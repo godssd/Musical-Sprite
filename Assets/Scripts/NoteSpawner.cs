@@ -8,10 +8,11 @@ using System;
 /// 负责：按谱面生成属于自己 side 的音符、移动、判定命中/漏击、通知中线移动。
 /// 输入由外部调用 TriggerLaneInput() 触发（键盘、触摸、AI 均可）。
 /// 
-/// 判定规则（几何重叠）：
-/// - 音符完全穿过判定线（leftband）且未被命中 => MISS
-/// - 命中时，音符中心与判定线中心的距离 <= 边长的一半 => PERFECT
-/// - 命中时，距离 > 边长的一半 但在有效命中范围内 => GOOD
+/// 判定规则：
+/// - 必须音符方块与判定线发生 X 轴重叠才算击中。
+/// - 重叠且音符中心到判定线中心距离 <= 0.25 × 边长 => PERFECT。
+/// - 重叠但距离 > 0.25 × 边长 => GOOD。
+/// - 音符完全穿过判定线且未重叠 => MISS。
 /// - 反馈文字生成在对应轨道判定线处。
 /// </summary>
 public class NoteSpawner : MonoBehaviour
@@ -44,11 +45,8 @@ public class NoteSpawner : MonoBehaviour
     public float laneSpacing = 1f;
 
     [Header("判定参数")]
-    [Tooltip("PERFECT 距离阈值 = 音符边长 × 该系数。命中时中心距离 ≤ 该值为 PERFECT。默认 1.2")]
-    public float perfectRatio = 1.2f;
-
-    [Tooltip("GOOD 最大距离阈值 = 音符边长 × 该系数。1.2 < 距离 ≤ 该值时为 GOOD，再远未命中。默认 2.0")]
-    public float goodRatio = 2.0f;
+    [Tooltip("PERFECT 阈值：音符中心到判定线中心距离 ≤ 边长 × 该系数。≤0.25 边长 PERFECT，>0.25 边长 GOOD")]
+    public float perfectRatio = 0.25f;
 
     [Header("键盘输入键位（PC 测试用）")]
     [Tooltip("每条轨道对应的按键")]
@@ -167,14 +165,15 @@ public class NoteSpawner : MonoBehaviour
         Note best = null;
         float bestDist = float.MaxValue;
 
+        // 只考虑与判定线发生几何重叠的音符，取距离判定线中心最近的一个
         foreach (var note in activeNotes)
         {
             if (note.lane != lane || note.isHit || note.side != side) continue;
 
             NoteMover mover = note.GetComponent<NoteMover>();
-            if (mover == null) continue;
+            if (mover == null || !mover.IsOverlappingHitLine()) continue;
 
-            float dist = mover.DistanceToHitCenter();
+            float dist = mover.CenterDistanceToHit();
             if (dist < bestDist)
             {
                 bestDist = dist;
@@ -184,34 +183,27 @@ public class NoteSpawner : MonoBehaviour
 
         if (best == null) return;
 
-        // 读取音符边长，作为判定基准
+        // 读取音符边长作为判定基准
         float noteEdge = 0.6f;
         NoteMover bestMover = best.GetComponent<NoteMover>();
         if (bestMover != null) noteEdge = bestMover.NoteEdgeLength;
         float perfectThresh = noteEdge * perfectRatio;
-        float goodThresh = noteEdge * goodRatio;
 
-        // 判定线发光与黑方块发生重叠即视为击中：
-        // distance ≤ 1.2×边长 → PERFECT；1.2×边长 < distance ≤ 2.0×边长 → GOOD
-        if (bestDist <= goodThresh)
+        string rank = bestDist <= perfectThresh ? "PERFECT" : "GOOD";
+        Debug.Log($"[Side {side}] {rank} lane {best.lane} distance {bestDist:F4} edge {noteEdge:F2}");
+
+        float accuracy = Mathf.Clamp01(bestDist / (noteEdge * 0.5f + 0.001f));
+        if (centerLine != null)
         {
-            string rank = bestDist <= perfectThresh ? "PERFECT" : "GOOD";
-
-            Debug.Log($"[Side {side}] {rank} lane {best.lane} distance {bestDist:F4} edge {noteEdge:F2} thresh {goodThresh:F2}");
-
-            float accuracy = Mathf.Clamp01(bestDist / goodThresh);
-            if (centerLine != null)
-            {
-                centerLine.RegisterHit(side, accuracy);
-            }
-
-            // 反馈位置放在对应轨道的判定线处
-            Vector3 judgePos = hitPoint.position + laneOffsets[best.lane];
-            OnJudge?.Invoke(side, best.lane, rank, judgePos);
-
-            best.Hit(rank);
-            activeNotes.Remove(best);
+            centerLine.RegisterHit(side, accuracy);
         }
+
+        // 反馈位置放在对应轨道的判定线处
+        Vector3 judgePos = hitPoint.position + laneOffsets[best.lane];
+        OnJudge?.Invoke(side, best.lane, rank, judgePos);
+
+        best.Hit(rank);
+        activeNotes.Remove(best);
     }
 
     /// <summary>

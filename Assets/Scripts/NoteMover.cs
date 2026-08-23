@@ -36,6 +36,21 @@ public class NoteMover : MonoBehaviour
     /// <summary>音符在移动方向上的边长（按 X 轴 scale 计）。</summary>
     public float NoteEdgeLength => transform.localScale.x;
 
+    [Tooltip("判定线（hit line cube）在移动方向上的半厚度")]
+    public float judgeLineHalfThickness = 0.05f;
+
+    /// <summary>当前音符是否与判定线发生了几何重叠。</summary>
+    public bool IsOverlappingHitLine()
+    {
+        return Mathf.Abs(transform.position.x - hitPos.x) <= noteHalfSize + judgeLineHalfThickness;
+    }
+
+    /// <summary>音符中心到判定线中心的 X 轴距离。</summary>
+    public float CenterDistanceToHit()
+    {
+        return Mathf.Abs(transform.position.x - hitPos.x);
+    }
+
     public void Init(Vector3 spawnPos, Vector3 hitPos, float hitTime, float leadTime,
                      Conductor conductor, BattleCenterLine centerLine)
     {
@@ -116,14 +131,6 @@ public class NoteMover : MonoBehaviour
             else
                 hasFullyPassed = noteBack > hitPos.x;
         }
-    }
-
-    /// <summary>
-    /// 返回音符中心到判定线中心的 X 轴距离。
-    /// </summary>
-    public float DistanceToHitCenter()
-    {
-        return Mathf.Abs(transform.position.x - hitPos.x);
     }
 
     /// <summary>

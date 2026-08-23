@@ -18,7 +18,7 @@ public class JudgeFeedbackManager : MonoBehaviour
     public Color missColor = new Color(0.8f, 0.2f, 0.2f, 1f);
 
     [Header("飘字偏移")]
-    public Vector3 spawnOffset = new Vector3(0f, 0.5f, 0f);
+    public Vector3 spawnOffset = new Vector3(0f, 0.25f, 0f);
 
     public void ShowFeedback(int side, int lane, string rank, Vector3 position)
     {
@@ -78,23 +78,29 @@ public class JudgeFeedbackManager : MonoBehaviour
     private GameObject CreateDefaultFeedbackPrefab(string text, Color color)
     {
         GameObject root = new GameObject("JudgeFeedbackDefault");
+        root.transform.localScale = Vector3.one * 0.01f;
+
         Canvas canvas = root.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
 
         GameObject textGo = new GameObject("Text");
         textGo.transform.SetParent(root.transform);
         textGo.transform.localPosition = Vector3.zero;
-        textGo.transform.localScale = Vector3.one * 0.06f;
+        textGo.transform.localScale = Vector3.one;
 
         RectTransform rect = textGo.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(5f, 1.2f);
+        rect.sizeDelta = new Vector2(200f, 60f);
 
         Text uiText = textGo.AddComponent<Text>();
         uiText.text = text;
         uiText.color = color;
-        uiText.fontSize = 70;
+        uiText.fontSize = 40;
         uiText.alignment = TextAnchor.MiddleCenter;
         uiText.font = GetUIFont();
+
+        Outline outline = textGo.AddComponent<Outline>();
+        outline.effectColor = Color.black;
+        outline.effectDistance = new Vector2(2f, 2f);
 
         root.AddComponent<JudgeFeedbackItem>();
         return root;
