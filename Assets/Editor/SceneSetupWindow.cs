@@ -245,10 +245,11 @@ namespace MusicalSprite.Editor
             centerLine.smoothSpeed = 5f;
 
             // 创建发射点 / 判定线
-            GameObject leftSpawn = CreateEmpty("LeftSpawnPoint", new Vector3(7f, 0.5f, 0f));
-            GameObject leftHit = CreateEmpty("LeftHitPoint", new Vector3(-6f, 0.5f, 0f));
-            GameObject rightSpawn = CreateEmpty("RightSpawnPoint", new Vector3(-7f, 0.5f, 0f));
-            GameObject rightHit = CreateEmpty("RightHitPoint", new Vector3(6f, 0.5f, 0f));
+            // 音符高度为 0.12，中心放在 0.06，底面正好贴住地面。
+            GameObject leftSpawn = CreateEmpty("LeftSpawnPoint", new Vector3(7f, 0.06f, 0f));
+            GameObject leftHit = CreateEmpty("LeftHitPoint", new Vector3(-6f, 0.06f, 0f));
+            GameObject rightSpawn = CreateEmpty("RightSpawnPoint", new Vector3(-7f, 0.06f, 0f));
+            GameObject rightHit = CreateEmpty("RightHitPoint", new Vector3(6f, 0.06f, 0f));
 
             // 创建判定线可视化
             CreateHitLineVisualizer("LeftHitLine", leftHit.transform.position, redMat);
@@ -473,7 +474,8 @@ namespace MusicalSprite.Editor
                 go = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 go.name = name;
             }
-            go.transform.position = pos + new Vector3(0f, -0.05f, 0f);
+            // 判定线高度为 0.05，底面贴地，中心高度为 0.025。
+            go.transform.position = new Vector3(pos.x, 0.025f, pos.z);
             go.transform.localScale = new Vector3(0.1f, 0.05f, 9f);
             SetMaterial(go, mat);
         }
@@ -625,7 +627,7 @@ namespace MusicalSprite.Editor
             // 圆台圆弧朝向场地中心（里侧），直径朝外（靠近场地边缘）
             float stageRadius = 1.2f;
             float hitX = spawner.hitPoint.position.x;
-            float indicatorX = hitX - direction * 0.15f; // 略靠场地内侧
+            float indicatorX = hitX; // 提示灯与真正判定线完全重合
 
             // 半圆圆台直径贴着场地外侧边缘，圆弧朝场地中心，不越过判定线
             float platformX = direction * 8f;
@@ -687,7 +689,8 @@ namespace MusicalSprite.Editor
                 indicator.name = $"{rootName}_Indicator_Lane{lane}";
                 indicator.transform.SetParent(root.transform);
                 // 横躺：沿 Z 轴延伸，Y 轴很薄，X 轴略宽于线
-                indicator.transform.position = new Vector3(indicatorX, 0.04f, z);
+                // 略高于判定线，避免两者深度冲突，同时保持贴地视觉。
+                indicator.transform.position = new Vector3(indicatorX, 0.06f, z);
                 indicator.transform.localScale = new Vector3(0.12f, 0.04f, spawner.laneSpacing * 0.85f);
                 SetMaterial(indicator, indicatorIdleMat);
 

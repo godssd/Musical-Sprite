@@ -78,8 +78,8 @@ public class NoteMover : MonoBehaviour
         // 压扁为薄板，使音符高度与判定线一致（X/Z 不变，仅降低 Y）
         transform.localScale = new Vector3(0.6f, 0.12f, 0.6f);
         noteHalfSize = transform.localScale.x * 0.5f;
-        // 判定线中心在 hitPos.y - 0.05 处，音符贴着它飞行
-        rideY = hitPos.y - 0.05f;
+        // hitPoint 表示音符中心高度；音符底面贴地时中心应为自身高度的一半。
+        rideY = hitPos.y;
 
         rend = GetComponentInChildren<MeshRenderer>();
         if (rend != null)
