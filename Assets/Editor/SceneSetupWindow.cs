@@ -624,9 +624,11 @@ namespace MusicalSprite.Editor
             // 场地内侧为 X=0，外侧为 X 绝对值更大的方向
             // 圆台圆弧朝向场地中心（里侧），直径朝外（靠近场地边缘）
             float stageRadius = 1.2f;
-            float platformX = direction * 6.5f;
             float hitX = spawner.hitPoint.position.x;
             float indicatorX = hitX - direction * 0.15f; // 略靠场地内侧
+
+            // 半圆圆台直径贴着场地外侧边缘，圆弧朝场地中心，不越过判定线
+            float platformX = direction * 8f;
 
             GameObject root = new GameObject(rootName);
             root.transform.position = Vector3.zero;
@@ -648,40 +650,34 @@ namespace MusicalSprite.Editor
             MeshCollider mc = stage.AddComponent<MeshCollider>();
             mc.sharedMesh = mf.sharedMesh;
 
-            // 本地坐标定义：X+ 朝圆弧外侧（远离场地），X- 朝场地内侧（靠近判定线）
-            // Z- = 上，Z+ = 下
+            // 成员与主角的 X 偏移：正数表示向场地边缘（后），负数表示向判定线（前）
+            float memberForward = 0.5f;   // 中间两个微微靠前
+            float memberBack = 1.15f;     // 最上/最下两个靠后
+            float protagonistOffset = 0.85f;
 
-            // 主角大方块：按图中红色示意，站在圆台靠前位置（靠近判定线/场地中心）
-            Vector3 protagonistLocal = new Vector3(-0.35f, 0.9f, 0f);
+            // 主角大方块：缩小后放在中间两个小方块后方
             GameObject protagonist = GameObject.CreatePrimitive(PrimitiveType.Cube);
             protagonist.name = $"{rootName}_Protagonist";
             protagonist.transform.SetParent(root.transform);
-            protagonist.transform.position = new Vector3(platformX + direction * protagonistLocal.x, protagonistLocal.y, protagonistLocal.z);
-            protagonist.transform.localScale = new Vector3(1.1f, 1.5f, 1.1f);
+            protagonist.transform.position = new Vector3(hitX + direction * protagonistOffset, 0.45f, 0f);
+            protagonist.transform.localScale = new Vector3(0.65f, 0.9f, 0.65f);
             SetMaterial(protagonist, protagonistMat);
 
-            // 4 个成员小方块：按图中黑色方块位置，Z 坐标严格与 4 条判定线对齐
-            // 本地 X：负值靠近判定线（前），正值靠近圆弧（后）
-            Vector3[] memberLocals = new Vector3[]
-            {
-                new Vector3( 0.55f, 0.45f, -1.5f), // 后上（lane 0）
-                new Vector3(-0.55f, 0.45f, -0.5f), // 前上（lane 1）
-                new Vector3(-0.55f, 0.45f,  0.5f), // 前下（lane 2）
-                new Vector3( 0.55f, 0.45f,  1.5f)  // 后下（lane 3）
-            };
-
+            // 4 个成员小方块：Z 坐标严格与 4 条判定线对齐
             for (int lane = 0; lane < spawner.laneCount; lane++)
             {
                 // 判定线 Z 坐标
                 float z = (lane - (spawner.laneCount - 1) * 0.5f) * spawner.laneSpacing;
 
-                // 成员：Z 必须与对应判定线完全一致
+                // 最上方和最下方靠后，中间两个微微靠前
+                float xOffset = (lane == 0 || lane == spawner.laneCount - 1) ? memberBack : memberForward;
+                float x = hitX + direction * xOffset;
+
                 GameObject member = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 member.name = $"{rootName}_Member_Lane{lane}";
                 member.transform.SetParent(root.transform);
-                Vector3 ml = memberLocals[lane];
-                member.transform.position = new Vector3(platformX + direction * ml.x, ml.y, z);
-                member.transform.localScale = new Vector3(0.5f, 0.6f, 0.5f);
+                member.transform.position = new Vector3(x, 0.45f, z);
+                member.transform.localScale = new Vector3(0.45f, 0.6f, 0.45f);
                 SetMaterial(member, memberMat);
 
                 // 指示灯：判定线处的横向短条（横躺在地面上方）
