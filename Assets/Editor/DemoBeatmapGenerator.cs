@@ -11,12 +11,18 @@ public class DemoBeatmapGenerator : MonoBehaviour
     [MenuItem("Tools/Musical Sprite/Create Demo Beatmap")]
     public static void CreateDemoBeatmap()
     {
-        BeatmapSO beatmap = ScriptableObject.CreateInstance<BeatmapSO>();
+        const string path = "Assets/ScriptableObjects/DemoBeatmap.asset";
+        BeatmapSO beatmap = AssetDatabase.LoadAssetAtPath<BeatmapSO>(path);
+        if (beatmap == null)
+        {
+            beatmap = ScriptableObject.CreateInstance<BeatmapSO>();
+            AssetDatabase.CreateAsset(beatmap, path);
+        }
+
         beatmap.bpm = 128f;
         beatmap.notes = GenerateDemoNotes();
 
-        string path = "Assets/ScriptableObjects/DemoBeatmap.asset";
-        AssetDatabase.CreateAsset(beatmap, path);
+        EditorUtility.SetDirty(beatmap);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
@@ -39,14 +45,14 @@ public class DemoBeatmapGenerator : MonoBehaviour
         {
             float t = startTime + i * beat;
 
-            // 基础节奏：每拍左右各一个音符，轨道轮流
+            // 基础节奏：同一时间、同一轨道，同时给左右玩家各生成一个音符。
             int lane = i % 4;
-            notes.Add(new NoteData { time = t, lane = lane, side = i % 2 });
+            AddMirroredNote(notes, t, lane);
 
             // 每 8 拍加一个双押
             if (i % 8 == 4)
             {
-                notes.Add(new NoteData { time = t, lane = (lane + 2) % 4, side = i % 2 });
+                AddMirroredNote(notes, t, (lane + 2) % 4);
             }
 
             // 每 16 拍加一个小连打
@@ -54,12 +60,7 @@ public class DemoBeatmapGenerator : MonoBehaviour
             {
                 for (int j = 0; j < 4; j++)
                 {
-                    notes.Add(new NoteData
-                    {
-                        time = t + j * (beat / 4f),
-                        lane = j,
-                        side = i % 2
-                    });
+                    AddMirroredNote(notes, t + j * (beat / 4f), j);
                 }
             }
         }
@@ -68,12 +69,17 @@ public class DemoBeatmapGenerator : MonoBehaviour
         for (int i = 0; i < 16; i++)
         {
             float t = startTime + totalBeats * beat + i * beat;
-            notes.Add(new NoteData { time = t, lane = i % 4, side = 0 });
-            notes.Add(new NoteData { time = t, lane = (i + 1) % 4, side = 1 });
+            AddMirroredNote(notes, t, i % 4);
         }
 
         // 必须按时间排序
         notes.Sort((a, b) => a.time.CompareTo(b.time));
         return notes.ToArray();
+    }
+
+    private static void AddMirroredNote(List<NoteData> notes, float time, int lane)
+    {
+        notes.Add(new NoteData { time = time, lane = lane, side = 0 });
+        notes.Add(new NoteData { time = time, lane = lane, side = 1 });
     }
 }
