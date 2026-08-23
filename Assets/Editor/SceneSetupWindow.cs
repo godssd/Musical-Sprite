@@ -486,7 +486,7 @@ namespace MusicalSprite.Editor
 
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = "Note";
-            go.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+            go.transform.localScale = new Vector3(0.6f, 0.12f, 0.6f);
             SetMaterial(go, mat);
 
             // 确保有 Note 组件

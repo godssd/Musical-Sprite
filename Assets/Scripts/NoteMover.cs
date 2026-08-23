@@ -21,6 +21,7 @@ public class NoteMover : MonoBehaviour
     private float startTime;
     private float exitLeadTime; // 从生成到完全穿过判定线所需时间
     private float noteHalfSize;
+    private float rideY; // 音符贴着判定线飞行时的 Y 高度
 
     private MeshRenderer rend;
     private Material noteMaterial;
@@ -74,8 +75,11 @@ public class NoteMover : MonoBehaviour
         float exitDistance = hitDistance + 1.5f;
         exitLeadTime = hitDistance > 0.001f ? leadTime * (exitDistance / hitDistance) : leadTime + 0.5f;
 
-        // 记录音符在移动方向上的半长（按 X 轴）
+        // 压扁为薄板，使音符高度与判定线一致（X/Z 不变，仅降低 Y）
+        transform.localScale = new Vector3(0.6f, 0.12f, 0.6f);
         noteHalfSize = transform.localScale.x * 0.5f;
+        // 判定线中心在 hitPos.y - 0.05 处，音符贴着它飞行
+        rideY = hitPos.y - 0.05f;
 
         rend = GetComponentInChildren<MeshRenderer>();
         if (rend != null)
@@ -97,7 +101,9 @@ public class NoteMover : MonoBehaviour
         // 按歌曲时间做线性插值：从生成点 -> 判定线 -> 穿出
         float t = (conductor.songPosition - startTime) / exitLeadTime;
         t = Mathf.Clamp01(t);
-        transform.position = Vector3.Lerp(spawnPos, exitPos, t);
+        Vector3 pos = Vector3.Lerp(spawnPos, exitPos, t);
+        pos.y = rideY; // 让音符与判定线同高
+        transform.position = pos;
 
         // 过中线后变为可见
         float centerX = centerLine != null ? centerLine.currentX : 0f;
