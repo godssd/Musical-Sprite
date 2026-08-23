@@ -57,7 +57,6 @@ public class ComboDisplay : MonoBehaviour
         {
             currentCombo = 0;
             UpdateText();
-            ShowMiss();
         }
     }
 

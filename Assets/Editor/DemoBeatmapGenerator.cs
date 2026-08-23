@@ -11,18 +11,12 @@ public class DemoBeatmapGenerator : MonoBehaviour
     [MenuItem("Tools/Musical Sprite/Create Demo Beatmap")]
     public static void CreateDemoBeatmap()
     {
-        const string path = "Assets/ScriptableObjects/DemoBeatmap.asset";
-        BeatmapSO beatmap = AssetDatabase.LoadAssetAtPath<BeatmapSO>(path);
-        if (beatmap == null)
-        {
-            beatmap = ScriptableObject.CreateInstance<BeatmapSO>();
-            AssetDatabase.CreateAsset(beatmap, path);
-        }
-
+        BeatmapSO beatmap = ScriptableObject.CreateInstance<BeatmapSO>();
         beatmap.bpm = 128f;
         beatmap.notes = GenerateDemoNotes();
 
-        EditorUtility.SetDirty(beatmap);
+        string path = "Assets/ScriptableObjects/DemoBeatmap.asset";
+        AssetDatabase.CreateAsset(beatmap, path);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
@@ -45,14 +39,16 @@ public class DemoBeatmapGenerator : MonoBehaviour
         {
             float t = startTime + i * beat;
 
-            // 基础节奏：同一时间、同一轨道，同时给左右玩家各生成一个音符。
+            // 基础节奏：每拍一个音符，轨道轮流；左右玩家谱面完全相同
             int lane = i % 4;
-            AddMirroredNote(notes, t, lane);
+            notes.Add(new NoteData { time = t, lane = lane, side = 0 });
+            notes.Add(new NoteData { time = t, lane = lane, side = 1 });
 
             // 每 8 拍加一个双押
             if (i % 8 == 4)
             {
-                AddMirroredNote(notes, t, (lane + 2) % 4);
+                notes.Add(new NoteData { time = t, lane = (lane + 2) % 4, side = 0 });
+                notes.Add(new NoteData { time = t, lane = (lane + 2) % 4, side = 1 });
             }
 
             // 每 16 拍加一个小连打
@@ -60,26 +56,32 @@ public class DemoBeatmapGenerator : MonoBehaviour
             {
                 for (int j = 0; j < 4; j++)
                 {
-                    AddMirroredNote(notes, t + j * (beat / 4f), j);
+                    notes.Add(new NoteData
+                    {
+                        time = t + j * (beat / 4f),
+                        lane = j,
+                        side = 0
+                    });
+                    notes.Add(new NoteData
+                    {
+                        time = t + j * (beat / 4f),
+                        lane = j,
+                        side = 1
+                    });
                 }
             }
         }
 
-        // 最后的大合唱：双方同时出现
+        // 最后的大合唱：双方同时出现，谱面相同
         for (int i = 0; i < 16; i++)
         {
             float t = startTime + totalBeats * beat + i * beat;
-            AddMirroredNote(notes, t, i % 4);
+            notes.Add(new NoteData { time = t, lane = i % 4, side = 0 });
+            notes.Add(new NoteData { time = t, lane = i % 4, side = 1 });
         }
 
         // 必须按时间排序
         notes.Sort((a, b) => a.time.CompareTo(b.time));
         return notes.ToArray();
-    }
-
-    private static void AddMirroredNote(List<NoteData> notes, float time, int lane)
-    {
-        notes.Add(new NoteData { time = time, lane = lane, side = 0 });
-        notes.Add(new NoteData { time = time, lane = lane, side = 1 });
     }
 }

@@ -7,6 +7,12 @@ using System;
 /// 每个玩家各挂一个：左玩家 side=0，右玩家 side=1。
 /// 负责：按谱面生成属于自己 side 的音符、移动、判定命中/漏击、通知中线移动。
 /// 输入由外部调用 TriggerLaneInput() 触发（键盘、触摸、AI 均可）。
+/// 
+/// 判定规则（几何重叠）：
+/// - 音符完全穿过判定线（leftband）且未被命中 => MISS
+/// - 命中时，音符中心与判定线中心的距离 <= 边长的一半 => PERFECT
+/// - 命中时，距离 > 边长的一半 但在有效命中范围内 => GOOD
+/// - 反馈文字生成在对应轨道判定线处。
 /// </summary>
 public class NoteSpawner : MonoBehaviour
 {
@@ -30,15 +36,19 @@ public class NoteSpawner : MonoBehaviour
     [Tooltip("音符从生成到抵达判定线需要多少秒")]
     public float leadTime = 2f;
 
-    [Tooltip("判定窗口（±秒）。total window = hitWindow * 2")]
-    public float hitWindow = 0.15f;
-
     [Header("轨道参数")]
     [Tooltip("轨道数量")]
     public int laneCount = 4;
 
     [Tooltip("相邻轨道在 Z 轴上的间距")]
     public float laneSpacing = 1f;
+
+    [Header("判定参数")]
+    [Tooltip("PERFECT 距离阈值 = 音符边长 × 该系数。命中时中心距离 ≤ 该值为 PERFECT。默认 1.2")]
+    public float perfectRatio = 1.2f;
+
+    [Tooltip("GOOD 最大距离阈值 = 音符边长 × 该系数。1.2 < 距离 ≤ 该值时为 GOOD，再远未命中。默认 2.0")]
+    public float goodRatio = 2.0f;
 
     [Header("键盘输入键位（PC 测试用）")]
     [Tooltip("每条轨道对应的按键")]
@@ -53,6 +63,11 @@ public class NoteSpawner : MonoBehaviour
     private List<Note> activeNotes = new List<Note>();
     private int spawnIndex = 0;
     private Vector3[] laneOffsets;
+
+    /// <summary>
+    /// 该侧谱面是否已全部生成且所有音符已消失。
+    /// </summary>
+    public bool IsFinished => beatmap != null && spawnIndex >= beatmap.notes.Length && activeNotes.Count == 0;
 
     void Start()
     {
@@ -83,16 +98,19 @@ public class NoteSpawner : MonoBehaviour
             spawnIndex++;
         }
 
-        // 2. 漏击检测
+        // 2. 漏击检测：音符完全穿过判定线且未被命中
         for (int i = activeNotes.Count - 1; i >= 0; i--)
         {
             var note = activeNotes[i];
             if (note.isHit) continue;
 
-            if (songTime > note.hitTime + hitWindow)
+            NoteMover mover = note.GetComponent<NoteMover>();
+            if (mover != null && mover.hasFullyPassed)
             {
                 Debug.Log($"[Side {side}] MISS lane {note.lane} time {note.hitTime:F2}");
-                OnJudge?.Invoke(side, note.lane, "MISS", note.transform.position);
+                // 反馈位置放在对应轨道的判定线处
+                Vector3 missPos = hitPoint.position + laneOffsets[note.lane];
+                OnJudge?.Invoke(side, note.lane, "MISS", missPos);
                 note.Miss();
                 activeNotes.RemoveAt(i);
             }
@@ -117,7 +135,7 @@ public class NoteSpawner : MonoBehaviour
         if (conductor == null) return;
 
         OnLanePress?.Invoke(side, lane);
-        TryHit(lane, conductor.songPosition);
+        TryHit(lane);
     }
 
     private void SpawnNote(NoteData data)
@@ -144,36 +162,52 @@ public class NoteSpawner : MonoBehaviour
         activeNotes.Add(note);
     }
 
-    private void TryHit(int lane, float songTime)
+    private void TryHit(int lane)
     {
         Note best = null;
-        float bestDiff = float.MaxValue;
+        float bestDist = float.MaxValue;
 
         foreach (var note in activeNotes)
         {
             if (note.lane != lane || note.isHit || note.side != side) continue;
 
-            float diff = Mathf.Abs(songTime - note.hitTime);
-            if (diff < bestDiff)
+            NoteMover mover = note.GetComponent<NoteMover>();
+            if (mover == null) continue;
+
+            float dist = mover.DistanceToHitCenter();
+            if (dist < bestDist)
             {
-                bestDiff = diff;
+                bestDist = dist;
                 best = note;
             }
         }
 
-        if (best != null && bestDiff <= hitWindow)
+        if (best == null) return;
+
+        // 读取音符边长，作为判定基准
+        float noteEdge = 0.6f;
+        NoteMover bestMover = best.GetComponent<NoteMover>();
+        if (bestMover != null) noteEdge = bestMover.NoteEdgeLength;
+        float perfectThresh = noteEdge * perfectRatio;
+        float goodThresh = noteEdge * goodRatio;
+
+        // 判定线发光与黑方块发生重叠即视为击中：
+        // distance ≤ 1.2×边长 → PERFECT；1.2×边长 < distance ≤ 2.0×边长 → GOOD
+        if (bestDist <= goodThresh)
         {
-            float accuracy = bestDiff / hitWindow; // 0 = 完美，1 = 边缘
-            string rank = accuracy < 0.4f ? "PERFECT" : "GOOD";
+            string rank = bestDist <= perfectThresh ? "PERFECT" : "GOOD";
 
-            Debug.Log($"[Side {side}] {rank} lane {best.lane} diff {bestDiff:F4}s");
+            Debug.Log($"[Side {side}] {rank} lane {best.lane} distance {bestDist:F4} edge {noteEdge:F2} thresh {goodThresh:F2}");
 
+            float accuracy = Mathf.Clamp01(bestDist / goodThresh);
             if (centerLine != null)
             {
                 centerLine.RegisterHit(side, accuracy);
             }
 
-            OnJudge?.Invoke(side, best.lane, rank, best.transform.position);
+            // 反馈位置放在对应轨道的判定线处
+            Vector3 judgePos = hitPoint.position + laneOffsets[best.lane];
+            OnJudge?.Invoke(side, best.lane, rank, judgePos);
 
             best.Hit(rank);
             activeNotes.Remove(best);

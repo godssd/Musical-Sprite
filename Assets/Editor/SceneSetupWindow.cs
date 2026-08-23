@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using System.Collections.Generic;
 using UnityEngine.UI;
 
 namespace MusicalSprite.Editor
@@ -238,9 +239,9 @@ namespace MusicalSprite.Editor
             centerLine.leftGround = arenaLeft.transform;
             centerLine.rightGround = arenaRight.transform;
             centerLine.arenaTotalWidth = 16f;
-            centerLine.minX = -6f;
-            centerLine.maxX = 6f;
-            centerLine.pushPerHit = 0.05f;
+            centerLine.minX = -5f;
+            centerLine.maxX = 5f;
+            centerLine.pushPerHit = 0.001f;
             centerLine.smoothSpeed = 5f;
 
             // 创建发射点 / 判定线
@@ -273,9 +274,9 @@ namespace MusicalSprite.Editor
             SetupSpawner(rightSpawner, 1, conductor, beatmap, centerLine, rightSpawn.transform, rightHit.transform, notePrefab);
 
             // 配置 CenterLine
-            centerLine.minX = -6f;
-            centerLine.maxX = 6f;
-            centerLine.pushPerHit = 0.05f;
+            centerLine.minX = -5f;
+            centerLine.maxX = 5f;
+            centerLine.pushPerHit = 0.001f;
             centerLine.smoothSpeed = 5f;
 
             // 关联 GameManager
@@ -299,6 +300,9 @@ namespace MusicalSprite.Editor
             scoreManager.leftScoreDisplay = leftScore;
             scoreManager.rightScoreDisplay = rightScore;
             gameManager.scoreManager = scoreManager;
+
+            // 让中线直接读取 ScoreManager 真实分差
+            centerLine.scoreManager = scoreManager;
 
             // 创建触控区构建器
             GameObject touchBuilderGo = new GameObject("TouchZoneBuilder");
@@ -345,7 +349,8 @@ namespace MusicalSprite.Editor
             BattleVisualsController visuals = gm.AddComponent<BattleVisualsController>();
             visuals.leftSpawner = leftSpawner;
             visuals.rightSpawner = rightSpawner;
-            visuals.comboDisplay = CreateComboDisplay(ComboGreen);
+            visuals.leftComboDisplay = CreateComboDisplay("ComboLeft", new Vector3(-4f, 2.5f, 0f), ArenaRed);
+            visuals.rightComboDisplay = CreateComboDisplay("ComboRight", new Vector3(4f, 2.5f, 0f), ArenaBlue);
 
             // 左侧乐队
             Transform leftBand = CreateBandFormation("LeftBand", -1f, leftSpawner, bandMemberMat, protagonistMat, indicatorActiveMat, indicatorIdleMat);
@@ -366,6 +371,98 @@ namespace MusicalSprite.Editor
             GameObject go = new GameObject(name);
             go.transform.position = pos;
             return go;
+        }
+
+        /// <summary>
+        /// 生成一个扁平半圆柱体 Mesh：直径沿 Z 轴，圆弧朝 +X 方向。
+        /// 可通过旋转 GameObject 改变朝向。
+        /// </summary>
+        private static Mesh CreateHalfCylinderMesh(float radius, float height, int segments)
+        {
+            Mesh mesh = new Mesh();
+            mesh.name = "HalfCylinder";
+
+            List<Vector3> verts = new List<Vector3>();
+            List<int> tris = new List<int>();
+            List<Vector2> uvs = new List<Vector2>();
+
+            // 底部中心 + 顶部中心
+            verts.Add(new Vector3(0, 0, 0));
+            verts.Add(new Vector3(0, height, 0));
+            uvs.Add(new Vector2(0.5f, 0.5f));
+            uvs.Add(new Vector2(0.5f, 0.5f));
+
+            // 弧形顶点，角度 -90° ~ 90°
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = -Mathf.PI / 2f + Mathf.PI * i / segments;
+                float x = Mathf.Cos(angle) * radius;
+                float z = Mathf.Sin(angle) * radius;
+
+                verts.Add(new Vector3(x, 0, z));
+                verts.Add(new Vector3(x, height, z));
+                uvs.Add(new Vector2(x / radius * 0.5f + 0.5f, z / radius * 0.5f + 0.5f));
+                uvs.Add(new Vector2(x / radius * 0.5f + 0.5f, z / radius * 0.5f + 0.5f));
+            }
+
+            int bottomCenter = 0;
+            int topCenter = 1;
+            int arcStart = 2;
+
+            // 底面
+            for (int i = 0; i < segments; i++)
+            {
+                tris.Add(bottomCenter);
+                tris.Add(arcStart + i * 2);
+                tris.Add(arcStart + i * 2 + 2);
+            }
+
+            // 顶面
+            for (int i = 0; i < segments; i++)
+            {
+                tris.Add(topCenter);
+                tris.Add(arcStart + i * 2 + 3);
+                tris.Add(arcStart + i * 2 + 1);
+            }
+
+            // 弧形侧面
+            for (int i = 0; i < segments; i++)
+            {
+                int bl = arcStart + i * 2;
+                int tl = arcStart + i * 2 + 1;
+                int br = arcStart + i * 2 + 2;
+                int tr = arcStart + i * 2 + 3;
+
+                tris.Add(bl);
+                tris.Add(tl);
+                tris.Add(tr);
+
+                tris.Add(bl);
+                tris.Add(tr);
+                tris.Add(br);
+            }
+
+            // 直径侧面（封闭切面）
+            int frontBottom = arcStart;
+            int frontTop = arcStart + 1;
+            int backBottom = arcStart + segments * 2;
+            int backTop = arcStart + segments * 2 + 1;
+
+            tris.Add(frontBottom);
+            tris.Add(backBottom);
+            tris.Add(backTop);
+
+            tris.Add(frontBottom);
+            tris.Add(backTop);
+            tris.Add(frontTop);
+
+            mesh.vertices = verts.ToArray();
+            mesh.triangles = tris.ToArray();
+            mesh.uv = uvs.ToArray();
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            mesh.UploadMeshData(false); // 保持 CPU 可读，供 MeshCollider 使用
+            return mesh;
         }
 
         private static void CreateHitLineVisualizer(string name, Vector3 pos, Material mat)
@@ -416,7 +513,6 @@ namespace MusicalSprite.Editor
             spawner.hitPoint = hitPoint;
             spawner.notePrefab = notePrefab;
             spawner.leadTime = 2f;
-            spawner.hitWindow = 0.15f;
             spawner.laneCount = 4;
             spawner.laneSpacing = 1.5f;
 
@@ -445,17 +541,17 @@ namespace MusicalSprite.Editor
             if (rend != null) rend.material = mat;
         }
 
-        private static ComboDisplay CreateComboDisplay(Color color)
+        private static ComboDisplay CreateComboDisplay(string name, Vector3 position, Color color)
         {
-            GameObject root = new GameObject("ComboDisplay");
-            root.transform.position = new Vector3(0f, 4.5f, 0f);
+            GameObject root = new GameObject(name);
+            root.transform.position = position;
 
             Canvas canvas = root.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             if (Camera.main != null)
                 root.transform.rotation = Quaternion.LookRotation(root.transform.position - Camera.main.transform.position);
 
-            root.transform.localScale = Vector3.one * 0.02f;
+            root.transform.localScale = Vector3.one * 0.03f;
 
             GameObject textGo = new GameObject("Text");
             textGo.transform.SetParent(root.transform);
@@ -463,7 +559,7 @@ namespace MusicalSprite.Editor
             textGo.transform.localScale = Vector3.one;
 
             RectTransform rect = textGo.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(400f, 160f);
+            rect.sizeDelta = new Vector2(300f, 160f);
 
             Text uiText = textGo.AddComponent<Text>();
             uiText.text = "";
@@ -525,55 +621,67 @@ namespace MusicalSprite.Editor
             Material memberMat, Material protagonistMat, Material indicatorActiveMat, Material indicatorIdleMat)
         {
             // direction: -1 = 左侧乐队，+1 = 右侧乐队
-            float platformX = direction * 7.5f;
+            // 场地内侧为 X=0，外侧为 X 绝对值更大的方向
+            // 圆台圆弧朝向场地中心（里侧），直径朝外（靠近场地边缘）
+            float stageRadius = 1.2f;
+            float platformX = direction * 6.5f;
             float hitX = spawner.hitPoint.position.x;
-            float memberX = direction * 6.8f;
-            float indicatorX = hitX - direction * 0.2f; // 略靠场地内侧
+            float indicatorX = hitX - direction * 0.15f; // 略靠场地内侧
 
             GameObject root = new GameObject(rootName);
             root.transform.position = Vector3.zero;
 
-            // 半圆圆台（用扁平圆柱体近似）
-            GameObject stage = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            stage.name = $"{rootName}_Stage";
+            // 半圆圆台：圆弧朝向场地中心（里侧），直径朝外（靠近场地边缘）
+            // 这样乐队站在圆弧上，面向场地中心演奏
+            GameObject stage = new GameObject($"{rootName}_Stage");
             stage.transform.SetParent(root.transform);
-            stage.transform.position = new Vector3(platformX, -0.02f, 0f);
-            stage.transform.localScale = new Vector3(2.5f, 0.1f, 2.5f);
-            SetMaterial(stage, direction < 0 ? AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_ArenaRed.mat") :
-                                                AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_ArenaBlue.mat"));
+            stage.transform.position = new Vector3(platformX, 0f, 0f);
+            // CreateHalfCylinderMesh 默认圆弧朝 +X；左侧 direction=-1 需要圆弧朝里（+X），所以不旋转
+            // 右侧 direction=+1 需要圆弧朝里（-X），所以旋转 180°
+            stage.transform.rotation = Quaternion.Euler(0f, direction < 0 ? 0f : 180f, 0f);
 
-            // 主角大方块（站圆台中央）
+            MeshFilter mf = stage.AddComponent<MeshFilter>();
+            mf.sharedMesh = CreateHalfCylinderMesh(stageRadius, 0.15f, 24);
+            MeshRenderer mr = stage.AddComponent<MeshRenderer>();
+            mr.material = direction < 0 ? AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_ArenaRed.mat") :
+                                           AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_ArenaBlue.mat");
+            MeshCollider mc = stage.AddComponent<MeshCollider>();
+            mc.sharedMesh = mf.sharedMesh;
+
+            // 本地坐标定义：X+ 朝圆弧外侧（远离场地），X- 朝场地内侧（靠近判定线）
+            // Z- = 上，Z+ = 下
+
+            // 主角大方块：按图中红色示意，站在圆台靠前位置（靠近判定线/场地中心）
+            Vector3 protagonistLocal = new Vector3(-0.35f, 0.9f, 0f);
             GameObject protagonist = GameObject.CreatePrimitive(PrimitiveType.Cube);
             protagonist.name = $"{rootName}_Protagonist";
             protagonist.transform.SetParent(root.transform);
-            protagonist.transform.position = new Vector3(platformX, 0.75f, 0f);
-            protagonist.transform.localScale = new Vector3(1.2f, 1.5f, 1.2f);
+            protagonist.transform.position = new Vector3(platformX + direction * protagonistLocal.x, protagonistLocal.y, protagonistLocal.z);
+            protagonist.transform.localScale = new Vector3(1.1f, 1.5f, 1.1f);
             SetMaterial(protagonist, protagonistMat);
 
-            // 4 个成员小方块：围绕主角分布在圆台上
-            // 前方 = 朝向场地（X 绝对值较小），后方 = 远离场地（X 绝对值较大）
-            float forwardX = platformX - direction * 1.0f;
-            float backX = platformX + direction * 1.0f;
-            float spreadZ = spawner.laneSpacing * 0.65f;    // 上下间距
-
-            Vector3[] memberOffsets = new Vector3[]
+            // 4 个成员小方块：按图中黑色方块位置，Z 坐标严格与 4 条判定线对齐
+            // 本地 X：负值靠近判定线（前），正值靠近圆弧（后）
+            Vector3[] memberLocals = new Vector3[]
             {
-                new Vector3(forwardX, 0.4f,  spreadZ),      // 前上
-                new Vector3(forwardX, 0.4f, -spreadZ),      // 前下
-                new Vector3(backX,    0.4f,  spreadZ),      // 后上
-                new Vector3(backX,    0.4f, -spreadZ)       // 后下
+                new Vector3( 0.55f, 0.45f, -1.5f), // 后上（lane 0）
+                new Vector3(-0.55f, 0.45f, -0.5f), // 前上（lane 1）
+                new Vector3(-0.55f, 0.45f,  0.5f), // 前下（lane 2）
+                new Vector3( 0.55f, 0.45f,  1.5f)  // 后下（lane 3）
             };
 
             for (int lane = 0; lane < spawner.laneCount; lane++)
             {
+                // 判定线 Z 坐标
                 float z = (lane - (spawner.laneCount - 1) * 0.5f) * spawner.laneSpacing;
 
-                // 成员
+                // 成员：Z 必须与对应判定线完全一致
                 GameObject member = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 member.name = $"{rootName}_Member_Lane{lane}";
                 member.transform.SetParent(root.transform);
-                member.transform.position = memberOffsets[lane];
-                member.transform.localScale = new Vector3(0.5f, 0.8f, 0.5f);
+                Vector3 ml = memberLocals[lane];
+                member.transform.position = new Vector3(platformX + direction * ml.x, ml.y, z);
+                member.transform.localScale = new Vector3(0.5f, 0.6f, 0.5f);
                 SetMaterial(member, memberMat);
 
                 // 指示灯：判定线处的横向短条（横躺在地面上方）

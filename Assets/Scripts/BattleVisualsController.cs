@@ -15,7 +15,8 @@ public class BattleVisualsController : MonoBehaviour
     public LaneIndicator[] indicators = new LaneIndicator[8];
 
     [Header("连击显示")]
-    public ComboDisplay comboDisplay;
+    public ComboDisplay leftComboDisplay;
+    public ComboDisplay rightComboDisplay;
 
     [Header("乐队成员")]
     public Transform leftBandRoot;
@@ -61,13 +62,15 @@ public class BattleVisualsController : MonoBehaviour
 
     private void OnJudge(int side, int lane, string rank, Vector3 position)
     {
+        ComboDisplay target = side == 0 ? leftComboDisplay : rightComboDisplay;
+
         if (rank == "PERFECT" || rank == "GOOD")
         {
-            if (comboDisplay != null) comboDisplay.AddCombo(1);
+            if (target != null) target.AddCombo(1);
         }
         else if (rank == "MISS")
         {
-            if (comboDisplay != null) comboDisplay.ResetCombo();
+            if (target != null) target.ResetCombo();
         }
     }
 }
