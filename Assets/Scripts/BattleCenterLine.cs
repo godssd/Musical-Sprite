@@ -9,17 +9,21 @@ public class BattleCenterLine : MonoBehaviour
 {
     [Header("移动范围")]
     [Tooltip("中线最左能到的 X 坐标")]
-    public float minX = -3f;
+    public float minX = -5f;
 
     [Tooltip("中线最右能到的 X 坐标")]
-    public float maxX = 3f;
+    public float maxX = 5f;
 
     [Header("移动参数")]
-    [Tooltip("每次命中推动多少单位")]
-    public float pushPerHit = 0.05f;
+    [Tooltip("分差 5000 时中线移动 5 个单位")]
+    public float pushPerHit = 0.001f;
 
     [Tooltip("中线归中/平滑移动的速度")]
     public float smoothSpeed = 5f;
+
+    [Header("分数引用")]
+    [Tooltip("可选：直接引用 ScoreManager，用真实分差驱动中线移动")]
+    public ScoreManager scoreManager;
 
     [Header("地面引用")]
     [Tooltip("左侧红色地面")]
@@ -48,7 +52,19 @@ public class BattleCenterLine : MonoBehaviour
     void Update()
     {
         // 根据双方得分差计算目标位置
-        float diff = _rightScore - _leftScore; // 右玩家领先为正 -> 中线左移
+        // 优先使用 ScoreManager 的真实分差；未引用时回退到内部累计
+        // 注意：中线应该向分数更低的一方移动，所以用 左分 - 右分
+        float diff;
+        if (scoreManager != null)
+        {
+            diff = scoreManager.GetLeftScore() - scoreManager.GetRightScore();
+        }
+        else
+        {
+            diff = _leftScore - _rightScore;
+        }
+
+        // 分差 5000 时移动 5 个单位
         float targetX = Mathf.Clamp(diff * pushPerHit, minX, maxX);
 
         _currentX = Mathf.Lerp(_currentX, targetX, Time.deltaTime * smoothSpeed);

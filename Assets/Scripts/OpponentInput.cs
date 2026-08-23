@@ -51,8 +51,8 @@ public class OpponentInput : MonoBehaviour
             float targetTime = note.time + aimOffset;
             if (songTime < targetTime - 0.01f) break;
 
-            // 在这个时间窗口内触发
-            if (songTime <= targetTime + spawner.hitWindow)
+            // 在这个时间窗口内触发（按几何判定，给 0.2 秒容错）
+            if (songTime <= targetTime + 0.2f)
             {
                 if (UnityEngine.Random.value > missChance)
                 {

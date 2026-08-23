@@ -95,6 +95,9 @@ public class ScoreManager : MonoBehaviour
         UpdateDisplays();
     }
 
+    public int GetLeftScore() => leftScore;
+    public int GetRightScore() => rightScore;
+
     private NoteSpawner FindLeftSpawner()
     {
         var all = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);

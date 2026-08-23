@@ -84,15 +84,15 @@ public class JudgeFeedbackManager : MonoBehaviour
         GameObject textGo = new GameObject("Text");
         textGo.transform.SetParent(root.transform);
         textGo.transform.localPosition = Vector3.zero;
-        textGo.transform.localScale = Vector3.one * 0.05f;
+        textGo.transform.localScale = Vector3.one * 0.06f;
 
         RectTransform rect = textGo.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(4f, 1f);
+        rect.sizeDelta = new Vector2(5f, 1.2f);
 
         Text uiText = textGo.AddComponent<Text>();
         uiText.text = text;
         uiText.color = color;
-        uiText.fontSize = 60;
+        uiText.fontSize = 70;
         uiText.alignment = TextAnchor.MiddleCenter;
         uiText.font = GetUIFont();
 

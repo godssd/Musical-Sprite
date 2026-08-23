@@ -2,8 +2,9 @@ using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// 控制音符从生成点沿轨道移动到判定线，并在越过中线后变为可见。
+/// 控制音符从生成点沿轨道移动到判定线并穿过判定线，越过中线后变为可见。
 /// 命中时：变黑方块 → 白方块 → 变大 → 消失。
+/// Miss 时：音符完全穿过判定线（leftband）后变小消失。
 /// </summary>
 [RequireComponent(typeof(Note))]
 public class NoteMover : MonoBehaviour
@@ -14,15 +15,26 @@ public class NoteMover : MonoBehaviour
 
     private Vector3 spawnPos;
     private Vector3 hitPos;
+    private Vector3 exitPos;
     private float hitTime;
     private float leadTime;
     private float startTime;
+    private float exitLeadTime; // 从生成到完全穿过判定线所需时间
+    private float noteHalfSize;
 
     private MeshRenderer rend;
     private Material noteMaterial;
     private Color originalColor;
 
     private bool animationPlaying = false;
+
+    /// <summary>音符是否已经完整穿过判定线。</summary>
+    public bool hasFullyPassed { get; private set; }
+
+    public Vector3 HitPosition => hitPos;
+
+    /// <summary>音符在移动方向上的边长（按 X 轴 scale 计）。</summary>
+    public float NoteEdgeLength => transform.localScale.x;
 
     public void Init(Vector3 spawnPos, Vector3 hitPos, float hitTime, float leadTime,
                      Conductor conductor, BattleCenterLine centerLine)
@@ -37,6 +49,18 @@ public class NoteMover : MonoBehaviour
         note = GetComponent<Note>();
         note.hitTime = hitTime;
         startTime = hitTime - leadTime;
+
+        // 计算越过判定线的终点（再往前 1.5 个单位，保证能完全穿过）
+        Vector3 moveDir = (hitPos - spawnPos).normalized;
+        exitPos = hitPos + moveDir * 1.5f;
+
+        // 音符应在 hitTime 时到达 hitPos，之后继续滑向 exitPos
+        float hitDistance = Vector3.Distance(spawnPos, hitPos);
+        float exitDistance = hitDistance + 1.5f;
+        exitLeadTime = hitDistance > 0.001f ? leadTime * (exitDistance / hitDistance) : leadTime + 0.5f;
+
+        // 记录音符在移动方向上的半长（按 X 轴）
+        noteHalfSize = transform.localScale.x * 0.5f;
 
         rend = GetComponentInChildren<MeshRenderer>();
         if (rend != null)
@@ -55,10 +79,10 @@ public class NoteMover : MonoBehaviour
     {
         if (conductor == null || animationPlaying) return;
 
-        // 按歌曲时间做线性插值
-        float t = (conductor.songPosition - startTime) / leadTime;
+        // 按歌曲时间做线性插值：从生成点 -> 判定线 -> 穿出
+        float t = (conductor.songPosition - startTime) / exitLeadTime;
         t = Mathf.Clamp01(t);
-        transform.position = Vector3.Lerp(spawnPos, hitPos, t);
+        transform.position = Vector3.Lerp(spawnPos, exitPos, t);
 
         // 过中线后变为可见
         float centerX = centerLine != null ? centerLine.currentX : 0f;
@@ -79,6 +103,27 @@ public class NoteMover : MonoBehaviour
             if (rend != null) rend.enabled = true;
             SetAlpha(1f);
         }
+
+        // 检测是否已完全穿过判定线：必须后缘也越过判定线，才算“彻底穿过”
+        if (!hasFullyPassed)
+        {
+            float noteBack = note.side == 0
+                ? transform.position.x + noteHalfSize   // 向左飞，后缘是右侧
+                : transform.position.x - noteHalfSize;  // 向右飞，后缘是左侧
+
+            if (note.side == 0)
+                hasFullyPassed = noteBack < hitPos.x;
+            else
+                hasFullyPassed = noteBack > hitPos.x;
+        }
+    }
+
+    /// <summary>
+    /// 返回音符中心到判定线中心的 X 轴距离。
+    /// </summary>
+    public float DistanceToHitCenter()
+    {
+        return Mathf.Abs(transform.position.x - hitPos.x);
     }
 
     /// <summary>
@@ -139,7 +184,7 @@ public class NoteMover : MonoBehaviour
 
     private IEnumerator MissCoroutine()
     {
-        float duration = 0.3f;
+        float duration = 0.15f;
         float timer = 0f;
         Vector3 startScale = transform.localScale;
 
@@ -154,7 +199,7 @@ public class NoteMover : MonoBehaviour
                 noteMaterial.color = c;
             }
 
-            transform.localScale = Vector3.Lerp(startScale, startScale * 0.5f, t);
+            transform.localScale = Vector3.Lerp(startScale, startScale * 0.3f, t);
             yield return null;
         }
 

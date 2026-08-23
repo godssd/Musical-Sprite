@@ -39,14 +39,16 @@ public class DemoBeatmapGenerator : MonoBehaviour
         {
             float t = startTime + i * beat;
 
-            // 基础节奏：每拍左右各一个音符，轨道轮流
+            // 基础节奏：每拍一个音符，轨道轮流；左右玩家谱面完全相同
             int lane = i % 4;
-            notes.Add(new NoteData { time = t, lane = lane, side = i % 2 });
+            notes.Add(new NoteData { time = t, lane = lane, side = 0 });
+            notes.Add(new NoteData { time = t, lane = lane, side = 1 });
 
             // 每 8 拍加一个双押
             if (i % 8 == 4)
             {
-                notes.Add(new NoteData { time = t, lane = (lane + 2) % 4, side = i % 2 });
+                notes.Add(new NoteData { time = t, lane = (lane + 2) % 4, side = 0 });
+                notes.Add(new NoteData { time = t, lane = (lane + 2) % 4, side = 1 });
             }
 
             // 每 16 拍加一个小连打
@@ -58,18 +60,24 @@ public class DemoBeatmapGenerator : MonoBehaviour
                     {
                         time = t + j * (beat / 4f),
                         lane = j,
-                        side = i % 2
+                        side = 0
+                    });
+                    notes.Add(new NoteData
+                    {
+                        time = t + j * (beat / 4f),
+                        lane = j,
+                        side = 1
                     });
                 }
             }
         }
 
-        // 最后的大合唱：双方同时出现
+        // 最后的大合唱：双方同时出现，谱面相同
         for (int i = 0; i < 16; i++)
         {
             float t = startTime + totalBeats * beat + i * beat;
             notes.Add(new NoteData { time = t, lane = i % 4, side = 0 });
-            notes.Add(new NoteData { time = t, lane = (i + 1) % 4, side = 1 });
+            notes.Add(new NoteData { time = t, lane = i % 4, side = 1 });
         }
 
         // 必须按时间排序
