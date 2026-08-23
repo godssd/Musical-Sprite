@@ -239,8 +239,8 @@ namespace MusicalSprite.Editor
             centerLine.leftGround = arenaLeft.transform;
             centerLine.rightGround = arenaRight.transform;
             centerLine.arenaTotalWidth = 16f;
-            centerLine.minX = -5f;
-            centerLine.maxX = 5f;
+            centerLine.minX = -3f;
+            centerLine.maxX = 3f;
             centerLine.pushPerHit = 0.001f;
             centerLine.smoothSpeed = 5f;
 
@@ -274,8 +274,8 @@ namespace MusicalSprite.Editor
             SetupSpawner(rightSpawner, 1, conductor, beatmap, centerLine, rightSpawn.transform, rightHit.transform, notePrefab);
 
             // 配置 CenterLine
-            centerLine.minX = -5f;
-            centerLine.maxX = 5f;
+            centerLine.minX = -3f;
+            centerLine.maxX = 3f;
             centerLine.pushPerHit = 0.001f;
             centerLine.smoothSpeed = 5f;
 
@@ -653,13 +653,15 @@ namespace MusicalSprite.Editor
             // 成员与主角的 X 偏移：正数表示向场地边缘（后），负数表示向判定线（前）
             float memberForward = 0.5f;   // 中间两个微微靠前
             float memberBack = 1.15f;     // 最上/最下两个靠后
-            float protagonistOffset = 0.85f;
+            // 半圆台沿 X 轴的范围约为 1.2，主角放在其几何中心而不是内侧边缘。
+            float protagonistOffset = 1.4f;
 
             // 主角大方块：缩小后放在中间两个小方块后方
             GameObject protagonist = GameObject.CreatePrimitive(PrimitiveType.Cube);
             protagonist.name = $"{rootName}_Protagonist";
             protagonist.transform.SetParent(root.transform);
-            protagonist.transform.position = new Vector3(hitX + direction * protagonistOffset, 0.45f, 0f);
+            // 半圆台高度为 0.15，大方块高度为 0.9，中心抬到 0.60 后底面正好落在台面上。
+            protagonist.transform.position = new Vector3(hitX + direction * protagonistOffset, 0.60f, 0f);
             protagonist.transform.localScale = new Vector3(0.65f, 0.9f, 0.65f);
             SetMaterial(protagonist, protagonistMat);
 

@@ -41,18 +41,28 @@ public class JudgeFeedbackManager : MonoBehaviour
                 break;
         }
 
-        if (prefab == null)
+        bool isRuntimeTemplate = prefab == null;
+        if (isRuntimeTemplate)
         {
-            // 如果没有预制体，动态生成一个默认 UI Text 飘字
+            // 如果没有预制体，动态生成一个默认 UI Text 模板。
             prefab = CreateDefaultFeedbackPrefab(rank, color);
+            // 模板本身不能显示，否则会在世界原点额外出现一个评价文字。
+            prefab.SetActive(false);
         }
 
         Vector3 pos = position + spawnOffset;
         GameObject go = Instantiate(prefab, pos, Quaternion.identity);
+        go.SetActive(true);
 
-        // 让 Canvas 面向相机
+        if (isRuntimeTemplate)
+        {
+            Destroy(prefab);
+        }
+
+        // World Space Canvas 的正面朝向与相机相反时，文字会左右/前后翻转；
+        // 让 Canvas 的法线背向相机，使 UI 正面朝向相机。
         if (Camera.main != null)
-            go.transform.rotation = Quaternion.LookRotation(Camera.main.transform.position - pos);
+            go.transform.rotation = Quaternion.LookRotation(pos - Camera.main.transform.position);
 
         // 确保有 JudgeFeedbackItem 自动动画
         JudgeFeedbackItem item = go.GetComponent<JudgeFeedbackItem>();
@@ -102,7 +112,6 @@ public class JudgeFeedbackManager : MonoBehaviour
         outline.effectColor = Color.black;
         outline.effectDistance = new Vector2(2f, 2f);
 
-        root.AddComponent<JudgeFeedbackItem>();
         return root;
     }
 }
