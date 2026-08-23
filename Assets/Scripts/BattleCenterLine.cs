@@ -9,10 +9,10 @@ public class BattleCenterLine : MonoBehaviour
 {
     [Header("移动范围")]
     [Tooltip("中线最左能到的 X 坐标")]
-    public float minX = -5f;
+    public float minX = -3f;
 
     [Tooltip("中线最右能到的 X 坐标")]
-    public float maxX = 5f;
+    public float maxX = 3f;
 
     [Header("移动参数")]
     [Tooltip("分差 5000 时中线移动 5 个单位")]
