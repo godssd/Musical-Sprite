@@ -1,0 +1,761 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d5f5dab618c9c742964cfde78c3c756, type: 3}
+  m_Name: DemoBeatmap
+  m_EditorClassIdentifier: 
+  notes:
+  - time: 2.3815377
+    lane: 2
+    side: 0
+  - time: 2.3815377
+    lane: 2
+    side: 1
+  - time: 2.6899178
+    lane: 0
+    side: 0
+  - time: 2.6899178
+    lane: 0
+    side: 1
+  - time: 3.1317449
+    lane: 1
+    side: 0
+  - time: 3.1317449
+    lane: 1
+    side: 1
+  - time: 3.5398831
+    lane: 0
+    side: 0
+  - time: 3.5398831
+    lane: 0
+    side: 1
+  - time: 3.7251031
+    lane: 2
+    side: 0
+  - time: 3.7251031
+    lane: 2
+    side: 1
+  - time: 3.938607
+    lane: 2
+    side: 0
+  - time: 3.938607
+    lane: 2
+    side: 1
+  - time: 4.2382164
+    lane: 3
+    side: 0
+  - time: 4.2382164
+    lane: 3
+    side: 1
+  - time: 4.5662236
+    lane: 0
+    side: 1
+  - time: 4.5662236
+    lane: 0
+    side: 0
+  - time: 5.9407554
+    lane: 0
+    side: 0
+  - time: 5.9407554
+    lane: 0
+    side: 1
+  - time: 6.8928795
+    lane: 1
+    side: 0
+  - time: 6.8928795
+    lane: 1
+    side: 1
+  - time: 7.1228385
+    lane: 3
+    side: 0
+  - time: 7.1228385
+    lane: 3
+    side: 1
+  - time: 7.345053
+    lane: 2
+    side: 0
+  - time: 7.345053
+    lane: 2
+    side: 1
+  - time: 7.706662
+    lane: 3
+    side: 0
+  - time: 7.706662
+    lane: 3
+    side: 1
+  - time: 9.200424
+    lane: 2
+    side: 0
+  - time: 9.200424
+    lane: 2
+    side: 1
+  - time: 9.41468
+    lane: 3
+    side: 1
+  - time: 9.41468
+    lane: 3
+    side: 0
+  - time: 9.667812
+    lane: 1
+    side: 1
+  - time: 9.667812
+    lane: 1
+    side: 0
+  - time: 10.519978
+    lane: 1
+    side: 0
+  - time: 10.519978
+    lane: 1
+    side: 1
+  - time: 11.0164
+    lane: 3
+    side: 0
+  - time: 11.0164
+    lane: 3
+    side: 1
+  - time: 11.94824
+    lane: 1
+    side: 0
+  - time: 11.94824
+    lane: 1
+    side: 1
+  - time: 12.301575
+    lane: 3
+    side: 0
+  - time: 12.301575
+    lane: 3
+    side: 1
+  - time: 12.810786
+    lane: 1
+    side: 0
+  - time: 12.810786
+    lane: 1
+    side: 1
+  - time: 13.436049
+    lane: 2
+    side: 0
+  - time: 13.436049
+    lane: 2
+    side: 1
+  - time: 14.044079
+    lane: 3
+    side: 0
+  - time: 14.044079
+    lane: 3
+    side: 1
+  - time: 14.313051
+    lane: 1
+    side: 1
+  - time: 14.313051
+    lane: 1
+    side: 0
+  - time: 15.077628
+    lane: 3
+    side: 0
+  - time: 15.077628
+    lane: 3
+    side: 1
+  - time: 15.407942
+    lane: 1
+    side: 0
+  - time: 15.407942
+    lane: 1
+    side: 1
+  - time: 15.672508
+    lane: 2
+    side: 0
+  - time: 15.672508
+    lane: 2
+    side: 1
+  - time: 16.012318
+    lane: 2
+    side: 0
+  - time: 16.012318
+    lane: 2
+    side: 1
+  - time: 16.273867
+    lane: 0
+    side: 0
+  - time: 16.273867
+    lane: 0
+    side: 1
+  - time: 16.561405
+    lane: 0
+    side: 0
+  - time: 16.561405
+    lane: 0
+    side: 1
+  - time: 17.044546
+    lane: 3
+    side: 1
+  - time: 17.044546
+    lane: 3
+    side: 0
+  - time: 17.403526
+    lane: 3
+    side: 0
+  - time: 17.403526
+    lane: 3
+    side: 1
+  - time: 18.093685
+    lane: 3
+    side: 0
+  - time: 18.093685
+    lane: 3
+    side: 1
+  - time: 18.741808
+    lane: 0
+    side: 0
+  - time: 18.741808
+    lane: 0
+    side: 1
+  - time: 19.212992
+    lane: 1
+    side: 0
+  - time: 19.212992
+    lane: 1
+    side: 1
+  - time: 19.69196
+    lane: 0
+    side: 0
+  - time: 19.69196
+    lane: 0
+    side: 1
+  - time: 20.325075
+    lane: 0
+    side: 0
+  - time: 20.325075
+    lane: 0
+    side: 1
+  - time: 20.783417
+    lane: 0
+    side: 1
+  - time: 20.783417
+    lane: 0
+    side: 0
+  - time: 20.978207
+    lane: 2
+    side: 0
+  - time: 20.978207
+    lane: 2
+    side: 1
+  - time: 21.246044
+    lane: 3
+    side: 0
+  - time: 21.246044
+    lane: 3
+    side: 1
+  - time: 21.56144
+    lane: 3
+    side: 0
+  - time: 21.56144
+    lane: 3
+    side: 1
+  - time: 22.177736
+    lane: 1
+    side: 0
+  - time: 22.177736
+    lane: 1
+    side: 1
+  - time: 22.441319
+    lane: 1
+    side: 0
+  - time: 22.441319
+    lane: 1
+    side: 1
+  - time: 22.963684
+    lane: 3
+    side: 0
+  - time: 22.963684
+    lane: 3
+    side: 1
+  - time: 23.360016
+    lane: 1
+    side: 0
+  - time: 23.360016
+    lane: 1
+    side: 1
+  - time: 23.847696
+    lane: 1
+    side: 1
+  - time: 23.847696
+    lane: 1
+    side: 0
+  - time: 24.23543
+    lane: 0
+    side: 0
+  - time: 24.23543
+    lane: 0
+    side: 1
+  - time: 24.585182
+    lane: 0
+    side: 0
+  - time: 24.585182
+    lane: 0
+    side: 1
+  - time: 24.878294
+    lane: 2
+    side: 0
+  - time: 24.878294
+    lane: 2
+    side: 1
+  - time: 25.302586
+    lane: 0
+    side: 0
+  - time: 25.302586
+    lane: 0
+    side: 1
+  - time: 25.766441
+    lane: 3
+    side: 0
+  - time: 25.766441
+    lane: 3
+    side: 1
+  - time: 26.08905
+    lane: 1
+    side: 0
+  - time: 26.08905
+    lane: 1
+    side: 1
+  - time: 26.48247
+    lane: 1
+    side: 1
+  - time: 26.48247
+    lane: 1
+    side: 0
+  - time: 26.71153
+    lane: 3
+    side: 1
+  - time: 26.71153
+    lane: 3
+    side: 0
+  - time: 27.18203
+    lane: 1
+    side: 0
+  - time: 27.18203
+    lane: 1
+    side: 1
+  - time: 27.837816
+    lane: 3
+    side: 0
+  - time: 27.837816
+    lane: 3
+    side: 1
+  - time: 28.131552
+    lane: 3
+    side: 0
+  - time: 28.131552
+    lane: 3
+    side: 1
+  - time: 28.528204
+    lane: 2
+    side: 0
+  - time: 28.528204
+    lane: 2
+    side: 1
+  - time: 29.279812
+    lane: 2
+    side: 0
+  - time: 29.279812
+    lane: 2
+    side: 1
+  - time: 29.632275
+    lane: 2
+    side: 0
+  - time: 29.632275
+    lane: 2
+    side: 1
+  - time: 30.377674
+    lane: 2
+    side: 0
+  - time: 30.377674
+    lane: 2
+    side: 1
+  - time: 30.752264
+    lane: 1
+    side: 1
+  - time: 30.752264
+    lane: 1
+    side: 0
+  - time: 30.967176
+    lane: 2
+    side: 0
+  - time: 30.967176
+    lane: 2
+    side: 1
+  - time: 31.351498
+    lane: 3
+    side: 0
+  - time: 31.351498
+    lane: 3
+    side: 1
+  - time: 31.780113
+    lane: 0
+    side: 0
+  - time: 31.780113
+    lane: 0
+    side: 1
+  - time: 32.09566
+    lane: 3
+    side: 0
+  - time: 32.09566
+    lane: 3
+    side: 1
+  - time: 32.37608
+    lane: 1
+    side: 0
+  - time: 32.37608
+    lane: 1
+    side: 1
+  - time: 32.675537
+    lane: 1
+    side: 0
+  - time: 32.675537
+    lane: 1
+    side: 1
+  - time: 33.073845
+    lane: 0
+    side: 1
+  - time: 33.073845
+    lane: 0
+    side: 0
+  - time: 33.477898
+    lane: 1
+    side: 0
+  - time: 33.477898
+    lane: 1
+    side: 1
+  - time: 33.766758
+    lane: 1
+    side: 0
+  - time: 33.766758
+    lane: 1
+    side: 1
+  - time: 34.044167
+    lane: 3
+    side: 0
+  - time: 34.044167
+    lane: 3
+    side: 1
+  - time: 34.942593
+    lane: 2
+    side: 0
+  - time: 34.942593
+    lane: 2
+    side: 1
+  - time: 35.19835
+    lane: 1
+    side: 0
+  - time: 35.19835
+    lane: 1
+    side: 1
+  - time: 35.401608
+    lane: 3
+    side: 0
+  - time: 35.401608
+    lane: 3
+    side: 1
+  - time: 35.88038
+    lane: 2
+    side: 0
+  - time: 35.88038
+    lane: 2
+    side: 1
+  - time: 36.148582
+    lane: 0
+    side: 1
+  - time: 36.148582
+    lane: 0
+    side: 0
+  - time: 37.057583
+    lane: 3
+    side: 0
+  - time: 37.057583
+    lane: 3
+    side: 1
+  - time: 37.400764
+    lane: 2
+    side: 0
+  - time: 37.400764
+    lane: 2
+    side: 1
+  - time: 37.65143
+    lane: 2
+    side: 0
+  - time: 37.65143
+    lane: 2
+    side: 1
+  - time: 37.879765
+    lane: 0
+    side: 0
+  - time: 37.879765
+    lane: 0
+    side: 1
+  - time: 38.328056
+    lane: 1
+    side: 0
+  - time: 38.328056
+    lane: 1
+    side: 1
+  - time: 38.592316
+    lane: 1
+    side: 0
+  - time: 38.592316
+    lane: 1
+    side: 1
+  - time: 38.891006
+    lane: 2
+    side: 1
+  - time: 38.891006
+    lane: 2
+    side: 0
+  - time: 39.320614
+    lane: 3
+    side: 1
+  - time: 39.320614
+    lane: 3
+    side: 0
+  - time: 39.7854
+    lane: 2
+    side: 0
+  - time: 39.7854
+    lane: 2
+    side: 1
+  - time: 40.34458
+    lane: 2
+    side: 0
+  - time: 40.34458
+    lane: 2
+    side: 1
+  - time: 40.68979
+    lane: 3
+    side: 0
+  - time: 40.68979
+    lane: 3
+    side: 1
+  - time: 41.05868
+    lane: 0
+    side: 0
+  - time: 41.05868
+    lane: 0
+    side: 1
+  - time: 41.466415
+    lane: 2
+    side: 0
+  - time: 41.466415
+    lane: 2
+    side: 1
+  - time: 41.975304
+    lane: 2
+    side: 0
+  - time: 41.975304
+    lane: 2
+    side: 1
+  - time: 42.23021
+    lane: 0
+    side: 1
+  - time: 42.23021
+    lane: 0
+    side: 0
+  - time: 43.345516
+    lane: 3
+    side: 1
+  - time: 43.345516
+    lane: 3
+    side: 0
+  - time: 44.09126
+    lane: 2
+    side: 0
+  - time: 44.09126
+    lane: 2
+    side: 1
+  - time: 44.71957
+    lane: 0
+    side: 0
+  - time: 44.71957
+    lane: 0
+    side: 1
+  - time: 45.117588
+    lane: 3
+    side: 0
+  - time: 45.117588
+    lane: 3
+    side: 1
+  - time: 45.373753
+    lane: 0
+    side: 0
+  - time: 45.373753
+    lane: 0
+    side: 1
+  - time: 45.57268
+    lane: 3
+    side: 0
+  - time: 45.57268
+    lane: 3
+    side: 1
+  - time: 46.02793
+    lane: 0
+    side: 0
+  - time: 46.02793
+    lane: 0
+    side: 1
+  - time: 46.38265
+    lane: 1
+    side: 1
+  - time: 46.38265
+    lane: 1
+    side: 0
+  - time: 47.442253
+    lane: 3
+    side: 0
+  - time: 47.442253
+    lane: 3
+    side: 1
+  - time: 47.623177
+    lane: 3
+    side: 0
+  - time: 47.623177
+    lane: 3
+    side: 1
+  - time: 48.05695
+    lane: 3
+    side: 0
+  - time: 48.05695
+    lane: 3
+    side: 1
+  - time: 49.02898
+    lane: 3
+    side: 0
+  - time: 49.02898
+    lane: 3
+    side: 1
+  - time: 49.44117
+    lane: 1
+    side: 0
+  - time: 49.44117
+    lane: 1
+    side: 1
+  - time: 49.859795
+    lane: 0
+    side: 0
+  - time: 49.859795
+    lane: 0
+    side: 1
+  - time: 50.168217
+    lane: 2
+    side: 0
+  - time: 50.168217
+    lane: 2
+    side: 1
+  - time: 50.939922
+    lane: 3
+    side: 1
+  - time: 50.939922
+    lane: 3
+    side: 0
+  - time: 51.433098
+    lane: 3
+    side: 0
+  - time: 51.433098
+    lane: 3
+    side: 1
+  - time: 52.199963
+    lane: 0
+    side: 0
+  - time: 52.199963
+    lane: 0
+    side: 1
+  - time: 52.399124
+    lane: 0
+    side: 0
+  - time: 52.399124
+    lane: 0
+    side: 1
+  - time: 53.06948
+    lane: 0
+    side: 0
+  - time: 53.06948
+    lane: 0
+    side: 1
+  - time: 53.382313
+    lane: 0
+    side: 0
+  - time: 53.382313
+    lane: 0
+    side: 1
+  - time: 53.67449
+    lane: 2
+    side: 0
+  - time: 53.67449
+    lane: 2
+    side: 1
+  - time: 53.86654
+    lane: 1
+    side: 1
+  - time: 53.86654
+    lane: 1
+    side: 0
+  - time: 54.53991
+    lane: 2
+    side: 1
+  - time: 54.53991
+    lane: 2
+    side: 0
+  - time: 54.722324
+    lane: 2
+    side: 0
+  - time: 54.722324
+    lane: 2
+    side: 1
+  - time: 55.14751
+    lane: 0
+    side: 0
+  - time: 55.14751
+    lane: 0
+    side: 1
+  - time: 55.39305
+    lane: 2
+    side: 0
+  - time: 55.39305
+    lane: 2
+    side: 1
+  - time: 55.60024
+    lane: 2
+    side: 0
+  - time: 55.60024
+    lane: 2
+    side: 1
+  - time: 56.080456
+    lane: 1
+    side: 0
+  - time: 56.080456
+    lane: 1
+    side: 1
+  - time: 56.41081
+    lane: 3
+    side: 0
+  - time: 56.41081
+    lane: 3
+    side: 1
+  - time: 56.952877
+    lane: 2
+    side: 0
+  - time: 56.952877
+    lane: 2
+    side: 1
+  - time: 57.6606
+    lane: 3
+    side: 0
+  - time: 57.6606
+    lane: 3
+    side: 1
+  bpm: 128
+  audioClip: {fileID: 0}

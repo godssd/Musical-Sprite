@@ -16,6 +16,7 @@ public class JudgeFeedbackManager : MonoBehaviour
     public Color perfectColor = new Color(1f, 0.85f, 0.2f, 1f);
     public Color goodColor = new Color(0.2f, 0.8f, 0.2f, 1f);
     public Color missColor = new Color(0.8f, 0.2f, 0.2f, 1f);
+    public Color clearColor = new Color(0.3f, 0.9f, 1f, 1f); // 长按完成
 
     [Header("飘字偏移")]
     public Vector3 spawnOffset = new Vector3(0f, 0.25f, 0f);
@@ -34,6 +35,10 @@ public class JudgeFeedbackManager : MonoBehaviour
             case "GOOD":
                 prefab = goodPrefab;
                 color = goodColor;
+                break;
+            case "CLEAR":
+                prefab = null;
+                color = clearColor;
                 break;
             case "MISS":
                 prefab = missPrefab;
@@ -59,12 +64,12 @@ public class JudgeFeedbackManager : MonoBehaviour
             Destroy(prefab);
         }
 
-        // 让 Canvas 直接面向相机，并使用相机的 up 轴，使文字在屏幕里完全水平。
+        // 让 Canvas 正面朝向相机（绕相机 up 轴翻转 180°，避免文字以背面示人导致左右镜像）。
         if (Camera.main != null)
         {
             Vector3 toCamera = Camera.main.transform.position - pos;
             if (toCamera.sqrMagnitude > 0.0001f)
-                go.transform.rotation = Quaternion.LookRotation(toCamera, Camera.main.transform.up);
+                go.transform.rotation = Quaternion.LookRotation(-toCamera, Camera.main.transform.up);
         }
 
         // 按等级缩放：PERFECT 0.5，GOOD 0.5*0.8=0.4，MISS 0.5*0.6=0.3

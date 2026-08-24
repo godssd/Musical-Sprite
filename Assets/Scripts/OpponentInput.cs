@@ -1,9 +1,13 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// 对手（AI）输入模拟器。
 /// 按谱面自动在 Perfect 时机触发对应轨道的输入，让对战看起来有来有回。
+/// 支持 Tap 与 Hold：
+/// - Tap：在目标时刻按下并随即松开（fromAI 标记，避免误占 heldLanes）。
+/// - Hold：在 head 时刻按下（fromAI，自动完成长按），在 tail 时刻松开。
 /// 挂载在任意物体上，GameManager 会自动把它关联到 rightSpawner。
 /// </summary>
 public class OpponentInput : MonoBehaviour
@@ -30,7 +34,36 @@ public class OpponentInput : MonoBehaviour
     /// </summary>
     public event Action<int> OnPressLane;
 
-    private int index = 0;
+    private int pressIndex = 0;                                  // 遍历 head / tap 事件
+    private List<(float time, int lane)> releaseEvents = new List<(float, int)>();
+    private int releaseIndex = 0;                                // 遍历 hold 的 tail 松开事件
+
+    void Start()
+    {
+        BuildSchedule();
+    }
+
+    /// <summary>
+    /// 预排序所有长按音符的“结束音符(tail)抵达判定线”松开事件。
+    /// </summary>
+    private void BuildSchedule()
+    {
+        releaseEvents.Clear();
+        releaseIndex = 0;
+        pressIndex = 0;
+
+        if (beatmap == null || beatmap.notes == null) return;
+
+        foreach (var n in beatmap.notes)
+        {
+            if (n.side != spawner.side) continue;
+            if (n.type == NoteData.NoteType.Hold)
+            {
+                releaseEvents.Add((n.time + Mathf.Max(0.1f, n.holdDuration), n.holdEndLane));
+            }
+        }
+        releaseEvents.Sort((a, b) => a.time.CompareTo(b.time));
+    }
 
     void Update()
     {
@@ -39,31 +72,50 @@ public class OpponentInput : MonoBehaviour
 
         float songTime = conductor.songPosition;
 
-        while (index < beatmap.notes.Length)
+        // 1) 按下事件（Tap 与 Hold 的 head），按 time 升序处理
+        while (pressIndex < beatmap.notes.Length)
         {
-            NoteData note = beatmap.notes[index];
+            NoteData note = beatmap.notes[pressIndex];
 
             if (note.side != spawner.side)
             {
-                index++;
+                pressIndex++;
                 continue;
             }
 
             float targetTime = note.time + aimOffset;
             if (songTime < targetTime - 0.01f) break;
 
-            // 在这个时间窗口内触发（按几何判定，给 0.2 秒容错）
             if (songTime <= targetTime + 0.2f)
             {
                 if (UnityEngine.Random.value > missChance)
                 {
-                    spawner.TriggerLaneInput(note.lane);
+                    spawner.TriggerLaneDown(note.lane, true);
+                    if (note.type != NoteData.NoteType.Hold)
+                    {
+                        // Tap：按下后立刻松开，避免占用 heldLanes（AI 标记也会让长按跳过按住检测）
+                        spawner.TriggerLaneUp(note.lane);
+                    }
                     if (showVisualFeedback)
                         ShowOpponentPress(note.lane);
                 }
             }
 
-            index++;
+            pressIndex++;
+        }
+
+        // 2) 松开事件（仅 Hold 的 tail）
+        while (releaseIndex < releaseEvents.Count)
+        {
+            var ev = releaseEvents[releaseIndex];
+            if (songTime < ev.time - 0.01f) break;
+
+            if (songTime <= ev.time + 0.2f)
+            {
+                spawner.TriggerLaneUp(ev.lane);
+            }
+
+            releaseIndex++;
         }
     }
 
@@ -74,6 +126,6 @@ public class OpponentInput : MonoBehaviour
 
     public void ResetInput()
     {
-        index = 0;
+        BuildSchedule();
     }
 }

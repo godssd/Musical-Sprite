@@ -15,7 +15,7 @@ namespace MusicalSprite.Editor
         private static readonly string ScriptsFolder = "Assets/Scripts";
         private static readonly string MaterialsFolder = "Assets/Resources/Materials";
         private static readonly string PrefabsFolder = "Assets/Resources/Prefabs";
-        private static readonly string BeatmapsFolder = "Assets/ScriptableObjects";
+        private static readonly string BeatmapsFolder = "Assets/Beatmaps";
 
         private static readonly Color ArenaRed = new Color(0.9f, 0.3f, 0.3f, 1f);
         private static readonly Color ArenaBlue = new Color(0.3f, 0.4f, 0.9f, 1f);
@@ -46,7 +46,10 @@ namespace MusicalSprite.Editor
             if (GUILayout.Button("2. 生成测试谱面", GUILayout.Height(30)))
             {
                 DemoBeatmapGenerator.CreateDemoBeatmap();
+                // 生成随机谱面后，把它设为当前谱面，覆盖之前在仓库「调用」的谱面
+                EditorPrefs.SetString("MusicalSprite/ActiveBeatmap", $"{BeatmapsFolder}/DemoBeatmap.asset");
                 AssetDatabase.Refresh();
+                ShowNotification(new GUIContent("已生成随机测试谱面并设为当前谱面"));
             }
 
             if (GUILayout.Button("3. 搭建完整场景", GUILayout.Height(40)))
@@ -260,13 +263,34 @@ namespace MusicalSprite.Editor
             // 创建 Note 预制体
             GameObject notePrefab = CreateNotePrefab(noteMat);
 
-            // 创建左右发射器
-            BeatmapSO beatmap = AssetDatabase.LoadAssetAtPath<BeatmapSO>($"{BeatmapsFolder}/DemoBeatmap.asset");
+            // 创建左右发射器：优先使用仓库中「调用」的谱面，否则回退到 Demo 谱面
+            string activeBeatmapPath = EditorPrefs.GetString("MusicalSprite/ActiveBeatmap", "");
+            BeatmapSO beatmap = null;
+            if (!string.IsNullOrEmpty(activeBeatmapPath))
+            {
+                beatmap = AssetDatabase.LoadAssetAtPath<BeatmapSO>(activeBeatmapPath);
+            }
             if (beatmap == null)
             {
-                EditorUtility.DisplayDialog("错误", "请先点击「生成测试谱面」", "确定");
+                beatmap = AssetDatabase.LoadAssetAtPath<BeatmapSO>($"{BeatmapsFolder}/DemoBeatmap.asset");
+            }
+            if (beatmap == null)
+            {
+                EditorUtility.DisplayDialog("错误", "请先点击「生成测试谱面」，或在谱面编辑器中「调用」一个谱面", "确定");
                 return;
             }
+
+            // 诊断：打印本次搭建实际使用的谱面，便于核对「调用/切换」是否生效
+            Debug.Log($"[场景搭建] 实际使用谱面：{(string.IsNullOrEmpty(activeBeatmapPath) ? "(未调用，回退 Demo)" : activeBeatmapPath)}  ({beatmap.notes.Length} 音符)");
+
+            // 把谱面音乐素材接到 Conductor 的 AudioSource；Conductor.Start() 会自动播放
+            if (beatmap.audioClip != null)
+            {
+                audioSource.clip = beatmap.audioClip;
+            }
+
+            // 让游戏内部拍时钟与音乐/谱面 BPM 对齐（note.time 本就是秒，命中时机不受影响，仅 beat 显示一致）
+            conductor.secPerBeat = 60f / Mathf.Max(1f, beatmap.bpm);
 
             GameObject leftSpawnerGo = new GameObject("LeftSpawner");
             NoteSpawner leftSpawner = leftSpawnerGo.AddComponent<NoteSpawner>();

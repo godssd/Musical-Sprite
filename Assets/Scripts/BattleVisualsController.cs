@@ -80,14 +80,17 @@ public class BattleVisualsController : MonoBehaviour
     private void OnJudge(int side, int lane, string rank, Vector3 position)
     {
         ComboDisplay target = side == 0 ? leftComboDisplay : rightComboDisplay;
+        if (target == null) return;
 
-        if (rank == "PERFECT" || rank == "GOOD")
+        if (rank == "MISS")
         {
-            if (target != null) target.AddCombo(1);
+            target.ResetCombo();
         }
-        else if (rank == "MISS")
+        else
         {
-            if (target != null) target.ResetCombo();
+            // PERFECT / GOOD / CLEAR 都记一次连击。
+            // 一个完整长按 = 起手命中 +1、完成时 CLEAR +1，共 +2。
+            target.AddCombo(1);
         }
     }
 }

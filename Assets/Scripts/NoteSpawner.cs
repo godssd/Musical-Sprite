@@ -6,7 +6,9 @@ using System;
 /// 音符发射器 + 判定器。
 /// 每个玩家各挂一个：左玩家 side=0，右玩家 side=1。
 /// 负责：按谱面生成属于自己 side 的音符、移动、判定命中/漏击、通知中线移动。
-/// 输入由外部调用 TriggerLaneInput() 触发（键盘、触摸、AI 均可）。
+/// 输入由外部调用 TriggerLaneDown()/TriggerLaneUp() 触发（键盘、触摸、AI 均可）。
+/// Tap 音符在 Down 时判定；Hold 音符在 Down（head 命中窗口内）起手，按住期间需保持所需轨道被按下，
+/// 到 tailTime（结束音符抵达判定线）完成，提前松开/未按住则断连。
 /// 
 /// 判定规则（基于时间窗口，单位：秒）：
 /// - 音符视觉为圆柱，半径 noteRadius。判定窗口由“视觉重叠”推导：
@@ -69,14 +71,17 @@ public class NoteSpawner : MonoBehaviour
     public event Action<int, int> OnLanePress;
 
     private List<Note> activeNotes = new List<Note>();
+    private List<HoldNote> activeHoldNotes = new List<HoldNote>();
+    public HashSet<int> heldLanes = new HashSet<int>(); // 当前被按住的轨道（本侧）
     private int spawnIndex = 0;
     private Vector3[] laneOffsets;
     private float approachSpeed; // 音符接近判定线的速度（单位/秒），用于把半径换算成时间窗口
 
     /// <summary>
-    /// 该侧谱面是否已全部生成且所有音符已消失。
+    /// 该侧谱面是否已全部生成且所有音符（含长按）已消失。
     /// </summary>
-    public bool IsFinished => beatmap != null && spawnIndex >= beatmap.notes.Length && activeNotes.Count == 0;
+    public bool IsFinished => beatmap != null && spawnIndex >= beatmap.notes.Length
+        && activeNotes.Count == 0 && activeHoldNotes.Count == 0;
 
     void Start()
     {
@@ -117,7 +122,7 @@ public class NoteSpawner : MonoBehaviour
 
         float songTime = conductor.songPosition;
 
-        // 1. 到时间就生成音符
+        // 1. 到时间就生成音符（区分 Tap / Hold）
         while (spawnIndex < beatmap.notes.Length)
         {
             NoteData data = beatmap.notes[spawnIndex];
@@ -125,7 +130,10 @@ public class NoteSpawner : MonoBehaviour
 
             if (data.side == side)
             {
-                SpawnNote(data);
+                if (data.type == NoteData.NoteType.Hold)
+                    SpawnHoldNote(data);
+                else
+                    SpawnNote(data);
             }
             spawnIndex++;
         }
@@ -159,26 +167,51 @@ public class NoteSpawner : MonoBehaviour
             }
         }
 
-        // 3. 键盘输入判定（仅 PC 测试）
+        // 2c. 清理已完成/已断开的长按音符
+        for (int i = activeHoldNotes.Count - 1; i >= 0; i--)
+        {
+            if (activeHoldNotes[i] == null || activeHoldNotes[i].finished)
+            {
+                if (activeHoldNotes[i] != null) Destroy(activeHoldNotes[i].gameObject);
+                activeHoldNotes.RemoveAt(i);
+            }
+        }
+
+        // 3. 键盘输入判定（仅 PC 测试）：按下 / 松开分别下发
         for (int lane = 0; lane < laneCount; lane++)
         {
             if (lane >= keys.Length) break;
             if (Input.GetKeyDown(keys[lane]))
             {
-                TriggerLaneInput(lane);
+                TriggerLaneDown(lane);
+            }
+            if (Input.GetKeyUp(keys[lane]))
+            {
+                TriggerLaneUp(lane);
             }
         }
     }
 
     /// <summary>
-    /// 由触摸、AI、键盘等外部系统调用，触发指定轨道的判定。
+    /// 由触摸、AI、键盘等外部系统调用：轨道“按下”时触发。
+    /// 同时处理：普通音符判定 + 长按音符起手。
     /// </summary>
-    public void TriggerLaneInput(int lane)
+    public void TriggerLaneDown(int lane, bool fromAI = false)
     {
         if (conductor == null) return;
 
+        heldLanes.Add(lane);
         OnLanePress?.Invoke(side, lane);
-        TryHit(lane);
+        TryHitTap(lane);
+        TryStartHold(lane, fromAI);
+    }
+
+    /// <summary>
+    /// 轨道“松开”时触发。长按中松开由 HoldNote 的断连检测感知（所需轨道不再被按住即断连）。
+    /// </summary>
+    public void TriggerLaneUp(int lane)
+    {
+        heldLanes.Remove(lane);
     }
 
     private void SpawnNote(NoteData data)
@@ -205,7 +238,77 @@ public class NoteSpawner : MonoBehaviour
         activeNotes.Add(note);
     }
 
-    private void TryHit(int lane)
+    /// <summary>
+    /// 生成长按音符（head + tail 圆柱 + 连接 bar），交由 HoldNote 组件驱动运动与判定。
+    /// </summary>
+    private void SpawnHoldNote(NoteData data)
+    {
+        if (spawnPoint == null || hitPoint == null) return;
+
+        int headLane = Mathf.Clamp(data.lane, 0, laneCount - 1);
+        int tailLane = Mathf.Clamp(data.holdEndLane, 0, laneCount - 1);
+
+        Vector3 headOff = laneOffsets[headLane];
+        Vector3 tailOff = laneOffsets[tailLane];
+        Vector3 spawnPosHead = spawnPoint.position + headOff;
+        Vector3 hitPosHead = hitPoint.position + headOff;
+        Vector3 spawnPosTail = spawnPoint.position + tailOff;
+        Vector3 hitPosTail = hitPoint.position + tailOff;
+
+        float tailTime = data.time + Mathf.Max(0.1f, data.holdDuration);
+
+        GameObject go = new GameObject($"Hold_side{side}_lane{headLane}_t{data.time:F2}");
+        go.transform.SetParent(transform, false); // 挂到发射器下，场景重搭时随发射器一起销毁
+        HoldNote hn = go.AddComponent<HoldNote>();
+        hn.spawner = this;
+        hn.side = side;
+        hn.headLane = headLane;
+        hn.tailLane = tailLane;
+        hn.headTime = data.time;
+        hn.tailTime = tailTime;
+        hn.leadTime = leadTime;
+        hn.noteRadius = noteRadius;
+        hn.spawnPosHead = spawnPosHead;
+        hn.hitPosHead = hitPosHead;
+        hn.spawnPosTail = spawnPosTail;
+        hn.hitPosTail = hitPosTail;
+        hn.conductor = conductor;
+        hn.centerLine = centerLine;
+        hn.goodWindow = goodWindow;
+        hn.perfectWindow = perfectWindow;
+        hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p);
+
+        activeHoldNotes.Add(hn);
+    }
+
+    /// <summary>
+    /// 在 head 时间窗内、对应轨道被按下时，起手最近的一个等待中长按音符。
+    /// </summary>
+    private void TryStartHold(int lane, bool fromAI)
+    {
+        float songTime = conductor.songPosition;
+
+        HoldNote best = null;
+        float bestAbs = goodWindow + 1f;
+
+        foreach (var hn in activeHoldNotes)
+        {
+            if (hn.state != HoldNote.HoldState.Waiting) continue;
+            if (hn.headLane != lane) continue;
+            float dt = songTime - hn.headTime;
+            float adt = Mathf.Abs(dt);
+            if (adt > goodWindow) continue;
+            if (adt < bestAbs)
+            {
+                bestAbs = adt;
+                best = hn;
+            }
+        }
+
+        if (best != null) best.StartHold(songTime, fromAI);
+    }
+
+    private void TryHitTap(int lane)
     {
         float songTime = conductor.songPosition;
 
@@ -257,6 +360,13 @@ public class NoteSpawner : MonoBehaviour
             if (note != null) Destroy(note.gameObject);
         }
         activeNotes.Clear();
+
+        foreach (var hn in activeHoldNotes)
+        {
+            if (hn != null) Destroy(hn.gameObject);
+        }
+        activeHoldNotes.Clear();
+        heldLanes.Clear();
     }
 
     /// <summary>

@@ -11,4 +11,7 @@ public class BeatmapSO : ScriptableObject
 
     [Tooltip("歌曲 BPM，用于辅助编辑")]
     public float bpm = 120f;
+
+    [Tooltip("谱面对应的音乐素材。编辑器预览、以及游戏运行时（调用该谱面后）会同步播放此音频")]
+    public AudioClip audioClip;
 }

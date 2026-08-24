@@ -12,6 +12,7 @@ public class ScoreManager : MonoBehaviour
     public int perfectScore = 100;
     public int goodScore = 60;
     public int missScore = 0;
+    public int clearScore = 50;     // 长按音符完成（CLEAR）的额外加分
 
     [Header("玩家分数显示（可选，会自动查找）")]
     public ScoreDisplay leftScoreDisplay;
@@ -320,6 +321,7 @@ public class ScoreManager : MonoBehaviour
         {
             case "PERFECT": delta = perfectScore; break;
             case "GOOD": delta = goodScore; break;
+            case "CLEAR": delta = clearScore; break;
             case "MISS": delta = missScore; break;
         }
 
