@@ -8,6 +8,7 @@ public class Note : MonoBehaviour
     [HideInInspector] public float hitTime;
     [HideInInspector] public int lane;
     [HideInInspector] public int side;        // 0=左玩家要接，1=右玩家要接
+    [HideInInspector] public bool isSmallTap = false; // 小型点击音符：半径更小、统一 PASS
     [HideInInspector] public bool isHit = false;
     [HideInInspector] public bool isVisible = false;
 

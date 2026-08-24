@@ -21,11 +21,14 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private int perfectScore = 100;
     private int goodScore = 60;
     private int missScore = 0;
+    private int clearScore = 50;
+    private int passScore = 80;
 
     // 音符
     private float leadTime = 2f;
     private float noteRadius = 0.45f;
     private int totalBeats = 120;
+    private DemoBeatmapGenerator.Density density = DemoBeatmapGenerator.Density.Medium;
 
     private Vector2 scroll;
 
@@ -66,9 +69,12 @@ public class MusicalSpriteDebugWindow : EditorWindow
         perfectScore = EditorPrefs.GetInt(PREFS + "perfectScore", perfectScore);
         goodScore = EditorPrefs.GetInt(PREFS + "goodScore", goodScore);
         missScore = EditorPrefs.GetInt(PREFS + "missScore", missScore);
+        clearScore = EditorPrefs.GetInt(PREFS + "clearScore", clearScore);
+        passScore = EditorPrefs.GetInt(PREFS + "passScore", passScore);
         leadTime = EditorPrefs.GetFloat(PREFS + "leadTime", leadTime);
         noteRadius = EditorPrefs.GetFloat(PREFS + "noteRadius", noteRadius);
         totalBeats = EditorPrefs.GetInt(PREFS + "totalBeats", totalBeats);
+        density = (DemoBeatmapGenerator.Density)EditorPrefs.GetInt(PREFS + "density", (int)density);
     }
 
     private void SavePrefs()
@@ -79,9 +85,12 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorPrefs.SetInt(PREFS + "perfectScore", perfectScore);
         EditorPrefs.SetInt(PREFS + "goodScore", goodScore);
         EditorPrefs.SetInt(PREFS + "missScore", missScore);
+        EditorPrefs.SetInt(PREFS + "clearScore", clearScore);
+        EditorPrefs.SetInt(PREFS + "passScore", passScore);
         EditorPrefs.SetFloat(PREFS + "leadTime", leadTime);
         EditorPrefs.SetFloat(PREFS + "noteRadius", noteRadius);
         EditorPrefs.SetInt(PREFS + "totalBeats", totalBeats);
+        EditorPrefs.SetInt(PREFS + "density", (int)density);
     }
 
     private void SyncFromScene()
@@ -100,6 +109,8 @@ public class MusicalSpriteDebugWindow : EditorWindow
             perfectScore = scoreManager.perfectScore;
             goodScore = scoreManager.goodScore;
             missScore = scoreManager.missScore;
+            clearScore = scoreManager.clearScore;
+            passScore = scoreManager.passScore;
         }
 
         NoteSpawner spawner = FindFirstObjectByType<NoteSpawner>();
@@ -162,6 +173,9 @@ public class MusicalSpriteDebugWindow : EditorWindow
         perfectScore = EditorGUILayout.IntField("PERFECT 分数", perfectScore);
         goodScore = EditorGUILayout.IntField("GOOD 分数", goodScore);
         missScore = EditorGUILayout.IntField("MISS 分数", missScore);
+        clearScore = EditorGUILayout.IntField("CLEAR 分数(长按每段)", clearScore);
+        passScore = EditorGUILayout.IntField("PASS 分数(小型点击)", passScore);
+        EditorGUILayout.HelpBox("CLEAR = 长按音符每完成一段链接（节点→节点）的加分；PASS = 小型点击音符命中统一加分。", MessageType.None);
 
         EditorGUILayout.EndVertical();
     }
@@ -177,8 +191,11 @@ public class MusicalSpriteDebugWindow : EditorWindow
         noteRadius = EditorGUILayout.FloatField("音符圆柱半径", noteRadius);
         EditorGUILayout.HelpBox("半径越大，视觉越大，GOOD 判定窗口也越宽。", MessageType.None);
 
-        totalBeats = EditorGUILayout.IntField("谱面音符拍数", totalBeats);
-        EditorGUILayout.HelpBox("重新生成 DemoBeatmap.asset 并重启对战。", MessageType.None);
+        totalBeats = EditorGUILayout.IntField("谱面总拍数", totalBeats);
+        EditorGUILayout.HelpBox("谱面时间窗口长度（决定音乐/谱面总时长）。", MessageType.None);
+
+        density = (DemoBeatmapGenerator.Density)EditorGUILayout.EnumPopup("谱面密度", density);
+        EditorGUILayout.HelpBox("稀疏=约 35% 拍点有音符，中等=约 60%，密集=约 90%。生成时还会随机混合整拍/半拍/四分音符网格。", MessageType.None);
 
         EditorGUILayout.EndVertical();
     }
@@ -205,6 +222,8 @@ public class MusicalSpriteDebugWindow : EditorWindow
             scoreManager.perfectScore = perfectScore;
             scoreManager.goodScore = goodScore;
             scoreManager.missScore = missScore;
+            scoreManager.clearScore = clearScore;
+            scoreManager.passScore = passScore;
             EditorUtility.SetDirty(scoreManager);
         }
 
@@ -222,7 +241,8 @@ public class MusicalSpriteDebugWindow : EditorWindow
 
         if (!silent)
             Debug.Log("[MS Debug] 参数已应用：aimOffset=" + aiAimOffset + " miss=" + aiMissChance +
-                      " perfect=" + perfectScore + " good=" + goodScore + " leadTime=" + leadTime + " radius=" + noteRadius);
+                      " perfect=" + perfectScore + " good=" + goodScore + " clear=" + clearScore +
+                      " pass=" + passScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius);
     }
 
     private void ApplyAll()
@@ -230,7 +250,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         ApplyValues(true);
 
         // 4. 重新生成谱面并重启
-        BeatmapSO newBeatmap = DemoBeatmapGenerator.CreateDemoBeatmapWithBeats(totalBeats);
+        BeatmapSO newBeatmap = DemoBeatmapGenerator.CreateDemoBeatmapWithBeats(totalBeats, density);
 
         GameManager gm = FindFirstObjectByType<GameManager>();
         if (gm != null)

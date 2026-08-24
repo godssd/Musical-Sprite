@@ -29,8 +29,12 @@ namespace MusicalSprite.Editor
             public float time;
             public int lane;
             public NoteData.NoteType type = NoteData.NoteType.Tap;
-            public float holdDuration = 0f;   // 仅 Hold：持续时长（秒）
-            public int holdEndLane = 0;       // 仅 Hold：结束音符所在轨道
+            public bool isSmallTap = false;   // SmallTap：半径更小、统一 PASS
+            public float holdDuration = 0f;   // 仅旧式 2 节点 Hold：持续时长（秒）
+            public int holdEndLane = 0;       // 仅旧式 2 节点 Hold：结束音符所在轨道
+            // 多节点 Hold：每个节点的时刻/轨道（length >= 2）。为空时退化成 2 节点 Hold。
+            public float[] holdTimes;
+            public int[] holdLanes;
         }
 
         [SerializeField] private string beatmapName = "NewBeatmap";
@@ -55,12 +59,15 @@ namespace MusicalSprite.Editor
         private float dragStartNoteTime;
         private int dragStartNoteLane;
 
-        // ---------- 长按音符创建（拖拽） ----------
-        [SerializeField] private bool placeHoldMode = false;
-        private bool holdDragging = false;
-        private Vector2 holdDragStartMouse;
-        private float holdDragStartTime;
-        private int holdDragStartLane;
+        // ---------- 链接模式（多次点击成链，可任意多节点 Hold） ----------
+        [SerializeField] private bool linkingMode = false;
+        private bool linkingActive = false;                 // 是否正在编辑一条链
+        private List<float> linkTimes = new List<float>();  // 已落下的节点时刻
+        private List<int> linkLanes = new List<int>();      // 已落下的节点轨道
+        private int linkLastIndex = -1;                     // 正在编辑的 ChartNote 在 notes 中的索引（多节点 Hold 本体）
+
+        // ---------- 小型点击音符创建 ----------
+        [SerializeField] private bool placeSmallTapMode = false;
 
         // ---------- 播放预览 ----------
         private bool isPlaying;
@@ -144,7 +151,8 @@ namespace MusicalSprite.Editor
 
             EditorGUILayout.BeginHorizontal();
             snapToBeat = EditorGUILayout.ToggleLeft("吸附到拍", snapToBeat, GUILayout.Width(90));
-            placeHoldMode = EditorGUILayout.ToggleLeft("长按模式(拖拽生成)", placeHoldMode, GUILayout.Width(140));
+            linkingMode = EditorGUILayout.ToggleLeft("链接模式(点按成链)", linkingMode, GUILayout.Width(140));
+            placeSmallTapMode = EditorGUILayout.ToggleLeft("小型点击(单击生成)", placeSmallTapMode, GUILayout.Width(140));
             pixelsPerSecond = EditorGUILayout.Slider("缩放(像素/秒)", pixelsPerSecond, 10f, 240f, GUILayout.Width(240));
             beatmapAudioClip = (AudioClip)EditorGUILayout.ObjectField("音乐素材", beatmapAudioClip, typeof(AudioClip), false, GUILayout.Width(220));
             EditorGUILayout.EndHorizontal();
@@ -170,7 +178,8 @@ namespace MusicalSprite.Editor
             EditorGUILayout.HelpBox(
                 "音符的 time = 音符圆心抵达判定线的时刻（非发射时刻）；改难度只改移动速度，不影响该时刻。\n" +
                 "普通音符：轨道区单击=加音符；拖拽=移动；右键/Delete=删除；点击刻度尺=定位播放头。\n" +
-                "长按音符：勾选「长按模式」后，在轨道区从此音符起点按下并拖拽到结束音符位置松手即可生成（可跨轨），青色连线表示长按；选中后拖动可整体移动，右键删除。\n" +
+                "链接模式（按住点击音符）：勾选「链接模式」后，轨道区左键点击落下第 1 个音符，它会自动跟随鼠标；移动到新位置再次左键点击→与前一节点链接并继续跟随；可一直点击加节点（每两段链接算一次 CLEAR）。在「跟随阶段」点右键→当前链结束、已落节点固化为一条多节点长按。仅落 1 个节点时点右键→降级为普通点击音符。\n" +
+                "小型点击音符：勾选「小型点击」后，在轨道区单击即可生成（紫色小方块，半径更小、命中统一 PASS）。\n" +
                 "挂上「音乐素材」后点播放可听音校谱；保存并「调用」后，下一次「搭建完整场景」将同步播放本谱面与音乐。\n" + activeName,
                 MessageType.Info);
         }
@@ -231,22 +240,39 @@ namespace MusicalSprite.Editor
 
                 if (isHold)
                 {
-                    // 长按：从 head（起点）到 tail（终点）画一条青色连线，两端画方块
-                    float xHead = timeX0 + (n.time - viewStartTime) * pixelsPerSecond;
-                    float yHead = baseRect.y + RulerHeight + n.lane * LaneHeight + LaneHeight / 2;
-                    float xTail = timeX0 + (n.time + Mathf.Max(0.1f, n.holdDuration) - viewStartTime) * pixelsPerSecond;
-                    float yTail = baseRect.y + RulerHeight + n.holdEndLane * LaneHeight + LaneHeight / 2;
-
-                    if (xTail >= timeX0 - 16 && xHead <= baseRect.x + baseRect.width + 16)
+                    // 多节点 Hold：遍历所有节点画折线 + 每个节点画方块
+                    float[] ts;
+                    int[] ls;
+                    if (n.holdTimes != null && n.holdLanes != null && n.holdTimes.Length >= 2 && n.holdLanes.Length >= 2)
                     {
-                        Color lineCol = (i == selectedIndex) ? Color.yellow : new Color(0.3f, 0.9f, 1f);
-                        // 连线（粗 4px）
-                        DrawThickLine(new Vector2(xHead, yHead), new Vector2(xTail, yTail), 4f, lineCol);
-                        // 两端方块
-                        EditorGUI.DrawRect(new Rect(xHead - 6, yHead - 6, 12, 12),
-                            (i == selectedIndex) ? Color.yellow : LaneColors[Mathf.Clamp(n.lane, 0, 3)]);
-                        EditorGUI.DrawRect(new Rect(xTail - 6, yTail - 6, 12, 12),
-                            (i == selectedIndex) ? Color.yellow : LaneColors[Mathf.Clamp(n.holdEndLane, 0, 3)]);
+                        ts = n.holdTimes;
+                        ls = n.holdLanes;
+                    }
+                    else
+                    {
+                        // 退化 2 节点：head=tail 直线
+                        ts = new float[] { n.time, n.time + Mathf.Max(0.1f, n.holdDuration) };
+                        ls = new int[] { n.lane, n.holdEndLane };
+                    }
+
+                    Color lineCol = (i == selectedIndex) ? Color.yellow : new Color(0.3f, 0.9f, 1f);
+                    for (int k = 0; k < ts.Length - 1; k++)
+                    {
+                        float xA = timeX0 + (ts[k] - viewStartTime) * pixelsPerSecond;
+                        float yA = baseRect.y + RulerHeight + ls[k] * LaneHeight + LaneHeight / 2;
+                        float xB = timeX0 + (ts[k + 1] - viewStartTime) * pixelsPerSecond;
+                        float yB = baseRect.y + RulerHeight + ls[k + 1] * LaneHeight + LaneHeight / 2;
+                        if (xB >= timeX0 - 16 && xA <= baseRect.x + baseRect.width + 16)
+                            DrawThickLine(new Vector2(xA, yA), new Vector2(xB, yB), 4f, lineCol);
+                    }
+                    // 节点方块
+                    for (int k = 0; k < ts.Length; k++)
+                    {
+                        float x = timeX0 + (ts[k] - viewStartTime) * pixelsPerSecond;
+                        if (x < timeX0 - 16 || x > baseRect.x + baseRect.width + 16) continue;
+                        float y = baseRect.y + RulerHeight + ls[k] * LaneHeight + LaneHeight / 2;
+                        EditorGUI.DrawRect(new Rect(x - 6, y - 6, 12, 12),
+                            (i == selectedIndex) ? Color.yellow : LaneColors[Mathf.Clamp(ls[k], 0, 3)]);
                     }
                 }
                 else
@@ -254,22 +280,28 @@ namespace MusicalSprite.Editor
                     float x = timeX0 + (n.time - viewStartTime) * pixelsPerSecond;
                     if (x < timeX0 - 16 || x > baseRect.x + baseRect.width + 16) continue;
                     float y = baseRect.y + RulerHeight + n.lane * LaneHeight + LaneHeight / 2;
-                    Color c = (i == selectedIndex) ? Color.yellow : LaneColors[Mathf.Clamp(n.lane, 0, 3)];
+                    Color c;
+                    if (n.isSmallTap)
+                        c = (i == selectedIndex) ? Color.yellow : new Color(0.7f, 0.4f, 1f); // 小型点击=紫色
+                    else
+                        c = (i == selectedIndex) ? Color.yellow : LaneColors[Mathf.Clamp(n.lane, 0, 3)];
                     if (i == selectedIndex)
                     {
                         EditorGUI.DrawRect(new Rect(x - 9, y - 9, 18, 18), new Color(1f, 1f, 0.2f, 0.35f));
                     }
-                    EditorGUI.DrawRect(new Rect(x - 6, y - 6, 12, 12), c);
+                    // 小型点击画小一点（半径更小），普通 Tap 正常
+                    float half = n.isSmallTap ? 4f : 6f;
+                    EditorGUI.DrawRect(new Rect(x - half, y - half, half * 2, half * 2), c);
                 }
             }
 
-            // 长按模式拖拽预览
-            if (placeHoldMode && holdDragging)
+            // 链接模式跟随预览：最后已落节点 → 鼠标指针
+            if (linkingMode && linkingActive && linkTimes.Count > 0)
             {
                 Vector2 cur = Event.current.mousePosition;
-                float xHead = timeX0 + (holdDragStartTime - viewStartTime) * pixelsPerSecond;
-                float yHead = baseRect.y + RulerHeight + holdDragStartLane * LaneHeight + LaneHeight / 2;
-                DrawThickLine(new Vector2(xHead, yHead), cur, 4f, new Color(0.3f, 0.9f, 1f, 0.7f));
+                float xLast = timeX0 + (linkTimes[linkTimes.Count - 1] - viewStartTime) * pixelsPerSecond;
+                float yLast = baseRect.y + RulerHeight + linkLanes[linkLanes.Count - 1] * LaneHeight + LaneHeight / 2;
+                DrawThickLine(new Vector2(xLast, yLast), cur, 4f, new Color(0.3f, 0.9f, 1f, 0.7f));
             }
 
             // ---- 播放头 ----
@@ -336,12 +368,49 @@ namespace MusicalSprite.Editor
                     return;
                 }
 
-                if (placeHoldMode)
+                if (linkingMode)
                 {
-                    // 长按模式：从此处拖拽到结束位置即可生成长按音符
-                    holdDragging = true;
-                    holdDragStartLane = lane;
-                    holdDragStartTime = snapToBeat ? Snap(time) : time;
+                    // 链接模式：左键落下一个节点；右键（在跟随阶段）结束整条链
+                    if (e.button == 1)
+                    {
+                        FinishLinkingChain();
+                        Repaint();
+                        e.Use();
+                        return;
+                    }
+                    // 左键：落节点
+                    float snapped = snapToBeat ? Snap(time) : time;
+                    if (!linkingActive)
+                    {
+                        // 第一个节点：创建一条尚在编辑中的多节点 Hold 本体（先只含 1 个节点）
+                        var hn = new ChartNote
+                        {
+                            time = snapped,
+                            lane = lane,
+                            type = NoteData.NoteType.Hold,
+                            holdLanes = new int[] { lane },
+                            holdTimes = new float[] { snapped }
+                        };
+                        notes.Add(hn);
+                        linkLastIndex = notes.Count - 1;
+                        linkTimes.Clear(); linkLanes.Clear();
+                        linkTimes.Add(snapped); linkLanes.Add(lane);
+                        linkingActive = true;
+                    }
+                    else
+                    {
+                        // 后续节点：把当前编辑中的 Hold 追加一个节点（与上一节点自动链接）
+                        linkTimes.Add(snapped);
+                        linkLanes.Add(lane);
+                        var hn = notes[linkLastIndex];
+                        hn.holdLanes = linkLanes.ToArray();
+                        hn.holdTimes = linkTimes.ToArray();
+                        // 同步兼容旧字段：head=第1节点，tail=最后节点
+                        hn.lane = linkLanes[0];
+                        hn.holdEndLane = lane;
+                        hn.holdDuration = Mathf.Max(0.1f, linkTimes[linkTimes.Count - 1] - linkTimes[0]);
+                    }
+                    selectedIndex = linkLastIndex;
                     Repaint();
                     e.Use();
                     return;
@@ -355,6 +424,18 @@ namespace MusicalSprite.Editor
                     dragStartMouse = e.mousePosition;
                     dragStartNoteTime = dragNote.time;
                     dragStartNoteLane = dragNote.lane;
+                }
+                else if (placeSmallTapMode) // 新增小型点击音符
+                {
+                    float snapped = snapToBeat ? Snap(time) : time;
+                    var nn = new ChartNote { time = snapped, lane = lane, isSmallTap = true };
+                    notes.Add(nn);
+                    selectedIndex = notes.Count - 1;
+                    dragIndex = selectedIndex;
+                    dragNote = nn;
+                    dragStartMouse = e.mousePosition;
+                    dragStartNoteTime = nn.time;
+                    dragStartNoteLane = nn.lane;
                 }
                 else // 新增普通音符
                 {
@@ -373,9 +454,9 @@ namespace MusicalSprite.Editor
             }
             else if (e.type == EventType.MouseDrag)
             {
-                if (placeHoldMode && holdDragging)
+                if (linkingMode && linkingActive)
                 {
-                    Repaint(); // 预览线由 DrawTimeline 绘制（使用 Event.current.mousePosition）
+                    Repaint(); // 跟随预览线由 DrawTimeline 绘制（使用 Event.current.mousePosition）
                     e.Use();
                     return;
                 }
@@ -387,11 +468,26 @@ namespace MusicalSprite.Editor
 
                     if (dragNote.type == NoteData.NoteType.Hold)
                     {
-                        // 整体移动：head 改时间/轨道，tail 跟随（保持轨跨度不变，时长不变）
+                        // 多节点 Hold 整体移动：head/tail 轨道差值保持，所有节点时间整体平移
                         int delta = nlane - dragNote.lane;
-                        dragNote.lane = nlane;
-                        dragNote.holdEndLane = Mathf.Clamp(dragNote.holdEndLane + delta, 0, 3);
-                        dragNote.time = snapToBeat ? Snap(nt) : nt;
+                        float dt = (snapToBeat ? Snap(nt) : nt) - dragNote.time;
+                        dragNote.lane = Mathf.Clamp(nlane, 0, 3);
+                        if (dragNote.holdLanes != null && dragNote.holdTimes != null && dragNote.holdLanes.Length >= 2)
+                        {
+                            for (int k = 0; k < dragNote.holdLanes.Length; k++)
+                            {
+                                dragNote.holdLanes[k] = Mathf.Clamp(dragNote.holdLanes[k] + delta, 0, 3);
+                                dragNote.holdTimes[k] = Mathf.Max(0f, dragNote.holdTimes[k] + dt);
+                            }
+                            dragNote.holdEndLane = dragNote.holdLanes[dragNote.holdLanes.Length - 1];
+                            dragNote.time = dragNote.holdTimes[0];
+                            dragNote.holdDuration = Mathf.Max(0.1f, dragNote.holdTimes[dragNote.holdTimes.Length - 1] - dragNote.holdTimes[0]);
+                        }
+                        else
+                        {
+                            dragNote.holdEndLane = Mathf.Clamp(dragNote.holdEndLane + delta, 0, 3);
+                            dragNote.time = snapToBeat ? Snap(nt) : nt;
+                        }
                     }
                     else
                     {
@@ -404,28 +500,6 @@ namespace MusicalSprite.Editor
             }
             else if (e.type == EventType.MouseUp)
             {
-                if (placeHoldMode && holdDragging)
-                {
-                    holdDragging = false;
-                    float endTimeRaw = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
-                    float startTime = Mathf.Min(holdDragStartTime, endTimeRaw);
-                    float endTime = Mathf.Max(holdDragStartTime, endTimeRaw);
-                    int endLane = lane;
-                    float dur = Mathf.Max(0.2f, endTime - startTime);
-                    var hn = new ChartNote
-                    {
-                        time = snapToBeat ? Snap(startTime) : startTime,
-                        lane = holdDragStartLane,
-                        type = NoteData.NoteType.Hold,
-                        holdDuration = dur,
-                        holdEndLane = endLane
-                    };
-                    notes.Add(hn);
-                    selectedIndex = notes.Count - 1;
-                    Repaint();
-                    e.Use();
-                    return;
-                }
                 if (dragIndex >= 0)
                 {
                     dragIndex = -1;
@@ -443,11 +517,23 @@ namespace MusicalSprite.Editor
                 var n = notes[i];
                 if (n.type == NoteData.NoteType.Hold)
                 {
-                    float xH = timeX0 + (n.time - viewStartTime) * pixelsPerSecond;
-                    float yH = baseRect.y + RulerHeight + n.lane * LaneHeight + LaneHeight / 2;
-                    float xT = timeX0 + (n.time + Mathf.Max(0.1f, n.holdDuration) - viewStartTime) * pixelsPerSecond;
-                    float yT = baseRect.y + RulerHeight + n.holdEndLane * LaneHeight + LaneHeight / 2;
-                    if (Near(mouse, xH, yH) || Near(mouse, xT, yT)) return i;
+                    float[] ts;
+                    int[] ls;
+                    if (n.holdTimes != null && n.holdLanes != null && n.holdTimes.Length >= 2 && n.holdLanes.Length >= 2)
+                    {
+                        ts = n.holdTimes; ls = n.holdLanes;
+                    }
+                    else
+                    {
+                        ts = new float[] { n.time, n.time + Mathf.Max(0.1f, n.holdDuration) };
+                        ls = new int[] { n.lane, n.holdEndLane };
+                    }
+                    for (int k = 0; k < ts.Length; k++)
+                    {
+                        float x = timeX0 + (ts[k] - viewStartTime) * pixelsPerSecond;
+                        float y = baseRect.y + RulerHeight + ls[k] * LaneHeight + LaneHeight / 2;
+                        if (Near(mouse, x, y)) return i;
+                    }
                 }
                 else
                 {
@@ -480,6 +566,42 @@ namespace MusicalSprite.Editor
         {
             float secPerBeat = 60f / Mathf.Max(0.001f, bpm);
             return Mathf.Round(time / secPerBeat) * secPerBeat;
+        }
+
+        /// <summary>
+        /// 结束正在编辑的链接链：
+        /// - 已落 >=2 个节点 → 保留为一条多节点 Hold（holdLanes/holdTimes 已填好）。
+        /// - 仅落 1 个节点 → 降级为普通点击音符（Tap）。
+        /// 无论如何都清理链接编辑状态。
+        /// </summary>
+        private void FinishLinkingChain()
+        {
+            if (linkingActive && linkLastIndex >= 0 && linkLastIndex < notes.Count)
+            {
+                var hn = notes[linkLastIndex];
+                if (linkTimes.Count <= 1)
+                {
+                    // 单节点：降级为普通 Tap
+                    hn.type = NoteData.NoteType.Tap;
+                    hn.holdLanes = null;
+                    hn.holdTimes = null;
+                    hn.holdDuration = 0f;
+                    hn.holdEndLane = hn.lane;
+                }
+                else
+                {
+                    hn.holdLanes = linkLanes.ToArray();
+                    hn.holdTimes = linkTimes.ToArray();
+                    hn.lane = linkLanes[0];
+                    hn.holdEndLane = linkLanes[linkLanes.Count - 1];
+                    hn.holdDuration = Mathf.Max(0.1f, linkTimes[linkTimes.Count - 1] - linkTimes[0]);
+                }
+                selectedIndex = linkLastIndex;
+            }
+            linkingActive = false;
+            linkLastIndex = -1;
+            linkTimes.Clear();
+            linkLanes.Clear();
         }
 
         // ===================================================================
@@ -543,7 +665,7 @@ namespace MusicalSprite.Editor
             // 快捷：一键生成随机测试谱面并设为当前，方便随时切回随机谱面
             if (GUILayout.Button("生成随机测试谱面（并调用）", GUILayout.Height(24)))
             {
-                DemoBeatmapGenerator.CreateDemoBeatmap();
+                DemoBeatmapGenerator.CreateDemoBeatmapWithBeats(120, DemoBeatmapGenerator.Density.Medium);
                 SetActiveBeatmap($"{BeatmapsDir}/DemoBeatmap.asset");
                 ShowNotification(new GUIContent("已生成随机测试谱面并设为当前谱面"));
             }
@@ -629,14 +751,19 @@ namespace MusicalSprite.Editor
                 {
                     if (n.side == 0)
                     {
-                        notes.Add(new ChartNote
+                        var cn = new ChartNote
                         {
                             time = n.time,
                             lane = n.lane,
                             type = n.type,
                             holdDuration = n.holdDuration,
                             holdEndLane = n.holdEndLane
-                        });
+                        };
+                        if (n.type == NoteData.NoteType.SmallTap) cn.isSmallTap = true;
+                        // 多节点 Hold 字段：若谱面存了则还原（编辑器当前只生成 2 节点，保持 null）
+                        if (n.holdLanes != null) cn.holdLanes = (int[])n.holdLanes.Clone();
+                        if (n.holdTimes != null) cn.holdTimes = (float[])n.holdTimes.Clone();
+                        notes.Add(cn);
                     }
                 }
             }
@@ -644,6 +771,10 @@ namespace MusicalSprite.Editor
             selectedIndex = -1;
             dragIndex = -1;
             dragNote = null;
+            linkingActive = false;
+            linkLastIndex = -1;
+            linkTimes.Clear();
+            linkLanes.Clear();
             playTime = 0f;
             Repaint();
         }
@@ -662,12 +793,19 @@ namespace MusicalSprite.Editor
             selectedIndex = -1;
             dragIndex = -1;
             dragNote = null;
+            linkingActive = false;
+            linkLastIndex = -1;
+            linkTimes.Clear();
+            linkLanes.Clear();
             playTime = 0f;
             Repaint();
         }
 
         private void SaveBeatmap()
         {
+            // 保存前若有未结束的链接链，先固化（避免半条链被保存）
+            if (linkingActive) FinishLinkingChain();
+
             if (string.IsNullOrWhiteSpace(beatmapName))
             {
                 EditorUtility.DisplayDialog("提示", "请先填写谱面名称。", "确定");
@@ -711,14 +849,31 @@ namespace MusicalSprite.Editor
             {
                 var nd0 = new NoteData { time = n.time, lane = n.lane, side = 0 };
                 var nd1 = new NoteData { time = n.time, lane = n.lane, side = 1 };
-                if (n.type == NoteData.NoteType.Hold)
+
+                if (n.isSmallTap)
+                {
+                    nd0.type = NoteData.NoteType.SmallTap;
+                    nd1.type = NoteData.NoteType.SmallTap;
+                }
+                else if (n.type == NoteData.NoteType.Hold)
                 {
                     nd0.type = NoteData.NoteType.Hold;
                     nd1.type = NoteData.NoteType.Hold;
-                    nd0.holdDuration = n.holdDuration;
-                    nd1.holdDuration = n.holdDuration;
-                    nd0.holdEndLane = n.holdEndLane;
-                    nd1.holdEndLane = n.holdEndLane;
+                    // 多节点 Hold（优先）或旧式 2 节点 Hold
+                    if (n.holdLanes != null && n.holdTimes != null && n.holdLanes.Length >= 2 && n.holdTimes.Length >= 2)
+                    {
+                        nd0.holdLanes = (int[])n.holdLanes.Clone();
+                        nd1.holdLanes = (int[])n.holdLanes.Clone();
+                        nd0.holdTimes = (float[])n.holdTimes.Clone();
+                        nd1.holdTimes = (float[])n.holdTimes.Clone();
+                    }
+                    else
+                    {
+                        nd0.holdDuration = n.holdDuration;
+                        nd1.holdDuration = n.holdDuration;
+                        nd0.holdEndLane = n.holdEndLane;
+                        nd1.holdEndLane = n.holdEndLane;
+                    }
                 }
                 list.Add(nd0);
                 list.Add(nd1);

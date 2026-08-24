@@ -16,7 +16,8 @@ public class JudgeFeedbackManager : MonoBehaviour
     public Color perfectColor = new Color(1f, 0.85f, 0.2f, 1f);
     public Color goodColor = new Color(0.2f, 0.8f, 0.2f, 1f);
     public Color missColor = new Color(0.8f, 0.2f, 0.2f, 1f);
-    public Color clearColor = new Color(0.3f, 0.9f, 1f, 1f); // 长按完成
+    public Color clearColor = new Color(0.3f, 0.9f, 1f, 1f); // 长按完成（每段 CLEAR）
+    public Color passColor = new Color(0.6f, 1f, 0.4f, 1f);  // 小型点击音符命中（PASS）
 
     [Header("飘字偏移")]
     public Vector3 spawnOffset = new Vector3(0f, 0.25f, 0f);
@@ -39,6 +40,10 @@ public class JudgeFeedbackManager : MonoBehaviour
             case "CLEAR":
                 prefab = null;
                 color = clearColor;
+                break;
+            case "PASS":
+                prefab = null;
+                color = passColor;
                 break;
             case "MISS":
                 prefab = missPrefab;
@@ -78,6 +83,8 @@ public class JudgeFeedbackManager : MonoBehaviour
         {
             case "PERFECT": rankScale = 0.5f; break;
             case "GOOD":    rankScale = 0.4f; break;
+            case "CLEAR":   rankScale = 0.42f; break;
+            case "PASS":    rankScale = 0.4f; break;
             case "MISS":    rankScale = 0.3f; break;
         }
         go.transform.localScale *= rankScale;

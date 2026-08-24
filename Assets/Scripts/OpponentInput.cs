@@ -44,7 +44,9 @@ public class OpponentInput : MonoBehaviour
     }
 
     /// <summary>
-    /// 预排序所有长按音符的“结束音符(tail)抵达判定线”松开事件。
+    /// 预排序所有长按音符的“每个节点（除 head 外）抵达判定线”松开事件。
+    /// 多节点 Hold：每个中间/尾节点都需要松开（AI 在最后一个节点松开即可，
+    /// 但这里记录所有节点时刻以确保任何中途断点也能释放按键状态）。
     /// </summary>
     private void BuildSchedule()
     {
@@ -59,7 +61,13 @@ public class OpponentInput : MonoBehaviour
             if (n.side != spawner.side) continue;
             if (n.type == NoteData.NoteType.Hold)
             {
-                releaseEvents.Add((n.time + Mathf.Max(0.1f, n.holdDuration), n.holdEndLane));
+                float[] times = n.GetHoldTimes();
+                int[] lanes = n.GetHoldLanes();
+                // 头节点由按下事件处理，这里登记其余节点（含尾节点）的松开
+                for (int i = 1; i < times.Length && i < lanes.Length; i++)
+                {
+                    releaseEvents.Add((times[i], lanes[i]));
+                }
             }
         }
         releaseEvents.Sort((a, b) => a.time.CompareTo(b.time));

@@ -78,7 +78,7 @@ public class NoteMover : MonoBehaviour
     }
 
     public void Init(Vector3 spawnPos, Vector3 hitPos, float hitTime, float leadTime,
-                     Conductor conductor, BattleCenterLine centerLine, float noteRadius = 0.45f)
+                     Conductor conductor, BattleCenterLine centerLine, float noteRadius = 0.45f, bool isSmallTap = false)
     {
         this.spawnPos = spawnPos;
         this.hitPos = hitPos;
@@ -86,10 +86,14 @@ public class NoteMover : MonoBehaviour
         this.leadTime = leadTime;
         this.conductor = conductor;
         this.centerLine = centerLine;
+
+        // 小型点击音符：半径只有基础 Tap 的 65%
+        if (isSmallTap) noteRadius *= 0.65f;
         this.noteRadius = noteRadius;
 
         note = GetComponent<Note>();
         note.hitTime = hitTime;
+        note.isSmallTap = isSmallTap;
         startTime = hitTime - leadTime;
 
         // 计算越过判定线的终点（再往前 1.5 个单位，保证能完全穿过）

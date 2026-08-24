@@ -12,7 +12,8 @@ public class ScoreManager : MonoBehaviour
     public int perfectScore = 100;
     public int goodScore = 60;
     public int missScore = 0;
-    public int clearScore = 50;     // 长按音符完成（CLEAR）的额外加分
+    public int clearScore = 50;     // 长按音符每完成一段链接（节点→节点）的加分
+    public int passScore = 80;      // 小型点击音符（SmallTap）命中统一加分
 
     [Header("玩家分数显示（可选，会自动查找）")]
     public ScoreDisplay leftScoreDisplay;
@@ -322,6 +323,7 @@ public class ScoreManager : MonoBehaviour
             case "PERFECT": delta = perfectScore; break;
             case "GOOD": delta = goodScore; break;
             case "CLEAR": delta = clearScore; break;
+            case "PASS": delta = passScore; break;
             case "MISS": delta = missScore; break;
         }
 

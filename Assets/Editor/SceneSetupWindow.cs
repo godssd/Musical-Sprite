@@ -45,7 +45,7 @@ namespace MusicalSprite.Editor
 
             if (GUILayout.Button("2. 生成测试谱面", GUILayout.Height(30)))
             {
-                DemoBeatmapGenerator.CreateDemoBeatmap();
+                DemoBeatmapGenerator.CreateDemoBeatmapWithBeats(120, DemoBeatmapGenerator.Density.Medium);
                 // 生成随机谱面后，把它设为当前谱面，覆盖之前在仓库「调用」的谱面
                 EditorPrefs.SetString("MusicalSprite/ActiveBeatmap", $"{BeatmapsFolder}/DemoBeatmap.asset");
                 AssetDatabase.Refresh();
