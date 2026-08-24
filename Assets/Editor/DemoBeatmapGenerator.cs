@@ -84,10 +84,11 @@ public class DemoBeatmapGenerator : MonoBehaviour
         }
         usedTimes.Sort();
 
-        // 3) 生成音符：时刻已在拍上；轨道完全随机；左右完全相同。
-        //    - 约 10% 为小型点击音符（SmallTap，半径更小、统一 PASS）
-        //    - 约 12% 为长按音符（Hold）：其中约 40% 为多节点（3~4 节点），其余为 2 节点（head→tail）
-        //    - 其余为普通 Tap
+        // 3) 生成音符：时刻已在拍上；左右完全相同。
+        //    - 约 10% 为小圈点击 SmallTap，和普通 Tap 保留大小区分。
+        //    - 约 12% 为单轨长按 Hold。
+        //    - 约 18% 为连轨 Linked：固定占相邻两轨，包含双轨点击、直线长按和跨轨长按。
+        //    - 其余为普通大圈 Tap。
         List<NoteData> notes = new List<NoteData>();
         foreach (float t in usedTimes)
         {
@@ -95,7 +96,6 @@ public class DemoBeatmapGenerator : MonoBehaviour
             float roll = Random.value;
             if (roll < 0.10f)
             {
-                // 小型点击音符
                 notes.Add(MakeSmallTap(t, lane, 0));
                 notes.Add(MakeSmallTap(t, lane, 1));
             }
@@ -134,6 +134,32 @@ public class DemoBeatmapGenerator : MonoBehaviour
                 notes.Add(MakeHold(t, lane, 0, lanes, times));
                 notes.Add(MakeHold(t, lane, 1, lanes, times));
             }
+            else if (roll < 0.40f)
+            {
+                int pairLane = Random.Range(0, 3); // 0=轨0+1，1=轨1+2，2=轨2+3
+                if (Random.value < 0.45f)
+                {
+                    // 图 1/2：不区分大小圈，统一为双轨点击。
+                    notes.Add(MakeLinked(t, pairLane, 0, null, null));
+                    notes.Add(MakeLinked(t, pairLane, 1, null, null));
+                }
+                else
+                {
+                    // 图 3/4/5：双轨按住；节点的 pairLane 改变时自然形成跨轨。
+                    int nodeCount = Random.value < 0.55f ? 2 : 3;
+                    int[] pairLanes = new int[nodeCount];
+                    float[] times = new float[nodeCount];
+                    pairLanes[0] = pairLane;
+                    times[0] = t;
+                    for (int i = 1; i < nodeCount; i++)
+                    {
+                        pairLanes[i] = Random.Range(0, 3);
+                        times[i] = times[i - 1] + Random.Range(1, 4) * beatDur;
+                    }
+                    notes.Add(MakeLinked(t, pairLane, 0, pairLanes, times));
+                    notes.Add(MakeLinked(t, pairLane, 1, pairLanes, times));
+                }
+            }
             else
             {
                 notes.Add(MakeNote(t, lane, 0));
@@ -156,6 +182,19 @@ public class DemoBeatmapGenerator : MonoBehaviour
         };
     }
 
+    private static NoteData MakeHold(float time, int lane, int side, int[] lanes, float[] times)
+    {
+        return new NoteData
+        {
+            time = time,
+            lane = lane,
+            side = side,
+            type = NoteData.NoteType.Hold,
+            holdLanes = (int[])lanes.Clone(),
+            holdTimes = (float[])times.Clone()
+        };
+    }
+
     private static NoteData MakeSmallTap(float time, int lane, int side)
     {
         return new NoteData
@@ -167,16 +206,16 @@ public class DemoBeatmapGenerator : MonoBehaviour
         };
     }
 
-    private static NoteData MakeHold(float time, int lane, int side, int[] lanes, float[] times)
+    private static NoteData MakeLinked(float time, int pairLane, int side, int[] lanes, float[] times)
     {
         return new NoteData
         {
             time = time,
-            lane = lane,
+            lane = pairLane,
             side = side,
-            type = NoteData.NoteType.Hold,
-            holdLanes = (int[])lanes.Clone(),
-            holdTimes = (float[])times.Clone()
+            type = NoteData.NoteType.Linked,
+            holdLanes = lanes != null ? (int[])lanes.Clone() : null,
+            holdTimes = times != null ? (float[])times.Clone() : null
         };
     }
 

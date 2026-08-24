@@ -11,7 +11,7 @@ using System;
 /// 到 tailTime（结束音符抵达判定线）完成，提前松开/未按住则断连。
 /// 
 /// 判定规则（基于时间窗口，单位：秒）：
-/// - 音符视觉为圆柱，半径 noteRadius。判定窗口由“视觉重叠”推导：
+/// - 普通点击视觉为圆柱，连轨点击为横跨两轨的圆角矩形；判定窗口由 X 方向半长推导：
 ///   goodWindow = noteRadius / 接近速度（即音符中心与判定线距离 <= 半径时正好视觉重叠）。
 ///   因此 GOOD 只有在“音符看得到与判定线重叠”时才能命中，不会提前触发。
 /// - perfectWindow = goodWindow * perfectRatioOfGood（默认 0.45，即 GOOD 的一半略低）。
@@ -122,7 +122,7 @@ public class NoteSpawner : MonoBehaviour
 
         float songTime = conductor.songPosition;
 
-        // 1. 到时间就生成音符（区分 Tap / Hold）
+        // 1. 到时间就生成音符。Linked 单节点是双轨点击，多节点是双轨长按/跨轨。
         while (spawnIndex < beatmap.notes.Length)
         {
             NoteData data = beatmap.notes[spawnIndex];
@@ -131,9 +131,11 @@ public class NoteSpawner : MonoBehaviour
             if (data.side == side)
             {
                 if (data.type == NoteData.NoteType.Hold)
-                    SpawnHoldNote(data);
+                    SpawnHoldNote(data, 1);
+                else if (data.IsLinkedHold())
+                    SpawnHoldNote(data, 2);
                 else
-                    SpawnNote(data); // Tap 与 SmallTap 共用 SpawnNote（内部按 isSmallTap 处理）
+                    SpawnNote(data);
             }
             spawnIndex++;
         }
@@ -160,7 +162,7 @@ public class NoteSpawner : MonoBehaviour
             NoteMover mover = note.GetComponent<NoteMover>();
             if (mover != null && mover.MissShrinkComplete)
             {
-                Vector3 missPos = hitPoint.position + laneOffsets[note.lane];
+                Vector3 missPos = mover.HitPosition;
                 OnJudge?.Invoke(side, note.lane, "MISS", missPos);
                 activeNotes.RemoveAt(i);
                 Destroy(note.gameObject);
@@ -219,8 +221,10 @@ public class NoteSpawner : MonoBehaviour
         if (spawnPoint == null || hitPoint == null) return;
 
         bool isSmallTap = data.type == NoteData.NoteType.SmallTap;
+        int laneSpan = data.type == NoteData.NoteType.Linked ? 2 : 1;
+        int startLane = ClampLaneSpanStart(data.lane, laneSpan);
 
-        Vector3 offset = laneOffsets[Mathf.Clamp(data.lane, 0, laneCount - 1)];
+        Vector3 offset = GetLaneSpanOffset(startLane, laneSpan);
         Vector3 spawnPos = spawnPoint.position + offset;
         Vector3 hitPos = hitPoint.position + offset;
 
@@ -230,13 +234,15 @@ public class NoteSpawner : MonoBehaviour
         Note note = go.GetComponent<Note>();
         if (note == null) note = go.AddComponent<Note>();
         note.hitTime = data.time;
-        note.lane = data.lane;
+        note.lane = startLane;
+        note.laneSpan = laneSpan;
         note.side = side;
         note.isSmallTap = isSmallTap;
 
         NoteMover mover = go.GetComponent<NoteMover>();
         if (mover == null) mover = go.AddComponent<NoteMover>();
-        mover.Init(spawnPos, hitPos, data.time, leadTime, conductor, centerLine, noteRadius, isSmallTap);
+        mover.Init(spawnPos, hitPos, data.time, leadTime, conductor, centerLine,
+            noteRadius, isSmallTap, laneSpan, laneSpacing);
 
         activeNotes.Add(note);
     }
@@ -245,11 +251,11 @@ public class NoteSpawner : MonoBehaviour
     /// 生成长按音符（多节点：head → mid → ... → tail，相邻节点间一段连接 bar），
     /// 交由 HoldNote 组件驱动运动与判定。每段（节点 i → i+1）完成触发一次 CLEAR。
     /// </summary>
-    private void SpawnHoldNote(NoteData data)
+    private void SpawnHoldNote(NoteData data, int laneSpan)
     {
         if (spawnPoint == null || hitPoint == null) return;
 
-        int[] holdLanes = data.GetHoldLanes();
+        int[] holdLanes = (int[])data.GetHoldLanes().Clone();
         float[] holdTimes = data.GetHoldTimes();
         int nodeCount = Mathf.Max(2, holdLanes.Length);
         // 防御：times 长度不足时用 lanes 长度补齐
@@ -265,13 +271,15 @@ public class NoteSpawner : MonoBehaviour
         Vector3[] hitPositions = new Vector3[nodeCount];
         for (int i = 0; i < nodeCount; i++)
         {
-            int ln = Mathf.Clamp(holdLanes[i], 0, laneCount - 1);
-            Vector3 off = laneOffsets[ln];
+            int ln = ClampLaneSpanStart(holdLanes[i], laneSpan);
+            holdLanes[i] = ln;
+            Vector3 off = GetLaneSpanOffset(ln, laneSpan);
             spawnPositions[i] = spawnPoint.position + off;
             hitPositions[i] = hitPoint.position + off;
         }
 
-        GameObject go = new GameObject($"Hold_side{side}_nodes{nodeCount}_lane{holdLanes[0]}_t{data.time:F2}");
+        string kind = laneSpan > 1 ? "LinkedHold" : "Hold";
+        GameObject go = new GameObject($"{kind}_side{side}_nodes{nodeCount}_lane{holdLanes[0]}_t{data.time:F2}");
         go.transform.SetParent(transform, false); // 挂到发射器下，场景重搭时随发射器一起销毁
         HoldNote hn = go.AddComponent<HoldNote>();
         hn.spawner = this;
@@ -280,6 +288,8 @@ public class NoteSpawner : MonoBehaviour
         hn.times = holdTimes;
         hn.leadTime = leadTime;
         hn.noteRadius = noteRadius;
+        hn.laneSpan = laneSpan;
+        hn.laneSpacing = laneSpacing;
         hn.spawnPositions = spawnPositions;
         hn.hitPositions = hitPositions;
         hn.conductor = conductor;
@@ -306,7 +316,7 @@ public class NoteSpawner : MonoBehaviour
         {
             if (hn.state != HoldNote.HoldState.Waiting) continue;
             if (hn.lanes == null || hn.lanes.Length < 2) continue;
-            if (hn.lanes[0] != lane) continue;
+            if (!hn.CanStartOnLane(lane)) continue;
             float dt = songTime - hn.times[0];
             float adt = Mathf.Abs(dt);
             if (adt > goodWindow) continue;
@@ -330,7 +340,8 @@ public class NoteSpawner : MonoBehaviour
         // 在 GOOD 窗口内、取离目标时刻最近的未命中音符
         foreach (var note in activeNotes)
         {
-            if (note.lane != lane || note.isHit || note.side != side) continue;
+            if (!note.CoversLane(lane) || note.isHit || note.side != side) continue;
+            if (note.laneSpan > 1 && !AreLanesHeld(note.lane, note.laneSpan)) continue;
             if (songTime > note.hitTime + goodWindow) continue; // 已超出窗口（将由 Update 判 MISS）
 
             float dt = songTime - note.hitTime;
@@ -360,11 +371,35 @@ public class NoteSpawner : MonoBehaviour
         }
 
         // 反馈位置放在对应轨道的判定线处
-        Vector3 judgePos = hitPoint.position + laneOffsets[best.lane];
+        NoteMover bestMover = best.GetComponent<NoteMover>();
+        Vector3 judgePos = bestMover != null ? bestMover.HitPosition : hitPoint.position + GetLaneSpanOffset(best.lane, best.laneSpan);
         OnJudge?.Invoke(side, best.lane, rank, judgePos);
 
         best.Hit(rank);
         activeNotes.Remove(best);
+    }
+
+    /// <summary>检查从 startLane 开始的连续 laneSpan 条轨道是否都处于按住状态。</summary>
+    public bool AreLanesHeld(int startLane, int laneSpan)
+    {
+        int start = ClampLaneSpanStart(startLane, laneSpan);
+        for (int i = 0; i < laneSpan; i++)
+        {
+            if (!heldLanes.Contains(start + i)) return false;
+        }
+        return true;
+    }
+
+    private int ClampLaneSpanStart(int startLane, int laneSpan)
+    {
+        return Mathf.Clamp(startLane, 0, Mathf.Max(0, laneCount - Mathf.Max(1, laneSpan)));
+    }
+
+    private Vector3 GetLaneSpanOffset(int startLane, int laneSpan)
+    {
+        int start = ClampLaneSpanStart(startLane, laneSpan);
+        int end = Mathf.Clamp(start + Mathf.Max(1, laneSpan) - 1, 0, laneCount - 1);
+        return (laneOffsets[start] + laneOffsets[end]) * 0.5f;
     }
 
     /// <summary>

@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// 控制音符（圆柱）从生成点沿轨道移动到判定线并穿过判定线，越过中线后变为可见。
+/// 控制点击音符从生成点沿轨道移动到判定线并穿过判定线，越过中线后变为可见。
+/// 普通点击使用圆柱，连轨点击使用带圆角的扁平矩形。
 /// 命中时：变黑 → 白 → 放大 → 消失。
 /// Miss 时：越过判定线后快速缩小消失（缩小完成才由 NoteSpawner 出 MISS 反馈）。
 /// </summary>
@@ -32,7 +33,7 @@ public class NoteMover : MonoBehaviour
     private bool missing = false;     // 已进入漏击缩小状态
     private bool missComplete = false; // 缩小动画结束，可出 MISS
 
-    // 圆柱网格（共享缓存，运行时把方块换成圆柱，不必重建预制体）
+    // 普通点击沿用圆柱；连轨点击使用带圆角的扁平矩形网格。
     private static Mesh _cylinderMesh;
     private static Mesh CylinderMesh
     {
@@ -46,6 +47,71 @@ public class NoteMover : MonoBehaviour
             }
             return _cylinderMesh;
         }
+    }
+
+    private static Mesh _roundedRectMesh;
+    public static Mesh RoundedRectMesh
+    {
+        get
+        {
+            if (_roundedRectMesh == null)
+                _roundedRectMesh = CreateRoundedRectMesh(0.18f, 2);
+            return _roundedRectMesh;
+        }
+    }
+
+    private static Mesh CreateRoundedRectMesh(float radius, int cornerSegments)
+    {
+        var outline = new System.Collections.Generic.List<Vector2>();
+        Vector2[] centers =
+        {
+            new Vector2(0.5f - radius, 0.5f - radius),
+            new Vector2(-0.5f + radius, 0.5f - radius),
+            new Vector2(-0.5f + radius, -0.5f + radius),
+            new Vector2(0.5f - radius, -0.5f + radius)
+        };
+
+        // 顺时针轮廓，便于从上方看到带圆角的正面。
+        for (int corner = 0; corner < centers.Length; corner++)
+        {
+            float start = corner * 90f;
+            for (int i = 0; i <= cornerSegments; i++)
+            {
+                float angle = (start + i * 90f / cornerSegments) * Mathf.Deg2Rad;
+                outline.Add(centers[corner] + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
+            }
+        }
+
+        int count = outline.Count;
+        var vertices = new Vector3[count * 2 + 2];
+        for (int i = 0; i < count; i++)
+        {
+            vertices[i] = new Vector3(outline[i].x, 0.5f, outline[i].y);
+            vertices[count + i] = new Vector3(outline[i].x, -0.5f, outline[i].y);
+        }
+        int topCenter = count * 2;
+        int bottomCenter = topCenter + 1;
+        vertices[topCenter] = new Vector3(0f, 0.5f, 0f);
+        vertices[bottomCenter] = new Vector3(0f, -0.5f, 0f);
+
+        var triangles = new System.Collections.Generic.List<int>(count * 12);
+        for (int i = 0; i < count; i++)
+        {
+            int next = (i + 1) % count;
+            // 顶面、底面各自反向，确保双面都能被看到。
+            triangles.Add(topCenter); triangles.Add(next); triangles.Add(i);
+            triangles.Add(bottomCenter); triangles.Add(count + i); triangles.Add(count + next);
+            // 侧面
+            triangles.Add(i); triangles.Add(next); triangles.Add(count + i);
+            triangles.Add(next); triangles.Add(count + next); triangles.Add(count + i);
+        }
+
+        var mesh = new Mesh { name = "RoundedFlatNote" };
+        mesh.vertices = vertices;
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
     }
 
     /// <summary>音符是否已经完整穿过判定线。</summary>
@@ -78,7 +144,8 @@ public class NoteMover : MonoBehaviour
     }
 
     public void Init(Vector3 spawnPos, Vector3 hitPos, float hitTime, float leadTime,
-                     Conductor conductor, BattleCenterLine centerLine, float noteRadius = 0.45f, bool isSmallTap = false)
+                     Conductor conductor, BattleCenterLine centerLine, float noteRadius = 0.45f,
+                     bool isSmallTap = false, int laneSpan = 1, float laneSpacing = 1f)
     {
         this.spawnPos = spawnPos;
         this.hitPos = hitPos;
@@ -105,18 +172,22 @@ public class NoteMover : MonoBehaviour
         float exitDistance = hitDistance + 1.5f;
         exitLeadTime = hitDistance > 0.001f ? leadTime * (exitDistance / hitDistance) : leadTime + 0.5f;
 
-        // 换成圆柱网格（与预制体无关，运行时保证是圆柱）
+        // 运行时替换预制体网格：普通点击是圆柱，连轨点击是圆角扁平矩形。
         MeshFilter mf = GetComponent<MeshFilter>();
-        if (mf != null) mf.sharedMesh = CylinderMesh;
+        if (mf != null) mf.sharedMesh = laneSpan > 1 ? RoundedRectMesh : CylinderMesh;
 
         // 移除可能存在的碰撞体，音符不需要物理
         Collider col = GetComponent<Collider>();
         if (col != null) Destroy(col);
 
-        // 圆柱：Unity 内置圆柱基准半径 0.5、高度 1；缩放到目标半径与薄高度
-        // 半径扩大 50%（原方块半宽 0.3 → 0.45），高度与判定线同高
+        // 圆柱基准直径为 1；圆角矩形网格基准宽深也为 1。
         float radiusScale = noteRadius / 0.5f;
-        transform.localScale = new Vector3(radiusScale, 0.12f, radiusScale);
+        // 连轨音符沿 Z 横跨两轨，沿 X 的判定半径仍与普通点击一致。
+        float zDiameter = laneSpan > 1
+            ? laneSpacing * (laneSpan - 1) + noteRadius * 2f
+            : radiusScale;
+        float xDiameter = laneSpan > 1 ? noteRadius * 2f : radiusScale;
+        transform.localScale = new Vector3(xDiameter, 0.12f, zDiameter);
         noteHalfSize = noteRadius; // 圆柱 X 方向半长即半径
         // hitPoint 表示音符中心高度；音符底面贴地时中心应为自身高度的一半。
         rideY = hitPos.y;

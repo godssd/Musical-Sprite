@@ -12,7 +12,8 @@ using System.Collections.Generic;
 /// - 全部节点完成后整体淡出（最后一段 CLEAR 在尾节点处上报）。
 ///
 /// 视觉：
-/// - 每个节点一个黑色圆柱体，相邻节点间用一条黑色连接 bar 相连。
+/// - 普通 Hold 的节点是黑色圆柱体，节点间用细连接 bar 相连。
+/// - 连轨 Hold 的节点与连接带都会横跨相邻两轨；节点轨道变化时形成跨轨宽带。
 /// - 命中 head 后 head 变白；按住期间 bar 从 head 向 tail 逐段变白，节点抵达判定线时变白。
 /// - 完成（尾节点抵达判定线）后整体淡出；断开 / 漏击时直接淡出。
 ///
@@ -33,6 +34,8 @@ public class HoldNote : MonoBehaviour
     public float[] times;   // 节点时刻（已解析，升序，length == lanes.Length）
     public float leadTime;
     public float noteRadius = 0.45f;
+    public int laneSpan = 1;       // 1=普通 Hold，2=连轨 Hold
+    public float laneSpacing = 1.5f;
     public float goodWindow = 0.07f;
     public float perfectWindow = 0.03f;
     public Vector3[] spawnPositions; // 每个节点的生成点（对方半场远端）
@@ -73,9 +76,9 @@ public class HoldNote : MonoBehaviour
     private Vector3[] exitPositions;
     private float[] exitLeadTimes;
     private float rideY;
-    private bool visible = false;
     private float breakTimer = 0f;
     private float fadeTimer = -1f;
+    private bool missShrinking = false;
 
     // 已完成的段数（段 i 表示 node[i] -> node[i+1]）
     private int completedSegments = 0;
@@ -187,14 +190,18 @@ public class HoldNote : MonoBehaviour
 
         // 节点圆柱
         float r = noteRadius / 0.5f;
-        baseNodeScale = new Vector3(r, 0.12f, r);
+        float linkedWidth = laneSpacing * (Mathf.Max(1, laneSpan) - 1) + noteRadius * 2f;
+        baseNodeScale = new Vector3(laneSpan > 1 ? noteRadius * 2f : r, 0.12f, laneSpan > 1 ? linkedWidth : r);
 
         for (int i = 0; i < nodeCount; i++)
         {
             var go = new GameObject($"HoldNode_{i}");
             var t = go.transform;
             t.SetParent(transform, false);
-            var mf = go.AddComponent<MeshFilter>(); mf.sharedMesh = CylinderMesh;
+            var mf = go.AddComponent<MeshFilter>();
+            // 连轨 Hold 的头尾节点与连接带保持同样的圆角长方形外观，
+            // 普通单轨 Hold 仍使用圆柱体，避免误改原有单轨视觉。
+            mf.sharedMesh = laneSpan > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
             var rend = go.AddComponent<MeshRenderer>();
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             rend.receiveShadows = false;
@@ -207,7 +214,8 @@ public class HoldNote : MonoBehaviour
             nodeMats.Add(mat);
         }
 
-        // 连接 bar：节点 i 与 i+1 之间一段，拆成多段圆柱便于逐段变白
+        // 连接 bar：节点 i 与 i+1 之间一段，拆成多段便于逐段变白。
+        // 连轨使用圆角扁平矩形片，片段首尾略微重叠，避免跨轨时出现断缝。
         baseBarSegRadius = r * 0.18f;
         for (int s = 0; s < nodeCount - 1; s++)
         {
@@ -219,13 +227,16 @@ public class HoldNote : MonoBehaviour
                 var segGo = new GameObject($"HoldSeg_{s}_{k}");
                 var segT = segGo.transform;
                 segT.SetParent(transform, false);
-                var smf = segGo.AddComponent<MeshFilter>(); smf.sharedMesh = CylinderMesh;
+                var smf = segGo.AddComponent<MeshFilter>();
+                smf.sharedMesh = laneSpan > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
                 var sRend = segGo.AddComponent<MeshRenderer>();
                 sRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 sRend.receiveShadows = false;
                 var sMat = CreateColoredMaterial(Color.black);
                 sRend.material = sMat;
-                segT.localScale = new Vector3(baseBarSegRadius, 1f, baseBarSegRadius);
+                segT.localScale = laneSpan > 1
+                    ? new Vector3(0.001f, 0.12f, linkedWidth)
+                    : new Vector3(baseBarSegRadius, 1f, baseBarSegRadius);
                 segTs.Add(segT);
                 segRends.Add(sRend);
                 segMats.Add(sMat);
@@ -266,6 +277,8 @@ public class HoldNote : MonoBehaviour
 
     private void MoveAndFade()
     {
+        if (finished || missShrinking) return;
+
         float songTime = conductor.songPosition;
 
         if (fadeTimer < 0f)
@@ -283,13 +296,16 @@ public class HoldNote : MonoBehaviour
 
             // 可见性：按元素"前沿"是否越过粉杠决定显示
             float cx = centerLine != null ? centerLine.currentX : 0f;
-            visible = true;
-
             for (int i = 0; i < nodeCount; i++)
             {
-                if (nodeRends[i] != null) nodeRends[i].enabled = IsBeyondLine(nodeTransforms[i].position.x, cx);
+                if (nodeRends[i] != null)
+                {
+                    bool revealed = IsBeyondLine(nodeTransforms[i].position.x, cx);
+                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, judgeLineX);
+                    nodeRends[i].enabled = revealed && stillBeforeJudge;
+                }
             }
-            UpdateSegmentVisibility(cx);
+            UpdateSegmentVisibility(cx, judgeLineX);
         }
         else
         {
@@ -312,9 +328,14 @@ public class HoldNote : MonoBehaviour
             float judgeX = judgeLineX;
             for (int i = 0; i < nodeCount; i++)
             {
-                if (nodeRends[i] != null) nodeRends[i].enabled = !IsBeyondLine(nodeTransforms[i].position.x, judgeX);
+                if (nodeRends[i] != null)
+                {
+                    bool revealed = IsBeyondLine(nodeTransforms[i].position.x, centerLine != null ? centerLine.currentX : 0f);
+                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, judgeX);
+                    nodeRends[i].enabled = revealed && stillBeforeJudge;
+                }
             }
-            UpdateSegmentVisibility(judgeX);
+            UpdateSegmentVisibility(centerLine != null ? centerLine.currentX : 0f, judgeX);
 
             // 完成：整体透明度淡出；断连/漏击：保持不透明，只通过判定线裁剪消失
             if (!broken)
@@ -327,7 +348,7 @@ public class HoldNote : MonoBehaviour
             bool allGone = true;
             for (int i = 0; i < nodeCount; i++)
             {
-                if (IsBeyondLine(nodeTransforms[i].position.x, judgeX)) { allGone = false; break; }
+                if (!IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, judgeX)) { allGone = false; break; }
             }
             if (allGone || fadeTimer > maxFadeLife)
             {
@@ -371,8 +392,29 @@ public class HoldNote : MonoBehaviour
             {
                 float p = (k + 0.5f) / n;
                 segs[k].position = Vector3.Lerp(start, end, p);
-                segs[k].rotation = Quaternion.FromToRotation(Vector3.up, normDir);
-                segs[k].localScale = new Vector3(baseBarSegRadius, segLen, baseBarSegRadius);
+                if (laneSpan > 1)
+                {
+                    // 连轨使用“阶梯”宽带：每个小片都保持水平，
+                    // 只逐段改变 Z，避免整条连接带被拉成斜四边形。
+                    float width = laneSpacing * (laneSpan - 1) + noteRadius * 2f;
+                    float directionX = Mathf.Sign(b.x - a.x);
+                    if (Mathf.Abs(b.x - a.x) < 0.001f) directionX = side == 0 ? -1f : 1f;
+                    float startX = a.x + directionX * noteRadius;
+                    float endX = b.x - directionX * noteRadius;
+                    float usableX = Mathf.Abs(endX - startX);
+                    float stairSegLen = usableX / n * 1.12f;
+                    float stairP = (k + 0.5f) / n;
+                    float x = Mathf.Lerp(startX, endX, stairP);
+                    float z = Mathf.Lerp(a.z, b.z, stairP);
+                    segs[k].position = new Vector3(x, a.y, z);
+                    segs[k].rotation = Quaternion.identity;
+                    segs[k].localScale = new Vector3(stairSegLen, 0.12f, width);
+                }
+                else
+                {
+                    segs[k].rotation = Quaternion.FromToRotation(Vector3.up, normDir);
+                    segs[k].localScale = new Vector3(baseBarSegRadius, segLen, baseBarSegRadius);
+                }
             }
         }
     }
@@ -406,7 +448,7 @@ public class HoldNote : MonoBehaviour
         }
     }
 
-    private void UpdateSegmentVisibility(float lineX)
+    private void UpdateSegmentVisibility(float revealLineX, float hideLineX)
     {
         for (int s = 0; s < segmentGroups.Count; s++)
         {
@@ -423,13 +465,27 @@ public class HoldNote : MonoBehaviour
                 if (rends[k] == null) continue;
                 if (totalLen < 0.001f)
                 {
-                    rends[k].enabled = IsBeyondLine(segs[k].position.x, lineX);
+                    bool collapsedRevealed = IsBeyondLine(segs[k].position.x, revealLineX);
+                    bool collapsedBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, noteRadius, hideLineX);
+                    rends[k].enabled = collapsedRevealed && collapsedBeforeJudge;
                     continue;
                 }
-                float halfLenX = (segs[k].localScale.y * 0.5f) * Mathf.Abs(normDir.x);
+                float halfLenX;
+                if (laneSpan > 1)
+                {
+                    float halfAlong = segs[k].localScale.x * 0.5f * Mathf.Abs(normDir.x);
+                    float halfAcross = segs[k].localScale.z * 0.5f * Mathf.Abs(normDir.z);
+                    halfLenX = halfAlong + halfAcross;
+                }
+                else
+                {
+                    halfLenX = segs[k].localScale.y * 0.5f * Mathf.Abs(normDir.x);
+                }
                 float minX = segs[k].position.x - halfLenX;
                 float maxX = segs[k].position.x + halfLenX;
-                rends[k].enabled = side == 0 ? minX < lineX : maxX > lineX;
+                bool revealed = IsBeyondLine(segs[k].position.x, revealLineX);
+                bool stillBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, halfLenX, hideLineX);
+                rends[k].enabled = revealed && stillBeforeJudge;
             }
         }
     }
@@ -455,6 +511,12 @@ public class HoldNote : MonoBehaviour
         return side == 0 ? x < lineX : x > lineX;
     }
 
+    /// <summary>判断一个带有 X 半宽的视觉元素是否已经完整越过指定判定线。</summary>
+    private bool IsFullyBeyondLine(float x, float halfExtent, float lineX)
+    {
+        return side == 0 ? x + halfExtent < lineX : x - halfExtent > lineX;
+    }
+
     /// <summary>
     /// 检查当前是否有按住的轨道与目标浮点轨道相差在 laneTolerance 以内。
     /// </summary>
@@ -466,6 +528,26 @@ public class HoldNote : MonoBehaviour
             if (Mathf.Abs(held - targetLane) <= laneTolerance) return true;
         }
         return false;
+    }
+
+    private bool AreRequiredLanesHeld(float targetStartLane)
+    {
+        if (spawner == null) return false;
+        if (laneSpan <= 1) return IsAnyHeldLaneClose(targetStartLane);
+
+        int start = Mathf.Clamp(Mathf.RoundToInt(targetStartLane), 0, Mathf.Max(0, spawner.laneCount - laneSpan));
+        return spawner.AreLanesHeld(start, laneSpan);
+    }
+
+    /// <summary>
+    /// 普通 Hold 从 head 轨起手；连轨 Hold 只有在覆盖的两轨都按下后才能起手。
+    /// </summary>
+    public bool CanStartOnLane(int pressedLane)
+    {
+        if (lanes == null || lanes.Length == 0) return false;
+        int start = Mathf.Clamp(lanes[0], 0, spawner != null ? Mathf.Max(0, spawner.laneCount - laneSpan) : lanes[0]);
+        if (pressedLane < start || pressedLane >= start + laneSpan) return false;
+        return laneSpan <= 1 || (spawner != null && spawner.AreLanesHeld(start, laneSpan));
     }
 
     /// <summary>
@@ -492,7 +574,7 @@ public class HoldNote : MonoBehaviour
             // 按住检测（AI 跳过，由 isAI 标志控制）
             if (!isAI)
             {
-                bool held = spawner != null && IsAnyHeldLaneClose(reqLaneF);
+                bool held = AreRequiredLanesHeld(reqLaneF);
                 if (!held) breakTimer += Time.deltaTime;
                 else breakTimer = 0f;
 
@@ -566,10 +648,58 @@ public class HoldNote : MonoBehaviour
     {
         state = HoldState.Done;
         broken = true;
-        fadeTimer = 0f;
-        if (nodeMats[0] != null) nodeMats[0].color = Color.black;
+        fadeTimer = -1f;
         ResetAllToBlack();
+        // 首节点漏击后整条链接立即失效，但保留对象播放缩小消失动画。
+        missShrinking = true;
+        StartCoroutine(MissShrinkCoroutine());
+    }
+
+    private System.Collections.IEnumerator MissShrinkCoroutine()
+    {
+        const float duration = 0.18f;
+        float timer = 0f;
+        Vector3[] nodeScales = new Vector3[nodeTransforms.Count];
+        for (int i = 0; i < nodeTransforms.Count; i++)
+            nodeScales[i] = nodeTransforms[i].localScale;
+
+        var segmentScales = new List<List<Vector3>>();
+        for (int s = 0; s < segmentGroups.Count; s++)
+        {
+            var scales = new List<Vector3>();
+            for (int k = 0; k < segmentGroups[s].Count; k++)
+                scales.Add(segmentGroups[s][k].localScale);
+            segmentScales.Add(scales);
+        }
+
+        SetAlpha(1f);
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            float t = Mathf.Clamp01(timer / duration);
+            float scale = 1f - t;
+            for (int i = 0; i < nodeTransforms.Count; i++)
+                nodeTransforms[i].localScale = nodeScales[i] * scale;
+            for (int s = 0; s < segmentGroups.Count; s++)
+                for (int k = 0; k < segmentGroups[s].Count; k++)
+                    segmentGroups[s][k].localScale = segmentScales[s][k] * scale;
+            SetAlpha(scale);
+            yield return null;
+        }
+
+        SetVisualsEnabled(false);
+        missShrinking = false;
+        finished = true;
         onJudge?.Invoke(side, lanes[0], "MISS", hitPositions[0]);
+    }
+
+    private void SetVisualsEnabled(bool enabled)
+    {
+        for (int i = 0; i < nodeRends.Count; i++)
+        {
+            if (nodeRends[i] != null) nodeRends[i].enabled = enabled;
+        }
+        SetBarEnabledAll(enabled);
     }
 
     private void Break()

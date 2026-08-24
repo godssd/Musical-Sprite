@@ -16,21 +16,23 @@ public class NoteData
     ///   每个节点 i 的圆心的抵达判定线时刻 = holdTimes[i]；所在轨道 = holdLanes[i]。
     ///   按住后沿连接线从头节点滑到尾节点；每完成「一个节点 → 下一个节点」视为一次 CLEAR。
     ///   兼容旧谱面：若 holdLanes/holdTimes 为空，则退化成 2 节点（head=time/lane，tail=time+holdDuration/holdEndLane）。
-    /// - SmallTap：小型点击音符。逻辑与 Tap 完全一致，但视觉半径只有基础 Tap 的 65%，
-    ///   且不做 PERFECT/GOOD 区分，命中统一评价为 PASS（80 分）。
+    /// - SmallTap：旧版小型点击音符，仅保留用于兼容已有谱面，不再由编辑器创建。
+    /// - Linked：连轨音符，固定覆盖相邻两轨，不区分大小圈。
+    ///   holdLanes/holdTimes 为空时是双轨点击；有至少两个节点时是双轨长按，
+    ///   holdLanes[i] 表示节点覆盖的第一条轨道，节点变化即可形成跨轨。
     /// </summary>
-    public enum NoteType { Tap = 0, Hold = 1, SmallTap = 2 }
+    public enum NoteType { Tap = 0, Hold = 1, SmallTap = 2, Linked = 3 }
 
     [Tooltip("该音符应该被击中的时间（秒，从歌曲开头算）。对 Hold 而言是起始音符(head)抵达判定线的时刻")]
     public float time;
 
-    [Tooltip("轨道编号：0-3（Hold 时为起始音符所在轨道；SmallTap 同 Tap）")]
+    [Tooltip("轨道编号：0-3。Linked 表示覆盖的第一条轨道，只能取 0-2，例如 1 表示覆盖轨道 1 和 2")]
     public int lane;
 
     [Tooltip("0=左玩家接，1=右玩家接")]
     public int side;
 
-    [Tooltip("音符类型：Tap=单击，Hold=长按（按住并沿节点链滑动），SmallTap=小型点击（半径更小、统一PASS）")]
+    [Tooltip("音符类型：Tap=单击，Hold=单轨长按，SmallTap=旧版小型点击，Linked=固定覆盖相邻两轨的点击/长按")]
     public NoteType type = NoteType.Tap;
 
     // ===== 旧版单段 Hold 字段（保留以兼容现有谱面/编辑器，新多节点 Hold 优先读取 holdLanes/holdTimes） =====
@@ -74,5 +76,14 @@ public class NoteData
     public bool IsMultiNodeHold()
     {
         return holdLanes != null && holdLanes.Length >= 3 && holdTimes != null && holdTimes.Length >= 3;
+    }
+
+    /// <summary>
+    /// Linked 有至少两个有效节点时按双轨长按处理；否则按双轨点击处理。
+    /// </summary>
+    public bool IsLinkedHold()
+    {
+        return type == NoteType.Linked && holdLanes != null && holdTimes != null
+            && holdLanes.Length >= 2 && holdTimes.Length >= 2;
     }
 }

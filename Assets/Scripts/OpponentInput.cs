@@ -5,9 +5,10 @@ using System.Collections.Generic;
 /// <summary>
 /// 对手（AI）输入模拟器。
 /// 按谱面自动在 Perfect 时机触发对应轨道的输入，让对战看起来有来有回。
-/// 支持 Tap 与 Hold：
+/// 支持 Tap、Hold 与 Linked：
 /// - Tap：在目标时刻按下并随即松开（fromAI 标记，避免误占 heldLanes）。
 /// - Hold：在 head 时刻按下（fromAI，自动完成长按），在 tail 时刻松开。
+/// - Linked：同时按下相邻两轨；多节点 Linked 由 AI 自动完成，到 tail 时同时松开两轨。
 /// 挂载在任意物体上，GameManager 会自动把它关联到 rightSpawner。
 /// </summary>
 public class OpponentInput : MonoBehaviour
@@ -69,6 +70,15 @@ public class OpponentInput : MonoBehaviour
                     releaseEvents.Add((times[i], lanes[i]));
                 }
             }
+            else if (n.IsLinkedHold())
+            {
+                float[] times = n.GetHoldTimes();
+                int[] lanes = n.GetHoldLanes();
+                int startLane = Mathf.Clamp(lanes[0], 0, Mathf.Max(0, spawner.laneCount - 2));
+                float tailTime = times[Mathf.Min(times.Length, lanes.Length) - 1];
+                releaseEvents.Add((tailTime, startLane));
+                releaseEvents.Add((tailTime, startLane + 1));
+            }
         }
         releaseEvents.Sort((a, b) => a.time.CompareTo(b.time));
     }
@@ -98,14 +108,27 @@ public class OpponentInput : MonoBehaviour
             {
                 if (UnityEngine.Random.value > missChance)
                 {
-                    spawner.TriggerLaneDown(note.lane, true);
-                    if (note.type != NoteData.NoteType.Hold)
+                    bool linked = note.type == NoteData.NoteType.Linked;
+                    bool heldNote = note.type == NoteData.NoteType.Hold || note.IsLinkedHold();
+                    int startLane = linked
+                        ? Mathf.Clamp(note.lane, 0, Mathf.Max(0, spawner.laneCount - 2))
+                        : note.lane;
+
+                    spawner.TriggerLaneDown(startLane, true);
+                    if (linked)
+                        spawner.TriggerLaneDown(startLane + 1, true);
+
+                    if (!heldNote)
                     {
                         // Tap：按下后立刻松开，避免占用 heldLanes（AI 标记也会让长按跳过按住检测）
-                        spawner.TriggerLaneUp(note.lane);
+                        spawner.TriggerLaneUp(startLane);
+                        if (linked) spawner.TriggerLaneUp(startLane + 1);
                     }
                     if (showVisualFeedback)
-                        ShowOpponentPress(note.lane);
+                    {
+                        ShowOpponentPress(startLane);
+                        if (linked) ShowOpponentPress(startLane + 1);
+                    }
                 }
             }
 
