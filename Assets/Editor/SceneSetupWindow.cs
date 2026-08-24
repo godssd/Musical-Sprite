@@ -146,6 +146,7 @@ namespace MusicalSprite.Editor
                 "LeftSpawnPoint", "LeftHitPoint", "RightSpawnPoint", "RightHitPoint",
                 "LeftHitLine", "RightHitLine", "JudgeFeedbackManager", "TouchZoneBuilder",
                 "TouchInputManager", "OpponentInput", "LeftBand", "RightBand", "ComboDisplay",
+                "ComboLeft", "ComboRight",
                 "ScoreManager", "ScoreLeft", "ScoreRight", "HPBarCanvas", "HPBarLeft", "HPBarRight"
             };
             foreach (string n in oldNames)
@@ -300,11 +301,11 @@ namespace MusicalSprite.Editor
             // 顶部血条 UI（必须先创建，分数会挂在它的 Canvas 下）
             GameObject hpCanvas = CreateHPBars(scoreManager);
 
-            // 分数显示：右移 40 / 左移 40、上移 14 回血条中线、放大 1.1 倍
+            // 分数显示：在 1.1 倍基础上再放大 1.2 倍（总 1.32 倍），位于血条右侧/左侧
             ScoreDisplay leftScore = CreateScreenScoreDisplay("ScoreLeft", hpCanvas.transform,
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(380f, -15f), ComboGreen, TextAnchor.MiddleLeft);
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(456f, -18f), ComboGreen, TextAnchor.MiddleLeft);
             ScoreDisplay rightScore = CreateScreenScoreDisplay("ScoreRight", hpCanvas.transform,
-                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-380f, -15f), ProtagonistYellow, TextAnchor.MiddleRight);
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-456f, -18f), ProtagonistYellow, TextAnchor.MiddleRight);
             scoreManager.leftScoreDisplay = leftScore;
             scoreManager.rightScoreDisplay = rightScore;
             gameManager.scoreManager = scoreManager;
@@ -357,11 +358,14 @@ namespace MusicalSprite.Editor
             BattleVisualsController visuals = gm.AddComponent<BattleVisualsController>();
             visuals.leftSpawner = leftSpawner;
             visuals.rightSpawner = rightSpawner;
-            // 连击数字放在场地中央靠内侧区域（图中绿色方形示意位置），比原来更小
+            visuals.centerLine = centerLine;
+            // 连击数字动态定位：第 2-3 音轨水平线 + 判定线到粉杠中央
             visuals.leftComboDisplay = CreateComboDisplay("ComboLeft", hpCanvas.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-200f, 0f), ArenaRed);
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-200f, 0f), ArenaRed,
+                leftSpawner, centerLine);
             visuals.rightComboDisplay = CreateComboDisplay("ComboRight", hpCanvas.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, 0f), ArenaBlue);
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, 0f), ArenaBlue,
+                rightSpawner, centerLine);
 
             // 左侧乐队
             Transform leftBand = CreateBandFormation("LeftBand", -1f, leftSpawner, bandMemberMat, protagonistMat, indicatorActiveMat, indicatorIdleMat);
@@ -555,7 +559,8 @@ namespace MusicalSprite.Editor
         }
 
         private static ComboDisplay CreateComboDisplay(string name, Transform canvas,
-            Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Color color)
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Color color,
+            NoteSpawner spawner, BattleCenterLine centerLine)
         {
             // 改为 ScreenSpaceOverlay 下的普通 UI 子对象，彻底去除透视变形
             GameObject root = new GameObject(name);
@@ -566,7 +571,7 @@ namespace MusicalSprite.Editor
             rt.anchorMax = anchorMax;
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = new Vector2(200f, 100f);
+            rt.sizeDelta = new Vector2(240f, 120f); // 放大 1.2 倍
 
             GameObject textGo = new GameObject("Text");
             textGo.transform.SetParent(root.transform, false);
@@ -579,18 +584,22 @@ namespace MusicalSprite.Editor
 
             Text uiText = textGo.AddComponent<Text>();
             uiText.text = "";
-            uiText.fontSize = 70;
+            uiText.fontSize = 84; // 放大 1.2 倍
             uiText.alignment = TextAnchor.MiddleCenter;
             uiText.color = color;
             uiText.font = GetUIFont();
 
             Outline outline = textGo.AddComponent<Outline>();
             outline.effectColor = Color.black;
-            outline.effectDistance = new Vector2(4f, 4f);
+            outline.effectDistance = new Vector2(5f, 5f); // 放大 1.2 倍
 
             ComboDisplay display = root.AddComponent<ComboDisplay>();
             display.text = uiText;
             display.comboColor = color;
+            display.isDynamic = true;
+            display.spawner = spawner;
+            display.centerLine = centerLine;
+            display.side = spawner != null ? spawner.side : 0;
             return display;
         }
 
@@ -646,7 +655,7 @@ namespace MusicalSprite.Editor
             rt.anchorMax = anchorMax;
             rt.pivot = anchorMin;
             rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = new Vector2(330f, 61f); // 放大 1.1 倍
+            rt.sizeDelta = new Vector2(396f, 73f); // 在 1.1 倍基础上再放大 1.2 倍
 
             // 子 Canvas：保持与父 Canvas 同模式，但提升 sortingOrder
             Canvas childCanvas = root.AddComponent<Canvas>();
@@ -664,14 +673,14 @@ namespace MusicalSprite.Editor
 
             Text uiText = textGo.AddComponent<Text>();
             uiText.text = "0";
-            uiText.fontSize = 57; // 放大 1.1 倍
+            uiText.fontSize = 68; // 在 1.1 倍基础上再放大 1.2 倍
             uiText.alignment = alignment;
             uiText.color = color;
             uiText.font = GetUIFont();
 
             Outline outline = textGo.AddComponent<Outline>();
             outline.effectColor = Color.black;
-            outline.effectDistance = new Vector2(3f, 3f);
+            outline.effectDistance = new Vector2(4f, 4f);
 
             ScoreDisplay display = root.AddComponent<ScoreDisplay>();
             display.isScreenSpace = true;
@@ -836,7 +845,7 @@ namespace MusicalSprite.Editor
             rootRect.anchorMax = anchorMax;
             rootRect.pivot = anchorMin;
             rootRect.anchoredPosition = anchoredPos;
-            rootRect.sizeDelta = new Vector2(300f, 30f);
+            rootRect.sizeDelta = new Vector2(432f, 43f); // 再放大 1.2 倍
 
             // 黑色外框：比血槽稍大，形成边框
             GameObject borderGo = new GameObject("Border");
@@ -844,8 +853,8 @@ namespace MusicalSprite.Editor
             RectTransform borderRect = borderGo.AddComponent<RectTransform>();
             borderRect.anchorMin = Vector2.zero;
             borderRect.anchorMax = Vector2.one;
-            borderRect.offsetMin = new Vector2(-4f, -4f);
-            borderRect.offsetMax = new Vector2(4f, 4f);
+            borderRect.offsetMin = new Vector2(-6f, -6f);
+            borderRect.offsetMax = new Vector2(6f, 6f);
             Image borderImg = borderGo.AddComponent<Image>();
             borderImg.color = Color.black;
 
@@ -882,13 +891,13 @@ namespace MusicalSprite.Editor
             textRect.offsetMax = Vector2.zero;
             Text hpText = textGo.AddComponent<Text>();
             hpText.text = "300/300";
-            hpText.fontSize = 18;
+            hpText.fontSize = 26; // 再放大 1.2 倍
             hpText.alignment = TextAnchor.MiddleCenter;
             hpText.color = Color.white;
             hpText.font = GetUIFont();
             Outline outline = textGo.AddComponent<Outline>();
             outline.effectColor = Color.black;
-            outline.effectDistance = new Vector2(1f, 1f);
+            outline.effectDistance = new Vector2(1.2f, 1.2f);
 
             HPBarDisplay display = root.AddComponent<HPBarDisplay>();
             display.side = side;

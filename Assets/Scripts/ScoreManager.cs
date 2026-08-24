@@ -114,20 +114,20 @@ public class ScoreManager : MonoBehaviour
 
             if (leftScoreDisplay == null)
             {
-                // 左分数：右移 40、上移 14 回血条中线、放大 1.1 倍
+                // 左分数：在 1.1 倍基础上再放大 1.2 倍（总 1.32 倍）
                 leftScoreDisplay = CreateRuntimeScoreDisplay("ScoreLeft", canvasTrans,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(380f, -15f), new Color(0.2f, 1f, 0.2f, 1f),
+                    new Vector2(456f, -18f), new Color(0.2f, 1f, 0.2f, 1f),
                     TextAnchor.MiddleLeft);
                 Debug.Log("[ScoreManager] 自动创建左分数显示 ScoreLeft");
             }
 
             if (rightScoreDisplay == null)
             {
-                // 右分数：左移 40、上移 14 回血条中线、放大 1.1 倍
+                // 右分数：在 1.1 倍基础上再放大 1.2 倍（总 1.32 倍）
                 rightScoreDisplay = CreateRuntimeScoreDisplay("ScoreRight", canvasTrans,
                     new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-380f, -15f), new Color(1f, 0.85f, 0.1f, 1f),
+                    new Vector2(-456f, -18f), new Color(1f, 0.85f, 0.1f, 1f),
                     TextAnchor.MiddleRight);
                 Debug.Log("[ScoreManager] 自动创建右分数显示 ScoreRight");
             }
@@ -149,7 +149,7 @@ public class ScoreManager : MonoBehaviour
         rt.anchorMax = aMax;
         rt.pivot = aMin;
         rt.anchoredPosition = pos;
-        rt.sizeDelta = new Vector2(330f, 61f); // 放大 1.1 倍
+        rt.sizeDelta = new Vector2(396f, 73f); // 在 1.1 倍基础上再放大 1.2 倍
 
         GameObject textGo = new GameObject("Text");
         textGo.transform.SetParent(root.transform, false);
@@ -162,16 +162,16 @@ public class ScoreManager : MonoBehaviour
 
         Text uiText = textGo.AddComponent<Text>();
         uiText.text = "0";
-        uiText.fontSize = 57; // 放大 1.1 倍
+        uiText.fontSize = 68; // 在 1.1 倍基础上再放大 1.2 倍
         uiText.alignment = alignment;
         uiText.color = color;
         uiText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         if (uiText.font == null) uiText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-        if (uiText.font == null) uiText.font = Font.CreateDynamicFontFromOSFont("Arial", 60);
+        if (uiText.font == null) uiText.font = Font.CreateDynamicFontFromOSFont("Arial", 80);
 
         Outline outline = textGo.AddComponent<Outline>();
         outline.effectColor = Color.black;
-        outline.effectDistance = new Vector2(4f, 4f);
+        outline.effectDistance = new Vector2(5f, 5f);
 
         ScoreDisplay display = root.AddComponent<ScoreDisplay>();
         display.isScreenSpace = true;
@@ -189,27 +189,27 @@ public class ScoreManager : MonoBehaviour
         SyncUGUIScoresToIMGUI();
 
         GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = Mathf.RoundToInt(48f * 1.1f); // 放大 1.1 倍
+        style.fontSize = Mathf.RoundToInt(48f * 1.32f); // 在 1.1 倍基础上再放大 1.2 倍
         style.alignment = TextAnchor.MiddleLeft;
         style.fontStyle = FontStyle.Bold;
 
         // 根据 HPBarCanvas 的实际参数与用户微调计算分数位置。
-        // 左血条 reference： anchoredPosition=(30,-30), sizeDelta=(300,30), pivot=左上角
-        // 右血条 reference： anchoredPosition=(-30,-30), sizeDelta=(300,30), pivot=右上角
-        // 左血条右缘 x=330；右血条左缘 x=1590；血条中心 y=-45（从顶部向下 45 reference 像素）。
-        // 微调：左分数右移 40 / 右分数左移 40；之前下移 14，现上移 14 回到血条中心；放大 1.1 倍。
+        // 左血条 reference： anchoredPosition=(30,-30), sizeDelta=(432,43), pivot=左上角
+        // 右血条 reference： anchoredPosition=(-30,-30), sizeDelta=(432,43), pivot=右上角
+        // 左血条右缘 x=462；右血条左缘 x=1458；血条中心 y=-51.5（从顶部向下 reference 像素）。
+        // 在 1.1 倍基础上再放大 1.2 倍，右移/左移偏移从 40 放大到 48。
         float scaleX = Screen.width / 1920f;
         float scaleY = Screen.height / 1080f;
         float canvasScale = Mathf.Sqrt(scaleX * scaleY); // 对应 match=0.5 的 CanvasScaler
 
-        float zoom = 1.1f;
+        float zoom = 1.32f;
         float labelHeight = 46f * canvasScale * zoom;
         float labelWidth = 180f * canvasScale * zoom;
 
-        int shiftX = 40;
-        float leftEdgeRef = 330f + 10f + shiftX; // 左分数左缘 reference x = 380
-        float rightEdgeRef = 1590f - 10f - shiftX; // 右分数右缘 reference x = 1540
-        float centerYFromTop = 45f;              // 回到血条中心（从顶部向下 45 reference 像素）
+        int shiftX = 48; // 在 40 基础上放大 1.2 倍
+        float leftEdgeRef = 462f + 10f + shiftX; // 左分数左缘 reference x = 520
+        float rightEdgeRef = 1458f - 10f - shiftX; // 右分数右缘 reference x = 1400
+        float centerYFromTop = 51.5f;              // 回到血条中心（从顶部向下 reference 像素）
 
         float posY = centerYFromTop * scaleY - labelHeight * 0.5f;
         float leftPosX = leftEdgeRef * scaleX;

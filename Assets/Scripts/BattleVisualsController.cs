@@ -22,6 +22,9 @@ public class BattleVisualsController : MonoBehaviour
     public Transform leftBandRoot;
     public Transform rightBandRoot;
 
+    [Header("中间粉杠")]
+    public BattleCenterLine centerLine;
+
     private void Start()
     {
         if (leftSpawner != null)
@@ -33,6 +36,20 @@ public class BattleVisualsController : MonoBehaviour
         {
             rightSpawner.OnLanePress += OnLanePress;
             rightSpawner.OnJudge += OnJudge;
+        }
+
+        // 把世界定位所需引用交给 ComboDisplay
+        if (leftComboDisplay != null)
+        {
+            leftComboDisplay.spawner = leftSpawner;
+            if (centerLine != null) leftComboDisplay.centerLine = centerLine;
+            leftComboDisplay.side = 0;
+        }
+        if (rightComboDisplay != null)
+        {
+            rightComboDisplay.spawner = rightSpawner;
+            if (centerLine != null) rightComboDisplay.centerLine = centerLine;
+            rightComboDisplay.side = 1;
         }
     }
 
