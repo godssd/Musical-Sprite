@@ -22,6 +22,8 @@ public class TouchInputManager : MonoBehaviour
 
     void Update()
     {
+        if (GameManager.Instance != null && GameManager.Instance.isGameOver) return;
+
         // 处理触摸
         for (int i = 0; i < Input.touchCount; i++)
         {

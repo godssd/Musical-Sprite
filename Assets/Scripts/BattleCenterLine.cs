@@ -64,8 +64,8 @@ public class BattleCenterLine : MonoBehaviour
             diff = _leftScore - _rightScore;
         }
 
-        // 分差 5000 时移动 5 个单位
-        float targetX = Mathf.Clamp(diff * pushPerHit, minX, maxX);
+        // 分差 5000 时移动 5 个单位；允许超过原 minX/maxX，让粉杠随分差继续推进
+        float targetX = diff * pushPerHit;
 
         _currentX = Mathf.Lerp(_currentX, targetX, Time.deltaTime * smoothSpeed);
 
@@ -85,11 +85,14 @@ public class BattleCenterLine : MonoBehaviour
         if (leftGround == null || rightGround == null) return;
 
         float halfWidth = arenaTotalWidth * 0.5f;
-        float leftCenter = (-halfWidth + _currentX) * 0.5f;
-        float leftWidth = _currentX - (-halfWidth);
+        // 地面缩放用 clamped 的 X，避免粉杠溢出后场时地面宽度变负/翻转
+        float groundX = Mathf.Clamp(_currentX, -halfWidth + 0.01f, halfWidth - 0.01f);
 
-        float rightCenter = (_currentX + halfWidth) * 0.5f;
-        float rightWidth = halfWidth - _currentX;
+        float leftCenter = (-halfWidth + groundX) * 0.5f;
+        float leftWidth = groundX - (-halfWidth);
+
+        float rightCenter = (groundX + halfWidth) * 0.5f;
+        float rightWidth = halfWidth - groundX;
 
         // 更新左侧红色地面
         Vector3 lp = leftGround.position;

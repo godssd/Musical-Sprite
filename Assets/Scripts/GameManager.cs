@@ -5,6 +5,8 @@ using UnityEngine;
 /// </summary>
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance { get; private set; }
+
     [Header("核心组件")]
     public Conductor conductor;
     public BattleCenterLine centerLine;
@@ -29,6 +31,14 @@ public class GameManager : MonoBehaviour
 
     private bool winnerShown = false;
 
+    /// <summary>当前对战是否已结束（血量归零或谱面结束已出胜者）。</summary>
+    public bool isGameOver { get; private set; }
+
+    void Awake()
+    {
+        Instance = this;
+    }
+
     void Start()
     {
         // 把判定事件接到 UI
@@ -52,6 +62,16 @@ public class GameManager : MonoBehaviour
             touchInput.leftSpawner = leftSpawner;
             touchInput.rightSpawner = rightSpawner;
         }
+
+        // 监听血量归零，直接判胜负
+        if (scoreManager != null)
+            scoreManager.OnPlayerDefeated += OnPlayerDefeated;
+    }
+
+    void OnDestroy()
+    {
+        if (scoreManager != null)
+            scoreManager.OnPlayerDefeated -= OnPlayerDefeated;
     }
 
     void Update()
@@ -93,33 +113,68 @@ public class GameManager : MonoBehaviour
 
         ShowWinner(result, color);
         winnerShown = true;
+        isGameOver = true;
+    }
+
+    private void OnPlayerDefeated(int defeatedSide)
+    {
+        if (winnerShown) return;
+
+        string result;
+        Color color;
+        if (defeatedSide == 0)
+        {
+            result = "蓝方胜";
+            color = new Color(0.2f, 0.3f, 0.9f, 1f);
+        }
+        else
+        {
+            result = "红方胜";
+            color = new Color(0.9f, 0.2f, 0.2f, 1f);
+        }
+
+        ShowWinner(result, color);
+        winnerShown = true;
+        isGameOver = true;
     }
 
     private void ShowWinner(string text, Color color)
     {
+        // 先清理场上残留音符，避免游戏结束后黑音符堆积不消失
+        if (leftSpawner != null) leftSpawner.ClearActiveNotes();
+        if (rightSpawner != null) rightSpawner.ClearActiveNotes();
+
         // 删除旧的获胜提示
         if (winnerDisplayRoot != null) Destroy(winnerDisplayRoot);
 
         winnerDisplayRoot = new GameObject("WinnerDisplay");
-        winnerDisplayRoot.transform.position = new Vector3(0f, 4f, 0f);
 
+        // 屏幕空间画布，无透视，盖在最上层
         Canvas canvas = winnerDisplayRoot.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.WorldSpace;
-        if (Camera.main != null)
-            winnerDisplayRoot.transform.rotation = Quaternion.LookRotation(winnerDisplayRoot.transform.position - Camera.main.transform.position);
-        winnerDisplayRoot.transform.localScale = Vector3.one * 0.04f;
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 200;
+
+        // 锚定到屏幕正上方中央，不再使用 3D 世界坐标（避免透视变形）
+        RectTransform rootRect = winnerDisplayRoot.GetComponent<RectTransform>();
+        if (rootRect == null) rootRect = winnerDisplayRoot.AddComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 1f);
+        rootRect.anchorMax = new Vector2(0.5f, 1f);
+        rootRect.pivot = new Vector2(0.5f, 1f);
+        rootRect.anchoredPosition = new Vector2(0f, 0f); // 贴顶中央
+        rootRect.sizeDelta = new Vector2(1200f, 300f); // 整体放大一倍
 
         GameObject textGo = new GameObject("Text");
-        textGo.transform.SetParent(winnerDisplayRoot.transform);
-        textGo.transform.localPosition = Vector3.zero;
-        textGo.transform.localScale = Vector3.one;
+        textGo.transform.SetParent(winnerDisplayRoot.transform, false);
 
         RectTransform rect = textGo.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(600f, 200f);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
 
         UnityEngine.UI.Text uiText = textGo.AddComponent<UnityEngine.UI.Text>();
         uiText.text = text;
-        uiText.fontSize = 120;
+        uiText.fontSize = 144; // 字号同步放大一倍
         uiText.alignment = TextAnchor.MiddleCenter;
         uiText.color = color;
         uiText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -141,6 +196,7 @@ public class GameManager : MonoBehaviour
 
         if (winnerDisplayRoot != null) Destroy(winnerDisplayRoot);
         winnerShown = false;
+        isGameOver = false;
 
         Debug.Log("游戏已重置");
     }

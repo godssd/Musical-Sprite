@@ -11,11 +11,18 @@ public class DemoBeatmapGenerator : MonoBehaviour
     [MenuItem("Tools/Musical Sprite/Create Demo Beatmap")]
     public static void CreateDemoBeatmap()
     {
+        CreateDemoBeatmapWithBeats(120);
+    }
+
+    public static BeatmapSO CreateDemoBeatmapWithBeats(int totalBeats)
+    {
         BeatmapSO beatmap = ScriptableObject.CreateInstance<BeatmapSO>();
         beatmap.bpm = 128f;
-        beatmap.notes = GenerateDemoNotes();
+        beatmap.notes = GenerateDemoNotes(totalBeats);
 
         string path = "Assets/ScriptableObjects/DemoBeatmap.asset";
+        // 删除旧资源（如果存在）再创建，避免 GUID 冲突或重复资源
+        AssetDatabase.DeleteAsset(path);
         AssetDatabase.CreateAsset(beatmap, path);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -23,17 +30,17 @@ public class DemoBeatmapGenerator : MonoBehaviour
         EditorUtility.FocusProjectWindow();
         Selection.activeObject = beatmap;
 
-        Debug.Log($"测试谱面已生成：{path}");
+        Debug.Log($"测试谱面已生成：{path}，共 {totalBeats} 拍");
+        return beatmap;
     }
 
-    private static NoteData[] GenerateDemoNotes()
+    private static NoteData[] GenerateDemoNotes(int totalBeats)
     {
         List<NoteData> notes = new List<NoteData>();
 
         float bpm = 128f;
         float beat = 60f / bpm;       // 每拍时长
         float startTime = 2f;         // 前奏 2 秒
-        int totalBeats = 120;         // 总共 120 拍
 
         for (int i = 0; i < totalBeats; i++)
         {

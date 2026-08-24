@@ -34,7 +34,7 @@ public class Note : MonoBehaviour
     }
 
     /// <summary>
-    /// 触发 Miss（漏击）消失。
+    /// 触发 Miss（漏击）消失反馈：先快速缩小，缩完再由 NoteSpawner 出 MISS。
     /// </summary>
     public void Miss()
     {
@@ -45,7 +45,7 @@ public class Note : MonoBehaviour
         NoteMover mover = GetComponent<NoteMover>();
         if (mover != null)
         {
-            mover.PlayMissAnimation();
+            mover.BeginMiss();
         }
         else
         {

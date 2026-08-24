@@ -59,10 +59,23 @@ public class JudgeFeedbackManager : MonoBehaviour
             Destroy(prefab);
         }
 
-        // World Space Canvas 的正面朝向与相机相反时，文字会左右/前后翻转；
-        // 让 Canvas 的法线背向相机，使 UI 正面朝向相机。
+        // 让 Canvas 直接面向相机，并使用相机的 up 轴，使文字在屏幕里完全水平。
         if (Camera.main != null)
-            go.transform.rotation = Quaternion.LookRotation(pos - Camera.main.transform.position);
+        {
+            Vector3 toCamera = Camera.main.transform.position - pos;
+            if (toCamera.sqrMagnitude > 0.0001f)
+                go.transform.rotation = Quaternion.LookRotation(toCamera, Camera.main.transform.up);
+        }
+
+        // 按等级缩放：PERFECT 0.5，GOOD 0.5*0.8=0.4，MISS 0.5*0.6=0.3
+        float rankScale = 1f;
+        switch (rank)
+        {
+            case "PERFECT": rankScale = 0.5f; break;
+            case "GOOD":    rankScale = 0.4f; break;
+            case "MISS":    rankScale = 0.3f; break;
+        }
+        go.transform.localScale *= rankScale;
 
         // 确保有 JudgeFeedbackItem 自动动画
         JudgeFeedbackItem item = go.GetComponent<JudgeFeedbackItem>();

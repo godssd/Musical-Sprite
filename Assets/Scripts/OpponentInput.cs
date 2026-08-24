@@ -34,6 +34,7 @@ public class OpponentInput : MonoBehaviour
 
     void Update()
     {
+        if (GameManager.Instance != null && GameManager.Instance.isGameOver) return;
         if (spawner == null || conductor == null || beatmap == null || beatmap.notes == null) return;
 
         float songTime = conductor.songPosition;

@@ -146,7 +146,7 @@ namespace MusicalSprite.Editor
                 "LeftSpawnPoint", "LeftHitPoint", "RightSpawnPoint", "RightHitPoint",
                 "LeftHitLine", "RightHitLine", "JudgeFeedbackManager", "TouchZoneBuilder",
                 "TouchInputManager", "OpponentInput", "LeftBand", "RightBand", "ComboDisplay",
-                "ScoreManager", "ScoreLeft", "ScoreRight"
+                "ScoreManager", "ScoreLeft", "ScoreRight", "HPBarCanvas", "HPBarLeft", "HPBarRight"
             };
             foreach (string n in oldNames)
             {
@@ -183,10 +183,11 @@ namespace MusicalSprite.Editor
                 mainCam = camGo.AddComponent<Camera>();
                 camGo.tag = "MainCamera";
             }
-            mainCam.transform.position = new Vector3(0f, 13f, -8f);
-            mainCam.transform.rotation = Quaternion.Euler(60f, 0f, 0f);
+            // 拉近并俯视：让用户能看清场地全貌，又不会太远
+            mainCam.transform.position = new Vector3(0f, 10.3f, -2.8f);
+            mainCam.transform.rotation = Quaternion.Euler(70f, 0f, 0f);
             mainCam.orthographic = false;
-            mainCam.fieldOfView = 60f;
+            mainCam.fieldOfView = 50f;
             mainCam.backgroundColor = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // 创建/更新 Arena
@@ -197,7 +198,7 @@ namespace MusicalSprite.Editor
                 arenaLeft.name = "ArenaLeft";
             }
             arenaLeft.transform.position = new Vector3(-4f, -0.05f, 0f);
-            arenaLeft.transform.localScale = new Vector3(8f, 0.1f, 9f);
+            arenaLeft.transform.localScale = new Vector3(8f, 0.1f, 7.5f);
             SetMaterial(arenaLeft, redMat);
 
             GameObject arenaRight = GameObject.Find("ArenaRight");
@@ -207,7 +208,7 @@ namespace MusicalSprite.Editor
                 arenaRight.name = "ArenaRight";
             }
             arenaRight.transform.position = new Vector3(4f, -0.05f, 0f);
-            arenaRight.transform.localScale = new Vector3(8f, 0.1f, 9f);
+            arenaRight.transform.localScale = new Vector3(8f, 0.1f, 7.5f);
             SetMaterial(arenaRight, blueMat);
 
             // 删除旧的 ArenaBase 避免重叠
@@ -233,7 +234,7 @@ namespace MusicalSprite.Editor
             GameObject centerLineGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             centerLineGo.name = "CenterLine";
             centerLineGo.transform.position = new Vector3(0f, 0.5f, 0f);
-            centerLineGo.transform.localScale = new Vector3(0.2f, 1f, 9f);
+            centerLineGo.transform.localScale = new Vector3(0.2f, 1f, 7.5f);
             SetMaterial(centerLineGo, pinkMat);
             BattleCenterLine centerLine = centerLineGo.AddComponent<BattleCenterLine>();
             centerLine.leftGround = arenaLeft.transform;
@@ -296,8 +297,14 @@ namespace MusicalSprite.Editor
             scoreManager.leftSpawner = leftSpawner;
             scoreManager.rightSpawner = rightSpawner;
 
-            ScoreDisplay leftScore = CreateScoreDisplay("ScoreLeft", new Vector3(-6f, 5.5f, 0f), ComboGreen);
-            ScoreDisplay rightScore = CreateScoreDisplay("ScoreRight", new Vector3(6f, 5.5f, 0f), ProtagonistYellow);
+            // 顶部血条 UI（必须先创建，分数会挂在它的 Canvas 下）
+            GameObject hpCanvas = CreateHPBars(scoreManager);
+
+            // 分数显示：右移 40 / 左移 40、上移 14 回血条中线、放大 1.1 倍
+            ScoreDisplay leftScore = CreateScreenScoreDisplay("ScoreLeft", hpCanvas.transform,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(380f, -15f), ComboGreen, TextAnchor.MiddleLeft);
+            ScoreDisplay rightScore = CreateScreenScoreDisplay("ScoreRight", hpCanvas.transform,
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-380f, -15f), ProtagonistYellow, TextAnchor.MiddleRight);
             scoreManager.leftScoreDisplay = leftScore;
             scoreManager.rightScoreDisplay = rightScore;
             gameManager.scoreManager = scoreManager;
@@ -350,8 +357,11 @@ namespace MusicalSprite.Editor
             BattleVisualsController visuals = gm.AddComponent<BattleVisualsController>();
             visuals.leftSpawner = leftSpawner;
             visuals.rightSpawner = rightSpawner;
-            visuals.leftComboDisplay = CreateComboDisplay("ComboLeft", new Vector3(-4f, 2.5f, 0f), ArenaRed);
-            visuals.rightComboDisplay = CreateComboDisplay("ComboRight", new Vector3(4f, 2.5f, 0f), ArenaBlue);
+            // 连击数字放在场地中央靠内侧区域（图中绿色方形示意位置），比原来更小
+            visuals.leftComboDisplay = CreateComboDisplay("ComboLeft", hpCanvas.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-200f, 0f), ArenaRed);
+            visuals.rightComboDisplay = CreateComboDisplay("ComboRight", hpCanvas.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, 0f), ArenaBlue);
 
             // 左侧乐队
             Transform leftBand = CreateBandFormation("LeftBand", -1f, leftSpawner, bandMemberMat, protagonistMat, indicatorActiveMat, indicatorIdleMat);
@@ -476,7 +486,7 @@ namespace MusicalSprite.Editor
             }
             // 判定线高度为 0.05，底面贴地，中心高度为 0.025。
             go.transform.position = new Vector3(pos.x, 0.025f, pos.z);
-            go.transform.localScale = new Vector3(0.1f, 0.05f, 9f);
+            go.transform.localScale = new Vector3(0.1f, 0.05f, 7.5f);
             SetMaterial(go, mat);
         }
 
@@ -486,9 +496,10 @@ namespace MusicalSprite.Editor
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (prefab != null) return prefab;
 
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             go.name = "Note";
-            go.transform.localScale = new Vector3(0.6f, 0.12f, 0.6f);
+            // 圆柱基准半径 0.5、高度 1；缩放到半径 0.45（比原方块半宽 0.3 大 50%）、高度 0.12
+            go.transform.localScale = new Vector3(0.9f, 0.12f, 0.9f);
             SetMaterial(go, mat);
 
             // 确保有 Note 组件
@@ -543,29 +554,32 @@ namespace MusicalSprite.Editor
             if (rend != null) rend.material = mat;
         }
 
-        private static ComboDisplay CreateComboDisplay(string name, Vector3 position, Color color)
+        private static ComboDisplay CreateComboDisplay(string name, Transform canvas,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Color color)
         {
+            // 改为 ScreenSpaceOverlay 下的普通 UI 子对象，彻底去除透视变形
             GameObject root = new GameObject(name);
-            root.transform.position = position;
+            root.transform.SetParent(canvas, false);
 
-            Canvas canvas = root.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-            if (Camera.main != null)
-                root.transform.rotation = Quaternion.LookRotation(root.transform.position - Camera.main.transform.position);
-
-            root.transform.localScale = Vector3.one * 0.03f;
+            RectTransform rt = root.AddComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = new Vector2(200f, 100f);
 
             GameObject textGo = new GameObject("Text");
-            textGo.transform.SetParent(root.transform);
-            textGo.transform.localPosition = Vector3.zero;
-            textGo.transform.localScale = Vector3.one;
+            textGo.transform.SetParent(root.transform, false);
 
             RectTransform rect = textGo.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(300f, 160f);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
 
             Text uiText = textGo.AddComponent<Text>();
             uiText.text = "";
-            uiText.fontSize = 120;
+            uiText.fontSize = 70;
             uiText.alignment = TextAnchor.MiddleCenter;
             uiText.color = color;
             uiText.font = GetUIFont();
@@ -615,6 +629,52 @@ namespace MusicalSprite.Editor
             outline.effectDistance = new Vector2(4f, 4f);
 
             ScoreDisplay display = root.AddComponent<ScoreDisplay>();
+            display.scoreText = uiText;
+            return display;
+        }
+
+        private static ScoreDisplay CreateScreenScoreDisplay(string name, Transform canvas,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Color color, TextAnchor alignment = TextAnchor.MiddleCenter)
+        {
+            // 作为 HPBarCanvas 下的 UI 子对象，但额外挂一个子 Canvas 并 overrideSorting，
+            // 确保分数显示在血条之上，避免被血条背景/填充遮挡。
+            GameObject root = new GameObject(name);
+            root.transform.SetParent(canvas, false);
+
+            RectTransform rt = root.AddComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot = anchorMin;
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = new Vector2(330f, 61f); // 放大 1.1 倍
+
+            // 子 Canvas：保持与父 Canvas 同模式，但提升 sortingOrder
+            Canvas childCanvas = root.AddComponent<Canvas>();
+            childCanvas.overrideSorting = true;
+            childCanvas.sortingOrder = 10;
+
+            GameObject textGo = new GameObject("Text");
+            textGo.transform.SetParent(root.transform, false);
+
+            RectTransform textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            Text uiText = textGo.AddComponent<Text>();
+            uiText.text = "0";
+            uiText.fontSize = 57; // 放大 1.1 倍
+            uiText.alignment = alignment;
+            uiText.color = color;
+            uiText.font = GetUIFont();
+
+            Outline outline = textGo.AddComponent<Outline>();
+            outline.effectColor = Color.black;
+            outline.effectDistance = new Vector2(3f, 3f);
+
+            ScoreDisplay display = root.AddComponent<ScoreDisplay>();
+            display.isScreenSpace = true;
             display.scoreText = uiText;
             return display;
         }
@@ -736,6 +796,105 @@ namespace MusicalSprite.Editor
                     }
                 }
             }
+        }
+
+        private static GameObject CreateHPBars(ScoreManager scoreManager)
+        {
+            // 屏幕空间画布
+            GameObject canvasGo = new GameObject("HPBarCanvas");
+            Canvas canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
+
+            CanvasScaler scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            // 左血条：左上角
+            CreateHPBar(canvasGo.transform, "HPBarLeft", scoreManager, 0,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -30f),
+                new Color(0.9f, 0.2f, 0.2f, 1f));
+
+            // 右血条：右上角
+            CreateHPBar(canvasGo.transform, "HPBarRight", scoreManager, 1,
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -30f),
+                new Color(0.2f, 0.3f, 0.9f, 1f));
+
+            return canvasGo;
+        }
+
+        private static void CreateHPBar(Transform canvas, string name, ScoreManager scoreManager, int side,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Color fillColor)
+        {
+            GameObject root = new GameObject(name);
+            root.transform.SetParent(canvas, false);
+
+            RectTransform rootRect = root.AddComponent<RectTransform>();
+            rootRect.anchorMin = anchorMin;
+            rootRect.anchorMax = anchorMax;
+            rootRect.pivot = anchorMin;
+            rootRect.anchoredPosition = anchoredPos;
+            rootRect.sizeDelta = new Vector2(300f, 30f);
+
+            // 黑色外框：比血槽稍大，形成边框
+            GameObject borderGo = new GameObject("Border");
+            borderGo.transform.SetParent(root.transform, false);
+            RectTransform borderRect = borderGo.AddComponent<RectTransform>();
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.offsetMin = new Vector2(-4f, -4f);
+            borderRect.offsetMax = new Vector2(4f, 4f);
+            Image borderImg = borderGo.AddComponent<Image>();
+            borderImg.color = Color.black;
+
+            // 背景（空血槽内部）
+            GameObject bgGo = new GameObject("Background");
+            bgGo.transform.SetParent(root.transform, false);
+            RectTransform bgRect = bgGo.AddComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.offsetMin = Vector2.zero;
+            bgRect.offsetMax = Vector2.zero;
+            Image bgImg = bgGo.AddComponent<Image>();
+            bgImg.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+
+            // 填充：血量下降时通过 RectTransform 锚点控制宽度
+            GameObject fillGo = new GameObject("Fill");
+            fillGo.transform.SetParent(root.transform, false);
+            RectTransform fillRect = fillGo.AddComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            Image fillImg = fillGo.AddComponent<Image>();
+            fillImg.type = Image.Type.Simple;
+            fillImg.color = fillColor;
+
+            // 血量文字
+            GameObject textGo = new GameObject("Text");
+            textGo.transform.SetParent(root.transform, false);
+            RectTransform textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            Text hpText = textGo.AddComponent<Text>();
+            hpText.text = "300/300";
+            hpText.fontSize = 18;
+            hpText.alignment = TextAnchor.MiddleCenter;
+            hpText.color = Color.white;
+            hpText.font = GetUIFont();
+            Outline outline = textGo.AddComponent<Outline>();
+            outline.effectColor = Color.black;
+            outline.effectDistance = new Vector2(1f, 1f);
+
+            HPBarDisplay display = root.AddComponent<HPBarDisplay>();
+            display.side = side;
+            display.scoreManager = scoreManager;
+            display.fillImage = fillImg;
+            display.hpText = hpText;
         }
 
         private static int ExtractLaneIndex(string name)
