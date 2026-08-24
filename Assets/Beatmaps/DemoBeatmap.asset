@@ -13,749 +13,2093 @@ MonoBehaviour:
   m_Name: DemoBeatmap
   m_EditorClassIdentifier: 
   notes:
-  - time: 2.3815377
-    lane: 2
-    side: 0
-  - time: 2.3815377
-    lane: 2
-    side: 1
-  - time: 2.6899178
-    lane: 0
-    side: 0
-  - time: 2.6899178
-    lane: 0
-    side: 1
-  - time: 3.1317449
+  - time: 2.2153814
     lane: 1
     side: 0
-  - time: 3.1317449
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 2.2153814
     lane: 1
     side: 1
-  - time: 3.5398831
-    lane: 0
-    side: 0
-  - time: 3.5398831
-    lane: 0
-    side: 1
-  - time: 3.7251031
-    lane: 2
-    side: 0
-  - time: 3.7251031
-    lane: 2
-    side: 1
-  - time: 3.938607
-    lane: 2
-    side: 0
-  - time: 3.938607
-    lane: 2
-    side: 1
-  - time: 4.2382164
-    lane: 3
-    side: 0
-  - time: 4.2382164
-    lane: 3
-    side: 1
-  - time: 4.5662236
-    lane: 0
-    side: 1
-  - time: 4.5662236
-    lane: 0
-    side: 0
-  - time: 5.9407554
-    lane: 0
-    side: 0
-  - time: 5.9407554
-    lane: 0
-    side: 1
-  - time: 6.8928795
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 2.43718
     lane: 1
     side: 0
-  - time: 6.8928795
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 2.43718
     lane: 1
     side: 1
-  - time: 7.1228385
-    lane: 3
-    side: 0
-  - time: 7.1228385
-    lane: 3
-    side: 1
-  - time: 7.345053
-    lane: 2
-    side: 0
-  - time: 7.345053
-    lane: 2
-    side: 1
-  - time: 7.706662
-    lane: 3
-    side: 0
-  - time: 7.706662
-    lane: 3
-    side: 1
-  - time: 9.200424
-    lane: 2
-    side: 0
-  - time: 9.200424
-    lane: 2
-    side: 1
-  - time: 9.41468
-    lane: 3
-    side: 1
-  - time: 9.41468
-    lane: 3
-    side: 0
-  - time: 9.667812
-    lane: 1
-    side: 1
-  - time: 9.667812
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 2.6276503
     lane: 1
     side: 0
-  - time: 10.519978
-    lane: 1
-    side: 0
-  - time: 10.519978
-    lane: 1
-    side: 1
-  - time: 11.0164
-    lane: 3
-    side: 0
-  - time: 11.0164
-    lane: 3
-    side: 1
-  - time: 11.94824
-    lane: 1
-    side: 0
-  - time: 11.94824
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 2.6276503
     lane: 1
     side: 1
-  - time: 12.301575
-    lane: 3
-    side: 0
-  - time: 12.301575
-    lane: 3
-    side: 1
-  - time: 12.810786
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 2.9437757
     lane: 1
     side: 0
-  - time: 12.810786
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 2.9437757
     lane: 1
     side: 1
-  - time: 13.436049
-    lane: 2
-    side: 0
-  - time: 13.436049
-    lane: 2
-    side: 1
-  - time: 14.044079
-    lane: 3
-    side: 0
-  - time: 14.044079
-    lane: 3
-    side: 1
-  - time: 14.313051
-    lane: 1
-    side: 1
-  - time: 14.313051
-    lane: 1
-    side: 0
-  - time: 15.077628
-    lane: 3
-    side: 0
-  - time: 15.077628
-    lane: 3
-    side: 1
-  - time: 15.407942
-    lane: 1
-    side: 0
-  - time: 15.407942
-    lane: 1
-    side: 1
-  - time: 15.672508
-    lane: 2
-    side: 0
-  - time: 15.672508
-    lane: 2
-    side: 1
-  - time: 16.012318
-    lane: 2
-    side: 0
-  - time: 16.012318
-    lane: 2
-    side: 1
-  - time: 16.273867
-    lane: 0
-    side: 0
-  - time: 16.273867
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 3.1507213
     lane: 0
     side: 1
-  - time: 16.561405
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 3.1507213
     lane: 0
     side: 0
-  - time: 16.561405
-    lane: 0
-    side: 1
-  - time: 17.044546
-    lane: 3
-    side: 1
-  - time: 17.044546
-    lane: 3
-    side: 0
-  - time: 17.403526
-    lane: 3
-    side: 0
-  - time: 17.403526
-    lane: 3
-    side: 1
-  - time: 18.093685
-    lane: 3
-    side: 0
-  - time: 18.093685
-    lane: 3
-    side: 1
-  - time: 18.741808
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 3.9167335
     lane: 0
     side: 0
-  - time: 18.741808
+    type: 1
+    holdDuration: 1.0450056
+    holdEndLane: 3
+  - time: 3.9167335
     lane: 0
     side: 1
-  - time: 19.212992
+    type: 1
+    holdDuration: 1.0450056
+    holdEndLane: 3
+  - time: 4.1578307
+    lane: 3
+    side: 0
+    type: 1
+    holdDuration: 0.55073833
+    holdEndLane: 2
+  - time: 4.1578307
+    lane: 3
+    side: 1
+    type: 1
+    holdDuration: 0.55073833
+    holdEndLane: 2
+  - time: 4.3678074
     lane: 1
     side: 0
-  - time: 19.212992
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 4.3678074
     lane: 1
     side: 1
-  - time: 19.69196
-    lane: 0
-    side: 0
-  - time: 19.69196
-    lane: 0
-    side: 1
-  - time: 20.325075
-    lane: 0
-    side: 0
-  - time: 20.325075
-    lane: 0
-    side: 1
-  - time: 20.783417
-    lane: 0
-    side: 1
-  - time: 20.783417
-    lane: 0
-    side: 0
-  - time: 20.978207
-    lane: 2
-    side: 0
-  - time: 20.978207
-    lane: 2
-    side: 1
-  - time: 21.246044
-    lane: 3
-    side: 0
-  - time: 21.246044
-    lane: 3
-    side: 1
-  - time: 21.56144
-    lane: 3
-    side: 0
-  - time: 21.56144
-    lane: 3
-    side: 1
-  - time: 22.177736
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 4.6587334
     lane: 1
     side: 0
-  - time: 22.177736
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 4.6587334
     lane: 1
     side: 1
-  - time: 22.441319
-    lane: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 4.996645
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 4.996645
+    lane: 2
     side: 0
-  - time: 22.441319
-    lane: 1
-    side: 1
-  - time: 22.963684
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 5.3572545
     lane: 3
     side: 0
-  - time: 22.963684
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 5.3572545
     lane: 3
     side: 1
-  - time: 23.360016
-    lane: 1
-    side: 0
-  - time: 23.360016
-    lane: 1
-    side: 1
-  - time: 23.847696
-    lane: 1
-    side: 1
-  - time: 23.847696
-    lane: 1
-    side: 0
-  - time: 24.23543
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 5.658889
     lane: 0
     side: 0
-  - time: 24.23543
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 5.658889
     lane: 0
     side: 1
-  - time: 24.585182
-    lane: 0
-    side: 0
-  - time: 24.585182
-    lane: 0
-    side: 1
-  - time: 24.878294
-    lane: 2
-    side: 0
-  - time: 24.878294
-    lane: 2
-    side: 1
-  - time: 25.302586
-    lane: 0
-    side: 0
-  - time: 25.302586
-    lane: 0
-    side: 1
-  - time: 25.766441
-    lane: 3
-    side: 0
-  - time: 25.766441
-    lane: 3
-    side: 1
-  - time: 26.08905
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 5.871105
     lane: 1
     side: 0
-  - time: 26.08905
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 5.871105
     lane: 1
     side: 1
-  - time: 26.48247
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 6.0783463
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 6.0783463
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 6.326001
     lane: 1
     side: 1
-  - time: 26.48247
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 6.326001
     lane: 1
     side: 0
-  - time: 26.71153
-    lane: 3
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 6.776706
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 6.776706
+    lane: 0
     side: 1
-  - time: 26.71153
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 7.087943
     lane: 3
     side: 0
-  - time: 27.18203
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 7.087943
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 7.4487743
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 7.4487743
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 7.7527556
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 7.7527556
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.048174
     lane: 1
     side: 0
-  - time: 27.18203
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.048174
     lane: 1
     side: 1
-  - time: 27.837816
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.292651
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.292651
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.779177
     lane: 3
     side: 0
-  - time: 27.837816
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.779177
     lane: 3
     side: 1
-  - time: 28.131552
-    lane: 3
-    side: 0
-  - time: 28.131552
-    lane: 3
-    side: 1
-  - time: 28.528204
-    lane: 2
-    side: 0
-  - time: 28.528204
-    lane: 2
-    side: 1
-  - time: 29.279812
-    lane: 2
-    side: 0
-  - time: 29.279812
-    lane: 2
-    side: 1
-  - time: 29.632275
-    lane: 2
-    side: 0
-  - time: 29.632275
-    lane: 2
-    side: 1
-  - time: 30.377674
-    lane: 2
-    side: 0
-  - time: 30.377674
-    lane: 2
-    side: 1
-  - time: 30.752264
-    lane: 1
-    side: 1
-  - time: 30.752264
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.967642
     lane: 1
     side: 0
-  - time: 30.967176
-    lane: 2
-    side: 0
-  - time: 30.967176
-    lane: 2
-    side: 1
-  - time: 31.351498
-    lane: 3
-    side: 0
-  - time: 31.351498
-    lane: 3
-    side: 1
-  - time: 31.780113
-    lane: 0
-    side: 0
-  - time: 31.780113
-    lane: 0
-    side: 1
-  - time: 32.09566
-    lane: 3
-    side: 0
-  - time: 32.09566
-    lane: 3
-    side: 1
-  - time: 32.37608
-    lane: 1
-    side: 0
-  - time: 32.37608
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 8.967642
     lane: 1
     side: 1
-  - time: 32.675537
-    lane: 1
-    side: 0
-  - time: 32.675537
-    lane: 1
-    side: 1
-  - time: 33.073845
-    lane: 0
-    side: 1
-  - time: 33.073845
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 9.256141
     lane: 0
     side: 0
-  - time: 33.477898
-    lane: 1
-    side: 0
-  - time: 33.477898
-    lane: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 9.256141
+    lane: 0
     side: 1
-  - time: 33.766758
-    lane: 1
-    side: 0
-  - time: 33.766758
-    lane: 1
-    side: 1
-  - time: 34.044167
-    lane: 3
-    side: 0
-  - time: 34.044167
-    lane: 3
-    side: 1
-  - time: 34.942593
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 9.4781065
     lane: 2
     side: 0
-  - time: 34.942593
+    type: 1
+    holdDuration: 0.6090747
+    holdEndLane: 0
+  - time: 9.4781065
     lane: 2
     side: 1
-  - time: 35.19835
-    lane: 1
-    side: 0
-  - time: 35.19835
+    type: 1
+    holdDuration: 0.6090747
+    holdEndLane: 0
+  - time: 9.851323
     lane: 1
     side: 1
-  - time: 35.401608
-    lane: 3
-    side: 0
-  - time: 35.401608
-    lane: 3
-    side: 1
-  - time: 35.88038
-    lane: 2
-    side: 0
-  - time: 35.88038
-    lane: 2
-    side: 1
-  - time: 36.148582
-    lane: 0
-    side: 1
-  - time: 36.148582
-    lane: 0
-    side: 0
-  - time: 37.057583
-    lane: 3
-    side: 0
-  - time: 37.057583
-    lane: 3
-    side: 1
-  - time: 37.400764
-    lane: 2
-    side: 0
-  - time: 37.400764
-    lane: 2
-    side: 1
-  - time: 37.65143
-    lane: 2
-    side: 0
-  - time: 37.65143
-    lane: 2
-    side: 1
-  - time: 37.879765
-    lane: 0
-    side: 0
-  - time: 37.879765
-    lane: 0
-    side: 1
-  - time: 38.328056
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 9.851323
     lane: 1
     side: 0
-  - time: 38.328056
-    lane: 1
-    side: 1
-  - time: 38.592316
-    lane: 1
-    side: 0
-  - time: 38.592316
-    lane: 1
-    side: 1
-  - time: 38.891006
-    lane: 2
-    side: 1
-  - time: 38.891006
-    lane: 2
-    side: 0
-  - time: 39.320614
-    lane: 3
-    side: 1
-  - time: 39.320614
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.060408
     lane: 3
     side: 0
-  - time: 39.7854
-    lane: 2
-    side: 0
-  - time: 39.7854
-    lane: 2
-    side: 1
-  - time: 40.34458
-    lane: 2
-    side: 0
-  - time: 40.34458
-    lane: 2
-    side: 1
-  - time: 40.68979
-    lane: 3
-    side: 0
-  - time: 40.68979
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.060408
     lane: 3
     side: 1
-  - time: 41.05868
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.307111
     lane: 0
     side: 0
-  - time: 41.05868
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.307111
     lane: 0
     side: 1
-  - time: 41.466415
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.489541
     lane: 2
     side: 0
-  - time: 41.466415
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.489541
     lane: 2
     side: 1
-  - time: 41.975304
-    lane: 2
-    side: 0
-  - time: 41.975304
-    lane: 2
-    side: 1
-  - time: 42.23021
-    lane: 0
-    side: 1
-  - time: 42.23021
-    lane: 0
-    side: 0
-  - time: 43.345516
-    lane: 3
-    side: 1
-  - time: 43.345516
-    lane: 3
-    side: 0
-  - time: 44.09126
-    lane: 2
-    side: 0
-  - time: 44.09126
-    lane: 2
-    side: 1
-  - time: 44.71957
-    lane: 0
-    side: 0
-  - time: 44.71957
-    lane: 0
-    side: 1
-  - time: 45.117588
-    lane: 3
-    side: 0
-  - time: 45.117588
-    lane: 3
-    side: 1
-  - time: 45.373753
-    lane: 0
-    side: 0
-  - time: 45.373753
-    lane: 0
-    side: 1
-  - time: 45.57268
-    lane: 3
-    side: 0
-  - time: 45.57268
-    lane: 3
-    side: 1
-  - time: 46.02793
-    lane: 0
-    side: 0
-  - time: 46.02793
-    lane: 0
-    side: 1
-  - time: 46.38265
-    lane: 1
-    side: 1
-  - time: 46.38265
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.770241
     lane: 1
     side: 0
-  - time: 47.442253
-    lane: 3
-    side: 0
-  - time: 47.442253
-    lane: 3
-    side: 1
-  - time: 47.623177
-    lane: 3
-    side: 0
-  - time: 47.623177
-    lane: 3
-    side: 1
-  - time: 48.05695
-    lane: 3
-    side: 0
-  - time: 48.05695
-    lane: 3
-    side: 1
-  - time: 49.02898
-    lane: 3
-    side: 0
-  - time: 49.02898
-    lane: 3
-    side: 1
-  - time: 49.44117
-    lane: 1
-    side: 0
-  - time: 49.44117
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 10.770241
     lane: 1
     side: 1
-  - time: 49.859795
-    lane: 0
-    side: 0
-  - time: 49.859795
-    lane: 0
-    side: 1
-  - time: 50.168217
-    lane: 2
-    side: 0
-  - time: 50.168217
-    lane: 2
-    side: 1
-  - time: 50.939922
-    lane: 3
-    side: 1
-  - time: 50.939922
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 11.172217
     lane: 3
     side: 0
-  - time: 51.433098
+    type: 1
+    holdDuration: 0.63701534
+    holdEndLane: 2
+  - time: 11.172217
+    lane: 3
+    side: 1
+    type: 1
+    holdDuration: 0.63701534
+    holdEndLane: 2
+  - time: 11.637184
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 11.637184
     lane: 3
     side: 0
-  - time: 51.433098
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 12.099825
+    lane: 3
+    side: 0
+    type: 1
+    holdDuration: 1.1901041
+    holdEndLane: 2
+  - time: 12.099825
     lane: 3
     side: 1
-  - time: 52.199963
-    lane: 0
+    type: 1
+    holdDuration: 1.1901041
+    holdEndLane: 2
+  - time: 12.472847
+    lane: 3
     side: 0
-  - time: 52.199963
-    lane: 0
+    type: 1
+    holdDuration: 0.51765525
+    holdEndLane: 3
+  - time: 12.472847
+    lane: 3
     side: 1
-  - time: 52.399124
-    lane: 0
-    side: 0
-  - time: 52.399124
-    lane: 0
-    side: 1
-  - time: 53.06948
-    lane: 0
-    side: 0
-  - time: 53.06948
-    lane: 0
-    side: 1
-  - time: 53.382313
-    lane: 0
-    side: 0
-  - time: 53.382313
-    lane: 0
-    side: 1
-  - time: 53.67449
-    lane: 2
-    side: 0
-  - time: 53.67449
-    lane: 2
-    side: 1
-  - time: 53.86654
-    lane: 1
-    side: 1
-  - time: 53.86654
+    type: 1
+    holdDuration: 0.51765525
+    holdEndLane: 3
+  - time: 12.738621
     lane: 1
     side: 0
-  - time: 54.53991
-    lane: 2
-    side: 1
-  - time: 54.53991
-    lane: 2
-    side: 0
-  - time: 54.722324
-    lane: 2
-    side: 0
-  - time: 54.722324
-    lane: 2
-    side: 1
-  - time: 55.14751
-    lane: 0
-    side: 0
-  - time: 55.14751
-    lane: 0
-    side: 1
-  - time: 55.39305
-    lane: 2
-    side: 0
-  - time: 55.39305
-    lane: 2
-    side: 1
-  - time: 55.60024
-    lane: 2
-    side: 0
-  - time: 55.60024
-    lane: 2
-    side: 1
-  - time: 56.080456
-    lane: 1
-    side: 0
-  - time: 56.080456
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 12.738621
     lane: 1
     side: 1
-  - time: 56.41081
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 12.925638
     lane: 3
     side: 0
-  - time: 56.41081
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 12.925638
     lane: 3
     side: 1
-  - time: 56.952877
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 13.234354
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 13.234354
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 13.5051565
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 13.5051565
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 13.770353
+    lane: 0
+    side: 0
+    type: 1
+    holdDuration: 1.1007699
+    holdEndLane: 2
+  - time: 13.770353
+    lane: 0
+    side: 1
+    type: 1
+    holdDuration: 1.1007699
+    holdEndLane: 2
+  - time: 14.314385
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 14.314385
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 14.683176
+    lane: 3
+    side: 0
+    type: 1
+    holdDuration: 0.7006564
+    holdEndLane: 0
+  - time: 14.683176
+    lane: 3
+    side: 1
+    type: 1
+    holdDuration: 0.7006564
+    holdEndLane: 0
+  - time: 15.005893
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 15.005893
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 15.360339
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 15.360339
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 15.632852
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 15.632852
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 16.416492
     lane: 2
     side: 0
-  - time: 56.952877
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 16.416492
     lane: 2
     side: 1
-  - time: 57.6606
-    lane: 3
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 16.610296
+    lane: 2
     side: 0
-  - time: 57.6606
+    type: 1
+    holdDuration: 0.51075983
+    holdEndLane: 3
+  - time: 16.610296
+    lane: 2
+    side: 1
+    type: 1
+    holdDuration: 0.51075983
+    holdEndLane: 3
+  - time: 16.898762
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 16.898762
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 17.139288
     lane: 3
     side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 17.139288
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 17.357111
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 17.357111
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 18.108639
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 18.108639
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 18.814348
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 18.814348
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.209599
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.209599
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.390707
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.390707
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.665546
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.665546
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.913597
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 19.913597
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 20.398527
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 20.398527
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 20.722021
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 20.722021
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 21.163815
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 21.163815
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 21.571262
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 21.571262
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 21.980494
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 21.980494
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 22.519161
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 22.519161
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 22.707306
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 22.707306
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 22.890501
+    lane: 2
+    side: 0
+    type: 1
+    holdDuration: 0.7307212
+    holdEndLane: 1
+  - time: 22.890501
+    lane: 2
+    side: 1
+    type: 1
+    holdDuration: 0.7307212
+    holdEndLane: 1
+  - time: 23.140324
+    lane: 0
+    side: 0
+    type: 1
+    holdDuration: 0.4446519
+    holdEndLane: 0
+  - time: 23.140324
+    lane: 0
+    side: 1
+    type: 1
+    holdDuration: 0.4446519
+    holdEndLane: 0
+  - time: 23.38622
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 23.38622
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 23.62599
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 23.62599
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.01068
+    lane: 1
+    side: 0
+    type: 1
+    holdDuration: 0.5979835
+    holdEndLane: 1
+  - time: 24.01068
+    lane: 1
+    side: 1
+    type: 1
+    holdDuration: 0.5979835
+    holdEndLane: 1
+  - time: 24.206884
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.206884
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.433075
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.433075
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.613935
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.613935
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.96715
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 24.96715
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 25.274872
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 25.274872
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 25.574991
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 25.574991
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 25.87727
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 25.87727
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 26.10065
+    lane: 0
+    side: 1
+    type: 1
+    holdDuration: 0.46928626
+    holdEndLane: 0
+  - time: 26.10065
+    lane: 0
+    side: 0
+    type: 1
+    holdDuration: 0.46928626
+    holdEndLane: 0
+  - time: 26.515635
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 26.515635
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 26.700762
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 26.700762
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 26.936005
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 26.936005
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 27.203093
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 27.203093
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 27.972122
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 27.972122
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 28.166676
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 28.166676
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 28.675558
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 28.675558
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 28.867891
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 28.867891
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 29.14076
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 29.14076
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 29.584356
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 29.584356
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 29.934103
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 29.934103
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 30.271076
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 30.271076
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 30.527723
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 30.527723
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 30.71279
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 30.71279
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.033474
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.033474
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.213497
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.213497
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.444275
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.444275
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.936253
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 31.936253
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 32.351654
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 32.351654
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 32.763706
+    lane: 3
+    side: 0
+    type: 1
+    holdDuration: 0.42249852
+    holdEndLane: 0
+  - time: 32.763706
+    lane: 3
+    side: 1
+    type: 1
+    holdDuration: 0.42249852
+    holdEndLane: 0
+  - time: 33.13762
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 33.13762
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 33.442085
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 33.442085
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 33.698536
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 33.698536
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 33.937557
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 33.937557
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 34.187263
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 34.187263
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 34.615337
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 34.615337
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 34.87384
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 34.87384
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 35.261856
+    lane: 1
+    side: 0
+    type: 1
+    holdDuration: 0.99628884
+    holdEndLane: 3
+  - time: 35.261856
+    lane: 1
+    side: 1
+    type: 1
+    holdDuration: 0.99628884
+    holdEndLane: 3
+  - time: 35.531807
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 35.531807
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 35.92589
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 35.92589
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 36.679787
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 36.679787
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 36.908558
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 36.908558
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 37.408386
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 37.408386
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 37.860634
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 37.860634
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 38.1548
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 38.1548
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 38.376865
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 38.376865
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 38.727215
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 38.727215
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 39.220684
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 39.220684
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 39.67511
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 39.67511
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 39.886562
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 39.886562
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 40.156178
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 40.156178
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 40.884087
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 40.884087
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.223312
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.223312
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.44298
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.44298
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.694546
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.694546
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.90616
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 41.90616
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.201523
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.201523
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.40106
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.40106
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.60752
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.60752
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.79777
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 42.79777
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 43.1582
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 43.1582
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 43.44297
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 43.44297
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 43.823917
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 43.823917
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.119072
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.119072
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.370903
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.370903
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.551193
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.551193
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.753387
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 44.753387
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 45.031685
+    lane: 0
+    side: 0
+    type: 1
+    holdDuration: 0.7521807
+    holdEndLane: 0
+  - time: 45.031685
+    lane: 0
+    side: 1
+    type: 1
+    holdDuration: 0.7521807
+    holdEndLane: 0
+  - time: 45.31613
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 45.31613
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 45.713173
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 45.713173
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 46.033913
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 46.033913
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 46.585033
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 46.585033
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 46.856956
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 46.856956
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 47.270973
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 47.270973
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 47.598175
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 47.598175
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 48.23254
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 48.23254
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 48.559124
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 48.559124
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 48.94582
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 48.94582
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 49.449738
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 49.449738
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 49.702938
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 49.702938
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 49.900852
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 49.900852
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.23883
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.23883
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.471676
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.471676
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.702873
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.702873
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.92928
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 50.92928
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 51.244713
+    lane: 2
+    side: 0
+    type: 1
+    holdDuration: 0.63660276
+    holdEndLane: 2
+  - time: 51.244713
+    lane: 2
+    side: 1
+    type: 1
+    holdDuration: 0.63660276
+    holdEndLane: 2
+  - time: 51.51873
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 51.51873
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 51.863552
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 51.863552
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.156536
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.156536
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.34356
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.34356
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.53497
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.53497
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.932823
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 52.932823
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 53.25904
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 53.25904
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 53.571686
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 53.571686
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 53.75864
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 53.75864
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.00907
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.00907
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.209312
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.209312
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.51694
+    lane: 0
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.51694
+    lane: 0
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.734604
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.734604
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.92138
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 54.92138
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 55.325703
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 55.325703
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 55.655045
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 55.655045
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 55.940914
+    lane: 1
+    side: 1
+    type: 1
+    holdDuration: 0.9903763
+    holdEndLane: 2
+  - time: 55.940914
+    lane: 1
+    side: 0
+    type: 1
+    holdDuration: 0.9903763
+    holdEndLane: 2
+  - time: 56.327126
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 56.327126
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 56.721947
+    lane: 1
+    side: 0
+    type: 1
+    holdDuration: 0.5542604
+    holdEndLane: 1
+  - time: 56.721947
+    lane: 1
+    side: 1
+    type: 1
+    holdDuration: 0.5542604
+    holdEndLane: 1
+  - time: 57.044064
+    lane: 1
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 57.044064
+    lane: 1
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 57.454704
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 57.454704
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 57.655758
+    lane: 3
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 57.655758
+    lane: 3
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 57.974358
+    lane: 2
+    side: 0
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
+  - time: 57.974358
+    lane: 2
+    side: 1
+    type: 0
+    holdDuration: 0
+    holdEndLane: 0
   bpm: 128
   audioClip: {fileID: 0}

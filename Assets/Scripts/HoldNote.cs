@@ -37,7 +37,17 @@ public class HoldNote : MonoBehaviour
     public Vector3 hitPosTail;
     public Conductor conductor;
     public BattleCenterLine centerLine;
+    public float judgeLineX; // 判定线（hitPoint）的 x，作为"消失边界"
     public bool isAI = false;
+
+    [Tooltip("跨轨 Hold 判定时，允许按住轨道与\"当前所需轨道\"相差多少条轨道。1.0 表示允许相邻整数轨道，越大越宽松。")]
+    public float laneTolerance = 1.0f;
+
+    [Tooltip("收尾后透明度淡出时长（秒）。在此期间音符继续移动并被判定线裁剪。")]
+    public float fadeDuration = 0.35f;
+
+    [Tooltip("收尾后最大存活时长（秒），防止超长 Hold 断连时久久不消失。")]
+    public float maxFadeLife = 0.6f;
 
     public enum HoldState { Waiting, Holding, Done }
     public HoldState state = HoldState.Waiting;
@@ -96,6 +106,7 @@ public class HoldNote : MonoBehaviour
 
     /// <summary>
     /// 创建 URP/Lit 材质并写入颜色。Standard fallback 仅用于极端情况。
+    /// 默认开启透明混合，以便收尾时可以整体淡出。
     /// </summary>
     private Material CreateColoredMaterial(Color c)
     {
@@ -104,7 +115,44 @@ public class HoldNote : MonoBehaviour
         mat.color = c;
         mat.SetFloat("_Metallic", 0f);
         mat.SetFloat("_Smoothness", 0f);
+
+        // 让 URP/Lit 支持 Alpha 淡出（透明渲染）
+        mat.SetFloat("_Surface", 1f); // 1 = Transparent
+        mat.SetOverrideTag("RenderType", "Transparent");
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
         return mat;
+    }
+
+    private void SetAlpha(float a)
+    {
+        if (headMat != null)
+        {
+            Color c = headMat.color; c.a = a; headMat.color = c;
+        }
+        if (tailMat != null)
+        {
+            Color c = tailMat.color; c.a = a; tailMat.color = c;
+        }
+        for (int i = 0; i < barSegmentMats.Count; i++)
+        {
+            if (barSegmentMats[i] == null) continue;
+            Color c = barSegmentMats[i].color; c.a = a; barSegmentMats[i].color = c;
+        }
+    }
+
+    private void ResetBarToBlack()
+    {
+        for (int i = 0; i < barSegmentMats.Count; i++)
+        {
+            if (barSegmentMats[i] == null) continue;
+            barSegmentMats[i].color = Color.black;
+        }
     }
 
     void Start()
@@ -120,6 +168,8 @@ public class HoldNote : MonoBehaviour
         head.SetParent(transform, false);
         var hmf = headGo.AddComponent<MeshFilter>(); hmf.sharedMesh = CylinderMesh;
         headRend = headGo.AddComponent<MeshRenderer>();
+        headRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        headRend.receiveShadows = false;
         headMat = CreateColoredMaterial(Color.black);
         headRend.material = headMat;
 
@@ -129,6 +179,8 @@ public class HoldNote : MonoBehaviour
         tail.SetParent(transform, false);
         var tmf = tailGo.AddComponent<MeshFilter>(); tmf.sharedMesh = CylinderMesh;
         tailRend = tailGo.AddComponent<MeshRenderer>();
+        tailRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        tailRend.receiveShadows = false;
         tailMat = CreateColoredMaterial(Color.black);
         tailRend.material = tailMat;
 
@@ -147,6 +199,8 @@ public class HoldNote : MonoBehaviour
             segT.SetParent(transform, false);
             var smf = segGo.AddComponent<MeshFilter>(); smf.sharedMesh = CylinderMesh;
             var sRend = segGo.AddComponent<MeshRenderer>();
+            sRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            sRend.receiveShadows = false;
             var sMat = CreateColoredMaterial(Color.black);
             sRend.material = sMat;
             segT.localScale = new Vector3(baseBarSegmentRadius, 1f, baseBarSegmentRadius);
@@ -203,42 +257,62 @@ public class HoldNote : MonoBehaviour
             // 长按进度：决定 bar 已经变白到哪一段
             UpdateBarColor(songTime);
 
-            // 可见性：逐元素判断——粉杠"已越过"的部分才显示，没越过的不显示。
-            // 这样粉杠扫过多少就显示多少，而不是等整条都穿过才突然出现。
+            // 可见性：按元素"前沿"是否越过粉杠决定显示，避免长 segment 中心越过后
+            // 后半段还戳在粉杠前面，导致长 Hold 看起来"隐身失效"。
             float cx = centerLine != null ? centerLine.currentX : 0f;
-            visible = true; // 进入过粉杠流程后保持 true，便于淡出阶段识别
+            visible = true;
 
-            bool headPast = side == 0 ? head.position.x < cx : head.position.x > cx;
-            bool tailPast = side == 0 ? tail.position.x < cx : tail.position.x > cx;
-            if (headRend != null) headRend.enabled = headPast;
-            if (tailRend != null) tailRend.enabled = tailPast;
+            if (headRend != null) headRend.enabled = IsBeyondLine(head.position.x, cx);
+            if (tailRend != null) tailRend.enabled = IsBeyondLine(tail.position.x, cx);
 
             for (int i = 0; i < barSegments.Count; i++)
             {
                 if (barSegmentRends[i] == null) continue;
-                bool segPast = side == 0 ? barSegments[i].position.x < cx : barSegments[i].position.x > cx;
-                barSegmentRends[i].enabled = segPast;
+                barSegmentRends[i].enabled = IsSegmentLeadingBeyondLine(i, cx);
             }
         }
         else
         {
-            // 淡出（缩小各子物体，保持各自中心位置不变）
-            // 进入淡出时把所有部分强制显示，让"完成 / 断连"有完整的缩小淡出反馈
-            if (headRend != null) headRend.enabled = true;
-            if (tailRend != null) tailRend.enabled = true;
-            SetBarEnabled(true);
-
+            // 收尾（完成 / 断连 / 漏击）：音符继续按原速度移动，
+            // 用"判定线 judgeLineX"作为固定的消失边界——已越过判定线的部分（从头/最越线端）被裁掉，
+            // 未越线的部分保持显示，于是自然形成"从头向尾逐渐消失"，且只发生在判定线那一侧。
+            // 收尾第一帧把 bar 重置为黑色，避免白色命中反馈久久残留。
+            if (fadeTimer <= 0f)
+            {
+                ResetBarToBlack();
+            }
             fadeTimer += Time.deltaTime;
-            float t = Mathf.Clamp01(fadeTimer / 0.2f);
-            float s = 1f - t;
-            head.localScale = baseHead * s;
-            tail.localScale = baseTail * s;
+
+            float tHead = Mathf.Clamp01((songTime - (headTime - leadTime)) / exitLeadTimeHead);
+            head.position = Vector3.Lerp(spawnPosHead, exitPosHead, tHead);
+            head.position = new Vector3(head.position.x, rideY, head.position.z);
+
+            float tTail = Mathf.Clamp01((songTime - (tailTime - leadTime)) / exitLeadTimeTail);
+            tail.position = Vector3.Lerp(spawnPosTail, exitPosTail, tTail);
+            tail.position = new Vector3(tail.position.x, rideY, tail.position.z);
+
+            UpdateBarSegments();
+
+            float judgeX = judgeLineX;
+            if (headRend != null) headRend.enabled = !IsBeyondLine(head.position.x, judgeX);
+            if (tailRend != null) tailRend.enabled = !IsBeyondLine(tail.position.x, judgeX);
             for (int i = 0; i < barSegments.Count; i++)
             {
-                var ls = barSegments[i].localScale;
-                barSegments[i].localScale = new Vector3(baseBarSegmentRadius * s, ls.y * s, baseBarSegmentRadius * s);
+                if (barSegmentRends[i] == null) continue;
+                barSegmentRends[i].enabled = !IsSegmentLeadingBeyondLine(i, judgeX);
             }
-            if (t >= 1f)
+
+            // 完成：整体透明度淡出，让 tail 白反馈自然消失；
+            // 断连/漏击：保持不透明，只通过判定线裁剪让音符"正常飞过终点后逐渐消失"，避免留下地面阴影。
+            if (!broken)
+            {
+                float alpha = 1f - Mathf.Clamp01(fadeTimer / fadeDuration);
+                SetAlpha(alpha);
+            }
+
+            // 结束条件：整根越过判定线，或超过最大存活时间
+            bool allGone = side == 0 ? tail.position.x < judgeX : tail.position.x > judgeX;
+            if (allGone || fadeTimer > maxFadeLife)
             {
                 finished = true;
                 Destroy(gameObject);
@@ -302,6 +376,54 @@ public class HoldNote : MonoBehaviour
     }
 
     /// <summary>
+    /// 某点是否已经越过指定竖直线（向判定线/粉杠方向前进）。
+    /// side==0（左玩家，音符从右向左飞）：x < lineX 表示已越过。
+    /// side==1（右玩家，音符从左向右飞）：x > lineX 表示已越过。
+    /// </summary>
+    private bool IsBeyondLine(float x, float lineX)
+    {
+        return side == 0 ? x < lineX : x > lineX;
+    }
+
+    /// <summary>
+    /// 第 i 段 bar 的"前沿"是否已经越过指定竖直线。
+    /// 使用 segment 在 x 轴上的实际范围（而非仅中心点），让裁剪边界更贴近粉杠/判定线。
+    /// </summary>
+    private bool IsSegmentLeadingBeyondLine(int i, float lineX)
+    {
+        if (i < 0 || i >= barSegments.Count || barSegmentRends[i] == null) return false;
+
+        Vector3 dir = tail.position - head.position;
+        float totalLen = dir.magnitude;
+        if (totalLen < 0.001f)
+        {
+            return IsBeyondLine(barSegments[i].position.x, lineX);
+        }
+
+        Vector3 normDir = dir.normalized;
+        float halfLenX = (barSegments[i].localScale.y * 0.5f) * Mathf.Abs(normDir.x);
+        float minX = barSegments[i].position.x - halfLenX;
+        float maxX = barSegments[i].position.x + halfLenX;
+
+        // side==0 音符向左飞，前沿是 segment 的左端（minX）；
+        // side==1 音符向右飞，前沿是 segment 的右端（maxX）。
+        return side == 0 ? minX < lineX : maxX > lineX;
+    }
+
+    /// <summary>
+    /// 检查当前是否有按住的轨道与目标浮点轨道相差在 laneTolerance 以内。
+    /// </summary>
+    private bool IsAnyHeldLaneClose(float targetLane)
+    {
+        if (spawner == null) return false;
+        foreach (int held in spawner.heldLanes)
+        {
+            if (Mathf.Abs(held - targetLane) <= laneTolerance) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// 判定状态机。由自身 Update 每帧调用。
     /// </summary>
     private void Judge()
@@ -320,12 +442,13 @@ public class HoldNote : MonoBehaviour
         if (state == HoldState.Holding)
         {
             float prog = Mathf.Clamp01((songTime - headTime) / Mathf.Max(tailTime - headTime, 0.0001f));
-            int reqLane = Mathf.RoundToInt(Mathf.Lerp(headLane, tailLane, prog));
+            float reqLaneF = Mathf.Lerp(headLane, tailLane, prog);
 
-            // 按住检测：当前所需音轨必须被按住（AI 模式跳过）
+            // 按住检测：当前"所需轨道"是一个浮点插值；只要玩家按住的某个轨道在容差范围内即算命中。
+            // 这样跨轨 Hold 不需要精确对准某个整数轨道，拖动时更宽容。
             if (!isAI)
             {
-                bool held = spawner != null && spawner.heldLanes.Contains(reqLane);
+                bool held = spawner != null && IsAnyHeldLaneClose(reqLaneF);
                 if (!held) breakTimer += Time.deltaTime;
                 else breakTimer = 0f;
 
@@ -368,6 +491,9 @@ public class HoldNote : MonoBehaviour
         state = HoldState.Done;
         broken = true;
         fadeTimer = 0f;
+        // 漏击/断连时立即把命中反馈（白色 head、已变白 bar）恢复黑色，避免残留白色残影
+        if (headMat != null) headMat.color = Color.black;
+        ResetBarToBlack();
         onJudge?.Invoke(side, headLane, "MISS", hitPosHead);
     }
 
@@ -376,6 +502,8 @@ public class HoldNote : MonoBehaviour
         state = HoldState.Done;
         broken = true;
         fadeTimer = 0f;
+        if (headMat != null) headMat.color = Color.black;
+        ResetBarToBlack();
         onJudge?.Invoke(side, headLane, "MISS", hitPosHead);
     }
 

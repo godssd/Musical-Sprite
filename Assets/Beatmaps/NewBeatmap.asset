@@ -13,53 +13,53 @@ MonoBehaviour:
   m_Name: NewBeatmap
   m_EditorClassIdentifier: 
   notes:
-  - time: 0.46875
+  - time: 5.625
     lane: 0
     side: 0
-  - time: 0.46875
+    type: 1
+    holdDuration: 2.6083336
+    holdEndLane: 3
+  - time: 5.625
     lane: 0
     side: 1
-  - time: 0.46875
-    lane: 1
-    side: 0
-  - time: 0.46875
-    lane: 1
-    side: 1
-  - time: 0.46875
-    lane: 2
-    side: 0
-  - time: 0.46875
-    lane: 2
-    side: 1
-  - time: 0.46875
+    type: 1
+    holdDuration: 2.6083336
+    holdEndLane: 3
+  - time: 10.78125
     lane: 3
     side: 0
-  - time: 0.46875
+    type: 1
+    holdDuration: 0.9854164
+    holdEndLane: 0
+  - time: 10.78125
     lane: 3
     side: 1
-  - time: 3.75
-    lane: 0
-    side: 0
-  - time: 3.75
-    lane: 0
-    side: 1
-  - time: 3.75
-    lane: 1
-    side: 0
-  - time: 3.75
-    lane: 1
-    side: 1
-  - time: 3.75
-    lane: 2
-    side: 0
-  - time: 3.75
-    lane: 2
-    side: 1
-  - time: 3.75
+    type: 1
+    holdDuration: 0.9854164
+    holdEndLane: 0
+  - time: 13.59375
     lane: 3
     side: 0
-  - time: 3.75
+    type: 1
+    holdDuration: 0.2
+    holdEndLane: 0
+  - time: 13.59375
     lane: 3
     side: 1
+    type: 1
+    holdDuration: 0.2
+    holdEndLane: 0
+  - time: 15
+    lane: 3
+    side: 0
+    type: 1
+    holdDuration: 5.552561
+    holdEndLane: 0
+  - time: 15
+    lane: 3
+    side: 1
+    type: 1
+    holdDuration: 5.552561
+    holdEndLane: 0
   bpm: 128
   audioClip: {fileID: 0}

@@ -24,9 +24,11 @@ public class TouchInputManager : MonoBehaviour
     [Tooltip("是否在控制台打印触摸信息")]
     public bool logTouches = false;
 
-    // 跟踪每个活跃触摸当前所在轨道，松开时正确上报对应轨道
+    // 跟踪每个活跃触摸当前所在侧/轨道，拖拽换轨时自动松开旧轨、按下新轨
     private Dictionary<int, int> touchLane = new Dictionary<int, int>();
+    private Dictionary<int, int> touchSide = new Dictionary<int, int>();
     private int mouseLane = -1;
+    private int mouseSide = -1;
 
     void Update()
     {
@@ -40,37 +42,112 @@ public class TouchInputManager : MonoBehaviour
             Touch touch = Input.GetTouch(i);
             if (touch.phase == TouchPhase.Began)
             {
-                int lane = ProcessPointerDown(touch.position);
-                touchLane[touch.fingerId] = lane;
+                if (TryResolvePointer(touch.position, out int side, out int lane))
+                {
+                    TriggerLaneDown(side, lane);
+                    touchSide[touch.fingerId] = side;
+                    touchLane[touch.fingerId] = lane;
+                }
+            }
+            else if (touch.phase == TouchPhase.Moved)
+            {
+                bool hasOldSide = touchSide.TryGetValue(touch.fingerId, out int oldSide);
+                bool hasOldLane = touchLane.TryGetValue(touch.fingerId, out int oldLane);
+
+                if (TryResolvePointer(touch.position, out int newSide, out int newLane))
+                {
+                    if (hasOldSide && hasOldLane && (newSide != oldSide || newLane != oldLane))
+                    {
+                        TriggerLaneUp(oldSide, oldLane);
+                        TriggerLaneDown(newSide, newLane);
+                        touchSide[touch.fingerId] = newSide;
+                        touchLane[touch.fingerId] = newLane;
+                    }
+                    else if (hasOldSide && !hasOldLane)
+                    {
+                        // 之前拖出 TouchZone，现在重新进入：直接按下
+                        TriggerLaneDown(newSide, newLane);
+                        touchSide[touch.fingerId] = newSide;
+                        touchLane[touch.fingerId] = newLane;
+                    }
+                }
+                else if (hasOldLane)
+                {
+                    // 拖到没有 TouchZone 的区域：松开旧轨，但保留 side 跟踪，再次进入时重新按下
+                    TriggerLaneUp(oldSide, oldLane);
+                    touchLane.Remove(touch.fingerId);
+                }
             }
             else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
-                if (touchLane.TryGetValue(touch.fingerId, out int lane))
+                if (touchSide.TryGetValue(touch.fingerId, out int side) &&
+                    touchLane.TryGetValue(touch.fingerId, out int lane))
                 {
-                    ProcessPointerUp(lane);
+                    TriggerLaneUp(side, lane);
+                    touchSide.Remove(touch.fingerId);
                     touchLane.Remove(touch.fingerId);
                 }
             }
         }
 
-        // 编辑器/PC 测试：鼠标左键
+        // 编辑器/PC 测试：鼠标左键（支持按住并拖动换轨）
         if (Input.GetMouseButtonDown(0))
         {
-            mouseLane = ProcessPointerDown(Input.mousePosition);
+            if (TryResolvePointer(Input.mousePosition, out int side, out int lane))
+            {
+                TriggerLaneDown(side, lane);
+                mouseSide = side;
+                mouseLane = lane;
+            }
+        }
+        else if (Input.GetMouseButton(0) && mouseLane >= 0)
+        {
+            if (TryResolvePointer(Input.mousePosition, out int newSide, out int newLane))
+            {
+                if (newSide != mouseSide || newLane != mouseLane)
+                {
+                    TriggerLaneUp(mouseSide, mouseLane);
+                    TriggerLaneDown(newSide, newLane);
+                    mouseSide = newSide;
+                    mouseLane = newLane;
+                }
+            }
+            else
+            {
+                TriggerLaneUp(mouseSide, mouseLane);
+                mouseLane = -1;
+            }
+        }
+        else if (Input.GetMouseButton(0) && mouseLane < 0 && mouseSide >= 0)
+        {
+            // 按住鼠标拖出 TouchZone 后又拖回来：重新按下
+            if (TryResolvePointer(Input.mousePosition, out int newSide, out int newLane))
+            {
+                TriggerLaneDown(newSide, newLane);
+                mouseSide = newSide;
+                mouseLane = newLane;
+            }
         }
         else if (Input.GetMouseButtonUp(0))
         {
             if (mouseLane >= 0)
             {
-                ProcessPointerUp(mouseLane);
+                TriggerLaneUp(mouseSide, mouseLane);
                 mouseLane = -1;
+                mouseSide = -1;
             }
         }
     }
 
-    private int ProcessPointerDown(Vector2 screenPos)
+    /// <summary>
+    /// 射线检测返回当前指针落在哪个 side/lane 的 TouchZone 上。
+    /// 没命中返回 false。
+    /// </summary>
+    private bool TryResolvePointer(Vector2 screenPos, out int side, out int lane)
     {
-        if (gameCamera == null) return -1;
+        side = -1;
+        lane = -1;
+        if (gameCamera == null) return false;
 
         Ray ray = gameCamera.ScreenPointToRay(screenPos);
         if (Physics.Raycast(ray, out RaycastHit hit, 100f, touchLayer))
@@ -80,23 +157,30 @@ public class TouchInputManager : MonoBehaviour
 
             if (zone != null)
             {
-                if (logTouches)
-                    Debug.Log($"Touch Down side={zone.side} lane={zone.lane}");
-
-                if (zone.side == 0 && leftSpawner != null)
-                    leftSpawner.TriggerLaneDown(zone.lane);
-                else if (zone.side == 1 && rightSpawner != null)
-                    rightSpawner.TriggerLaneDown(zone.lane);
-                return zone.lane;
+                side = zone.side;
+                lane = zone.lane;
+                return true;
             }
         }
-        return -1;
+        return false;
     }
 
-    private void ProcessPointerUp(int lane)
+    private void TriggerLaneDown(int side, int lane)
     {
-        // lane 仅用于本地跟踪；具体 side 由 spawner 自身记录，这里分别对两侧下发松开
-        if (leftSpawner != null) leftSpawner.TriggerLaneUp(lane);
-        if (rightSpawner != null) rightSpawner.TriggerLaneUp(lane);
+        if (logTouches)
+            Debug.Log($"Touch Down side={side} lane={lane}");
+
+        if (side == 0 && leftSpawner != null)
+            leftSpawner.TriggerLaneDown(lane);
+        else if (side == 1 && rightSpawner != null)
+            rightSpawner.TriggerLaneDown(lane);
+    }
+
+    private void TriggerLaneUp(int side, int lane)
+    {
+        if (side == 0 && leftSpawner != null)
+            leftSpawner.TriggerLaneUp(lane);
+        else if (side == 1 && rightSpawner != null)
+            rightSpawner.TriggerLaneUp(lane);
     }
 }

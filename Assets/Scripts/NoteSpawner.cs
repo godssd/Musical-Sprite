@@ -274,6 +274,7 @@ public class NoteSpawner : MonoBehaviour
         hn.hitPosTail = hitPosTail;
         hn.conductor = conductor;
         hn.centerLine = centerLine;
+        hn.judgeLineX = hitPosHead.x; // 判定线 x：作为 Hold 收尾时的"消失边界"
         hn.goodWindow = goodWindow;
         hn.perfectWindow = perfectWindow;
         hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p);

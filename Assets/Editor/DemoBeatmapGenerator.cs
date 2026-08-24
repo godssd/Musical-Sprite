@@ -8,7 +8,7 @@ using System.Collections.Generic;
 ///
 /// 随机约束：
 /// - BPM 固定 128。
-/// - 音符总数在 100~180 之间随机。
+/// - 音符总数在 30~180 之间随机。
 /// - 每个音符的出现时刻与所在轨道（0~3）完全随机。
 /// - 同一侧（side）相邻音符最小间隔 0.18s，避免重叠到无法判定。
 /// - 左右玩家谱面完全相同（同一份 time/lane 同时写入 side=0 与 side=1）。
@@ -16,7 +16,7 @@ using System.Collections.Generic;
 public class DemoBeatmapGenerator : MonoBehaviour
 {
     private const float Bpm = 128f;
-    private const int MinNotes = 100;
+    private const int MinNotes = 30;
     private const int MaxNotes = 180;
     private const float LeadIn = 2f;          // 前奏留白（秒）
     private const float MinGap = 0.18f;        // 同侧相邻音符最小时间间隔（秒）
@@ -28,7 +28,7 @@ public class DemoBeatmapGenerator : MonoBehaviour
     }
 
     // 保留旧签名给调试窗口调用：totalBeats 仅用于决定时间窗口下限长度，
-    // 实际音符数量由随机约束（100~180）决定。
+    // 实际音符数量由随机约束（30~180）决定。
     public static BeatmapSO CreateDemoBeatmapWithBeats(int totalBeats)
     {
         BeatmapSO beatmap = ScriptableObject.CreateInstance<BeatmapSO>();
