@@ -20,8 +20,9 @@ public class NoteData
     /// - Linked：连轨音符，固定覆盖相邻两轨，不区分大小圈。
     ///   holdLanes/holdTimes 为空时是双轨点击；有至少两个节点时是双轨长按，
     ///   holdLanes[i] 表示节点覆盖的第一条轨道，节点变化即可形成跨轨。
+    /// - ChainTap：连点音符，普通大点击外形，chainTapCount 表示需要连续命中的次数。
     /// </summary>
-    public enum NoteType { Tap = 0, Hold = 1, SmallTap = 2, Linked = 3 }
+    public enum NoteType { Tap = 0, Hold = 1, SmallTap = 2, Linked = 3, ChainTap = 4 }
 
     [Tooltip("该音符应该被击中的时间（秒，从歌曲开头算）。对 Hold 而言是起始音符(head)抵达判定线的时刻")]
     public float time;
@@ -34,6 +35,9 @@ public class NoteData
 
     [Tooltip("音符类型：Tap=单击，Hold=单轨长按，SmallTap=旧版小型点击，Linked=固定覆盖相邻两轨的点击/长按")]
     public NoteType type = NoteType.Tap;
+
+    [Tooltip("连点音符需要连续命中的次数。仅 ChainTap 使用，最小为 1")]
+    public int chainTapCount = 3;
 
     // ===== 旧版单段 Hold 字段（保留以兼容现有谱面/编辑器，新多节点 Hold 优先读取 holdLanes/holdTimes） =====
     [Tooltip("（兼容字段）仅旧版 2 节点 Hold 使用：长按持续时长（秒）。结束音符(tail)抵达判定线时刻 = time + holdDuration")]

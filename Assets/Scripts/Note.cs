@@ -10,6 +10,10 @@ public class Note : MonoBehaviour
     [HideInInspector] public int laneSpan = 1; // Linked 固定为 2，覆盖 lane 与 lane+1
     [HideInInspector] public int side;        // 0=左玩家要接，1=右玩家要接
     [HideInInspector] public bool isSmallTap = false; // 小型点击音符：半径更小、统一 PASS
+    [HideInInspector] public bool isChainTap = false;
+    [HideInInspector] public int chainTapRemaining = 0;
+    [HideInInspector] public int chainTapRequired = 0;
+    [HideInInspector] public bool chainTapWaiting = false;
     [HideInInspector] public bool isHit = false;
     [HideInInspector] public bool isVisible = false;
 
@@ -58,5 +62,36 @@ public class Note : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    public bool IsChainTapExpired(float songTime)
+    {
+        NoteMover mover = GetComponent<NoteMover>();
+        return isChainTap && chainTapWaiting && mover != null && mover.ChainTapDeadline >= 0f
+            && songTime > mover.ChainTapDeadline;
+    }
+
+    /// <summary>
+    /// 连点音符的一次有效命中。未到 0 时保留在 activeNotes 中，归零时才结束。
+    /// </summary>
+    public bool RegisterChainTapHit(float songTime, string rank)
+    {
+        if (!isChainTap || isHit || chainTapRemaining <= 0) return false;
+
+        chainTapWaiting = true;
+        chainTapRemaining = Mathf.Max(0, chainTapRemaining - 1);
+        finalRank = rank;
+
+        NoteMover mover = GetComponent<NoteMover>();
+        if (mover != null)
+            mover.RegisterChainTapHit(chainTapRemaining, chainTapRequired, songTime);
+
+        if (chainTapRemaining <= 0)
+        {
+            isHit = true;
+            if (mover != null) mover.CompleteChainTap();
+            return true;
+        }
+        return false;
     }
 }

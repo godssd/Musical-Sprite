@@ -28,6 +28,18 @@ public class NoteMover : MonoBehaviour
     private MeshRenderer rend;
     private Material noteMaterial;
     private Color originalColor;
+    private bool isChainTap = false;
+    private TextMesh chainCountText;
+    private MeshRenderer chainCountRenderer;
+    private float chainTapDeadline = -1f;
+    private float chainTapHoldDuration = 0.4f;
+
+    public float ChainTapDeadline => chainTapDeadline;
+
+    public void SetChainTapHoldDuration(float seconds)
+    {
+        chainTapHoldDuration = Mathf.Max(0.05f, seconds);
+    }
 
     private bool animationPlaying = false;
     private bool missing = false;     // 已进入漏击缩小状态
@@ -145,7 +157,8 @@ public class NoteMover : MonoBehaviour
 
     public void Init(Vector3 spawnPos, Vector3 hitPos, float hitTime, float leadTime,
                      Conductor conductor, BattleCenterLine centerLine, float noteRadius = 0.45f,
-                     bool isSmallTap = false, int laneSpan = 1, float laneSpacing = 1f)
+                     bool isSmallTap = false, int laneSpan = 1, float laneSpacing = 1f,
+                     bool isChainTap = false, int chainTapCount = 0, float chainTapHoldDuration = 0.4f)
     {
         this.spawnPos = spawnPos;
         this.hitPos = hitPos;
@@ -153,6 +166,9 @@ public class NoteMover : MonoBehaviour
         this.leadTime = leadTime;
         this.conductor = conductor;
         this.centerLine = centerLine;
+        this.isChainTap = isChainTap;
+        this.chainTapHoldDuration = Mathf.Max(0.05f, chainTapHoldDuration);
+        chainTapDeadline = -1f;
 
         // 小型点击音符：半径只有基础 Tap 的 65%
         if (isSmallTap) noteRadius *= 0.65f;
@@ -161,6 +177,9 @@ public class NoteMover : MonoBehaviour
         note = GetComponent<Note>();
         note.hitTime = hitTime;
         note.isSmallTap = isSmallTap;
+        note.isChainTap = isChainTap;
+        note.chainTapRequired = isChainTap ? Mathf.Max(1, chainTapCount) : 0;
+        note.chainTapRemaining = note.chainTapRequired;
         startTime = hitTime - leadTime;
 
         // 计算越过判定线的终点（再往前 1.5 个单位，保证能完全穿过）
@@ -203,11 +222,22 @@ public class NoteMover : MonoBehaviour
             // 初始不可见：越过粉杠前完全隐藏
             rend.enabled = false;
         }
+
+        if (isChainTap)
+            CreateChainCountText(Mathf.Max(1, chainTapCount));
     }
 
     void Update()
     {
         if (conductor == null || animationPlaying) return;
+
+        // 连点命中后停在判定线处，直到下一次命中或超时 Miss。
+        // 超时后仍保持停留，等待 NoteSpawner 触发统一的 Miss 缩小动画。
+        if (isChainTap && chainTapDeadline >= 0f)
+        {
+            transform.position = new Vector3(hitPos.x, rideY, hitPos.z);
+            return;
+        }
 
         // 按歌曲时间做线性插值：从生成点 -> 判定线 -> 穿出
         float t = (conductor.songPosition - startTime) / exitLeadTime;
@@ -233,6 +263,7 @@ public class NoteMover : MonoBehaviour
         {
             note.isVisible = true;
             if (rend != null) rend.enabled = true;
+            if (chainCountRenderer != null) chainCountRenderer.enabled = true;
             SetAlpha(1f);
         }
 
@@ -272,6 +303,87 @@ public class NoteMover : MonoBehaviour
         animationPlaying = true;
         StopAllCoroutines();
         StartCoroutine(MissCoroutine());
+    }
+
+    public void RegisterChainTapHit(int remaining, int required, float songTime)
+    {
+        if (!isChainTap || animationPlaying) return;
+
+        chainTapDeadline = songTime + chainTapHoldDuration;
+        float progress = 1f - Mathf.Clamp01(remaining / (float)Mathf.Max(1, required));
+        SetChainBodyColor(Color.Lerp(Color.black, Color.white, progress));
+        if (chainCountText != null) chainCountText.text = remaining.ToString();
+        transform.position = new Vector3(hitPos.x, rideY, hitPos.z);
+    }
+
+    public void CompleteChainTap()
+    {
+        if (!isChainTap || animationPlaying) return;
+        chainTapDeadline = -1f;
+        animationPlaying = true;
+        StopAllCoroutines();
+        StartCoroutine(ChainClearCoroutine());
+    }
+
+    private System.Collections.IEnumerator ChainClearCoroutine()
+    {
+        const float duration = 0.6f;
+        float timer = 0f;
+        Vector3 startScale = transform.localScale;
+        Vector3 endScale = startScale * 1.15f;
+        Color startColor = noteMaterial != null ? noteMaterial.color : Color.black;
+
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            float t = Mathf.Clamp01(timer / duration);
+            if (noteMaterial != null)
+            {
+                Color c = Color.Lerp(startColor, Color.white, t);
+                c.a = 1f - t;
+                noteMaterial.color = c;
+            }
+            if (chainCountText != null)
+            {
+                Color c = chainCountText.color;
+                c.a = 1f - t;
+                chainCountText.color = c;
+            }
+            transform.localScale = Vector3.Lerp(startScale, endScale, Mathf.Sin(t * Mathf.PI * 0.5f));
+            yield return null;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void CreateChainCountText(int count)
+    {
+        GameObject textGo = new GameObject("ChainTapCount");
+        textGo.transform.SetParent(transform, false);
+        textGo.transform.localPosition = new Vector3(0f, 0.55f, 0f);
+        // TextMesh 默认朝 +Z。这里从音符底面方向朝上放置文字，
+        // 让字符的上方指向画面上方，避免额外绕法线旋转造成左右镜像。
+        textGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        // 只翻转文字面的法线，不改变字符的左右/上下方向，兼容带背面裁剪的字体材质。
+        textGo.transform.localScale = new Vector3(1f, 1f, -1f);
+
+        chainCountText = textGo.AddComponent<TextMesh>();
+        chainCountText.text = count.ToString();
+        chainCountText.anchor = TextAnchor.MiddleCenter;
+        chainCountText.alignment = TextAlignment.Center;
+        chainCountText.fontSize = 64;
+        chainCountText.characterSize = 0.04f;
+        chainCountText.color = Color.white;
+        chainCountRenderer = textGo.GetComponent<MeshRenderer>();
+        if (chainCountRenderer != null) chainCountRenderer.enabled = false;
+        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        chainCountText.font = font;
+    }
+
+    private void SetChainBodyColor(Color color)
+    {
+        if (noteMaterial != null) noteMaterial.color = color;
     }
 
     private IEnumerator HitCoroutine(string rank)
@@ -325,6 +437,12 @@ public class NoteMover : MonoBehaviour
                 c.a = Mathf.Lerp(1f, 0f, t);
                 noteMaterial.color = c;
             }
+            if (chainCountText != null)
+            {
+                Color c = chainCountText.color;
+                c.a = Mathf.Lerp(1f, 0f, t);
+                chainCountText.color = c;
+            }
 
             // 缩小到 0，配合淡出形成“穿过后快速消失”的反馈
             transform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
@@ -347,6 +465,14 @@ public class NoteMover : MonoBehaviour
         if (rend != null && note.isVisible)
         {
             rend.enabled = alpha > 0.01f;
+        }
+        if (chainCountText != null)
+        {
+            Color textColor = chainCountText.color;
+            textColor.a = alpha;
+            chainCountText.color = textColor;
+            if (chainCountRenderer != null && note.isVisible)
+                chainCountRenderer.enabled = alpha > 0.01f;
         }
     }
 }

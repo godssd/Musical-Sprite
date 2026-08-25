@@ -30,6 +30,7 @@ namespace MusicalSprite.Editor
             public int lane;
             public NoteData.NoteType type = NoteData.NoteType.Tap;
             public bool isSmallTap = false;   // SmallTap：半径更小、统一 PASS
+            public int chainTapCount = 3;      // ChainTap：需要连续命中的次数
             public float holdDuration = 0f;   // 仅旧式 2 节点 Hold：持续时长（秒）
             public int holdEndLane = 0;       // 仅旧式 2 节点 Hold：结束音符所在轨道
             // Hold / Linked 长按的节点时刻与轨道。Linked 的 lane 表示双轨中的第一轨（0-2）。
@@ -89,6 +90,8 @@ namespace MusicalSprite.Editor
         // ---------- 点击音符与连轨音符创建 ----------
         [SerializeField] private bool placeSmallTapMode = false;
         [SerializeField] private bool placeLinkedMode = false;
+        [SerializeField] private bool placeChainTapMode = false;
+        [SerializeField] private int chainTapCount = 3;
 
         // ---------- 播放预览 ----------
         private bool isPlaying;
@@ -188,9 +191,31 @@ namespace MusicalSprite.Editor
             linkingMode = EditorGUILayout.ToggleLeft("链接模式(点按成链)", linkingMode, GUILayout.Width(140));
             placeSmallTapMode = EditorGUILayout.ToggleLeft("小圈点击", placeSmallTapMode, GUILayout.Width(100));
             placeLinkedMode = EditorGUILayout.ToggleLeft("连轨音符(占相邻2轨)", placeLinkedMode, GUILayout.Width(160));
+            placeChainTapMode = EditorGUILayout.ToggleLeft("连点音符", placeChainTapMode, GUILayout.Width(90));
+            if (placeChainTapMode)
+            {
+                int inputCount = EditorGUILayout.DelayedIntField("次数", Mathf.Clamp(chainTapCount, 3, 10), GUILayout.Width(110));
+                chainTapCount = Mathf.Clamp(inputCount, 3, 10);
+            }
             pixelsPerSecond = EditorGUILayout.Slider("缩放(像素/秒)", pixelsPerSecond, 10f, 240f, GUILayout.Width(240));
             beatmapAudioClip = (AudioClip)EditorGUILayout.ObjectField("音乐素材", beatmapAudioClip, typeof(AudioClip), false, GUILayout.Width(220));
             EditorGUILayout.EndHorizontal();
+
+            if (selectedIndex >= 0 && selectedIndex < notes.Count && notes[selectedIndex].type == NoteData.NoteType.ChainTap)
+            {
+                EditorGUILayout.BeginHorizontal();
+                int currentCount = Mathf.Clamp(notes[selectedIndex].chainTapCount, 3, 10);
+                int selectedCount = EditorGUILayout.DelayedIntField("选中连点次数", currentCount, GUILayout.Width(220));
+                selectedCount = Mathf.Clamp(selectedCount, 3, 10);
+                if (selectedCount != notes[selectedIndex].chainTapCount)
+                {
+                    PushUndo();
+                    notes[selectedIndex].chainTapCount = selectedCount;
+                    chainTapCount = selectedCount;
+                    Repaint();
+                }
+                EditorGUILayout.EndHorizontal();
+            }
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("新建", GUILayout.Width(60))) NewChart();
@@ -216,6 +241,7 @@ namespace MusicalSprite.Editor
                 "普通音符：轨道区单击=加音符；拖拽=移动；右键/Delete=删除；点击刻度尺=定位播放头。\n" +
                 "链接模式（按住点击音符）：勾选后左键落节点，右键结束；松开后仍自动链接鼠标，可继续落下一个节点（普通点击=单轨节点）。\n" +
                 "连轨音符（链接模式专属）：左键按下不放并上下拖动 >=1 轨 => 制作连轨音符（覆盖拖动的相邻两轨），松开后同样自动链接鼠标；此时右键 => 变成普通的连轨点击音符。也可勾选「连轨音符」后单击生成覆盖相邻两轨的宽点击。连轨不区分大小圈。普通点击仍可用「小圈点击」区分大小。\n" +
+                "连点音符：勾选「连点音符」后单击生成普通大点击外形的连续点击音符；次数框手动输入 3-10 次，选中后可在上方修改。\n" +
                 "挂上「音乐素材」后点播放可听音校谱；保存并「调用」后，下一次「搭建完整场景」将同步播放本谱面与音乐。\n" + activeName,
                 MessageType.Info);
         }
@@ -370,6 +396,8 @@ namespace MusicalSprite.Editor
                         DrawRoundedRect(noteRect, 3f, c);
                     else
                         EditorGUI.DrawRect(noteRect, c);
+                    if (n.type == NoteData.NoteType.ChainTap)
+                        DrawChainTapCount(new Rect(x - 10f, y - 9f, 20f, 18f), n.chainTapCount);
                 }
             }
 
@@ -572,6 +600,27 @@ namespace MusicalSprite.Editor
                     dragStartMouse = e.mousePosition;
                     dragStartNoteTime = dragNote.time;
                     dragStartNoteLane = dragNote.lane;
+                }
+                else if (placeChainTapMode)
+                {
+                    float snapped = snapToBeat ? Snap(time) : time;
+                    var nn = new ChartNote
+                    {
+                        time = snapped,
+                        lane = lane,
+                        type = NoteData.NoteType.ChainTap,
+                        chainTapCount = Mathf.Clamp(chainTapCount, 3, 10)
+                    };
+                    PushUndo();
+                    notes.Add(nn);
+                    selectedIndex = notes.Count - 1;
+                    dragIndex = selectedIndex;
+                    dragNote = nn;
+                    dragStartMouse = e.mousePosition;
+                    dragStartNoteTime = nn.time;
+                    dragStartNoteLane = nn.lane;
+                    Repaint();
+                    e.Use();
                 }
                 else if (placeSmallTapMode) // 恢复普通点击音符的大小圈区分
                 {
@@ -792,6 +841,17 @@ namespace MusicalSprite.Editor
             Handles.DrawAAConvexPolygon(points);
         }
 
+        private static void DrawChainTapCount(Rect rect, int count)
+        {
+            GUIStyle style = new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 10
+            };
+            style.normal.textColor = Color.black;
+            GUI.Label(rect, Mathf.Clamp(count, 3, 10).ToString(), style);
+        }
+
         private static void DrawThickLine(Vector2 a, Vector2 b, float thickness, Color col)
         {
             Vector2 dir = b - a;
@@ -856,6 +916,9 @@ namespace MusicalSprite.Editor
                 lane = src.lane,
                 type = src.type,
                 isSmallTap = src.isSmallTap,
+                chainTapCount = src.type == NoteData.NoteType.ChainTap
+                    ? Mathf.Clamp(src.chainTapCount, 3, 10)
+                    : src.chainTapCount,
                 holdDuration = src.holdDuration,
                 holdEndLane = src.holdEndLane,
                 holdTimes = src.holdTimes == null ? null : (float[])src.holdTimes.Clone(),
@@ -1208,6 +1271,9 @@ namespace MusicalSprite.Editor
                             time = n.time,
                             lane = n.lane,
                             type = n.type,
+                            chainTapCount = n.type == NoteData.NoteType.ChainTap
+                                ? Mathf.Clamp(n.chainTapCount, 3, 10)
+                                : n.chainTapCount,
                             holdDuration = n.holdDuration,
                             holdEndLane = n.holdEndLane
                         };
@@ -1311,8 +1377,9 @@ namespace MusicalSprite.Editor
             {
                 NoteData.NoteType type = n.isSmallTap ? NoteData.NoteType.SmallTap : n.type;
                 int lane = type == NoteData.NoteType.Linked ? Mathf.Clamp(n.lane, 0, 2) : Mathf.Clamp(n.lane, 0, 3);
-                var nd0 = new NoteData { time = n.time, lane = lane, side = 0, type = type };
-                var nd1 = new NoteData { time = n.time, lane = lane, side = 1, type = type };
+                int count = type == NoteData.NoteType.ChainTap ? Mathf.Clamp(n.chainTapCount, 3, 10) : n.chainTapCount;
+                var nd0 = new NoteData { time = n.time, lane = lane, side = 0, type = type, chainTapCount = count };
+                var nd1 = new NoteData { time = n.time, lane = lane, side = 1, type = type, chainTapCount = count };
 
                 if (type == NoteData.NoteType.Hold || type == NoteData.NoteType.Linked)
                 {

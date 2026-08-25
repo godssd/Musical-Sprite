@@ -3,7 +3,7 @@ using UnityEditor;
 
 /// <summary>
 /// Musical Sprite 运行时调试工具。
-/// 可调整：AI 实力、音符分数、音符速度和数量、音符半径、连轨长按判定（滑动手感：滞留窗口/断连阈值/单轨容差）。
+/// 可调整：AI 实力、音符分数、音符速度和数量、音符半径、连点停留时间、连轨长按判定。
 /// 菜单：Tools > Musical Sprite > Debug Window
 ///
 /// 关键修复：之前在编辑模式修改参数后，进入 Play 模式会被重置。
@@ -34,6 +34,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private float holdSlideSettleWindow = 0.15f;
     private float holdBreakThreshold = 0.2f;
     private float holdLaneTolerance = 1.0f;
+    private float chainTapHoldDuration = 0.4f;
 
     // 过热加成（Fever / Super Fever）
     private float feverMult = 1.05f;
@@ -97,6 +98,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         holdSlideSettleWindow = EditorPrefs.GetFloat(PREFS + "holdSlideSettleWindow", holdSlideSettleWindow);
         holdBreakThreshold = EditorPrefs.GetFloat(PREFS + "holdBreakThreshold", holdBreakThreshold);
         holdLaneTolerance = EditorPrefs.GetFloat(PREFS + "holdLaneTolerance", holdLaneTolerance);
+        chainTapHoldDuration = EditorPrefs.GetFloat(PREFS + "chainTapHoldDuration", chainTapHoldDuration);
         feverMult = EditorPrefs.GetFloat(PREFS + "feverMult", feverMult);
         superMult = EditorPrefs.GetFloat(PREFS + "superMult", superMult);
         feverThresh = EditorPrefs.GetInt(PREFS + "feverThresh", feverThresh);
@@ -124,6 +126,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorPrefs.SetFloat(PREFS + "holdSlideSettleWindow", holdSlideSettleWindow);
         EditorPrefs.SetFloat(PREFS + "holdBreakThreshold", holdBreakThreshold);
         EditorPrefs.SetFloat(PREFS + "holdLaneTolerance", holdLaneTolerance);
+        EditorPrefs.SetFloat(PREFS + "chainTapHoldDuration", chainTapHoldDuration);
         EditorPrefs.SetFloat(PREFS + "feverMult", feverMult);
         EditorPrefs.SetFloat(PREFS + "superMult", superMult);
         EditorPrefs.SetInt(PREFS + "feverThresh", feverThresh);
@@ -162,6 +165,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             holdSlideSettleWindow = spawner.holdSlideSettleWindow;
             holdBreakThreshold = spawner.holdBreakThreshold;
             holdLaneTolerance = spawner.holdLaneTolerance;
+            chainTapHoldDuration = spawner.chainTapHoldDuration;
         }
 
         // 过热加成：优先读运行时 FeverManager.config，否则读 FeverConfigSO 资产
@@ -302,6 +306,9 @@ public class MusicalSpriteDebugWindow : EditorWindow
         holdLaneTolerance = EditorGUILayout.Slider("单轨容差 laneTolerance", holdLaneTolerance, 0f, 2f);
         EditorGUILayout.HelpBox("仅普通单轨 Hold 的跟随容差：按住轨道与当前插值轨道相差多少条轨道内算命中。", MessageType.None);
 
+        chainTapHoldDuration = EditorGUILayout.Slider("连点停留时间 (秒)", chainTapHoldDuration, 0.05f, 2f);
+        EditorGUILayout.HelpBox("连点音符每次命中后等待下一次点击的时间。默认 0.4 秒，超时后判定 MISS。", MessageType.None);
+
         EditorGUILayout.EndVertical();
     }
 
@@ -405,6 +412,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             s.holdSlideSettleWindow = holdSlideSettleWindow;
             s.holdBreakThreshold = holdBreakThreshold;
             s.holdLaneTolerance = holdLaneTolerance;
+            s.chainTapHoldDuration = Mathf.Max(0.05f, chainTapHoldDuration);
             s.RecomputeWindows();
             EditorUtility.SetDirty(s);
         }
@@ -418,6 +426,10 @@ public class MusicalSpriteDebugWindow : EditorWindow
             h.laneTolerance = holdLaneTolerance;
             EditorUtility.SetDirty(h);
         }
+
+        NoteMover[] liveNotes = FindObjectsByType<NoteMover>(FindObjectsSortMode.None);
+        foreach (var n in liveNotes)
+            n.SetChainTapHoldDuration(chainTapHoldDuration);
 
         // 4. 过热加成：写入运行时 FeverManager.config（即时生效）+ 所有 FeverConfigSO 资产（持久化）
         FeverManager fever = FindFirstObjectByType<FeverManager>();
@@ -448,7 +460,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             Debug.Log("[MS Debug] 参数已应用：aimOffset=" + aiAimOffset + " miss=" + aiMissChance +
                       " perfect=" + perfectScore + " good=" + goodScore + " clear=" + clearScore +
                       " pass=" + passScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius +
-                      " slideSettle=" + holdSlideSettleWindow + " breakTh=" + holdBreakThreshold + " laneTol=" + holdLaneTolerance +
+                      " chainTapHold=" + chainTapHoldDuration + " slideSettle=" + holdSlideSettleWindow + " breakTh=" + holdBreakThreshold + " laneTol=" + holdLaneTolerance +
                       " | Fever 系数=" + feverMult + " Super 系数=" + superMult + " Fever阈值=" + feverThresh + " Super阈值=" + superThresh);
     }
 

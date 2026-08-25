@@ -5,8 +5,9 @@ using System.Collections.Generic;
 /// <summary>
 /// 对手（AI）输入模拟器。
 /// 按谱面自动在 Perfect 时机触发对应轨道的输入，让对战看起来有来有回。
-/// 支持 Tap、Hold 与 Linked：
+/// 支持 Tap、ChainTap、Hold 与 Linked：
 /// - Tap：在目标时刻按下并随即松开（fromAI 标记，避免误占 heldLanes）。
+/// - ChainTap：在首次命中后按固定间隔继续点击，间隔小于停留时间，避免中途超时。
 /// - Hold：在 head 时刻按下（fromAI，自动完成长按），在 tail 时刻松开。
 /// - Linked：同时按下相邻两轨；多节点 Linked 由 AI 自动完成，到 tail 时同时松开两轨。
 /// 挂载在任意物体上，GameManager 会自动把它关联到 rightSpawner。
@@ -36,6 +37,8 @@ public class OpponentInput : MonoBehaviour
     public event Action<int> OnPressLane;
 
     private int pressIndex = 0;                                  // 遍历 head / tap 事件
+    private List<(float time, int lane)> chainTapPressEvents = new List<(float, int)>();
+    private int chainTapPressIndex = 0;                          // 遍历连点后续按下事件
     private List<(float time, int lane)> releaseEvents = new List<(float, int)>();
     private int releaseIndex = 0;                                // 遍历 hold 的 tail 松开事件
 
@@ -52,15 +55,26 @@ public class OpponentInput : MonoBehaviour
     private void BuildSchedule()
     {
         releaseEvents.Clear();
+        chainTapPressEvents.Clear();
         releaseIndex = 0;
         pressIndex = 0;
+        chainTapPressIndex = 0;
 
         if (beatmap == null || beatmap.notes == null) return;
 
         foreach (var n in beatmap.notes)
         {
             if (n.side != spawner.side) continue;
-            if (n.type == NoteData.NoteType.Hold)
+            if (n.type == NoteData.NoteType.ChainTap)
+            {
+                // 第一次点击由普通 head/tap 调度处理；这里只登记后续点击。
+                // 使用停留时间的一小部分作为间隔，确保每次点击都能刷新倒计时。
+                float interval = Mathf.Max(0.05f, spawner.chainTapHoldDuration * 0.35f);
+                int count = Mathf.Max(1, n.chainTapCount);
+                for (int i = 1; i < count; i++)
+                    chainTapPressEvents.Add((n.time + i * interval, n.lane));
+            }
+            else if (n.type == NoteData.NoteType.Hold)
             {
                 float[] times = n.GetHoldTimes();
                 int[] lanes = n.GetHoldLanes();
@@ -80,6 +94,7 @@ public class OpponentInput : MonoBehaviour
                 releaseEvents.Add((tailTime, startLane + 1));
             }
         }
+        chainTapPressEvents.Sort((a, b) => a.time.CompareTo(b.time));
         releaseEvents.Sort((a, b) => a.time.CompareTo(b.time));
     }
 
@@ -135,7 +150,23 @@ public class OpponentInput : MonoBehaviour
             pressIndex++;
         }
 
-        // 2) 松开事件（仅 Hold 的 tail）
+        // 2) 连点音符的后续点击。它们仍走 NoteSpawner 的统一判定/计分逻辑。
+        while (chainTapPressIndex < chainTapPressEvents.Count)
+        {
+            var ev = chainTapPressEvents[chainTapPressIndex];
+            if (songTime < ev.time + aimOffset - 0.01f) break;
+
+            if (songTime <= ev.time + aimOffset + 0.2f && UnityEngine.Random.value > missChance)
+            {
+                spawner.TriggerLaneDown(ev.lane, true);
+                spawner.TriggerLaneUp(ev.lane);
+                if (showVisualFeedback) ShowOpponentPress(ev.lane);
+            }
+
+            chainTapPressIndex++;
+        }
+
+        // 3) 松开事件（仅 Hold 的 tail）
         while (releaseIndex < releaseEvents.Count)
         {
             var ev = releaseEvents[releaseIndex];

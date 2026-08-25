@@ -7,7 +7,7 @@ using System;
 /// 每个玩家各挂一个：左玩家 side=0，右玩家 side=1。
 /// 负责：按谱面生成属于自己 side 的音符、移动、判定命中/漏击、通知中线移动。
 /// 输入由外部调用 TriggerLaneDown()/TriggerLaneUp() 触发（键盘、触摸、AI 均可）。
-/// Tap 音符在 Down 时判定；Hold 音符在 Down（head 命中窗口内）起手，按住期间需保持所需轨道被按下，
+/// Tap/ChainTap 音符在 Down 时判定；Hold 音符在 Down（head 命中窗口内）起手，按住期间需保持所需轨道被按下，
 /// 到 tailTime（结束音符抵达判定线）完成，提前松开/未按住则断连。
 /// 
 /// 判定规则（基于时间窗口，单位：秒）：
@@ -17,6 +17,7 @@ using System;
 /// - perfectWindow = goodWindow * perfectRatioOfGood（默认 0.45，即 GOOD 的一半略低）。
 /// - 按键时取该轨道内 |按键时刻 - 音符目标时刻| 最小且未判定的音符。
 /// - 时间差 <= perfectWindow => PERFECT；<= goodWindow => GOOD；窗口外忽略（不扣分）。
+/// - ChainTap 首次命中后停在判定线处，每次命中刷新 chainTapHoldDuration 倒计时；超时则进入普通 MISS。
 /// - 超过 goodWindow 仍未命中 => 音符进入漏击状态，快速缩小后消失，缩小完成时出 MISS。
 /// - 反馈文字生成在对应轨道判定线处。
 /// </summary>
@@ -67,6 +68,10 @@ public class NoteSpawner : MonoBehaviour
     public float holdBreakThreshold = 0.2f;
     [Tooltip("普通单轨 Hold 跟随判定容差：按住轨道与当前插值轨道相差多少条轨道内算命中。")]
     public float holdLaneTolerance = 1.0f;
+
+    [Header("连点音符判定")]
+    [Tooltip("连点音符命中后停留等待下一次点击的时间（秒）")]
+    public float chainTapHoldDuration = 0.4f;
 
     [Header("键盘输入键位（PC 测试用）")]
     [Tooltip("每条轨道对应的按键。lane 顺序（0=最下 → 3=最上）：0=空格，1=C，2=D，3=W。与屏幕从上到下 W,D,C,空格 对应")]
@@ -159,7 +164,11 @@ public class NoteSpawner : MonoBehaviour
             var note = activeNotes[i];
             if (note.isHit) continue;
 
-            if (songTime > note.hitTime + goodWindow)
+            if (note.isChainTap && note.chainTapWaiting)
+            {
+                if (note.IsChainTapExpired(songTime)) note.Miss();
+            }
+            else if (songTime > note.hitTime + goodWindow)
             {
                 // 标记为漏击并播放“穿过后快速缩小消失”的反馈，
                 // MISS 文字等缩小完成（步骤 2b）才出现
@@ -234,6 +243,7 @@ public class NoteSpawner : MonoBehaviour
         if (spawnPoint == null || hitPoint == null) return;
 
         bool isSmallTap = data.type == NoteData.NoteType.SmallTap;
+        bool isChainTap = data.type == NoteData.NoteType.ChainTap;
         int laneSpan = data.type == NoteData.NoteType.Linked ? 2 : 1;
         int startLane = ClampLaneSpanStart(data.lane, laneSpan);
 
@@ -251,11 +261,15 @@ public class NoteSpawner : MonoBehaviour
         note.laneSpan = laneSpan;
         note.side = side;
         note.isSmallTap = isSmallTap;
+        note.isChainTap = isChainTap;
+        note.chainTapRequired = isChainTap ? Mathf.Max(1, data.chainTapCount) : 0;
+        note.chainTapRemaining = note.chainTapRequired;
 
         NoteMover mover = go.GetComponent<NoteMover>();
         if (mover == null) mover = go.AddComponent<NoteMover>();
         mover.Init(spawnPos, hitPos, data.time, leadTime, conductor, centerLine,
-            noteRadius, isSmallTap, laneSpan, laneSpacing);
+            noteRadius, isSmallTap, laneSpan, laneSpacing, isChainTap, data.chainTapCount,
+            chainTapHoldDuration);
 
         activeNotes.Add(note);
     }
@@ -380,13 +394,23 @@ public class NoteSpawner : MonoBehaviour
         foreach (var note in activeNotes)
         {
             if (!note.CoversLane(lane) || note.isHit || note.side != side) continue;
-            // 连轨点击音符（laneSpan>1）只需按覆盖的任意一条轨道即可命中（判定宽一个音轨），
-            // 因此不再要求两条轨道同时被按住；评价/MISS 与普通点击完全一致。
-            if (songTime > note.hitTime + goodWindow) continue; // 已超出窗口（将由 Update 判 MISS）
-
-            float dt = songTime - note.hitTime;
-            float absDt = Mathf.Abs(dt);
-            if (absDt > goodWindow) continue; // 窗口外（按太早），忽略这次输入
+            bool chainContinuation = note.isChainTap && note.chainTapWaiting;
+            float absDt;
+            if (chainContinuation)
+            {
+                // 连点音符停留期间不再按首次 hitTime 判定，倒计时内的每次按下都有效。
+                if (note.IsChainTapExpired(songTime)) continue;
+                absDt = 0f;
+            }
+            else
+            {
+                // 连轨点击音符（laneSpan>1）只需按覆盖的任意一条轨道即可命中，
+                // 因此不再要求两条轨道同时被按住；评价/MISS 与普通点击一致。
+                if (songTime > note.hitTime + goodWindow) continue;
+                float dt = songTime - note.hitTime;
+                absDt = Mathf.Abs(dt);
+                if (absDt > goodWindow) continue;
+            }
             if (absDt < bestAbsDt)
             {
                 bestAbsDt = absDt;
@@ -396,7 +420,8 @@ public class NoteSpawner : MonoBehaviour
 
         if (best == null) return;
 
-        // 小型点击音符：不做 PERFECT/GOOD 区分，命中统一 PASS 评价（80 分）
+        // 小型点击音符：不做 PERFECT/GOOD 区分，命中统一 PASS 评价（80 分）。
+        // 连点音符沿用普通大点击的 PERFECT/GOOD 判定，每次命中都单独计分/计连击。
         string rank;
         if (best.isSmallTap)
             rank = "PASS";
@@ -415,8 +440,16 @@ public class NoteSpawner : MonoBehaviour
         Vector3 judgePos = bestMover != null ? bestMover.HitPosition : hitPoint.position + GetLaneSpanOffset(best.lane, best.laneSpan);
         OnJudge?.Invoke(side, best.lane, rank, judgePos);
 
-        best.Hit(rank);
-        activeNotes.Remove(best);
+        if (best.isChainTap)
+        {
+            bool cleared = best.RegisterChainTapHit(songTime, rank);
+            if (cleared) activeNotes.Remove(best);
+        }
+        else
+        {
+            best.Hit(rank);
+            activeNotes.Remove(best);
+        }
     }
 
     /// <summary>检查从 startLane 开始的连续 laneSpan 条轨道是否都处于按住状态。</summary>
