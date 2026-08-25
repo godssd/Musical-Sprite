@@ -79,6 +79,13 @@ public static class SkillLibraryGenerator
 
         if (!silent)
             AssetDatabase.SaveAssets();
+        else if (created > 0)
+        {
+            // 启动静默模式也可能升级了现有 .asset（inputSequence A/B/C → ←/↓/→）。
+            // 必须落盘，否则下次启动会再次"升级"覆盖用户在 Inspector 里改过的参数（虽然 SetDirty 已调用，
+            // SaveAssets 仍然负责把脏 .asset 写回磁盘，避免 failed to save 警告）。
+            AssetDatabase.SaveAssets();
+        }
         return created;
     }
 

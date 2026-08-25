@@ -18,7 +18,7 @@ MonoBehaviour:
     3 \u79D2\u6C89\u7761"
   cooldown: 60
   energyCost: 330
-  inputSequence: 050000000600000004000000
+  inputSequence: 010000000200000000000000
   inputWindow: 1.5
   charmedNoteCount: 0
   onlyCountNonMiss: 1

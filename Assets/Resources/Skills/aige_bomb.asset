@@ -19,7 +19,7 @@ MonoBehaviour:
     \u70B9\u4F24\u5BB3\uFF09\uFF0C\u9020\u6210\u76F4\u63A5\u751F\u547D\u4F24\u5BB3\u76F4\u5230\u7ED3\u7B97\u5B8C\u6BD5\uFF09\uFF08\u5FC5\u6740\uFF09"
   cooldown: 60
   energyCost: 280
-  inputSequence: 040000000500000004000000
+  inputSequence: 000000000100000000000000
   inputWindow: 1.5
   charmedNoteCount: 3
   onlyCountNonMiss: 1
