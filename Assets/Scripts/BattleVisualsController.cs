@@ -25,6 +25,9 @@ public class BattleVisualsController : MonoBehaviour
     [Header("中间粉杠")]
     public BattleCenterLine centerLine;
 
+    /// <summary>按 (side, lane) 缓存对应 CharacterCubeMarker（启动时一次性扫描，OnLanePress 直接调用 O(1)）。</summary>
+    private CharacterCubeMarker[] markerByKey = new CharacterCubeMarker[8]; // side*4 + lane
+
     private void Start()
     {
         if (leftSpawner != null)
@@ -51,6 +54,9 @@ public class BattleVisualsController : MonoBehaviour
             if (centerLine != null) rightComboDisplay.centerLine = centerLine;
             rightComboDisplay.side = 1;
         }
+
+        // 预缓存标记（玩家自身 cube laneIndex=-1 不进缓存，OnLanePress 不会涉及）
+        BuildMarkerCache();
     }
 
     private void OnDestroy()
@@ -67,6 +73,50 @@ public class BattleVisualsController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 建立 (side, lane) → 角色 cube 的缓存。
+    /// 优先用场景里已挂好的 CharacterCubeMarker；若缺失（例如尚未用 MS Debug 工具补 marker），
+    /// 则按命名 Left/RightBand_Member_LaneN 自动补上组件，保证左右两侧按键反馈都一定生效。
+    /// </summary>
+    private void BuildMarkerCache()
+    {
+        // 1) 先收集场景里已有的 marker
+        var existing = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
+        for (int i = 0; i < existing.Length; i++)
+        {
+            var m = existing[i];
+            if (m == null || m.laneIndex < 0 || m.laneIndex > 3) continue; // 玩家自身不在 lane 索引里
+            int key = Mathf.Clamp(m.side, 0, 1) * 4 + Mathf.Clamp(m.laneIndex, 0, 3);
+            markerByKey[key] = m;
+        }
+
+        // 2) 兜底：扫描所有 transform，按命名自动补 marker（无需手动在场景里挂组件）
+        var all = FindObjectsByType<Transform>(FindObjectsSortMode.None);
+        for (int i = 0; i < all.Length; i++)
+        {
+            var t = all[i];
+            if (t == null) continue;
+            string n = t.name;
+            if (!n.Contains("Member_Lane")) continue; // 只处理队伍角色，跳过 Indicator / Protagonist
+            int side = n.StartsWith("LeftBand") ? 0 : (n.StartsWith("RightBand") ? 1 : -1);
+            if (side < 0) continue;
+
+            int laneIdx = n.LastIndexOf("Lane");
+            if (laneIdx < 0 || laneIdx + 4 >= n.Length) continue;
+            if (!int.TryParse(n.Substring(laneIdx + 4), out int lane)) continue;
+            if (lane < 0 || lane > 3) continue;
+
+            int key = side * 4 + lane;
+            if (markerByKey[key] != null) continue; // 已有则跳过
+
+            var m = t.gameObject.GetComponent<CharacterCubeMarker>();
+            if (m == null) m = t.gameObject.AddComponent<CharacterCubeMarker>();
+            m.side = side;
+            m.laneIndex = lane;
+            markerByKey[key] = m;
+        }
+    }
+
     private void OnLanePress(int side, int lane)
     {
         if (lane < 0 || lane >= 4 || side < 0 || side > 1) return;
@@ -74,6 +124,11 @@ public class BattleVisualsController : MonoBehaviour
         if (idx < indicators.Length && indicators[idx] != null)
         {
             indicators[idx].Flash();
+        }
+        // 同时让该侧该 lane 的角色 cube 也弹一下（按键反馈延伸到角色方块）
+        if (idx < markerByKey.Length && markerByKey[idx] != null)
+        {
+            markerByKey[idx].Flash();
         }
     }
 

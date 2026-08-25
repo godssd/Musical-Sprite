@@ -23,15 +23,24 @@ public class ScoreManager : MonoBehaviour
     public NoteSpawner leftSpawner;
     public NoteSpawner rightSpawner;
 
+    [Header("过热系统（可选，会自动查找/补建）")]
+    public FeverManager feverManager;
+
+    [Header("战斗系统（可选，会自动查找/补建）")]
+    public CharacterBattleSystem battleSystem;
+    public SkillInputUI skillInputUI;
+
     [Header("血量与追分机制")]
-    [Tooltip("玩家血量上限")]
+    [Tooltip("每侧玩家血量上限兜底值（仅当 battleSystem.GetMaxHP 无效时使用）")]
     public int maxHP = 300;
-    [Tooltip("分差超过多少时触发追分/扣血")]
+    [Tooltip("每侧血量上限（运行时由 CharacterBattleSystem.GetMaxHP 注入）。P2 起左侧/右侧可不同。")]
+    public int[] maxHPBySide = new int[2] { 300, 300 };
+    [Tooltip("分差超过多少时触发保底（给劣势方补救加分）。粉杠在分差=此值时已移动到 3 单位处（BattleCenterLine.pushPerHit=0.001），此处不另动粉杠。")]
     public int catchUpDiffThreshold = 3000;
-    [Tooltip("追分判定间隔（秒）")]
+    [Tooltip("保底判定间隔（秒），每秒检查一次")]
     public float catchUpInterval = 1f;
-    [Tooltip("追分比例：额外加分 = 分差 - 阈值 + 1，扣血 = 额外加分 × 该系数")]
-    public float hpDrainPerBonus = 0.1f;
+    [Tooltip("保底扣血系数：damage = extra × combatSum × drainRate。drainRate=0.001 即“该侧(全队角色+玩家自身)战斗力总和 × 0.1%”。仅作用于劣势方。")]
+    public float catchUpDrainRate = 0.001f;
 
     private int leftScore = 0;
     private int rightScore = 0;
@@ -42,6 +51,11 @@ public class ScoreManager : MonoBehaviour
     public event Action<int, int> OnScoreChanged;
     public event Action<int, int> OnHPChanged;
     public event Action<int> OnPlayerDefeated; // 参数：战败方 side
+
+    /// <summary>外部读取某侧血量上限（HPBarDisplay 用）。</summary>
+    public int GetMaxHP(int side) => maxHPBySide[Mathf.Clamp(side, 0, 1)];
+    /// <summary>外部读取某侧当前血量。</summary>
+    public int GetHP(int side) => side == 0 ? leftHP : rightHP;
 
     void Start()
     {
@@ -58,6 +72,40 @@ public class ScoreManager : MonoBehaviour
         else
             Debug.LogWarning("[ScoreManager] 未找到右发射器");
 
+        // 过热系统：自动查找，缺失则补建（保证倍率/连击逻辑存在）
+        if (feverManager == null)
+        {
+            feverManager = FindFirstObjectByType<FeverManager>();
+            if (feverManager == null)
+            {
+                var go = new GameObject("FeverManager");
+                feverManager = go.AddComponent<FeverManager>();
+                Debug.Log("[ScoreManager] 自动创建 FeverManager");
+            }
+        }
+
+        // 战斗系统：自动查找，缺失则补建
+        if (battleSystem == null)
+        {
+            battleSystem = FindFirstObjectByType<CharacterBattleSystem>();
+            if (battleSystem == null)
+            {
+                var go = new GameObject("CharacterBattleSystem");
+                battleSystem = go.AddComponent<CharacterBattleSystem>();
+                Debug.Log("[ScoreManager] 自动创建 CharacterBattleSystem");
+            }
+        }
+        if (skillInputUI == null)
+        {
+            skillInputUI = FindFirstObjectByType<SkillInputUI>();
+            if (skillInputUI == null)
+            {
+                var go = new GameObject("SkillInputUI");
+                skillInputUI = go.AddComponent<SkillInputUI>();
+                Debug.Log("[ScoreManager] 自动创建 SkillInputUI");
+            }
+        }
+
         if (leftScoreDisplay == null)
             leftScoreDisplay = FindScoreDisplay("ScoreLeft");
 
@@ -73,8 +121,23 @@ public class ScoreManager : MonoBehaviour
         if (rightScoreDisplay == null)
             Debug.LogWarning("[ScoreManager] 未找到右分数显示");
 
-        leftHP = maxHP;
-        rightHP = maxHP;
+        if (battleSystem != null)
+        {
+            int l = battleSystem.GetMaxHP(0);
+            int r = battleSystem.GetMaxHP(1);
+            if (l > 0) maxHPBySide[0] = l;
+            else maxHPBySide[0] = maxHP;
+            if (r > 0) maxHPBySide[1] = r;
+            else maxHPBySide[1] = maxHP;
+        }
+        else
+        {
+            maxHPBySide[0] = maxHP;
+            maxHPBySide[1] = maxHP;
+        }
+        leftHP = maxHPBySide[0];
+        rightHP = maxHPBySide[1];
+        this.maxHP = maxHPBySide[0]; // 兼容旧的"全游戏单一 max"读取者（HPBarDisplay 仍可读到非零值）
         UpdateDisplays();
         // 刷新血条初始显示（避免 HPBarDisplay 在 Start 中读到字段默认 0）
         OnHPChanged?.Invoke(leftHP, rightHP);
@@ -260,20 +323,36 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 保底（追分）机制（P2 修正版，依据最新设计描述）：
+    /// - 分差 > catchUpDiffThreshold（默认 3000）时启动。优势方每 catchUpInterval 秒继续拉开分差后，
+    ///   给劣势方额外加分 100×M（M 为使分差≤阈值的最小整数倍），把分差一次性压回 ≤3000。
+    /// - 优势方分数与血量均不受影响（不转移、不扣血）。
+    /// - 劣势方因被保底补救而付出的代价：按“额外加分 × (优势方全队角色+玩家自身战斗力总和) × 0.1%”扣血。
+    ///   即 damage = extra × combatSum(优势方) × catchUpDrainRate（drainRate=0.001 → 优势方战斗力总和×0.1%）。
+    /// 注：粉杠随真实分差移动（BattleCenterLine），分差 3000 时粉杠已在 3 单位处；此处只改分数/血量，不改粉杠。
+    /// </summary>
     private void ApplyCatchUp()
     {
         int diff = Mathf.Abs(leftScore - rightScore);
         if (diff <= catchUpDiffThreshold) return;
 
-        // 给低分方加分，直到分差低于阈值
-        int bonus = diff - catchUpDiffThreshold + 1;
-        int lowerSide = leftScore < rightScore ? 0 : 1;
+        int higherSide = leftScore > rightScore ? 0 : 1;
+        int lowerSide = 1 - higherSide;
 
-        AddScore(lowerSide, bonus);
+        // 超过阈值的部分压回 ≤ 阈值：给劣势方额外加分（优势方分数/血量均不动）
+        int overflow = diff - catchUpDiffThreshold;
+        int multiple = Mathf.CeilToInt(overflow / 100f); // 让分差≤阈值的最小整数倍
+        int extra = 100 * multiple;
+        AddScore(lowerSide, +extra);
 
-        // 扣低分方血量：额外加分 × 系数
-        int damage = Mathf.RoundToInt(bonus * hpDrainPerBonus);
+        // 劣势方代价：damage = extra × (优势方全队+玩家自身战斗力总和) × 0.1%
+        // 注意：combatSum 取【优势方】的战斗力总和，不是劣势方
+        float combatSum = (battleSystem != null) ? battleSystem.GetCombatSum(higherSide) : 100f;
+        int damage = Mathf.RoundToInt(extra * combatSum * catchUpDrainRate);
         TakeDamage(lowerSide, damage);
+
+        Debug.Log($"[ScoreManager] 保底：diff={diff} 优势方side{higherSide}不动，劣势方side{lowerSide} +{extra}分，扣血 {damage}（优势方combatSum={combatSum}, drain={catchUpDrainRate}）");
     }
 
     /// <summary>
@@ -281,8 +360,8 @@ public class ScoreManager : MonoBehaviour
     /// </summary>
     public void AddScore(int side, int amount)
     {
-        if (side == 0) leftScore += amount;
-        else rightScore += amount;
+        if (side == 0) leftScore = Mathf.Max(0, leftScore + amount);
+        else rightScore = Mathf.Max(0, rightScore + amount);
 
         UpdateDisplays();
         OnScoreChanged?.Invoke(leftScore, rightScore);
@@ -327,18 +406,30 @@ public class ScoreManager : MonoBehaviour
             case "MISS": delta = missScore; break;
         }
 
+        // MISS：不加分、不充能（仅由 FeverManager 的 OnNoteMiss 断连）
+        if (delta <= 0) return;
+
+        // 过热倍率：最终得分 = 基础分 × 倍率（分数不损失，只在得分上乘倍率）
+        float mul = (feverManager != null) ? feverManager.GetScoreMultiplier(side) : 1f;
+        int actual = Mathf.RoundToInt(delta * mul);
+
         if (side == 0)
         {
-            leftScore += delta;
+            leftScore += actual;
         }
         else
         {
-            rightScore += delta;
+            rightScore += actual;
         }
+
+        // 能量：仅给命中音轨对应的队伍角色充能（10 分 = 1 能量），其他角色不动
+        CharacterClass tc = CharacterRoster.GetTeam(side, lane);
+        if (tc != null)
+            tc.AddEnergy(actual / 10f);
 
         UpdateDisplays();
         OnScoreChanged?.Invoke(leftScore, rightScore);
-        Debug.Log($"[ScoreManager] Side {side} {rank} +{delta} | Left={leftScore} Right={rightScore}");
+        Debug.Log($"[ScoreManager] Side {side} {rank} +{actual} (raw {delta}, x{mul}) | Left={leftScore} Right={rightScore}");
     }
 
     private void UpdateDisplays()
@@ -359,8 +450,13 @@ public class ScoreManager : MonoBehaviour
     {
         leftScore = 0;
         rightScore = 0;
-        leftHP = maxHP;
-        rightHP = maxHP;
+        int l = (battleSystem != null) ? battleSystem.GetMaxHP(0) : 0;
+        int r = (battleSystem != null) ? battleSystem.GetMaxHP(1) : 0;
+        maxHPBySide[0] = l > 0 ? l : maxHP;
+        maxHPBySide[1] = r > 0 ? r : maxHP;
+        leftHP = maxHPBySide[0];
+        rightHP = maxHPBySide[1];
+        this.maxHP = maxHPBySide[0];
         catchUpTimer = 0f;
         UpdateDisplays();
         OnScoreChanged?.Invoke(leftScore, rightScore);

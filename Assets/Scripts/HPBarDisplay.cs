@@ -52,7 +52,7 @@ public class HPBarDisplay : MonoBehaviour
             scoreManager.OnHPChanged += OnHPChanged;
             // 初始化一次
             int hp = side == 0 ? scoreManager.GetLeftHP() : scoreManager.GetRightHP();
-            int max = scoreManager.maxHP;
+            int max = scoreManager.GetMaxHP(side);
             UpdateBar(hp, max);
         }
     }
@@ -154,7 +154,7 @@ public class HPBarDisplay : MonoBehaviour
     private void OnHPChanged(int leftHP, int rightHP)
     {
         int hp = side == 0 ? leftHP : rightHP;
-        int max = scoreManager != null ? scoreManager.maxHP : 1;
+        int max = scoreManager != null ? scoreManager.GetMaxHP(side) : 1;
         UpdateBar(hp, max);
     }
 
