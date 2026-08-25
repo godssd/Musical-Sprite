@@ -46,6 +46,12 @@ namespace MusicalSprite.Editor
         [SerializeField] private List<ChartNote> notes = new List<ChartNote>();
         private string currentEditingPath = ""; // 正在编辑的资产路径；为空表示新谱面
 
+        // ---------- 撤销 ----------
+        // 撤销栈：每一项是某一操作“之前”的 notes 完整快照（深拷贝）。
+        // 入栈发生在任何会改变音符列表的操作之前，出栈（撤销）即恢复到上一次操作前的状态。
+        private List<List<ChartNote>> undoStack = new List<List<ChartNote>>();
+        private const int UndoCap = 50; // 最多保存 50 步，超出后丢弃最早的
+
         // ---------- 视图参数 ----------
         [SerializeField] private float pixelsPerSecond = 60f;
         [SerializeField] private float viewStartTime = 0f;
@@ -147,6 +153,19 @@ namespace MusicalSprite.Editor
         // ===================================================================
         private void OnGUI()
         {
+            // Ctrl/Cmd + Z 撤销。
+            // Unity 6 没有任何"文本框正在编辑"的官方 API 能直接调用（EditorGUIUtility /
+            // GUIUtility 都没有 isEditingTextField/textFieldHasFocus 这类成员），
+            // 而 IMGUI 的 EditorGUILayout.TextField 又根本不响应 Ctrl+Z，
+            // 因此无需再绕开——Ctrl+Z 直接走我们的撤销栈，绝不冲突。
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Z &&
+                (Event.current.control || Event.current.command))
+            {
+                Undo();
+                Event.current.Use();
+                return;
+            }
+
             DrawHeader();
             EditorGUILayout.Space(6);
             DrawTimeline();
@@ -185,6 +204,7 @@ namespace MusicalSprite.Editor
                 if (GUILayout.Button("暂停", GUILayout.Width(60))) Pause();
             }
             if (GUILayout.Button("停止", GUILayout.Width(60))) StopPlayback();
+            if (GUILayout.Button("撤销", GUILayout.Width(60))) Undo();
             EditorGUILayout.LabelField($"音符数：{notes.Count}    当前时间：{playTime:F2}s", GUILayout.Width(220));
             EditorGUILayout.EndHorizontal();
 
@@ -275,6 +295,8 @@ namespace MusicalSprite.Editor
                     }
 
                     Color lineCol = (i == selectedIndex) ? Color.yellow : new Color(0.3f, 0.9f, 1f);
+                    float thinTh = 4f;
+                    float thickTh = LaneHeight * 1.45f;
                     for (int k = 0; k < ts.Length - 1; k++)
                     {
                         float xA = timeX0 + (ts[k] - viewStartTime) * pixelsPerSecond;
@@ -283,10 +305,28 @@ namespace MusicalSprite.Editor
                         float yA = GetNoteY(baseRect, ls[k], aLinked);
                         float xB = timeX0 + (ts[k + 1] - viewStartTime) * pixelsPerSecond;
                         float yB = GetNoteY(baseRect, ls[k + 1], bLinked);
-                        // 段宽度取两端节点宽度较大者（节点一宽一窄时连轨带更宽）
-                        bool segLinked = aLinked || bLinked;
-                        if (xB >= timeX0 - 16 && xA <= baseRect.x + baseRect.width + 16)
-                            DrawThickLine(new Vector2(xA, yA), new Vector2(xB, yB), segLinked ? LaneHeight * 1.45f : 4f, lineCol);
+                        if (xB < timeX0 - 16 || xA > baseRect.x + baseRect.width + 16) continue;
+                        Vector2 pa = new Vector2(xA, yA);
+                        Vector2 pb = new Vector2(xB, yB);
+                        // 两端同为连轨 => 粗；同为普通 => 细；混合 => 沿段插值出“粗到细”渐变
+                        if (aLinked == bLinked)
+                        {
+                            DrawThickLine(pa, pb, aLinked ? thickTh : thinTh, lineCol);
+                        }
+                        else
+                        {
+                            int steps = 10;
+                            float aTh = aLinked ? thickTh : thinTh;
+                            float bTh = bLinked ? thickTh : thinTh;
+                            for (int s2 = 0; s2 < steps; s2++)
+                            {
+                                float t0 = (float)s2 / steps, t1 = (float)(s2 + 1) / steps;
+                                Vector2 p0 = Vector2.Lerp(pa, pb, t0);
+                                Vector2 p1 = Vector2.Lerp(pa, pb, t1);
+                                float th = Mathf.Lerp(aTh, bTh, (t0 + t1) * 0.5f);
+                                DrawThickLine(p0, p1, th, lineCol);
+                            }
+                        }
                     }
                     // 节点方块（逐节点宽度）
                     for (int k = 0; k < ts.Length; k++)
@@ -422,6 +462,7 @@ namespace MusicalSprite.Editor
             {
                 if ((e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace) && selectedIndex >= 0)
                 {
+                    PushUndo();
                     notes.RemoveAt(selectedIndex);
                     selectedIndex = -1;
                     Repaint();
@@ -478,6 +519,7 @@ namespace MusicalSprite.Editor
                 }
                 if (hit >= 0)
                 {
+                    PushUndo();
                     notes.RemoveAt(hit);
                     if (selectedIndex == hit) selectedIndex = -1;
                     Repaint();
@@ -516,6 +558,7 @@ namespace MusicalSprite.Editor
 
                 if (hit >= 0) // 选中并准备拖拽
                 {
+                    PushUndo(); // 在拖动改变音符位置前记录快照，撤销即可回到拖动前
                     selectedIndex = hit;
                     dragIndex = hit;
                     dragNote = notes[hit];
@@ -533,6 +576,7 @@ namespace MusicalSprite.Editor
                         type = NoteData.NoteType.SmallTap,
                         isSmallTap = true
                     };
+                    PushUndo();
                     notes.Add(nn);
                     selectedIndex = notes.Count - 1;
                     dragIndex = selectedIndex;
@@ -552,6 +596,7 @@ namespace MusicalSprite.Editor
                         lane = Mathf.Clamp(lane, 0, 2),
                         type = NoteData.NoteType.Linked
                     };
+                    PushUndo();
                     notes.Add(nn);
                     selectedIndex = notes.Count - 1;
                     dragIndex = selectedIndex;
@@ -564,6 +609,7 @@ namespace MusicalSprite.Editor
                 {
                     float snapped = snapToBeat ? Snap(time) : time;
                     var nn = new ChartNote { time = snapped, lane = lane };
+                    PushUndo();
                     notes.Add(nn);
                     selectedIndex = notes.Count - 1;
                     dragIndex = selectedIndex;
@@ -757,6 +803,92 @@ namespace MusicalSprite.Editor
             return Mathf.Round(time / secPerBeat) * secPerBeat;
         }
 
+        // ===================================================================
+        // 撤销
+        // ===================================================================
+        private static ChartNote CloneNote(ChartNote src)
+        {
+            if (src == null) return null;
+            return new ChartNote
+            {
+                time = src.time,
+                lane = src.lane,
+                type = src.type,
+                isSmallTap = src.isSmallTap,
+                holdDuration = src.holdDuration,
+                holdEndLane = src.holdEndLane,
+                holdTimes = src.holdTimes == null ? null : (float[])src.holdTimes.Clone(),
+                holdLanes = src.holdLanes == null ? null : (int[])src.holdLanes.Clone(),
+                holdLaneSpans = src.holdLaneSpans == null ? null : (int[])src.holdLaneSpans.Clone()
+            };
+        }
+
+        private static List<ChartNote> CloneNotes(List<ChartNote> src)
+        {
+            var dst = new List<ChartNote>(src.Count);
+            foreach (var n in src) dst.Add(CloneNote(n));
+            return dst;
+        }
+
+        /// <summary>
+        /// 在当前编辑操作“之前”调用：把 notes 的完整快照压入撤销栈。
+        /// </summary>
+        private void PushUndo()
+        {
+            undoStack.Add(CloneNotes(notes));
+            if (undoStack.Count > UndoCap)
+                undoStack.RemoveAt(0); // 超出上限丢弃最早的一步
+        }
+
+        /// <summary>
+        /// 撤销：弹出最近一次快照并恢复；同时清理可能失效的链接编辑态。
+        /// </summary>
+        private void Undo()
+        {
+            if (undoStack.Count == 0)
+            {
+                ShowNotification(new GUIContent("没有可撤销的操作"));
+                return;
+            }
+            notes = undoStack[undoStack.Count - 1];
+            undoStack.RemoveAt(undoStack.Count - 1);
+            selectedIndex = -1;
+            dragIndex = -1;
+            dragNote = null;
+            // 链接编辑态若指向已不存在的索引则复位，避免悬空引用
+            if (linkingActive && (linkLastIndex < 0 || linkLastIndex >= notes.Count))
+            {
+                linkingActive = false;
+                linkLastIndex = -1;
+                linkTimes.Clear();
+                linkLanes.Clear();
+                linkLaneSpans.Clear();
+            }
+            else if (linkingActive && linkLastIndex >= 0 && linkLastIndex < notes.Count)
+            {
+                // 仍处于链接编辑态：把暂存的节点列表重新同步到“撤销后”的链音符，
+                // 避免下一次落点基于过时的 linkTimes/linkLanes。
+                var hn = notes[linkLastIndex];
+                if (hn.holdLanes != null && hn.holdTimes != null && hn.holdLaneSpans != null &&
+                    hn.holdLanes.Length >= 2 && hn.holdTimes.Length >= 2 && hn.holdLaneSpans.Length >= 2)
+                {
+                    linkTimes = new List<float>(hn.holdTimes);
+                    linkLanes = new List<int>(hn.holdLanes);
+                    linkLaneSpans = new List<int>(hn.holdLaneSpans);
+                }
+                else
+                {
+                    // 链已收尾为单音符：结束链接编辑态
+                    linkingActive = false;
+                    linkLastIndex = -1;
+                    linkTimes.Clear();
+                    linkLanes.Clear();
+                    linkLaneSpans.Clear();
+                }
+            }
+            Repaint();
+        }
+
         /// <summary>
         /// 结束正在编辑的链接链：
         /// - 已落 >=2 个节点 → 保留为一条多节点 Hold（holdLanes/holdTimes/holdLaneSpans 已填好），
@@ -766,6 +898,8 @@ namespace MusicalSprite.Editor
         /// </summary>
         private void FinishLinkingChain()
         {
+            PushUndo(); // 结束链接（断开/收尾）前记录快照，撤销可恢复链接编辑态
+
             if (linkingActive && linkLastIndex >= 0 && linkLastIndex < notes.Count)
             {
                 var hn = notes[linkLastIndex];
@@ -809,6 +943,8 @@ namespace MusicalSprite.Editor
         private void CommitPendingLinkNode(Rect baseRect, float timeX0)
         {
             if (!linkingMode) { pendingLinkDown = false; return; }
+
+            PushUndo(); // 落下一个链接节点前记录快照，撤销可回退该节点
 
             // 按下时已做过失效恢复，这里再保险一次
             if (linkingActive && (linkLastIndex < 0 || linkLastIndex >= notes.Count))
@@ -1054,6 +1190,7 @@ namespace MusicalSprite.Editor
             linkLanes.Clear();
             linkLaneSpans.Clear();
             pendingLinkDown = false;
+            undoStack.Clear(); // 载入新谱面后清空旧撤销历史
             playTime = 0f;
             Repaint();
         }
@@ -1066,6 +1203,7 @@ namespace MusicalSprite.Editor
                 return;
             }
             notes = new List<ChartNote>();
+            undoStack.Clear(); // 新建后没有可撤销的历史
             beatmapName = "NewBeatmap";
             currentEditingPath = "";
             beatmapAudioClip = null;

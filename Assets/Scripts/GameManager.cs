@@ -17,7 +17,6 @@ public class GameManager : MonoBehaviour
 
     [Header("反馈与输入")]
     public JudgeFeedbackManager judgeFeedback;
-    public TouchInputManager touchInput;
     public OpponentInput opponentInput;
     public ScoreManager scoreManager;
 
@@ -54,13 +53,6 @@ public class GameManager : MonoBehaviour
             opponentInput.spawner = rightSpawner;
             opponentInput.conductor = conductor;
             opponentInput.beatmap = rightSpawner.beatmap;
-        }
-
-        // 把发射器传给触摸输入
-        if (touchInput != null)
-        {
-            touchInput.leftSpawner = leftSpawner;
-            touchInput.rightSpawner = rightSpawner;
         }
 
         // 监听血量归零，直接判胜负

@@ -1,79 +1,79 @@
 using UnityEngine;
 
 /// <summary>
-/// 运行时自动生成触控区域。
-/// 根据 NoteSpawner 的判定线和轨道数量，在黄线到屏幕边缘之间生成透明 BoxCollider 触摸区。
+/// 场景搭建时，为红方（本地玩家，leftSpawner）的 4 条轨道生成触控区。
+/// 每个触控区是一个位于 TouchZone 层（默认 Layer 6）的不可见 BoxCollider 方块，
+/// 位于红方演奏区的**左/前边缘**（玩家端），供 TouchInputManager 射线检测。
+///
+/// 联机对战下蓝方（rightSpawner）由网络驱动，不生成触控区。
+///
+/// 默认参数贴合 SceneSetupWindow 搭出来的红方场地：红方场 X∈[-8, 0]、Z∈[-3.75, 3.75]，
+/// 4 条轨道 Z 分别为 -2.25 / -0.75 / +0.75 / +2.25。触控区紧贴 X=-8 的玩家端边缘，
+/// 大小约 2×1.3，方便手指点击而不挡视线。
 /// </summary>
 public class TouchZoneBuilder : MonoBehaviour
 {
-    [Header("左右发射器")]
+    [Tooltip("红方发射器（本地玩家的 4 条轨道）")]
     public NoteSpawner leftSpawner;
-    public NoteSpawner rightSpawner;
 
-    [Header("触控区参数")]
-    [Tooltip("左玩家触控区延伸到多左（X 坐标）")]
-    public float leftEdgeX = -8f;
-
-    [Tooltip("右玩家触控区延伸到多右（X 坐标）")]
-    public float rightEdgeX = 8f;
-
-    [Tooltip("触控区 Y 高度")]
-    public float touchHeight = 1f;
-
-    [Tooltip("是否生成时显示半透明调试用材质")]
-    public bool showDebugVisual = false;
-
-    [Tooltip("调试用材质（可选）")]
-    public Material debugMaterial;
-
-    [Tooltip("触控区域所在的 Layer（必须是射线能检测到的 Layer）")]
+    [Tooltip("触控区所在的层（对应 ProjectSettings 里 Layer 6 = TouchZone）")]
     public int touchLayer = 6;
 
-    void Start()
+    [Tooltip("单个触控区的高度（Y 方向厚度，越大越容易在俯视下被射线命中）")]
+    public float touchHeight = 1.5f;
+
+    [Tooltip("是否显示调试方块（半透明），便于确认触控区位置")]
+    public bool showDebugVisual = true;
+
+    [Tooltip("调试用半透明材质（如 M_TouchDebug）")]
+    public Material debugMaterial;
+
+    [Tooltip("触控区在 X 方向的中心（默认 -7，紧贴红方场地 X=-8 的玩家端边缘）")]
+    public float centerX = -7f;
+
+    [Tooltip("触控区在 X 方向的半宽（默认 1，即 X 方向跨度 2 个单位，呈小垫子）")]
+    public float halfWidth = 1f;
+
+    [Tooltip("触控区在 Z 方向的半厚度（默认 0.65，略大于车道间距一半，方便指头按）")]
+    public float halfDepth = 0.65f;
+
+    void Awake()
     {
-        if (leftSpawner != null) BuildZones(leftSpawner, leftEdgeX);
-        if (rightSpawner != null) BuildZones(rightSpawner, rightEdgeX);
+        Build();
     }
 
-    private void BuildZones(NoteSpawner spawner, float edgeX)
+    /// <summary>
+    /// 为红方每条轨道生成一个触控区。可被工具重复调用（先在 SetupScene 清理旧物体）。
+    /// </summary>
+    public void Build()
     {
-        if (spawner.hitPoint == null) return;
+        if (leftSpawner == null) return;
 
-        float hitX = spawner.hitPoint.position.x;
-        float centerX = (hitX + edgeX) * 0.5f;
-        float sizeX = Mathf.Abs(edgeX - hitX);
-        float laneSpacing = spawner.laneSpacing;
+        int count = leftSpawner.laneCount;
+        float spacing = leftSpawner.laneSpacing;
 
-        GameObject root = new GameObject($"TouchZones_Side{spawner.side}");
-        root.transform.SetParent(transform);
-        root.transform.position = Vector3.zero;
-
-        for (int lane = 0; lane < spawner.laneCount; lane++)
+        for (int lane = 0; lane < count; lane++)
         {
-            float z = (lane - (spawner.laneCount - 1) * 0.5f) * laneSpacing;
-            float zCenter = spawner.hitPoint.position.z + z;
+            // 与 NoteSpawner 完全一致的轨道 Z 坐标
+            float z = (lane - (count - 1) * 0.5f) * spacing;
 
-            GameObject zone = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            zone.name = $"TouchZone_Side{spawner.side}_Lane{lane}";
+            GameObject zone = new GameObject($"TouchZone_Lane{lane}");
+            zone.transform.SetParent(transform, false);
+            zone.transform.position = new Vector3(centerX, touchHeight * 0.5f, z);
+            zone.transform.localScale = new Vector3(halfWidth * 2f, touchHeight, halfDepth * 2f);
             zone.layer = touchLayer;
-            zone.transform.SetParent(root.transform);
-            zone.transform.position = new Vector3(centerX, 0.5f, zCenter);
-            zone.transform.localScale = new Vector3(sizeX, touchHeight, laneSpacing * 0.95f);
 
-            // 移除默认 Cube 的材质显示
-            MeshRenderer rend = zone.GetComponent<MeshRenderer>();
-            if (showDebugVisual && debugMaterial != null)
-            {
-                rend.material = debugMaterial;
-            }
-            else
-            {
-                rend.enabled = false;
-            }
+            BoxCollider col = zone.AddComponent<BoxCollider>();
+            col.isTrigger = true;
 
             TouchZone tz = zone.AddComponent<TouchZone>();
-            tz.side = spawner.side;
             tz.lane = lane;
+
+            if (showDebugVisual && debugMaterial != null)
+            {
+                MeshRenderer mr = zone.AddComponent<MeshRenderer>();
+                mr.material = debugMaterial;
+            }
         }
     }
 }

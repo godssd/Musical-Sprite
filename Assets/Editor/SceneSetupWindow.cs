@@ -166,7 +166,6 @@ namespace MusicalSprite.Editor
             Material blueMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_ArenaBlue.mat");
             Material pinkMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_CenterLine.mat");
             Material noteMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_Note.mat");
-            Material touchDebugMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_TouchDebug.mat");
             Material indicatorActiveMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_IndicatorActive.mat");
             Material indicatorIdleMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_IndicatorIdle.mat");
             Material bandMemberMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_BandMember.mat");
@@ -300,6 +299,28 @@ namespace MusicalSprite.Editor
             NoteSpawner rightSpawner = rightSpawnerGo.AddComponent<NoteSpawner>();
             SetupSpawner(rightSpawner, 1, conductor, beatmap, centerLine, rightSpawn.transform, rightHit.transform, notePrefab);
 
+            // 红方（左 / 本地玩家）触控区 + 触摸输入：仅红方生成；
+            // 蓝方（右）为联网对手，由网络驱动，不创建本地触控区 / 触摸输入。
+            Material touchDebugMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/M_TouchDebug.mat");
+            GameObject touchBuilderGo = new GameObject("TouchZoneBuilder");
+            TouchZoneBuilder touchBuilder = touchBuilderGo.AddComponent<TouchZoneBuilder>();
+            touchBuilder.leftSpawner = leftSpawner;
+            touchBuilder.touchLayer = 6;
+            touchBuilder.touchHeight = 1.5f;
+            touchBuilder.showDebugVisual = true;
+            touchBuilder.debugMaterial = touchDebugMat;
+            // 紧贴红方场地左侧（玩家端 X=-8 边缘）的 4 个小触控垫
+            touchBuilder.centerX = -7f;
+            touchBuilder.halfWidth = 1f;
+            touchBuilder.halfDepth = 0.65f;
+
+            GameObject touchInputGo = new GameObject("TouchInputManager");
+            TouchInputManager touchInput = touchInputGo.AddComponent<TouchInputManager>();
+            touchInput.gameCamera = mainCam;
+            touchInput.leftSpawner = leftSpawner;
+            touchInput.touchLayer = 1 << 6;
+            touchInput.logTouches = false;
+
             // 配置 CenterLine
             centerLine.minX = -3f;
             centerLine.maxX = 3f;
@@ -337,27 +358,8 @@ namespace MusicalSprite.Editor
             // 让中线直接读取 ScoreManager 真实分差
             centerLine.scoreManager = scoreManager;
 
-            // 创建触控区构建器
-            GameObject touchBuilderGo = new GameObject("TouchZoneBuilder");
-            TouchZoneBuilder touchBuilder = touchBuilderGo.AddComponent<TouchZoneBuilder>();
-            touchBuilder.leftSpawner = leftSpawner;
-            touchBuilder.rightSpawner = rightSpawner;
-            touchBuilder.leftEdgeX = -8f;
-            touchBuilder.rightEdgeX = 8f;
-            touchBuilder.touchHeight = 1f;
-            touchBuilder.showDebugVisual = true;
-            touchBuilder.debugMaterial = touchDebugMat;
-            touchBuilder.touchLayer = 6;
-
-            // 创建触摸输入管理器
-            GameObject touchInputGo = new GameObject("TouchInputManager");
-            TouchInputManager touchInput = touchInputGo.AddComponent<TouchInputManager>();
-            touchInput.gameCamera = mainCam;
-            touchInput.leftSpawner = leftSpawner;
-            touchInput.rightSpawner = rightSpawner;
-            touchInput.touchLayer = 1 << 6;
-            touchInput.logTouches = false;
-            gameManager.touchInput = touchInput;
+            // 注意：联网对战下，蓝方（rightSpawner）输入来自网络，不创建本地触控区/触摸输入。
+            // 红方（leftSpawner）同时支持键盘输入（W/D/C/空格）与触屏输入（见上方 TouchZoneBuilder / TouchInputManager）。
 
             // 创建 AI 对手输入
             GameObject opponentGo = new GameObject("OpponentInput");
@@ -370,13 +372,10 @@ namespace MusicalSprite.Editor
             opponent.showVisualFeedback = true;
             gameManager.opponentInput = opponent;
 
-            // 视觉反馈事件：让对手按键时右轨道闪一下
+            // 视觉反馈事件：让对手按键时右轨道指示灯闪一下
             OpponentVisualFeedback oppFeedback = rightSpawnerGo.AddComponent<OpponentVisualFeedback>();
             oppFeedback.opponentInput = opponent;
             oppFeedback.rightSpawner = rightSpawner;
-            oppFeedback.touchZoneBuilder = touchBuilder;
-            oppFeedback.feedbackMaterial = touchDebugMat;
-            oppFeedback.flashDuration = 0.15f;
 
             // 创建乐队阵容、轨道指示灯、连击显示
             BattleVisualsController visuals = gm.AddComponent<BattleVisualsController>();
@@ -559,11 +558,16 @@ namespace MusicalSprite.Editor
 
             if (side == 0)
             {
-                spawner.keys = new KeyCode[] { KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };
+                // 红方（本地玩家）：lane 顺序 0=最下 1=C 2=D 3=最上=W
+                // 屏幕从上到下依次为 W、D、C、空格
+                spawner.keys = new KeyCode[] { KeyCode.Space, KeyCode.C, KeyCode.D, KeyCode.W };
+                spawner.useKeyboard = true;
             }
             else
             {
-                spawner.keys = new KeyCode[] { KeyCode.H, KeyCode.J, KeyCode.K, KeyCode.L };
+                // 蓝方（联网对手）：不由本地键盘驱动，关闭键盘输入，改由网络同步
+                spawner.useKeyboard = false;
+                spawner.keys = new KeyCode[0];
             }
         }
 

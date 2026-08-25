@@ -2,44 +2,33 @@ using UnityEngine;
 
 /// <summary>
 /// 对手按键的视觉反馈。
-/// 当 AI 按下某条轨道时，让该轨道对应的触控区短暂亮起。
+/// 当 AI（或未来的网络对手）按下某条轨道时，让该轨道对应的真实指示灯（LaneIndicator）短暂亮起，
+/// 表现与本地玩家按键完全一致。
 /// </summary>
 public class OpponentVisualFeedback : MonoBehaviour
 {
     [Header("引用")]
     public OpponentInput opponentInput;
     public NoteSpawner rightSpawner;
-    public TouchZoneBuilder touchZoneBuilder;
 
-    [Header("反馈材质")]
-    [Tooltip("对手按键时触控区临时显示的颜色材质")]
-    public Material feedbackMaterial;
-
-    [Tooltip("亮起持续时间")]
-    public float flashDuration = 0.15f;
-
-    private Renderer[,] zoneRenderers;
-    private float[,] flashTimers;
+    [Header("指示灯")]
+    [Tooltip("右侧各轨指示灯（与场景里 RightBand_Indicator_Lane0..3 对应），由 Start 自动查找")]
+    public LaneIndicator[] rightIndicators = new LaneIndicator[4];
 
     void Start()
     {
         if (opponentInput != null)
             opponentInput.OnPressLane += OnOpponentPress;
-    }
 
-    void Update()
-    {
-        if (zoneRenderers == null) return;
-
-        int lanes = zoneRenderers.GetLength(1);
-        for (int lane = 0; lane < lanes; lane++)
+        // 若未手动指定，则按场景命名约定自动查找右侧指示灯
+        if (rightSpawner != null)
         {
-            if (flashTimers[1, lane] > 0f && zoneRenderers[1, lane] != null)
+            for (int lane = 0; lane < rightIndicators.Length; lane++)
             {
-                flashTimers[1, lane] -= Time.deltaTime;
-                if (flashTimers[1, lane] <= 0f)
+                if (rightIndicators[lane] == null)
                 {
-                    zoneRenderers[1, lane].enabled = false;
+                    GameObject go = GameObject.Find($"RightBand_Indicator_Lane{lane}");
+                    if (go != null) rightIndicators[lane] = go.GetComponent<LaneIndicator>();
                 }
             }
         }
@@ -47,40 +36,10 @@ public class OpponentVisualFeedback : MonoBehaviour
 
     private void OnOpponentPress(int lane)
     {
-        if (zoneRenderers == null) CacheRenderers();
-        if (zoneRenderers == null || zoneRenderers.GetLength(1) <= lane) return;
-
-        Renderer rend = zoneRenderers[1, lane];
-        if (rend != null)
+        if (rightSpawner == null || lane < 0 || lane >= rightIndicators.Length) return;
+        if (rightIndicators[lane] != null)
         {
-            rend.enabled = true;
-            if (feedbackMaterial != null)
-                rend.material = feedbackMaterial;
-            flashTimers[1, lane] = flashDuration;
-        }
-    }
-
-    private void CacheRenderers()
-    {
-        // 简单实现：遍历 TouchZoneBuilder 生成的子物体
-        if (touchZoneBuilder == null) return;
-
-        // 预期 TouchZoneBuilder 生成一个名为 TouchZones_Side1 的根物体
-        Transform root = touchZoneBuilder.transform.Find("TouchZones_Side1");
-        if (root == null) return;
-
-        zoneRenderers = new Renderer[2, rightSpawner.laneCount];
-        flashTimers = new float[2, rightSpawner.laneCount];
-
-        foreach (Transform child in root)
-        {
-            TouchZone tz = child.GetComponent<TouchZone>();
-            Renderer rend = child.GetComponent<Renderer>();
-            if (tz != null && rend != null)
-            {
-                zoneRenderers[tz.side, tz.lane] = rend;
-                rend.enabled = false;
-            }
+            rightIndicators[lane].Flash();
         }
     }
 

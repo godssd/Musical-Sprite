@@ -60,9 +60,21 @@ public class NoteSpawner : MonoBehaviour
     [Tooltip("PERFECT 窗口：自动 = goodWindow × perfectRatioOfGood。只读参考")]
     public float perfectWindow = 0.03f;
 
+    [Header("连轨长按判定（滑动手感）")]
+    [Tooltip("连轨滑动 Hold（如 第2轨→第3轨）在节点时间中点切换\"应被按住\"的轨道；切换前后各该秒数内，起手轨与目标轨都允许（容滑动手感）。调大=更宽松，调小=更接近正中切点切换。单位：秒。")]
+    public float holdSlideSettleWindow = 0.15f;
+    [Tooltip("所需轨道超过该秒数未被按住即断连 MISS。越小越严格。")]
+    public float holdBreakThreshold = 0.2f;
+    [Tooltip("普通单轨 Hold 跟随判定容差：按住轨道与当前插值轨道相差多少条轨道内算命中。")]
+    public float holdLaneTolerance = 1.0f;
+
     [Header("键盘输入键位（PC 测试用）")]
-    [Tooltip("每条轨道对应的按键")]
-    public KeyCode[] keys = new KeyCode[4] { KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F };
+    [Tooltip("每条轨道对应的按键。lane 顺序（0=最下 → 3=最上）：0=空格，1=C，2=D，3=W。与屏幕从上到下 W,D,C,空格 对应")]
+    public KeyCode[] keys = new KeyCode[4] { KeyCode.Space, KeyCode.C, KeyCode.D, KeyCode.W };
+
+    [Header("输入开关")]
+    [Tooltip("是否启用本侧键盘输入。红方（本地玩家）为 true；蓝方为联网对手，由网络驱动，应设为 false")]
+    public bool useKeyboard = true;
 
     // 判定事件：side, lane, rank, position
     public event Action<int, int, string, Vector3> OnJudge;
@@ -179,7 +191,8 @@ public class NoteSpawner : MonoBehaviour
             }
         }
 
-        // 3. 键盘输入判定（仅 PC 测试）：按下 / 松开分别下发
+        // 3. 键盘输入判定（仅 PC 测试，且本侧启用键盘时）：按下 / 松开分别下发
+        if (!useKeyboard) return;
         for (int lane = 0; lane < laneCount; lane++)
         {
             if (lane >= keys.Length) break;
@@ -320,6 +333,9 @@ public class NoteSpawner : MonoBehaviour
         hn.judgeLineX = hitPositions[0].x; // 判定线 x：作为 Hold 收尾时的"消失边界"（取 head 判定线）
         hn.goodWindow = goodWindow;
         hn.perfectWindow = perfectWindow;
+        hn.slideSettleWindow = holdSlideSettleWindow;
+        hn.breakThreshold = holdBreakThreshold;
+        hn.laneTolerance = holdLaneTolerance;
         hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p);
 
         activeHoldNotes.Add(hn);

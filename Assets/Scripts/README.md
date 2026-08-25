@@ -12,13 +12,10 @@
 | `NoteSpawner.cs` | 发射器 + 判定器 | `LeftSpawner`、`RightSpawner` |
 | `BattleCenterLine.cs` | 中间粉色竖杠对战移动 | `CenterLine` |
 | `GameManager.cs` | 总控 + 事件接线 | `GameManager` |
-| `TouchInputManager.cs` | 移动端触摸/鼠标输入 | `GameManager` |
-| `TouchZone.cs` | 触控区标识 | 运行时生成 |
-| `TouchZoneBuilder.cs` | 自动生成 8 个触控区 | `TouchInputManager` 同级或 GameManager 下 |
-| `OpponentInput.cs` | AI 对手输入 | `GameManager` 或 `Opponent` |
+| `OpponentInput.cs` | AI 对手输入（本地测试用，正式联网由网络驱动） | `GameManager` 或 `Opponent` |
 | `JudgeFeedbackManager.cs` | 判定文字管理器 | `GameManager` |
 | `JudgeFeedbackItem.cs` | 判定文字飘动动画 | 判定文字 Prefab |
-| `OpponentVisualFeedback.cs` | AI 按键时轨道高亮 | `RightSpawner` |
+| `OpponentVisualFeedback.cs` | AI 按键时右侧轨道指示灯(LaneIndicator)闪亮 | `RightSpawner` |
 | `LaneIndicator.cs` | 轨道指示灯（竖直线，点击发光） | 每轨指示灯 |
 | `ComboDisplay.cs` | 连击数显示 | `ComboDisplay` |
 | `BattleVisualsController.cs` | 乐队/指示灯/连击总控 | `GameManager` |
@@ -37,7 +34,8 @@
    - **创建材质与文件夹**
    - **生成测试谱面**
    - **搭建完整场景**
-4. 工具会自动创建：红蓝场地（面积随中线移动）、中线、判定线、发射器、音符预制体、触控区、AI 对手、乐队阵容、轨道指示灯（竖直线）、连击数显示、顶部计分板（左绿右黄），并连好所有引用。
+4. 工具会自动创建：红蓝场地（面积随中线移动）、中线、判定线、发射器、音符预制体、AI 对手、乐队阵容、轨道指示灯（竖直线）、连击数显示、顶部计分板（左绿右黄），并连好所有引用。
+   - 红方（左）仅用键盘输入（W/D/C/空格），蓝方（右）为联网对手、不创建本地触控区/触摸输入。
 5. 选中 `GameManager`，在 `AudioSource` 里拖入一首 `AudioClip`（可选，没有也能跑）。
 6. 按 Play 测试。
 
@@ -50,8 +48,6 @@
 - 挂载组件：
   - `Conductor`
   - `GameManager`
-  - `TouchInputManager`
-  - `TouchZoneBuilder`
   - `JudgeFeedbackManager`
 - 给 `GameManager` 再挂一个 `AudioSource`：
   - 拖入音乐 AudioClip。
@@ -126,25 +122,16 @@
 - 挂载 `OpponentInput`。
 - `GameManager.opponentInput` 会自动接线，不用手动填。
 
-### 9. 配置 `TouchInputManager`
+### 9. 输入方式说明（重要）
 
-- `Game Camera` 留空会自动用 `Camera.main`。
-- `Left Spawner` ← `LeftSpawner`
-- `Right Spawner` ← `RightSpawner`
-- `Touch Layer`：
-  - 打开 `Edit > Project Settings > Tags and Layers`。
-  - 把 `Layer 6` 命名为 `TouchZone`。
-  - 在 `TouchInputManager` 的 `Touch Layer` 勾选 `TouchZone`。
+本作为**联网对战**：
 
-### 10. 配置 `TouchZoneBuilder`
+- **红方（左 / 本地玩家）**：同时支持键盘与触屏。四条轨自上而下分别为 `W`、`D`、`C`、`空格`；触屏在红方 4 条轨道对应区域点击即可（见下方触控区说明）。
+- **蓝方（右 / 联网对手）**：输入来自网络，**不创建本地触控区、也不读取键盘**。本地仅保留 `OpponentInput`（AI 模拟），用于无网络时快速测试对战手感。
+- 红方的触控区由 `TouchZoneBuilder` 在场景搭建时生成（仅红方 4 条轨，位于 `TouchZone` 图层 = Layer 6），运行时由 `TouchInputManager` 射线检测后触发对应轨道；蓝方不生成触控区。
+- 对手按键时由 `OpponentVisualFeedback` 直接点亮右侧轨道指示灯（`LaneIndicator`）做视觉反馈。
 
-- `Left Spawner` ← `LeftSpawner`
-- `Right Spawner` ← `RightSpawner`
-- `Touch Layer` 填 `6`（对应 Project Settings 里的 TouchZone）。
-- `Show Debug Visual` 建议先勾上，确认位置后再取消。
-- 如果勾上 debug，给一个半透明材质（见下文材质制作）。
-
-### 11. 配置 `JudgeFeedbackManager`
+### 10. 配置 `JudgeFeedbackManager`
 
 - 参数默认即可，不需要 Prefab 也会动态生成 UI Text 飘字。
 - 如果想自定义样式，创建世界空间 Canvas + Text 预制体，拖到 `Perfect Prefab` 等字段。
@@ -174,30 +161,24 @@
 
 ## 五、调试材质（可选）
 
-用于显示触控区位置：
-1. Project 右键 → `Create > Material`，命名 `TouchDebugMat`。
-2. Shader 选 `Universal Render Pipeline/Lit`。
-3. Albedo 颜色 `RGBA(1, 1, 1, 0.3)`。
-4. 勾选 `Surface Type = Transparent`。
-5. 拖到 `TouchZoneBuilder.debugMaterial`。
+> 说明：红方触控区由场景搭建工具（`TouchZoneBuilder`）自动生成于 `TouchZone` 图层（Layer 6），`M_TouchDebug` 半透明材质用于调试显示，可勾掉 `showDebugVisual` 关闭。轨道指示灯的发光材质同样由搭建工具自动创建（`M_IndicatorActive` / `M_IndicatorIdle`），无需手动配置。
 
 ## 六、运行
 
 1. 按 Play。
-2. 左玩家用键盘 `A/S/D/F`，右玩家由 AI 自动按键。
-3. 鼠标左键点击场景里的触控区也能触发输入。
-4. 音符过中线后显示，到达判定线时按键。
-5. 命中会出现 `PERFECT`/`GOOD` 飘字，Miss 会出现 `MISS`。
-6. 命中会推动中线。
-7. 按键时对应轨道的蓝色指示灯会亮起（玩家和 AI 都会）。
-8. 画面中央绿色数字为当前连击数，Miss 会清零并显示 `MISS`。
-9. 按 `R` 重新开始。
+2. 红方（左）玩家用键盘 `W`/`D`/`C`/`空格`（自上而下四条轨），蓝方（右）由 AI 自动按键（联网版由网络驱动）。
+3. 音符过中线后显示，到达判定线时按键。
+4. 命中会出现 `PERFECT`/`GOOD` 飘字，Miss 会出现 `MISS`。
+5. 命中会推动中线。
+6. 红方按键、蓝方（AI/网络）按键时，对应轨道指示灯会亮起。
+7. 画面中央绿色数字为当前连击数，Miss 会清零并显示 `MISS`。
+8. 按 `R` 重新开始。
 
-## 七、移动端测试
+## 七、网络对战说明
 
-1. 切到 Android 或 iOS 平台（`File > Build Profiles`）。
-2. 真机上手指按屏幕两侧的触控区即可。
-3. 触控区在黄线到屏幕边缘之间，按 Z 轴分成 4 条轨道。
+- 本作为联网对战：红方为本地键盘玩家，蓝方为联网对手。
+- 蓝方不在本机读取键盘或触控，其输入由网络同步到 `RightSpawner.TriggerLaneDown/Up`（与现有 `OpponentInput` 调用方式一致）。
+- 本地仅保留 `OpponentInput` 作为无网络时的 AI 测试替身。
 
 ## 八、后续扩展
 
@@ -207,11 +188,6 @@
 - 网络对战：把真人右玩家的输入通过网络传给 `RightSpawner.TriggerLaneInput()`。
 
 ## 九、常见问题
-
-### 触控区点不动
-- 确认 `TouchZoneBuilder` 的 `Touch Layer` 和 `TouchInputManager` 的 `Touch Layer` 一致。
-- 确认该 Layer 在 `Edit > Project Settings > Physics` 里没有被禁用射线检测。
-- 确认主相机 `Main Camera` 标签是 `MainCamera`。
 
 ### 判定文字不显示
 - 确认场景里有 `JudgeFeedbackManager`。

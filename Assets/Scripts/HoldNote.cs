@@ -19,10 +19,12 @@ using System.Collections.Generic;
 ///
 /// 判定状态机（由自身 Update 驱动，结果通过 onJudge 回调上报给 NoteSpawner）：
 /// - Waiting：等待起始节点(head)抵达判定线。若 head 时间窗内没有按下 -> MISS。
-/// - Holding：head 命中后进入。按进度插值出"当前所需音轨"，要求该音轨被按住；
-///   跨轨时玩家需沿连接线滑动跟随。所需音轨超过 0.2s 未被按住 -> 断连 MISS。
-///   每跨越一个节点时刻 -> 该段完成，触发 CLEAR。
-///   到达最后一个节点时刻 -> 完成。
+    /// - Holding：head 命中后进入。按进度插值出"当前所需音轨"，要求该音轨被按住；
+    ///   连轨滑动段在节点时间中点"强制切换"应被按住的轨道（前半段按起手轨、后半段按目标轨），
+    ///   中点前后各 slideSettleWindow 秒内两条轨都允许（容滑动手感）；窗口之外必须严格跟随。
+    ///   所需轨道超过 breakThreshold 秒未被按住 -> 断连 MISS。
+    ///   每跨越一个节点时刻 -> 该段完成，触发 CLEAR。
+    ///   到达最后一个节点时刻 -> 完成。
 /// - Done：最终态，淡出后由发射器清理。
 /// </summary>
 public class HoldNote : MonoBehaviour
@@ -46,8 +48,14 @@ public class HoldNote : MonoBehaviour
     public float judgeLineX; // 判定线（hitPoint）的 x，作为"消失边界"
     public bool isAI = false;
 
-    [Tooltip("跨轨 Hold 判定时，允许按住轨道与\"当前所需轨道\"相差多少条轨道。1.0 表示允许相邻整数轨道，越大越宽松。")]
+    [Tooltip("普通单轨 Hold 跟随判定容差：按住轨道与\"当前插值轨道\"相差多少条轨道内算命中。1.0 表示允许相邻一轨，越小越严格。")]
     public float laneTolerance = 1.0f;
+
+    [Tooltip("连轨滑动 Hold（如 第2轨→第3轨）在中点切换\"应被按住\"的轨道：切换前后各 slideSettleWindow 秒内，起手轨与目标轨都允许（容滑动手感）；窗口之外必须严格跟随当前阶段轨。单位：秒。")]
+    public float slideSettleWindow = 0.15f;
+
+    [Tooltip("断连判定：所需轨道超过该秒数未被按住即断连 MISS。越小越严格。")]
+    public float breakThreshold = 0.2f;
 
     [Tooltip("收尾后透明度淡出时长（秒）。在此期间音符继续移动并被判定线裁剪。")]
     public float fadeDuration = 0.35f;
@@ -73,13 +81,16 @@ public class HoldNote : MonoBehaviour
     private const int BarSegmentCount = 16; // 每段细分圆柱数
 
     private Vector3 baseNodeScale;
+    private Vector3[] nodeBaseScales;   // 每个节点基础缩放，MISS 逐段缩小时乘以收缩系数
     private float baseBarSegRadius;
     private Vector3[] exitPositions;
     private float[] exitLeadTimes;
     private float rideY;
     private float breakTimer = 0f;
     private float fadeTimer = -1f;
-    private bool missShrinking = false;
+    private bool missMode = false;        // 漏击后改为逐段越过判定线缩小消失（而非整条统一缩小）
+    private bool missReported = false;    // MISS 反馈是否已上报（只报一次）
+    private float missShrinkSpan = 0.5f;  // 越过判定线后多少距离内完成缩小消失
 
     // 已完成的段数（段 i 表示 node[i] -> node[i+1]）
     private int completedSegments = 0;
@@ -188,6 +199,7 @@ public class HoldNote : MonoBehaviour
             times = new float[] { 0f, 1f };
         }
         nodeCount = lanes.Length;
+        nodeBaseScales = new Vector3[nodeCount];
 
         // 节点圆柱（逐节点宽度：连轨节点覆盖相邻两轨，普通节点单轨）
         float r = noteRadius / 0.5f;
@@ -211,6 +223,7 @@ public class HoldNote : MonoBehaviour
             var mat = CreateColoredMaterial(Color.black);
             rend.material = mat;
             t.localScale = nodeScale;
+            nodeBaseScales[i] = nodeScale;
 
             nodeTransforms.Add(t);
             nodeRends.Add(rend);
@@ -286,7 +299,7 @@ public class HoldNote : MonoBehaviour
 
     private void MoveAndFade()
     {
-        if (finished || missShrinking) return;
+        if (finished) return;
 
         float songTime = conductor.songPosition;
 
@@ -315,6 +328,38 @@ public class HoldNote : MonoBehaviour
                 }
             }
             UpdateSegmentVisibility(cx, judgeLineX);
+
+            // 漏击消失：每个节点 / 段小片各自越过判定线后缩小并淡出（不再整条统一缩小）
+            if (missMode)
+            {
+                ApplyMissDisappear(cx, judgeLineX);
+
+                // 漏击的首节点越过判定线并缩没后，立即上报一次 MISS（不等待整条链）
+                float headPast = side == 0
+                    ? (judgeLineX - nodeTransforms[0].position.x)
+                    : (nodeTransforms[0].position.x - judgeLineX);
+                if (!missReported && headPast >= missShrinkSpan)
+                {
+                    missReported = true;
+                    onJudge?.Invoke(side, lanes[0], "MISS", hitPositions[0]);
+                }
+
+                // 所有节点都缩没后才销毁对象（期间其余节点继续逐片消失）
+                bool allGone = true;
+                for (int i = 0; i < nodeCount; i++)
+                {
+                    float past = side == 0
+                        ? (judgeLineX - nodeTransforms[i].position.x)
+                        : (nodeTransforms[i].position.x - judgeLineX);
+                    if (past < missShrinkSpan) { allGone = false; break; }
+                }
+                if (allGone)
+                {
+                    finished = true;
+                    Destroy(gameObject);
+                    return;
+                }
+            }
         }
         else
         {
@@ -388,6 +433,12 @@ public class HoldNote : MonoBehaviour
                 continue;
             }
 
+            // 逐段宽度：取两端节点各自的宽度（1=普通单轨，2=连轨），
+            // 不再用链级 laneSpan，从而避免“链内有一个连轨节点就把所有段都画粗”。
+            int spanA = NodeSpan(s);
+            int spanB = NodeSpan(s + 1);
+            bool hasWide = spanA > 1 || spanB > 1;
+
             Vector3 normDir = dir.normalized;
             float headEdgeOffset = noteRadius;
             float tailEdgeOffset = noteRadius;
@@ -397,36 +448,37 @@ public class HoldNote : MonoBehaviour
 
             int n = segs.Count;
             float segLen = n > 1 ? usableLen / n * 1.05f : usableLen;
+
+            // 连轨/混合段的阶梯参数（沿 X 步进、Z 插值，避免斜四边形）
+            float directionX = Mathf.Sign(b.x - a.x);
+            if (Mathf.Abs(b.x - a.x) < 0.001f) directionX = side == 0 ? -1f : 1f;
+            float startX = a.x + directionX * noteRadius;
+            float endX = b.x - directionX * noteRadius;
+            float usableX = Mathf.Abs(endX - startX);
+
             for (int k = 0; k < n; k++)
             {
-                float p = (k + 0.5f) / n;
-                segs[k].position = Vector3.Lerp(start, end, p);
-                if (laneSpan > 1)
+                float t = (k + 0.5f) / n;
+                segs[k].position = Vector3.Lerp(start, end, t);
+
+                if (!hasWide)
                 {
-                    // 连轨使用“阶梯”宽带：每个小片都保持水平，
-                    // 只逐段改变 Z，避免整条连接带被拉成斜四边形。
-                    // 每段宽度取两端节点宽度的最大值（节点 i 与 i+1 可能一宽一窄）。
-                    int spanA = NodeSpan(s);
-                    int spanB = NodeSpan(s + 1);
-                    int segSpan = Mathf.Max(spanA, spanB);
-                    float width = laneSpacing * (segSpan - 1) + noteRadius * 2f;
-                    float directionX = Mathf.Sign(b.x - a.x);
-                    if (Mathf.Abs(b.x - a.x) < 0.001f) directionX = side == 0 ? -1f : 1f;
-                    float startX = a.x + directionX * noteRadius;
-                    float endX = b.x - directionX * noteRadius;
-                    float usableX = Mathf.Abs(endX - startX);
-                    float stairSegLen = usableX / n * 1.12f;
-                    float stairP = (k + 0.5f) / n;
-                    float x = Mathf.Lerp(startX, endX, stairP);
-                    float z = Mathf.Lerp(a.z, b.z, stairP);
-                    segs[k].position = new Vector3(x, a.y, z);
-                    segs[k].rotation = Quaternion.identity;
-                    segs[k].localScale = new Vector3(stairSegLen, 0.12f, width);
+                    // 普通 ↔ 普通：细连接线（圆柱）
+                    segs[k].rotation = Quaternion.FromToRotation(Vector3.up, normDir);
+                    segs[k].localScale = new Vector3(baseBarSegRadius, segLen, baseBarSegRadius);
                 }
                 else
                 {
-                    segs[k].rotation = Quaternion.FromToRotation(Vector3.up, normDir);
-                    segs[k].localScale = new Vector3(baseBarSegRadius, segLen, baseBarSegRadius);
+                    // 含连轨节点：阶梯宽带。混合段（一端连轨一端普通）按位置插值宽度
+                    // => 粗到细的渐变链接，而不是整段统一粗。
+                    float kSpan = Mathf.Lerp(spanA, spanB, t);
+                    float width = laneSpacing * (kSpan - 1) + noteRadius * 2f;
+                    float stairSegLen = usableX / n * 1.12f;
+                    float x = Mathf.Lerp(startX, endX, t);
+                    float z = Mathf.Lerp(a.z, b.z, t);
+                    segs[k].position = new Vector3(x, a.y, z);
+                    segs[k].rotation = Quaternion.identity;
+                    segs[k].localScale = new Vector3(stairSegLen, 0.12f, width);
                 }
             }
         }
@@ -465,6 +517,10 @@ public class HoldNote : MonoBehaviour
     {
         for (int s = 0; s < segmentGroups.Count; s++)
         {
+            int spanA = NodeSpan(s);
+            int spanB = NodeSpan(s + 1);
+            bool hasWide = spanA > 1 || spanB > 1;
+
             var segs = segmentGroups[s];
             var rends = segmentRendGroups[s];
             Vector3 a = nodeTransforms[s].position;
@@ -484,7 +540,7 @@ public class HoldNote : MonoBehaviour
                     continue;
                 }
                 float halfLenX;
-                if (laneSpan > 1)
+                if (hasWide)
                 {
                     float halfAlong = segs[k].localScale.x * 0.5f * Mathf.Abs(normDir.x);
                     float halfAcross = segs[k].localScale.z * 0.5f * Mathf.Abs(normDir.z);
@@ -494,13 +550,69 @@ public class HoldNote : MonoBehaviour
                 {
                     halfLenX = segs[k].localScale.y * 0.5f * Mathf.Abs(normDir.x);
                 }
-                float minX = segs[k].position.x - halfLenX;
-                float maxX = segs[k].position.x + halfLenX;
                 bool revealed = IsBeyondLine(segs[k].position.x, revealLineX);
                 bool stillBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, halfLenX, hideLineX);
                 rends[k].enabled = revealed && stillBeforeJudge;
             }
         }
+    }
+
+    /// <summary>
+    /// 漏击消失：每个节点与每个段小片在“越过判定线后”各自缩小并淡出，
+    /// 表现与普通点击音符一致（先变小后消失），而不是整条链统一缩小。
+    /// 越过判定线的距离越远（最多 missShrinkSpan），收缩越彻底，缩没即隐藏。
+    /// </summary>
+    private void ApplyMissDisappear(float revealLineX, float judgeX)
+    {
+        // 节点：越过判定线后逐个缩小消失
+        for (int i = 0; i < nodeCount; i++)
+        {
+            if (nodeRends[i] == null) continue;
+            bool revealed = IsBeyondLine(nodeTransforms[i].position.x, revealLineX);
+            if (!revealed) { nodeRends[i].enabled = false; continue; }
+
+            float past = side == 0
+                ? (judgeX - nodeTransforms[i].position.x)
+                : (nodeTransforms[i].position.x - judgeX);
+            float shrink = past <= 0f ? 1f : 1f - Mathf.Clamp01(past / missShrinkSpan);
+
+            nodeTransforms[i].localScale = nodeBaseScales[i] * shrink;
+            SetMatAlpha(nodeMats[i], shrink);
+            nodeRends[i].enabled = shrink > 0.02f;
+        }
+
+        // 段带：同上，每个细分小片各自缩小消失
+        for (int s = 0; s < segmentGroups.Count; s++)
+        {
+            var segs = segmentGroups[s];
+            var rends = segmentRendGroups[s];
+            var mats = segmentMatGroups[s];
+            for (int k = 0; k < segs.Count; k++)
+            {
+                if (rends[k] == null) continue;
+                bool revealed = IsBeyondLine(segs[k].position.x, revealLineX);
+                if (!revealed) { rends[k].enabled = false; continue; }
+
+                float past = side == 0
+                    ? (judgeX - segs[k].position.x)
+                    : (segs[k].position.x - judgeX);
+                float shrink = past <= 0f ? 1f : 1f - Mathf.Clamp01(past / missShrinkSpan);
+
+                // 段缩放每帧由 UpdateAllSegments 重新写回基准值，这里直接乘以收缩系数即可
+                segs[k].localScale = segs[k].localScale * shrink;
+                SetMatAlpha(mats[k], shrink);
+                rends[k].enabled = shrink > 0.02f;
+            }
+        }
+    }
+
+    /// <summary>设置单个材质实例的透明度（不影响颜色，供漏击逐片淡出用）。</summary>
+    private void SetMatAlpha(Material mat, float a)
+    {
+        if (mat == null) return;
+        Color c = mat.color;
+        c.a = Mathf.Clamp01(a);
+        mat.color = c;
     }
 
     private void SetBarEnabledAll(bool enabled)
@@ -551,18 +663,49 @@ public class HoldNote : MonoBehaviour
         return laneSpan > 1 ? 2 : 1;
     }
 
-    /// <summary>当前 songTime 所处“应被按住”的轨道判定（连轨 Hold 判定宽一个音轨）。</summary>
-    /// <param name="reqLaneF">当前插值轨道（来自 SampleLaneAtTime，保留滑动过渡）。</param>
-    private bool AreRequiredLanesHeld(float reqLaneF)
+    /// <summary>当前 songTime 所处"应被按住"的轨道判定。</summary>
+    /// <param name="songTime">当前歌曲时间（秒），用于判断连轨滑动段所处的阶段与中点窗口。</param>
+    /// <param name="reqLaneF">当前插值轨道（来自 SampleLaneAtTime，保留滑动过渡，仅普通单轨 Hold 使用）。</param>
+    private bool AreRequiredLanesHeld(float songTime, float reqLaneF)
     {
         if (spawner == null) return false;
+
+        // 普通单轨 Hold：沿用浮点容差跟随（laneTolerance）
         if (laneSpan <= 1) return IsAnyHeldLaneClose(reqLaneF);
-        // 连轨 Hold：判定宽一个音轨——按住覆盖的任意一条相邻轨即可。
-        // 基于当前插值轨道 reqLaneF：直接判断按下的是否为覆盖的两条相邻轨之一，
-        // 并保留容差（IsAnyHeldLaneClose）以兼容普通 Hold 的滑动过渡手感。
-        int baseLane = Mathf.RoundToInt(reqLaneF);
-        if (spawner.heldLanes.Contains(baseLane) || spawner.heldLanes.Contains(baseLane + 1)) return true;
-        return IsAnyHeldLaneClose(reqLaneF);
+
+        // 连轨 Hold：
+        int seg = CurrentSegmentIndex(songTime);
+        int fromLane = lanes[seg];
+        int toLane = lanes[seg + 1];
+
+        // 静止宽音符（连轨但不滑动，两节点同轨）：覆盖的两条相邻轨任一即可（R4 宽一轨）
+        if (fromLane == toLane)
+        {
+            return spawner.heldLanes.Contains(fromLane) || spawner.heldLanes.Contains(fromLane + 1);
+        }
+
+        // 滑动段（如 第2轨→第3轨）：在节点时间中点"强制切换"应被按住的轨道，要求玩家跟随滑动。
+        // 前半段必须按 fromLane，后半段必须按 toLane；中点前后各 slideSettleWindow 秒内两条轨都允许，
+        // 给滑动手感的宽容度（不必正好在中点瞬间切换）。
+        float midTime = (times[seg] + times[seg + 1]) * 0.5f;
+        int phaseLane = songTime < midTime ? fromLane : toLane;
+        if (spawner.heldLanes.Contains(phaseLane)) return true;
+
+        if (Mathf.Abs(songTime - midTime) <= slideSettleWindow)
+        {
+            if (spawner.heldLanes.Contains(fromLane) || spawner.heldLanes.Contains(toLane)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>返回 songTime 当前所处的段索引（段 i 表示 node[i] -> node[i+1]）。</summary>
+    private int CurrentSegmentIndex(float songTime)
+    {
+        for (int i = 0; i < nodeCount - 1; i++)
+        {
+            if (songTime >= times[i] && songTime < times[i + 1]) return i;
+        }
+        return Mathf.Max(0, nodeCount - 2);
     }
 
     /// <summary>
@@ -603,11 +746,11 @@ public class HoldNote : MonoBehaviour
             // 按住检测（AI 跳过，由 isAI 标志控制）
             if (!isAI)
             {
-                bool held = AreRequiredLanesHeld(reqLaneF);
+                bool held = AreRequiredLanesHeld(songTime, reqLaneF);
                 if (!held) breakTimer += Time.deltaTime;
                 else breakTimer = 0f;
 
-                if (breakTimer > 0.2f)
+                if (breakTimer > breakThreshold)
                 {
                     Break();
                     return;
@@ -679,56 +822,9 @@ public class HoldNote : MonoBehaviour
         broken = true;
         fadeTimer = -1f;
         ResetAllToBlack();
-        // 首节点漏击后整条链接立即失效，但保留对象播放缩小消失动画。
-        missShrinking = true;
-        StartCoroutine(MissShrinkCoroutine());
-    }
-
-    private System.Collections.IEnumerator MissShrinkCoroutine()
-    {
-        const float duration = 0.18f;
-        float timer = 0f;
-        Vector3[] nodeScales = new Vector3[nodeTransforms.Count];
-        for (int i = 0; i < nodeTransforms.Count; i++)
-            nodeScales[i] = nodeTransforms[i].localScale;
-
-        var segmentScales = new List<List<Vector3>>();
-        for (int s = 0; s < segmentGroups.Count; s++)
-        {
-            var scales = new List<Vector3>();
-            for (int k = 0; k < segmentGroups[s].Count; k++)
-                scales.Add(segmentGroups[s][k].localScale);
-            segmentScales.Add(scales);
-        }
-
-        SetAlpha(1f);
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-            float t = Mathf.Clamp01(timer / duration);
-            float scale = 1f - t;
-            for (int i = 0; i < nodeTransforms.Count; i++)
-                nodeTransforms[i].localScale = nodeScales[i] * scale;
-            for (int s = 0; s < segmentGroups.Count; s++)
-                for (int k = 0; k < segmentGroups[s].Count; k++)
-                    segmentGroups[s][k].localScale = segmentScales[s][k] * scale;
-            SetAlpha(scale);
-            yield return null;
-        }
-
-        SetVisualsEnabled(false);
-        missShrinking = false;
-        finished = true;
-        onJudge?.Invoke(side, lanes[0], "MISS", hitPositions[0]);
-    }
-
-    private void SetVisualsEnabled(bool enabled)
-    {
-        for (int i = 0; i < nodeRends.Count; i++)
-        {
-            if (nodeRends[i] != null) nodeRends[i].enabled = enabled;
-        }
-        SetBarEnabledAll(enabled);
+        // 首节点漏击后整条链接立即失效。改为“逐段越过判定线缩小消失”，
+        // 由 MoveAndFade 每帧调用 ApplyMissDisappear 处理，而不是整条统一缩小。
+        missMode = true;
     }
 
     private void Break()

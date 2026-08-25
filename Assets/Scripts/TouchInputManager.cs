@@ -2,185 +2,155 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// 移动端触摸输入管理器。
-/// 从主相机发射射线，检测落在哪个 TouchZone 上，触发对应玩家的轨道输入。
-/// 同时支持鼠标点击，方便在编辑器里测试。
+/// 处理红方（本地玩家）的触摸 / 鼠标输入：从屏幕坐标发射射线命中 TouchZone，
+/// 再调用 leftSpawner.TriggerLaneDown / TriggerLaneUp 触发对应轨道。
 ///
-/// 与长按音符配合：按下(Began/Down) -> TriggerLaneDown，松开(Ended/Up) -> TriggerLaneUp。
-/// 这样玩家可按住轨道并在跨轨长按时沿连接线滑动跟随。
+/// 蓝方输入来自网络，不在此处理。
+/// 设计要点：
+/// - 每个手指（触摸）或鼠标（编辑器测试用固定 id = -1）记录当前按下的 lane；
+/// - 手指在轨道间滑动时，先释放旧轨道再按下新轨道；
+/// - 同一条轨道可被多指按住，用 laneHoldCount 计数，最后一指抬起才下发 TriggerLaneUp。
 /// </summary>
 public class TouchInputManager : MonoBehaviour
 {
-    [Header("引用")]
+    [Tooltip("用于屏幕坐标转射线（留空自动取 Camera.main）")]
     public Camera gameCamera;
+
+    [Tooltip("红方发射器（本地玩家）")]
     public NoteSpawner leftSpawner;
-    public NoteSpawner rightSpawner;
 
-    [Header("射线层")]
-    [Tooltip("触控区域所在的 Layer。需要在 Inspector 里设置 TouchZone 的 Layer")]
-    public LayerMask touchLayer;
+    [Tooltip("触控区所在层（默认 Layer 6 = TouchZone）")]
+    public LayerMask touchLayer = 1 << 6;
 
-    [Header("调试")]
-    [Tooltip("是否在控制台打印触摸信息")]
+    [Tooltip("是否在 Console 打印触摸调试")]
     public bool logTouches = false;
 
-    // 跟踪每个活跃触摸当前所在侧/轨道，拖拽换轨时自动松开旧轨、按下新轨
-    private Dictionary<int, int> touchLane = new Dictionary<int, int>();
-    private Dictionary<int, int> touchSide = new Dictionary<int, int>();
-    private int mouseLane = -1;
-    private int mouseSide = -1;
+    // 每个手指当前按下的 lane（-1 表示空闲），key 为 fingerId（鼠标固定为 -1）
+    private Dictionary<int, int> fingerLane = new Dictionary<int, int>();
+    // 每条轨道当前被按住的指头数（用于多指 / 滑动场景，避免误触发抬起）
+    private int[] laneHoldCount = new int[4];
+    private RaycastHit[] hitBuffer = new RaycastHit[8];
+
+    void Start()
+    {
+        if (gameCamera == null) gameCamera = Camera.main;
+    }
 
     void Update()
     {
-        if (GameManager.Instance != null && GameManager.Instance.isGameOver) return;
-
+        if (leftSpawner == null) return;
         if (gameCamera == null) gameCamera = Camera.main;
+        if (gameCamera == null) return;
 
-        // 处理触摸
+        // 1. 处理所有触摸
         for (int i = 0; i < Input.touchCount; i++)
         {
-            Touch touch = Input.GetTouch(i);
-            if (touch.phase == TouchPhase.Began)
-            {
-                if (TryResolvePointer(touch.position, out int side, out int lane))
-                {
-                    TriggerLaneDown(side, lane);
-                    touchSide[touch.fingerId] = side;
-                    touchLane[touch.fingerId] = lane;
-                }
-            }
-            else if (touch.phase == TouchPhase.Moved)
-            {
-                bool hasOldSide = touchSide.TryGetValue(touch.fingerId, out int oldSide);
-                bool hasOldLane = touchLane.TryGetValue(touch.fingerId, out int oldLane);
-
-                if (TryResolvePointer(touch.position, out int newSide, out int newLane))
-                {
-                    if (hasOldSide && hasOldLane && (newSide != oldSide || newLane != oldLane))
-                    {
-                        TriggerLaneUp(oldSide, oldLane);
-                        TriggerLaneDown(newSide, newLane);
-                        touchSide[touch.fingerId] = newSide;
-                        touchLane[touch.fingerId] = newLane;
-                    }
-                    else if (hasOldSide && !hasOldLane)
-                    {
-                        // 之前拖出 TouchZone，现在重新进入：直接按下
-                        TriggerLaneDown(newSide, newLane);
-                        touchSide[touch.fingerId] = newSide;
-                        touchLane[touch.fingerId] = newLane;
-                    }
-                }
-                else if (hasOldLane)
-                {
-                    // 拖到没有 TouchZone 的区域：松开旧轨，但保留 side 跟踪，再次进入时重新按下
-                    TriggerLaneUp(oldSide, oldLane);
-                    touchLane.Remove(touch.fingerId);
-                }
-            }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-            {
-                if (touchSide.TryGetValue(touch.fingerId, out int side) &&
-                    touchLane.TryGetValue(touch.fingerId, out int lane))
-                {
-                    TriggerLaneUp(side, lane);
-                    touchSide.Remove(touch.fingerId);
-                    touchLane.Remove(touch.fingerId);
-                }
-            }
+            Touch t = Input.GetTouch(i);
+            int lane = LaneAtScreenPoint(t.position);
+            UpdateFinger(t.fingerId, lane, t.phase);
         }
 
-        // 编辑器/PC 测试：鼠标左键（支持按住并拖动换轨）
-        if (Input.GetMouseButtonDown(0))
+        // 2. 鼠标（PC / 编辑器测试用）：当作一个固定 id = -1 的指针
+        if (Input.mousePresent)
         {
-            if (TryResolvePointer(Input.mousePosition, out int side, out int lane))
+            if (Input.GetMouseButton(0) || Input.GetMouseButtonDown(0) || Input.GetMouseButtonUp(0))
             {
-                TriggerLaneDown(side, lane);
-                mouseSide = side;
-                mouseLane = lane;
+                int mlane = LaneAtScreenPoint(Input.mousePosition);
+                TouchPhase mp;
+                if (Input.GetMouseButtonDown(0)) mp = TouchPhase.Began;
+                else if (Input.GetMouseButtonUp(0)) mp = TouchPhase.Ended;
+                else mp = fingerLane.ContainsKey(-1) ? TouchPhase.Moved : TouchPhase.Stationary;
+                UpdateFinger(-1, mlane, mp);
             }
-        }
-        else if (Input.GetMouseButton(0) && mouseLane >= 0)
-        {
-            if (TryResolvePointer(Input.mousePosition, out int newSide, out int newLane))
+            else if (fingerLane.ContainsKey(-1))
             {
-                if (newSide != mouseSide || newLane != mouseLane)
-                {
-                    TriggerLaneUp(mouseSide, mouseLane);
-                    TriggerLaneDown(newSide, newLane);
-                    mouseSide = newSide;
-                    mouseLane = newLane;
-                }
-            }
-            else
-            {
-                TriggerLaneUp(mouseSide, mouseLane);
-                mouseLane = -1;
-            }
-        }
-        else if (Input.GetMouseButton(0) && mouseLane < 0 && mouseSide >= 0)
-        {
-            // 按住鼠标拖出 TouchZone 后又拖回来：重新按下
-            if (TryResolvePointer(Input.mousePosition, out int newSide, out int newLane))
-            {
-                TriggerLaneDown(newSide, newLane);
-                mouseSide = newSide;
-                mouseLane = newLane;
-            }
-        }
-        else if (Input.GetMouseButtonUp(0))
-        {
-            if (mouseLane >= 0)
-            {
-                TriggerLaneUp(mouseSide, mouseLane);
-                mouseLane = -1;
-                mouseSide = -1;
+                // 鼠标没按但状态里还记着，强制抬起
+                UpdateFinger(-1, -1, TouchPhase.Ended);
             }
         }
     }
 
     /// <summary>
-    /// 射线检测返回当前指针落在哪个 side/lane 的 TouchZone 上。
-    /// 没命中返回 false。
+    /// 屏幕坐标 → 命中的 TouchZone.lane（未命中返回 -1）。
     /// </summary>
-    private bool TryResolvePointer(Vector2 screenPos, out int side, out int lane)
+    private int LaneAtScreenPoint(Vector2 screen)
     {
-        side = -1;
-        lane = -1;
-        if (gameCamera == null) return false;
-
-        Ray ray = gameCamera.ScreenPointToRay(screenPos);
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f, touchLayer))
+        Ray ray = gameCamera.ScreenPointToRay(screen);
+        int hits = Physics.RaycastNonAlloc(ray, hitBuffer, 200f, touchLayer);
+        for (int i = 0; i < hits; i++)
         {
-            TouchZone zone = hit.collider.GetComponent<TouchZone>();
-            if (zone == null) zone = hit.collider.GetComponentInParent<TouchZone>();
+            TouchZone tz = hitBuffer[i].collider.GetComponent<TouchZone>();
+            if (tz != null) return tz.lane;
+        }
+        return -1;
+    }
 
-            if (zone != null)
+    private void UpdateFinger(int fingerId, int lane, TouchPhase phase)
+    {
+        if (phase == TouchPhase.Began)
+        {
+            if (lane >= 0 && lane < 4)
             {
-                side = zone.side;
-                lane = zone.lane;
-                return true;
+                fingerLane[fingerId] = lane;
+                laneHoldCount[lane]++;
+                leftSpawner.TriggerLaneDown(lane);
+                if (logTouches) Debug.Log($"[Touch] finger {fingerId} down lane {lane}");
             }
         }
-        return false;
+        else if (phase == TouchPhase.Moved || phase == TouchPhase.Stationary)
+        {
+            if (fingerLane.TryGetValue(fingerId, out int cur))
+            {
+                if (lane != cur)
+                {
+                    // 滑到了另一条轨道：释放旧轨道，按下新轨道
+                    ReleaseLane(cur);
+                    if (lane >= 0 && lane < 4)
+                    {
+                        fingerLane[fingerId] = lane;
+                        laneHoldCount[lane]++;
+                        leftSpawner.TriggerLaneDown(lane);
+                        if (logTouches) Debug.Log($"[Touch] finger {fingerId} move -> lane {lane}");
+                    }
+                    else
+                    {
+                        fingerLane.Remove(fingerId);
+                    }
+                }
+            }
+            else if (lane >= 0 && lane < 4)
+            {
+                // 之前在空白处，现在进入某条轨道
+                fingerLane[fingerId] = lane;
+                laneHoldCount[lane]++;
+                leftSpawner.TriggerLaneDown(lane);
+            }
+        }
+        else if (phase == TouchPhase.Ended || phase == TouchPhase.Canceled)
+        {
+            ReleaseFinger(fingerId);
+        }
     }
 
-    private void TriggerLaneDown(int side, int lane)
+    private void ReleaseFinger(int fingerId)
     {
-        if (logTouches)
-            Debug.Log($"Touch Down side={side} lane={lane}");
-
-        if (side == 0 && leftSpawner != null)
-            leftSpawner.TriggerLaneDown(lane);
-        else if (side == 1 && rightSpawner != null)
-            rightSpawner.TriggerLaneDown(lane);
+        if (fingerLane.TryGetValue(fingerId, out int lane))
+        {
+            ReleaseLane(lane);
+            fingerLane.Remove(fingerId);
+        }
     }
 
-    private void TriggerLaneUp(int side, int lane)
+    private void ReleaseLane(int lane)
     {
-        if (side == 0 && leftSpawner != null)
-            leftSpawner.TriggerLaneUp(lane);
-        else if (side == 1 && rightSpawner != null)
-            rightSpawner.TriggerLaneUp(lane);
+        if (lane >= 0 && lane < 4)
+        {
+            laneHoldCount[lane] = Mathf.Max(0, laneHoldCount[lane] - 1);
+            if (laneHoldCount[lane] == 0)
+            {
+                leftSpawner.TriggerLaneUp(lane);
+                if (logTouches) Debug.Log($"[Touch] lane {lane} up");
+            }
+        }
     }
 }

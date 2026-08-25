@@ -3,7 +3,7 @@ using UnityEditor;
 
 /// <summary>
 /// Musical Sprite 运行时调试工具。
-/// 可调整：AI 实力、音符分数、音符速度和数量、音符半径。
+/// 可调整：AI 实力、音符分数、音符速度和数量、音符半径、连轨长按判定（滑动手感：滞留窗口/断连阈值/单轨容差）。
 /// 菜单：Tools > Musical Sprite > Debug Window
 ///
 /// 关键修复：之前在编辑模式修改参数后，进入 Play 模式会被重置。
@@ -29,6 +29,11 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private float noteRadius = 0.45f;
     private int totalBeats = 120;
     private DemoBeatmapGenerator.Density density = DemoBeatmapGenerator.Density.Medium;
+
+    // 连轨长按判定（滑动手感）
+    private float holdSlideSettleWindow = 0.15f;
+    private float holdBreakThreshold = 0.2f;
+    private float holdLaneTolerance = 1.0f;
 
     private Vector2 scroll;
 
@@ -75,6 +80,9 @@ public class MusicalSpriteDebugWindow : EditorWindow
         noteRadius = EditorPrefs.GetFloat(PREFS + "noteRadius", noteRadius);
         totalBeats = EditorPrefs.GetInt(PREFS + "totalBeats", totalBeats);
         density = (DemoBeatmapGenerator.Density)EditorPrefs.GetInt(PREFS + "density", (int)density);
+        holdSlideSettleWindow = EditorPrefs.GetFloat(PREFS + "holdSlideSettleWindow", holdSlideSettleWindow);
+        holdBreakThreshold = EditorPrefs.GetFloat(PREFS + "holdBreakThreshold", holdBreakThreshold);
+        holdLaneTolerance = EditorPrefs.GetFloat(PREFS + "holdLaneTolerance", holdLaneTolerance);
     }
 
     private void SavePrefs()
@@ -91,6 +99,9 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorPrefs.SetFloat(PREFS + "noteRadius", noteRadius);
         EditorPrefs.SetInt(PREFS + "totalBeats", totalBeats);
         EditorPrefs.SetInt(PREFS + "density", (int)density);
+        EditorPrefs.SetFloat(PREFS + "holdSlideSettleWindow", holdSlideSettleWindow);
+        EditorPrefs.SetFloat(PREFS + "holdBreakThreshold", holdBreakThreshold);
+        EditorPrefs.SetFloat(PREFS + "holdLaneTolerance", holdLaneTolerance);
     }
 
     private void SyncFromScene()
@@ -118,6 +129,9 @@ public class MusicalSpriteDebugWindow : EditorWindow
         {
             leadTime = spawner.leadTime;
             noteRadius = spawner.noteRadius;
+            holdSlideSettleWindow = spawner.holdSlideSettleWindow;
+            holdBreakThreshold = spawner.holdBreakThreshold;
+            holdLaneTolerance = spawner.holdLaneTolerance;
         }
     }
 
@@ -134,6 +148,8 @@ public class MusicalSpriteDebugWindow : EditorWindow
         DrawScores();
         GUILayout.Space(15);
         DrawNotes();
+        GUILayout.Space(15);
+        DrawHoldJudgment();
         GUILayout.Space(20);
 
         EditorGUILayout.EndScrollView();
@@ -200,6 +216,23 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorGUILayout.EndVertical();
     }
 
+    private void DrawHoldJudgment()
+    {
+        GUILayout.Label("连轨长按判定（滑动手感）", EditorStyles.boldLabel);
+        EditorGUILayout.BeginVertical(GUI.skin.box);
+
+        holdSlideSettleWindow = EditorGUILayout.Slider("滞留窗口 slideSettleWindow", holdSlideSettleWindow, 0f, 0.5f);
+        EditorGUILayout.HelpBox("连轨滑动 Hold（如 第2轨→第3轨）在节点时间中点切换\"应被按住\"的轨道；切换前后各该秒数内，起手轨与目标轨都允许（容滑动手感）。调大=更宽松，调小=更接近正中切点切换。", MessageType.None);
+
+        holdBreakThreshold = EditorGUILayout.Slider("断连阈值 breakThreshold", holdBreakThreshold, 0.05f, 0.5f);
+        EditorGUILayout.HelpBox("所需轨道超过该秒数未被按住即断连 MISS。调小=更快断（更严格）。", MessageType.None);
+
+        holdLaneTolerance = EditorGUILayout.Slider("单轨容差 laneTolerance", holdLaneTolerance, 0f, 2f);
+        EditorGUILayout.HelpBox("仅普通单轨 Hold 的跟随容差：按住轨道与当前插值轨道相差多少条轨道内算命中。", MessageType.None);
+
+        EditorGUILayout.EndVertical();
+    }
+
     /// <summary>
     /// 仅应用参数值（AI/分数/发射器），不重生成谱面、不重启。
     /// 用于进入 Play 模式时确保修改生效。
@@ -227,14 +260,27 @@ public class MusicalSpriteDebugWindow : EditorWindow
             EditorUtility.SetDirty(scoreManager);
         }
 
-        // 3. 音符速度和半径（两边发射器同步）
+        // 3. 音符速度、半径、连轨判定（两边发射器同步）
         NoteSpawner[] spawners = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
         foreach (var s in spawners)
         {
             s.leadTime = leadTime;
             s.noteRadius = noteRadius;
+            s.holdSlideSettleWindow = holdSlideSettleWindow;
+            s.holdBreakThreshold = holdBreakThreshold;
+            s.holdLaneTolerance = holdLaneTolerance;
             s.RecomputeWindows();
             EditorUtility.SetDirty(s);
+        }
+
+        // 3b. 立即应用到场上已存在的长按音符（调试时无需重启即可看到效果）
+        HoldNote[] liveHolds = FindObjectsByType<HoldNote>(FindObjectsSortMode.None);
+        foreach (var h in liveHolds)
+        {
+            h.slideSettleWindow = holdSlideSettleWindow;
+            h.breakThreshold = holdBreakThreshold;
+            h.laneTolerance = holdLaneTolerance;
+            EditorUtility.SetDirty(h);
         }
 
         SavePrefs();
@@ -242,7 +288,8 @@ public class MusicalSpriteDebugWindow : EditorWindow
         if (!silent)
             Debug.Log("[MS Debug] 参数已应用：aimOffset=" + aiAimOffset + " miss=" + aiMissChance +
                       " perfect=" + perfectScore + " good=" + goodScore + " clear=" + clearScore +
-                      " pass=" + passScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius);
+                      " pass=" + passScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius +
+                      " slideSettle=" + holdSlideSettleWindow + " breakTh=" + holdBreakThreshold + " laneTol=" + holdLaneTolerance);
     }
 
     private void ApplyAll()
