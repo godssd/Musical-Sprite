@@ -267,13 +267,32 @@ public class NoteSpawner : MonoBehaviour
             holdTimes = tt;
         }
 
+        // 逐节点宽度：优先用 data.holdLaneSpans（链接模式可为不同节点设不同宽度），
+        // 否则整条链沿用传入的 whole-span（旧谱面 / 纯连轨长按）。
+        int[] nodeLaneSpans;
+        if (data.holdLaneSpans != null && data.holdLaneSpans.Length >= nodeCount)
+            nodeLaneSpans = System.Array.ConvertAll(data.holdLaneSpans, v => v > 1 ? 2 : 1);
+        else if (data.holdLaneSpans != null)
+        {
+            nodeLaneSpans = new int[nodeCount];
+            for (int i = 0; i < nodeCount; i++)
+                nodeLaneSpans[i] = (i < data.holdLaneSpans.Length && data.holdLaneSpans[i] > 1) ? 2 : 1;
+        }
+        else
+        {
+            int whole = laneSpan > 1 ? 2 : 1;
+            nodeLaneSpans = new int[nodeCount];
+            for (int i = 0; i < nodeCount; i++) nodeLaneSpans[i] = whole;
+        }
+
         Vector3[] spawnPositions = new Vector3[nodeCount];
         Vector3[] hitPositions = new Vector3[nodeCount];
         for (int i = 0; i < nodeCount; i++)
         {
-            int ln = ClampLaneSpanStart(holdLanes[i], laneSpan);
+            int span = nodeLaneSpans[i];
+            int ln = ClampLaneSpanStart(holdLanes[i], span);
             holdLanes[i] = ln;
-            Vector3 off = GetLaneSpanOffset(ln, laneSpan);
+            Vector3 off = GetLaneSpanOffset(ln, span);
             spawnPositions[i] = spawnPoint.position + off;
             hitPositions[i] = hitPoint.position + off;
         }
@@ -288,7 +307,11 @@ public class NoteSpawner : MonoBehaviour
         hn.times = holdTimes;
         hn.leadTime = leadTime;
         hn.noteRadius = noteRadius;
-        hn.laneSpan = laneSpan;
+        // 整条链宽度兜底取各节点最大宽度（细宽度由 nodeLaneSpans 决定）
+        int maxSpan = laneSpan > 1 ? 2 : 1;
+        for (int i = 0; i < nodeLaneSpans.Length; i++) if (nodeLaneSpans[i] > maxSpan) maxSpan = nodeLaneSpans[i];
+        hn.laneSpan = maxSpan;
+        hn.nodeLaneSpans = nodeLaneSpans;
         hn.laneSpacing = laneSpacing;
         hn.spawnPositions = spawnPositions;
         hn.hitPositions = hitPositions;
@@ -341,7 +364,8 @@ public class NoteSpawner : MonoBehaviour
         foreach (var note in activeNotes)
         {
             if (!note.CoversLane(lane) || note.isHit || note.side != side) continue;
-            if (note.laneSpan > 1 && !AreLanesHeld(note.lane, note.laneSpan)) continue;
+            // 连轨点击音符（laneSpan>1）只需按覆盖的任意一条轨道即可命中（判定宽一个音轨），
+            // 因此不再要求两条轨道同时被按住；评价/MISS 与普通点击完全一致。
             if (songTime > note.hitTime + goodWindow) continue; // 已超出窗口（将由 Update 判 MISS）
 
             float dt = songTime - note.hitTime;

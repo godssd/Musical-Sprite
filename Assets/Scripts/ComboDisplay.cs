@@ -30,8 +30,8 @@ public class ComboDisplay : MonoBehaviour
     public NoteSpawner spawner;
     [Tooltip("中间粉杠，用于计算判定线到粉杠中央")]
     public BattleCenterLine centerLine;
-    [Tooltip("高度偏移（地面以上）")]
-    public float heightOffset = 0.5f;
+    [Tooltip("高度偏移（地面以上）。连击数在世界坐标里的抬高量，默认 1.2（原 0.5，按手感微调）。")]
+    public float heightOffset = 1.2f;
 
     private int currentCombo = 0;
     private Vector3 baseScale;

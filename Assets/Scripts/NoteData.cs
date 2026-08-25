@@ -50,6 +50,14 @@ public class NoteData
     public float[] holdTimes;
 
     /// <summary>
+    /// 逐节点宽度（与 holdLanes 一一对应）：1 = 普通单轨节点，2 = 连轨节点（覆盖相邻两轨）。
+    /// 链接模式中不同节点的宽度可以不同（例如第一个节点是普通单轨，后面的节点是连轨），
+    /// 因此宽度不再是整条链共用一个 type，而是每个节点独立记录。
+    /// 为 null 时按 type 推断：Linked => 全部 2 轨；否则全部 1 轨（兼容旧谱面）。
+    /// </summary>
+    public int[] holdLaneSpans;
+
+    /// <summary>
     /// 解析出 Hold 的节点轨道列表。优先使用 holdLanes（多节点）；
     /// 若为空，则退化成旧版 2 节点：[lane, holdEndLane]。
     /// </summary>
@@ -68,6 +76,17 @@ public class NoteData
         if (holdTimes != null && holdTimes.Length >= 2) return holdTimes;
         float tail = time + Mathf.Max(0.1f, holdDuration);
         return new float[] { time, tail };
+    }
+
+    /// <summary>
+    /// 解析出节点 i 的宽度（1=普通单轨，2=连轨覆盖相邻两轨）。
+    /// 优先使用 holdLaneSpans（逐节点）；为 null 时按 type 推断（Linked=>2，否则=>1）。
+    /// </summary>
+    public int GetNodeSpan(int i)
+    {
+        if (holdLaneSpans != null && i >= 0 && i < holdLaneSpans.Length)
+            return holdLaneSpans[i] > 1 ? 2 : 1;
+        return type == NoteType.Linked ? 2 : 1;
     }
 
     /// <summary>

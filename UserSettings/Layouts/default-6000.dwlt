@@ -675,22 +675,33 @@ MonoBehaviour:
   - time: 11.25
     lane: 1
     type: 1
+    isSmallTap: 0
     holdDuration: 1.4625001
     holdEndLane: 1
+    holdTimes: []
+    holdLanes: 
   - time: 20.625
     lane: 1
     type: 1
+    isSmallTap: 0
     holdDuration: 1.6166668
     holdEndLane: 2
+    holdTimes: []
+    holdLanes: 
   - time: 14.0625
     lane: 2
     type: 0
+    isSmallTap: 0
     holdDuration: 0
     holdEndLane: 0
+    holdTimes: []
+    holdLanes: 
   pixelsPerSecond: 60
   viewStartTime: 0
   snapToBeat: 1
-  placeHoldMode: 0
+  linkingMode: 0
+  placeSmallTapMode: 0
+  placeLinkedMode: 0
   playTime: 0
 --- !u!114 &27
 MonoBehaviour:
@@ -960,7 +971,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 9eb50000
     m_LastClickedID: 46494
-    m_ExpandedIDs: 000000001cb50000
+    m_ExpandedIDs: 00000000b8b40000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -989,7 +1000,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 000000001cb50000
+    m_ExpandedIDs: 00000000b8b40000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 

@@ -35,6 +35,9 @@ namespace MusicalSprite.Editor
             // Hold / Linked 长按的节点时刻与轨道。Linked 的 lane 表示双轨中的第一轨（0-2）。
             public float[] holdTimes;
             public int[] holdLanes;
+            // 逐节点宽度（与 holdLanes 一一对应）：1=普通单轨节点，2=连轨节点（覆盖相邻两轨）。
+            // 链接模式中不同节点可独立设宽度，不再整条链共用一个 type。
+            public int[] holdLaneSpans;
         }
 
         [SerializeField] private string beatmapName = "NewBeatmap";
@@ -64,8 +67,18 @@ namespace MusicalSprite.Editor
         private bool linkingActive = false;                 // 是否正在编辑一条链
         private List<float> linkTimes = new List<float>();  // 已落下的节点时刻
         private List<int> linkLanes = new List<int>();      // 已落下的节点轨道
+        private List<int> linkLaneSpans = new List<int>();  // 已落下的节点宽度（1=普通单轨，2=连轨），逐节点独立
         private int linkLastIndex = -1;                     // 正在编辑的 ChartNote 在 notes 中的索引（多节点 Hold 本体）
         private bool linkingLinked = false;                 // 当前正在编辑的是双轨连轨链
+
+        // ---------- 链接模式：左键按住不放 + 上下拖动 => 连轨音符 ----------
+        // 左键按下后不直接落节点，而是记录起始信息；到 MouseUp 才决定：
+        //  - 仅点击（无上下拖动）=> 落单轨节点（保持原有链接逻辑）
+        //  - 按住并上下拖动 >=1 轨 => 制作连轨音符（覆盖相邻两轨）
+        private bool pendingLinkDown = false;               // 左键已按下、等待 MouseUp 提交
+        private Vector2 linkDownMouse;                      // 按下时鼠标位置
+        private int linkDownLane;                           // 按下时所在轨道
+        private float linkDownTime;                         // 按下时的 time（未吸附）
 
         // ---------- 点击音符与连轨音符创建 ----------
         [SerializeField] private bool placeSmallTapMode = false;
@@ -181,8 +194,8 @@ namespace MusicalSprite.Editor
             EditorGUILayout.HelpBox(
                 "音符的 time = 音符圆心抵达判定线的时刻（非发射时刻）；改难度只改移动速度，不影响该时刻。\n" +
                 "普通音符：轨道区单击=加音符；拖拽=移动；右键/Delete=删除；点击刻度尺=定位播放头。\n" +
-                "链接模式（按住点击音符）：勾选后连续左键落节点，右键结束；每完成一段链接评价一次 CLEAR。\n" +
-                "连轨音符：勾选「连轨音符」后单击生成覆盖相邻两轨的宽点击；同时勾选「链接模式」可生成双轨按住链，后续节点换到其他轨道对时即形成跨轨。连轨不区分大小圈。普通点击仍可用「小圈点击」区分大小。\n" +
+                "链接模式（按住点击音符）：勾选后左键落节点，右键结束；松开后仍自动链接鼠标，可继续落下一个节点（普通点击=单轨节点）。\n" +
+                "连轨音符（链接模式专属）：左键按下不放并上下拖动 >=1 轨 => 制作连轨音符（覆盖拖动的相邻两轨），松开后同样自动链接鼠标；此时右键 => 变成普通的连轨点击音符。也可勾选「连轨音符」后单击生成覆盖相邻两轨的宽点击。连轨不区分大小圈。普通点击仍可用「小圈点击」区分大小。\n" +
                 "挂上「音乐素材」后点播放可听音校谱；保存并「调用」后，下一次「搭建完整场景」将同步播放本谱面与音乐。\n" + activeName,
                 MessageType.Info);
         }
@@ -245,7 +258,8 @@ namespace MusicalSprite.Editor
 
                 if (isHold)
                 {
-                    // 多节点 Hold：遍历所有节点画折线 + 每个节点画方块
+                    // 多节点 Hold：遍历所有节点画折线 + 每个节点画方块。
+                    // 逐节点宽度（holdLaneSpans）：普通节点 1 轨、连轨节点 2 轨，互不影响。
                     float[] ts;
                     int[] ls;
                     if (n.holdTimes != null && n.holdLanes != null && n.holdTimes.Length >= 2 && n.holdLanes.Length >= 2)
@@ -264,22 +278,27 @@ namespace MusicalSprite.Editor
                     for (int k = 0; k < ts.Length - 1; k++)
                     {
                         float xA = timeX0 + (ts[k] - viewStartTime) * pixelsPerSecond;
-                        float yA = GetNoteY(baseRect, ls[k], isLinked);
+                        bool aLinked = NodeIsLinked(n, k);
+                        bool bLinked = NodeIsLinked(n, k + 1);
+                        float yA = GetNoteY(baseRect, ls[k], aLinked);
                         float xB = timeX0 + (ts[k + 1] - viewStartTime) * pixelsPerSecond;
-                        float yB = GetNoteY(baseRect, ls[k + 1], isLinked);
+                        float yB = GetNoteY(baseRect, ls[k + 1], bLinked);
+                        // 段宽度取两端节点宽度较大者（节点一宽一窄时连轨带更宽）
+                        bool segLinked = aLinked || bLinked;
                         if (xB >= timeX0 - 16 && xA <= baseRect.x + baseRect.width + 16)
-                            DrawThickLine(new Vector2(xA, yA), new Vector2(xB, yB), isLinked ? LaneHeight * 1.45f : 4f, lineCol);
+                            DrawThickLine(new Vector2(xA, yA), new Vector2(xB, yB), segLinked ? LaneHeight * 1.45f : 4f, lineCol);
                     }
-                    // 节点方块
+                    // 节点方块（逐节点宽度）
                     for (int k = 0; k < ts.Length; k++)
                     {
                         float x = timeX0 + (ts[k] - viewStartTime) * pixelsPerSecond;
                         if (x < timeX0 - 16 || x > baseRect.x + baseRect.width + 16) continue;
-                        float y = GetNoteY(baseRect, ls[k], isLinked);
-                        float nodeHeight = isLinked ? LaneHeight * 1.7f : 12f;
+                        bool nodeLinked = NodeIsLinked(n, k);
+                        float y = GetNoteY(baseRect, ls[k], nodeLinked);
+                        float nodeHeight = nodeLinked ? LaneHeight * 1.7f : 12f;
                         Rect nodeRect = new Rect(x - 6, y - nodeHeight * 0.5f, 12, nodeHeight);
                         Color nodeColor = (i == selectedIndex) ? Color.yellow : LaneColors[Mathf.Clamp(ls[k], 0, 3)];
-                        if (isLinked)
+                        if (nodeLinked)
                             DrawRoundedRect(nodeRect, 3f, nodeColor);
                         else
                             EditorGUI.DrawRect(nodeRect, nodeColor);
@@ -310,14 +329,72 @@ namespace MusicalSprite.Editor
                 }
             }
 
-            // 链接模式跟随预览：最后已落节点 → 鼠标指针
-            if (linkingMode && linkingActive && linkTimes.Count > 0)
+            // 链接模式跟随预览：最后已落节点 → 鼠标指针（明确表现"正在链接鼠标"）
+            if (linkingMode && linkingActive && linkTimes.Count > 0 && !pendingLinkDown)
             {
+                // 跟随线宽度取“最后已落节点”自身的宽度（普通=细线，连轨=粗宽带），而非整条链标志
+                int lastSpan = (linkLaneSpans.Count > 0 && linkLaneSpans[linkLaneSpans.Count - 1] > 1) ? 2 : 1;
+                bool lastLinked = lastSpan > 1;
                 Vector2 cur = Event.current.mousePosition;
                 float xLast = timeX0 + (linkTimes[linkTimes.Count - 1] - viewStartTime) * pixelsPerSecond;
-                float yLast = GetNoteY(baseRect, linkLanes[linkLanes.Count - 1], linkingLinked);
-                DrawThickLine(new Vector2(xLast, yLast), cur, linkingLinked ? LaneHeight * 1.45f : 4f,
-                    new Color(0.3f, 0.9f, 1f, 0.7f));
+                float yLast = GetNoteY(baseRect, linkLanes[linkLanes.Count - 1], lastLinked);
+                // 亮蓝主线（更粗、更高不透明）
+                DrawThickLine(new Vector2(xLast, yLast), cur, lastLinked ? LaneHeight * 1.45f : 5f,
+                    new Color(0.25f, 0.85f, 1f, 0.95f));
+                // 鼠标处的"实时端点"圆环 + 上一节点的白色连接点，强调正在跟手
+                if (Event.current.type == EventType.Repaint)
+                {
+                    float r = lastLinked ? LaneHeight * 0.55f : 7f;
+                    Handles.color = new Color(0.25f, 0.95f, 1f, 1f);
+                    Handles.DrawWireDisc(cur, Vector3.forward, r);
+                    Handles.color = new Color(1f, 1f, 1f, 0.9f);
+                    Handles.DrawSolidDisc(new Vector2(xLast, yLast), Vector3.forward, 4f);
+                }
+                GUI.Label(new Rect(cur.x + 10, cur.y - 22, 140, 18), "链接中…右键完成", EditorStyles.miniLabel);
+            }
+
+            // 链接模式：左键按住 + 上下拖动 => 连轨音符（覆盖相邻两轨）实时预览
+            if (linkingMode && pendingLinkDown)
+            {
+                Vector2 cur = Event.current.mousePosition;
+                float localY = cur.y - baseRect.y;
+                int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - RulerHeight) / LaneHeight), 0, 3);
+                int endLane = 3 - displayRow;
+                // 拖动方向（屏幕上"下"=lane 减小），钳制到相邻 1 轨
+                int step = Mathf.Clamp(endLane - linkDownLane, -1, 1);
+                bool crossLane = step != 0;
+                // 与提交逻辑保持一致：拖动跨轨 => 2 轨连轨节点；否则为 1 轨普通节点
+                int commitLane = crossLane ? Mathf.Clamp(Mathf.Min(linkDownLane, linkDownLane + step), 0, 2) : linkDownLane;
+                int commitSpan = crossLane ? 2 : 1;
+
+                if (commitSpan > 1)
+                {
+                    // 覆盖两轨的高亮带（commitLane 为上方轨，commitLane+1 为下方轨）
+                    float bandTop = baseRect.y + RulerHeight + (2 - commitLane) * LaneHeight;
+                    EditorGUI.DrawRect(new Rect(baseRect.x, bandTop, baseRect.width, LaneHeight * 2f),
+                        new Color(1f, 0.6f, 0.2f, 0.28f));
+                }
+                else
+                {
+                    // 单轨节点：仅高亮对应的一条轨道，避免预览比实际结果更宽
+                    float bandTop = baseRect.y + RulerHeight + (3 - commitLane) * LaneHeight;
+                    EditorGUI.DrawRect(new Rect(baseRect.x, bandTop, baseRect.width, LaneHeight),
+                        new Color(1f, 0.6f, 0.2f, 0.18f));
+                }
+                // 竖拖手柄线（按下点 -> 当前指针）
+                DrawThickLine(linkDownMouse, cur, 3f, new Color(1f, 0.6f, 0.2f, 0.9f));
+                // 落点标记
+                if (Event.current.type == EventType.Repaint)
+                {
+                    float yNode = GetNoteY(baseRect, commitLane, commitSpan > 1);
+                    Handles.color = new Color(1f, 0.85f, 0.3f, 1f);
+                    Handles.DrawWireDisc(new Vector2(timeX0 + (linkDownTime - viewStartTime) * pixelsPerSecond, yNode),
+                        Vector3.forward, LaneHeight * 0.55f);
+                }
+                string tip = step == 0
+                    ? "松开=单轨节点（横向拖动无效，time 取按下点）"
+                    : $"连轨音符 轨{commitLane}-{commitLane + 1}（松开继续链接，右键=普通连轨点击）";
+                GUI.Label(new Rect(cur.x + 10, cur.y - 22, 280, 18), tip, EditorStyles.miniLabel);
             }
 
             // ---- 播放头 ----
@@ -333,6 +410,12 @@ namespace MusicalSprite.Editor
         private void HandleTimelineEvents(Rect baseRect, float timeX0)
         {
             Event e = Event.current;
+            // 链接跟随阶段：鼠标移动时持续重绘，让"链接鼠标"的蓝线（或连轨音符预览）实时跟手
+            if (e.type == EventType.MouseMove)
+            {
+                if (linkingMode && (linkingActive || pendingLinkDown)) { Repaint(); e.Use(); }
+                return;
+            }
             if (e.type != EventType.MouseDown && e.type != EventType.MouseDrag &&
                 e.type != EventType.MouseUp && e.type != EventType.KeyDown) return;
             if (e.type == EventType.KeyDown)
@@ -344,6 +427,15 @@ namespace MusicalSprite.Editor
                     Repaint();
                     e.Use();
                 }
+                return;
+            }
+
+            // 处理挂起的连轨拖动落点：即使松开在区域外也提交，避免状态卡死
+            if (e.type == EventType.MouseUp && pendingLinkDown)
+            {
+                CommitPendingLinkNode(baseRect, timeX0);
+                pendingLinkDown = false;
+                e.Use();
                 return;
             }
 
@@ -374,89 +466,53 @@ namespace MusicalSprite.Editor
             {
                 int hit = HitTestNote(e.mousePosition, baseRect, timeX0);
 
-                if (e.button == 1) // 右键删除（普通/长按都适用）
+            // 右键：链接编辑态中 = 断开链接（保留为普通/长按音符，不删除）；否则删除光标下音符
+            if (e.button == 1)
+            {
+                if (linkingMode && linkingActive)
                 {
-                    if (hit >= 0)
-                    {
-                        notes.RemoveAt(hit);
-                        if (linkingActive && hit == linkLastIndex)
-                        {
-                            linkingActive = false;
-                            linkingLinked = false;
-                            linkLastIndex = -1;
-                            linkTimes.Clear();
-                            linkLanes.Clear();
-                        }
-                        else if (linkLastIndex > hit)
-                        {
-                            linkLastIndex--;
-                        }
-                        if (selectedIndex == hit) selectedIndex = -1;
-                        Repaint();
-                        e.Use();
-                    }
-                    return;
-                }
-
-                if (linkingMode)
-                {
-                    // 窗口热重载或删除正在编辑的链后，旧索引可能失效；直接从新链重新开始。
-                    if (linkingActive && (linkLastIndex < 0 || linkLastIndex >= notes.Count))
-                    {
-                        linkingActive = false;
-                        linkingLinked = false;
-                        linkLastIndex = -1;
-                        linkTimes.Clear();
-                        linkLanes.Clear();
-                    }
-                    // 链接模式：左键落下一个节点；右键（在跟随阶段）结束整条链
-                    if (e.button == 1)
-                    {
-                        FinishLinkingChain();
-                        Repaint();
-                        e.Use();
-                        return;
-                    }
-                    // 左键：落节点
-                    float snapped = snapToBeat ? Snap(time) : time;
-                    if (!linkingActive)
-                    {
-                        // 第一个节点：普通链接生成单轨 Hold；连轨模式生成覆盖相邻两轨的 Linked。
-                        linkingLinked = placeLinkedMode;
-                        int nodeLane = linkingLinked ? Mathf.Clamp(lane, 0, 2) : lane;
-                        var hn = new ChartNote
-                        {
-                            time = snapped,
-                            lane = nodeLane,
-                            type = linkingLinked ? NoteData.NoteType.Linked : NoteData.NoteType.Hold,
-                            holdLanes = new int[] { nodeLane },
-                            holdTimes = new float[] { snapped }
-                        };
-                        notes.Add(hn);
-                        linkLastIndex = notes.Count - 1;
-                        linkTimes.Clear(); linkLanes.Clear();
-                        linkTimes.Add(snapped); linkLanes.Add(nodeLane);
-                        linkingActive = true;
-                    }
-                    else
-                    {
-                        // 后续节点：把当前编辑中的 Hold 追加一个节点（与上一节点自动链接）
-                        int nodeLane = linkingLinked ? Mathf.Clamp(lane, 0, 2) : lane;
-                        linkTimes.Add(snapped);
-                        linkLanes.Add(nodeLane);
-                        var hn = notes[linkLastIndex];
-                        hn.holdLanes = linkLanes.ToArray();
-                        hn.holdTimes = linkTimes.ToArray();
-                        // 同步兼容旧字段：head=第1节点，tail=最后节点
-                        hn.lane = linkLanes[0];
-                        hn.holdEndLane = nodeLane;
-                        hn.holdDuration = Mathf.Max(0.1f, linkTimes[linkTimes.Count - 1] - linkTimes[0]);
-                    }
-                    selectedIndex = linkLastIndex;
+                    FinishLinkingChain();
                     Repaint();
                     e.Use();
                     return;
                 }
+                if (hit >= 0)
+                {
+                    notes.RemoveAt(hit);
+                    if (selectedIndex == hit) selectedIndex = -1;
+                    Repaint();
+                    e.Use();
+                }
+                return;
+            }
+
+                    if (linkingMode)
+                    {
+                        if (e.button == 0)
+                        {
+                            // 记录一次左键按下，推迟到 MouseUp 决定落点类型：
+                            //  - 仅点击（无上下拖动）=> 单轨节点（保持原有链接逻辑）
+                            //  - 按住并上下拖动 >=1 轨 => 连轨音符（覆盖相邻两轨）
+                            // 窗口热重载或删除正在编辑的链后，旧索引可能失效；直接从新链重新开始。
+                            if (linkingActive && (linkLastIndex < 0 || linkLastIndex >= notes.Count))
+                            {
+                                linkingActive = false;
+                                linkingLinked = false;
+                                linkLastIndex = -1;
+                                linkTimes.Clear();
+                                linkLanes.Clear();
+                            }
+                            pendingLinkDown = true;
+                            linkDownMouse = e.mousePosition;
+                            linkDownLane = lane;
+                            linkDownTime = time;
+                            Repaint();
+                            e.Use();
+                            return;
+                        }
+                        // 链接模式下的右键已在上方统一处理为"断开链接"；其余按钮忽略
+                        return;
+                    }
 
                 if (hit >= 0) // 选中并准备拖拽
                 {
@@ -521,6 +577,12 @@ namespace MusicalSprite.Editor
             }
             else if (e.type == EventType.MouseDrag)
             {
+                if (pendingLinkDown)
+                {
+                    Repaint(); // 连轨音符预览由 DrawTimeline 绘制
+                    e.Use();
+                    return;
+                }
                 if (linkingMode && linkingActive)
                 {
                     Repaint(); // 跟随预览线由 DrawTimeline 绘制（使用 Event.current.mousePosition）
@@ -634,6 +696,17 @@ namespace MusicalSprite.Editor
             return baseRect.y + RulerHeight + laneCenter * LaneHeight;
         }
 
+        /// <summary>
+        /// 节点 k 是否为连轨（2 轨宽）。优先用逐节点 holdLaneSpans；
+        /// 未记录时按整条 type 推断（Linked => 全 2 轨），以兼容旧谱面。
+        /// </summary>
+        private static bool NodeIsLinked(ChartNote n, int k)
+        {
+            if (n.holdLaneSpans != null && k >= 0 && k < n.holdLaneSpans.Length)
+                return n.holdLaneSpans[k] > 1;
+            return n.type == NoteData.NoteType.Linked;
+        }
+
         private static void DrawRoundedRect(Rect rect, float radius, Color color)
         {
             radius = Mathf.Clamp(radius, 0f, Mathf.Min(rect.width, rect.height) * 0.5f);
@@ -686,9 +759,10 @@ namespace MusicalSprite.Editor
 
         /// <summary>
         /// 结束正在编辑的链接链：
-        /// - 已落 >=2 个节点 → 保留为一条多节点 Hold（holdLanes/holdTimes 已填好）。
-        /// - 仅落 1 个节点 → 降级为普通点击音符（Tap）。
-        /// 无论如何都清理链接编辑状态。
+        /// - 已落 >=2 个节点 → 保留为一条多节点 Hold（holdLanes/holdTimes/holdLaneSpans 已填好），
+        ///   逐节点宽度由 holdLaneSpans 决定（普通节点 width=1，连轨节点 width=2）。
+        /// - 仅落 1 个节点 → 按该节点自身宽度决定：width=2 保留为双轨点击(Linked)，否则普通点击(Tap)。
+        /// 无论如何都清理链接编辑状态。每个节点的类型/宽度互不影响。
         /// </summary>
         private void FinishLinkingChain()
         {
@@ -697,17 +771,20 @@ namespace MusicalSprite.Editor
                 var hn = notes[linkLastIndex];
                 if (linkTimes.Count <= 1)
                 {
-                    // 单节点：普通链接降级为 Tap；连轨链接保留为双轨点击。
-                    hn.type = hn.type == NoteData.NoteType.Linked ? NoteData.NoteType.Linked : NoteData.NoteType.Tap;
+                    int span = linkLaneSpans.Count > 0 ? linkLaneSpans[0] : 1;
+                    hn.type = span == 2 ? NoteData.NoteType.Linked : NoteData.NoteType.Tap;
                     hn.holdLanes = null;
                     hn.holdTimes = null;
+                    hn.holdLaneSpans = null;
                     hn.holdDuration = 0f;
                     hn.holdEndLane = hn.lane;
                 }
                 else
                 {
+                    hn.type = NoteData.NoteType.Hold; // 多节点链 = 连续按住滑动
                     hn.holdLanes = linkLanes.ToArray();
                     hn.holdTimes = linkTimes.ToArray();
+                    hn.holdLaneSpans = linkLaneSpans.ToArray();
                     hn.lane = linkLanes[0];
                     hn.holdEndLane = linkLanes[linkLanes.Count - 1];
                     hn.holdDuration = Mathf.Max(0.1f, linkTimes[linkTimes.Count - 1] - linkTimes[0]);
@@ -715,10 +792,91 @@ namespace MusicalSprite.Editor
                 selectedIndex = linkLastIndex;
             }
             linkingActive = false;
-            linkingLinked = false;
             linkLastIndex = -1;
             linkTimes.Clear();
             linkLanes.Clear();
+            linkLaneSpans.Clear();
+        }
+
+        /// <summary>
+        /// 提交一次"左键按住"的链接落点（在 MouseUp 时调用）：
+        /// - 若期间上下拖动 >=1 轨 => 本次落点为连轨音符（覆盖相邻两轨，width=2）。
+        /// - 否则视为普通单轨节点（width=1）。
+        /// 每个节点独立记录自己的宽度（linkLaneSpans），不再把整条链强制升级为 Linked，
+        /// 因此第一个普通节点不会因为后面的连轨节点而跟着变成连轨。
+        /// 提交后仍保持 linkingActive，继续自动链接鼠标；右键可断开（FinishLinkingChain）。
+        /// </summary>
+        private void CommitPendingLinkNode(Rect baseRect, float timeX0)
+        {
+            if (!linkingMode) { pendingLinkDown = false; return; }
+
+            // 按下时已做过失效恢复，这里再保险一次
+            if (linkingActive && (linkLastIndex < 0 || linkLastIndex >= notes.Count))
+            {
+                linkingActive = false;
+                linkLastIndex = -1;
+                linkTimes.Clear();
+                linkLanes.Clear();
+                linkLaneSpans.Clear();
+            }
+
+            // 当前指针所在轨道（用于判断拖动了几轨）
+            float localY = Event.current.mousePosition.y - baseRect.y;
+            int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - RulerHeight) / LaneHeight), 0, 3);
+            int endLane = 3 - displayRow;
+            // 拖动方向钳制到相邻 1 轨：下拖(step<0) / 上拖(step>0)
+            int step = Mathf.Clamp(endLane - linkDownLane, -1, 1);
+            bool crossLane = step != 0;
+            int span = crossLane ? 2 : 1; // 本节点自己的宽度
+            // 连轨"上"轨：覆盖 nodeLane..nodeLane+1 两条相邻轨
+            int nodeLane = crossLane
+                ? Mathf.Clamp(Mathf.Min(linkDownLane, linkDownLane + step), 0, 2)
+                : linkDownLane;
+
+            float snapped = snapToBeat ? Snap(linkDownTime) : linkDownTime;
+            // 限制：后续节点不能早于上一节点（谱面位置不可倒退）
+            if (linkingActive && linkTimes.Count > 0 && snapped < linkTimes[linkTimes.Count - 1])
+            {
+                ShowNotification(new GUIContent("后续节点不能早于上一节点，已钳制到上一节点时刻"));
+                snapped = linkTimes[linkTimes.Count - 1];
+            }
+
+            if (!linkingActive)
+            {
+                var hn = new ChartNote
+                {
+                    time = snapped,
+                    lane = nodeLane,
+                    // 单节点：width=2 => 连轨点击(Linked)，否则普通点击(Tap)
+                    type = span == 2 ? NoteData.NoteType.Linked : NoteData.NoteType.Tap,
+                    holdLanes = new int[] { nodeLane },
+                    holdTimes = new float[] { snapped }
+                };
+                hn.holdLaneSpans = new int[] { span };
+                notes.Add(hn);
+                linkLastIndex = notes.Count - 1;
+                linkTimes.Clear(); linkLanes.Clear(); linkLaneSpans.Clear();
+                linkTimes.Add(snapped); linkLanes.Add(nodeLane); linkLaneSpans.Add(span);
+                linkingActive = true;
+            }
+            else
+            {
+                linkTimes.Add(snapped);
+                linkLanes.Add(nodeLane);
+                linkLaneSpans.Add(span);
+                var hn = notes[linkLastIndex];
+                // 多节点链统一为 Hold（连续按住滑动）；逐节点宽度由 holdLaneSpans 决定，
+                // 第一个普通节点(width=1)不会因为后续连轨节点(width=2)而变成连轨。
+                hn.type = NoteData.NoteType.Hold;
+                hn.holdLanes = linkLanes.ToArray();
+                hn.holdTimes = linkTimes.ToArray();
+                hn.holdLaneSpans = linkLaneSpans.ToArray();
+                hn.lane = linkLanes[0];
+                hn.holdEndLane = nodeLane;
+                hn.holdDuration = Mathf.Max(0.1f, linkTimes[linkTimes.Count - 1] - linkTimes[0]);
+            }
+            selectedIndex = linkLastIndex;
+            Repaint();
         }
 
         // ===================================================================
@@ -880,6 +1038,7 @@ namespace MusicalSprite.Editor
                         // 多节点 Hold 字段：若谱面存了则还原（编辑器当前只生成 2 节点，保持 null）
                         if (n.holdLanes != null) cn.holdLanes = (int[])n.holdLanes.Clone();
                         if (n.holdTimes != null) cn.holdTimes = (float[])n.holdTimes.Clone();
+                        if (n.holdLaneSpans != null) cn.holdLaneSpans = (int[])n.holdLaneSpans.Clone();
                         notes.Add(cn);
                     }
                 }
@@ -893,6 +1052,8 @@ namespace MusicalSprite.Editor
             linkLastIndex = -1;
             linkTimes.Clear();
             linkLanes.Clear();
+            linkLaneSpans.Clear();
+            pendingLinkDown = false;
             playTime = 0f;
             Repaint();
         }
@@ -916,6 +1077,8 @@ namespace MusicalSprite.Editor
             linkLastIndex = -1;
             linkTimes.Clear();
             linkLanes.Clear();
+            linkLaneSpans.Clear();
+            pendingLinkDown = false;
             playTime = 0f;
             Repaint();
         }
@@ -924,6 +1087,7 @@ namespace MusicalSprite.Editor
         {
             // 保存前若有未结束的链接链，先固化（避免半条链被保存）
             if (linkingActive) FinishLinkingChain();
+            pendingLinkDown = false;
 
             if (string.IsNullOrWhiteSpace(beatmapName))
             {
@@ -982,6 +1146,12 @@ namespace MusicalSprite.Editor
                         nd1.holdLanes = (int[])lanes.Clone();
                         nd0.holdTimes = (float[])n.holdTimes.Clone();
                         nd1.holdTimes = (float[])n.holdTimes.Clone();
+                        // 逐节点宽度（1=普通，2=连轨），与节点一一对应，直接克隆（与轨号无关）
+                        if (n.holdLaneSpans != null && n.holdLaneSpans.Length == lanes.Length)
+                        {
+                            nd0.holdLaneSpans = (int[])n.holdLaneSpans.Clone();
+                            nd1.holdLaneSpans = (int[])n.holdLaneSpans.Clone();
+                        }
                     }
                     else if (type == NoteData.NoteType.Hold)
                     {

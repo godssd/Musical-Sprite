@@ -34,7 +34,8 @@ public class HoldNote : MonoBehaviour
     public float[] times;   // 节点时刻（已解析，升序，length == lanes.Length）
     public float leadTime;
     public float noteRadius = 0.45f;
-    public int laneSpan = 1;       // 1=普通 Hold，2=连轨 Hold
+    public int laneSpan = 1;       // 整条链宽度兜底（取各节点最大宽度）；逐节点细宽度见 nodeLaneSpans
+    public int[] nodeLaneSpans;   // 逐节点宽度：1=普通单轨节点，2=连轨节点（覆盖相邻两轨）。与 lanes 一一对应
     public float laneSpacing = 1.5f;
     public float goodWindow = 0.07f;
     public float perfectWindow = 0.03f;
@@ -188,26 +189,28 @@ public class HoldNote : MonoBehaviour
         }
         nodeCount = lanes.Length;
 
-        // 节点圆柱
+        // 节点圆柱（逐节点宽度：连轨节点覆盖相邻两轨，普通节点单轨）
         float r = noteRadius / 0.5f;
-        float linkedWidth = laneSpacing * (Mathf.Max(1, laneSpan) - 1) + noteRadius * 2f;
-        baseNodeScale = new Vector3(laneSpan > 1 ? noteRadius * 2f : r, 0.12f, laneSpan > 1 ? linkedWidth : r);
 
         for (int i = 0; i < nodeCount; i++)
         {
+            int span = NodeSpan(i);
+            float linkedWidth = laneSpacing * (span - 1) + noteRadius * 2f;
+            Vector3 nodeScale = new Vector3(span > 1 ? noteRadius * 2f : r, 0.12f, span > 1 ? linkedWidth : r);
+
             var go = new GameObject($"HoldNode_{i}");
             var t = go.transform;
             t.SetParent(transform, false);
             var mf = go.AddComponent<MeshFilter>();
             // 连轨 Hold 的头尾节点与连接带保持同样的圆角长方形外观，
             // 普通单轨 Hold 仍使用圆柱体，避免误改原有单轨视觉。
-            mf.sharedMesh = laneSpan > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
+            mf.sharedMesh = span > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
             var rend = go.AddComponent<MeshRenderer>();
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             rend.receiveShadows = false;
             var mat = CreateColoredMaterial(Color.black);
             rend.material = mat;
-            t.localScale = baseNodeScale;
+            t.localScale = nodeScale;
 
             nodeTransforms.Add(t);
             nodeRends.Add(rend);
@@ -396,7 +399,11 @@ public class HoldNote : MonoBehaviour
                 {
                     // 连轨使用“阶梯”宽带：每个小片都保持水平，
                     // 只逐段改变 Z，避免整条连接带被拉成斜四边形。
-                    float width = laneSpacing * (laneSpan - 1) + noteRadius * 2f;
+                    // 每段宽度取两端节点宽度的最大值（节点 i 与 i+1 可能一宽一窄）。
+                    int spanA = NodeSpan(s);
+                    int spanB = NodeSpan(s + 1);
+                    int segSpan = Mathf.Max(spanA, spanB);
+                    float width = laneSpacing * (segSpan - 1) + noteRadius * 2f;
                     float directionX = Mathf.Sign(b.x - a.x);
                     if (Mathf.Abs(b.x - a.x) < 0.001f) directionX = side == 0 ? -1f : 1f;
                     float startX = a.x + directionX * noteRadius;
@@ -530,24 +537,40 @@ public class HoldNote : MonoBehaviour
         return false;
     }
 
-    private bool AreRequiredLanesHeld(float targetStartLane)
+    /// <summary>节点 i 的宽度（1=普通单轨，2=连轨覆盖相邻两轨）。无逐节点数据时用整条链 laneSpan 兜底。</summary>
+    private int NodeSpan(int i)
+    {
+        if (nodeLaneSpans != null && i >= 0 && i < nodeLaneSpans.Length)
+            return nodeLaneSpans[i] > 1 ? 2 : 1;
+        return laneSpan > 1 ? 2 : 1;
+    }
+
+    /// <summary>当前 songTime 所处“应被按住”的轨道判定（连轨 Hold 判定宽一个音轨）。</summary>
+    /// <param name="reqLaneF">当前插值轨道（来自 SampleLaneAtTime，保留滑动过渡）。</param>
+    private bool AreRequiredLanesHeld(float reqLaneF)
     {
         if (spawner == null) return false;
-        if (laneSpan <= 1) return IsAnyHeldLaneClose(targetStartLane);
-
-        int start = Mathf.Clamp(Mathf.RoundToInt(targetStartLane), 0, Mathf.Max(0, spawner.laneCount - laneSpan));
-        return spawner.AreLanesHeld(start, laneSpan);
+        if (laneSpan <= 1) return IsAnyHeldLaneClose(reqLaneF);
+        // 连轨 Hold：判定宽一个音轨——按住覆盖的任意一条相邻轨即可。
+        // 基于当前插值轨道 reqLaneF：直接判断按下的是否为覆盖的两条相邻轨之一，
+        // 并保留容差（IsAnyHeldLaneClose）以兼容普通 Hold 的滑动过渡手感。
+        int baseLane = Mathf.RoundToInt(reqLaneF);
+        if (spawner.heldLanes.Contains(baseLane) || spawner.heldLanes.Contains(baseLane + 1)) return true;
+        return IsAnyHeldLaneClose(reqLaneF);
     }
 
     /// <summary>
-    /// 普通 Hold 从 head 轨起手；连轨 Hold 只有在覆盖的两轨都按下后才能起手。
+    /// 普通 Hold 从 head 轨起手；连轨 Hold 按下覆盖范围的任意一条轨道即可起手（判定宽一个音轨）。
+    /// 头节点宽度用自身 NodeSpan(0)，避免“后续连轨节点”把头节点也当成宽轨。
     /// </summary>
     public bool CanStartOnLane(int pressedLane)
     {
         if (lanes == null || lanes.Length == 0) return false;
-        int start = Mathf.Clamp(lanes[0], 0, spawner != null ? Mathf.Max(0, spawner.laneCount - laneSpan) : lanes[0]);
-        if (pressedLane < start || pressedLane >= start + laneSpan) return false;
-        return laneSpan <= 1 || (spawner != null && spawner.AreLanesHeld(start, laneSpan));
+        int span0 = NodeSpan(0);
+        int start = Mathf.Clamp(lanes[0], 0, Mathf.Max(0, spawner != null ? spawner.laneCount - span0 : lanes[0]));
+        if (pressedLane < start || pressedLane >= start + span0) return false;
+        // 按下时该轨已在 heldLanes 中：普通头节点即该轨；连轨头节点为覆盖的任一条轨
+        return true;
     }
 
     /// <summary>
@@ -568,7 +591,7 @@ public class HoldNote : MonoBehaviour
 
         if (state == HoldState.Holding)
         {
-            // 当前进度位置：在节点链上插值出的浮点轨道
+            // 当前进度位置：在节点链上插值出的浮点轨道（保留滑动过渡手感）
             float reqLaneF = SampleLaneAtTime(songTime);
 
             // 按住检测（AI 跳过，由 isAI 标志控制）
