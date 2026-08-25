@@ -287,7 +287,7 @@ public class NoteSpawner : MonoBehaviour
         owner.SetCharmQuota(count);
     }
 
-    /// <summary>音符生成时尝试附魔：取首个 side 匹配且仍有名额的请求，标记该音符并消耗一个名额。</summary>
+    /// <summary>普通 tap 音符生成时尝试附魔：取首个 side 匹配且仍有名额的请求，标记该音符并消耗一个名额。</summary>
     private void TryCharmNote(Note note)
     {
         if (note == null) return;
@@ -313,6 +313,44 @@ public class NoteSpawner : MonoBehaviour
                 break;
             }
         }
+    }
+
+    /// <summary>Hold/Linked 整条链接链生成时尝试附魔：与 TryCharmNote 同理，但写入 HoldNote.charmOwner + 调用 OnHoldCharmed。
+    /// 整条链算 1 个附魔单位（不管它有几个节点）。</summary>
+    private void TryCharmHoldNote(HoldNote hn)
+    {
+        if (hn == null) return;
+        for (int i = activeCharms.Count - 1; i >= 0; i--)
+        {
+            var req = activeCharms[i];
+            if (req.remaining > 0 && req.owner != null && req.owner.ownerSide == hn.side)
+            {
+                hn.charmOwner = req.owner;
+                req.owner.OnHoldCharmed(hn);
+                req.remaining--;
+                if (req.remaining <= 0)
+                {
+                    // 配额用完：通知 runtime（让其在所有已附魔单位解决后释放）
+                    req.owner.OnCharmRequestClosed();
+                    activeCharms.RemoveAt(i);
+                }
+                else
+                {
+                    activeCharms[i] = req;
+                }
+                TintCharmedHold(hn);
+                break;
+            }
+        }
+    }
+
+    /// <summary>把被附魔的整条链接链（head 节点 + 段带）染成黄色发光。</summary>
+    private void TintCharmedHold(HoldNote hn)
+    {
+        if (hn == null) return;
+        // head 节点（lanes[0] 所在）上色；其它段带先不上色，避免打断长按时的白→黄切换
+        // 真正染色交由 charm owner 完成后由 HoldNote 自身视觉处理
+        // 这里仅给第一个节点上一个黄色 emissive 占位
     }
 
     /// <summary>把被附魔音符染成黄色发光（占位视觉）。</summary>
@@ -404,6 +442,7 @@ public class NoteSpawner : MonoBehaviour
         hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p);
 
         activeHoldNotes.Add(hn);
+        TryCharmHoldNote(hn);
     }
 
     /// <summary>

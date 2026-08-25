@@ -70,6 +70,9 @@ public class HoldNote : MonoBehaviour
 
     public event System.Action<int, int, string, Vector3> onJudge;
 
+    /// <summary>若本整条链接链被某主动技能附魔，则指向其运行时；链整体结束（CLEAR/BREAK/MISSHEAD）时回调通知。</summary>
+    [HideInInspector] public ActiveSkillRuntime charmOwner;
+
     // ===== 视觉 =====
     private List<Transform> nodeTransforms = new List<Transform>();
     private List<MeshRenderer> nodeRends = new List<MeshRenderer>();
@@ -825,6 +828,13 @@ public class HoldNote : MonoBehaviour
         // 首节点漏击后整条链接立即失效。改为“逐段越过判定线缩小消失”，
         // 由 MoveAndFade 每帧调用 ApplyMissDisappear 处理，而不是整条统一缩小。
         missMode = true;
+
+        // 通知 charm owner：整条链漏击（不算 success）
+        if (charmOwner != null)
+        {
+            charmOwner.OnCharmedHoldResolved(this, false);
+            charmOwner = null;
+        }
     }
 
     private void Break()
@@ -836,6 +846,13 @@ public class HoldNote : MonoBehaviour
         // 断连在"最后成功节点"处报 MISS
         int lastNode = Mathf.Max(0, completedSegments);
         onJudge?.Invoke(side, lanes[lastNode], "MISS", hitPositions[lastNode]);
+
+        // 通知 charm owner：整条链断连（不算 success）
+        if (charmOwner != null)
+        {
+            charmOwner.OnCharmedHoldResolved(this, false);
+            charmOwner = null;
+        }
     }
 
     private void Complete()
@@ -849,5 +866,12 @@ public class HoldNote : MonoBehaviour
             for (int k = 0; k < segmentMatGroups[s].Count; k++)
                 if (segmentMatGroups[s][k] != null) segmentMatGroups[s][k].color = Color.white;
         // 最后一段 CLEAR 已在 Judge 循环中于尾节点处上报，这里不再重复上报
+
+        // 通知 charm owner：整条链完整成功（不算 MISS）
+        if (charmOwner != null)
+        {
+            charmOwner.OnCharmedHoldResolved(this, true);
+            charmOwner = null;
+        }
     }
 }

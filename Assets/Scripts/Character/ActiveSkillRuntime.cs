@@ -7,12 +7,14 @@ using System.Collections.Generic;
 ///
 /// 生命周期：
 ///   Standby  →（玩家按对 inputSequence 且能量满）→ Grow
-///   Grow     → 角色变大+持续发光；同时向 ownerSpawner 请求附魔接下来 charmedNoteCount 个音符
-///   Charming → 每个被附魔音符结算（命中/MISS/消失）回调 OnCharmedNoteResolved；全部消费完后 → Settle
+///   Grow     → 角色变大+持续发光；同时向 ownerSpawner 请求附魔接下来 charmedNoteCount 个附魔单位
+///   Charming → 每个被附魔单位结算（普通 tap 命中/MISS、Hold/Linked 整体 COMPLETE/BREAK/MISSHEAD）回调 OnCharmedNoteResolved/OnCharmedHoldResolved；
+///              当所有被附魔单位全部结算且配额外所有链接出去的音符也消费完 → 立刻 Settle（不再有时间下限）
 ///   Releasing→ 发射音波冲向对面 + 按 完成数×reduceComboPerCharmedNote 削减对方连击 + 角色缩回熄灭 + 清空能量
 ///   Cooldown → 冷却倒计时后回到 Standby
 ///
-/// 无时间兜底：6 个音符要全部被命中或 MISS/消失才结算（符合设计）。
+/// 释放时机 = 等所有被附魔单位（含整条 Hold/Linked 链接链）结算完毕（CLEAR/命中 算 success=true，断连/漏击算 success=false），立刻释放狗叫。
+/// 效果强度（连击削减量）= success 数 × reduceComboPerCharmedNote；效果强度取决于玩家的命中而非时间。
 /// </summary>
 public class ActiveSkillRuntime : MonoBehaviour
 {
@@ -30,9 +32,8 @@ public class ActiveSkillRuntime : MonoBehaviour
     private int completedCount;     // 完成数（非 MISS）
     private List<Note> charmedNotes = new List<Note>();
     private float cooldownLeft;
-    private float settleIdleTimer;  // 兜底计时：已无 outstanding 附魔音符但配额未填满，超过 0.6s 强制 Settle
-    private float castStartTime;    // BeginCast 时刻（Time.time），用于强制最少蓄力时间，避免「6 个附魔音符被打完后瞬间释放」
-    private const float MIN_CAST_DURATION = 1.2f;   // 蓄力下限：按完序列后至少 1.2s 才能 Settle（让玩家有「变大发光蓄力中」的视觉感）
+    private float settleIdleTimer;          // 兜底计时：已无 outstanding 附魔单位但配额还没消费完（如歌里剩余音符 < charmedNoteCount），超过 0.6s 强制 Settle
+    private List<HoldNote> charmedHolds = new List<HoldNote>();  // 整条 Hold/Linked 链接链（链整体算一个附魔单位）
 
     public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side)
     {
@@ -53,15 +54,10 @@ public class ActiveSkillRuntime : MonoBehaviour
             return;
         }
 
-        // 蓄力下限检查：按完序列后到 1.2s 之前一律不允许 Settle（即便附魔音符都被打完了）。
-        // 这是为了避免「释放 → 立刻叫」的感知：玩家需要看到角色持续发光、变大一段时间。
-        float elapsed = Time.time - castStartTime;
-        if (elapsed < MIN_CAST_DURATION) return;
-
         // 安全兜底（仅在舞台真的没有可附魔音符时触发，避免「歌里剩下的音符 < charmedNoteCount」导致永久卡死）：
-        // 已附魔的音符全部解决，且当前没有任何 outstanding 附魔音符 + 等待 0.6s 仍未消费完配额 → 强制释放（按真实完成数结算）。
+        // 已附魔的音符全部解决（notes + holds 都清空），且当前没有任何 outstanding 附魔单位 + 等待 0.6s 仍未消费完配额 → 强制释放（按真实完成数结算）。
         if ((phase == Phase.Grow || phase == Phase.Charming) &&
-            charmedNotes.Count == 0 && charmRemaining > 0)
+            charmedNotes.Count == 0 && charmedHolds.Count == 0 && charmRemaining > 0)
         {
             settleIdleTimer += Time.deltaTime;
             if (settleIdleTimer > 0.6f)
@@ -88,17 +84,17 @@ public class ActiveSkillRuntime : MonoBehaviour
         completedCount = 0;
         charmRemaining = Mathf.Max(1, skill.charmedNoteCount);
         charmedNotes.Clear();
+        charmedHolds.Clear();
         settleIdleTimer = 0f;
-        castStartTime = Time.time;
 
         if (marker != null) marker.GrowGlow();
         if (ownerSpawner != null)
             ownerSpawner.RequestCharm(this, charmRemaining);
 
-        Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] BeginCast → 等待 {3} 个附魔音符（最少 {4:F1}s 蓄力）",
+        Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] BeginCast → 等待 {3} 个附魔单位结算完毕即释放",
             skill != null ? skill.displayName : "?",
             ownerSide, owner != null ? owner.characterId : -1,
-            charmRemaining, MIN_CAST_DURATION));
+            charmRemaining));
     }
 
     /// <summary>NoteSpawner 给本技能成功附魔了一个音符时调用。</summary>
@@ -115,25 +111,51 @@ public class ActiveSkillRuntime : MonoBehaviour
     /// <summary>spawner 端把本技能的 activeCharms 条目移除时回调（配额用完，或该请求被作废清理）。</summary>
     public void OnCharmRequestClosed()
     {
-        // 即使配额外没有全部 charmed（歌里音符已耗尽），只要 outstanding 全部解决，就允许释放
         if (phase == Phase.Grow || phase == Phase.Charming)
         {
-            if (charmedNotes.Count == 0) Settle();
+            if (charmedNotes.Count == 0 && charmedHolds.Count == 0) Settle();
         }
     }
 
-    /// <summary>被附魔音符结算（命中/MISS/消失）时由 Note 调用。success=true 表示非 MISS。</summary>
+    /// <summary>HoldNote（整条链接链）被 charm 时由 NoteSpawner 调用，加入 charmedHolds + 消耗 1 配额。</summary>
+    public void OnHoldCharmed(HoldNote hn)
+    {
+        if (hn == null) return;
+        if (charmedHolds.Contains(hn)) return;
+        charmedHolds.Add(hn);
+        charmRemaining = Mathf.Max(0, charmRemaining - 1);
+        settleIdleTimer = 0f;
+    }
+
+    /// <summary>被附魔的普通 tap 音符结算（命中/MISS/消失）时由 Note 调用。success=true 表示非 MISS。</summary>
     public void OnCharmedNoteResolved(Note n, bool success)
     {
         if (n != null && charmedNotes.Contains(n)) charmedNotes.Remove(n);
         if (skill != null && (skill.onlyCountNonMiss ? success : true))
             completedCount++;
-        if (phase == Phase.Grow && charmedNotes.Count > 0) phase = Phase.Charming;
+        if (phase == Phase.Grow && (charmedNotes.Count > 0 || charmedHolds.Count > 0)) phase = Phase.Charming;
+        TrySettleFromCharm();
+    }
 
-        if (charmedNotes.Count == 0 && charmRemaining <= 0)
+    /// <summary>被附魔的 Hold/Linked 整条链接链结算时由 HoldNote 调用（COMPLETE/BREAK/MISSHEAD 都会触发）。
+    /// 整条链作为 1 个附魔单位；COMPLETE 算 success=true；BREAK/MISSHEAD 算 success=false。</summary>
+    public void OnCharmedHoldResolved(HoldNote hn, bool success)
+    {
+        if (hn != null && charmedHolds.Contains(hn)) charmedHolds.Remove(hn);
+        if (skill != null && (skill.onlyCountNonMiss ? success : true))
+            completedCount++;
+        if (phase == Phase.Grow && (charmedNotes.Count > 0 || charmedHolds.Count > 0)) phase = Phase.Charming;
+        TrySettleFromCharm();
+    }
+
+    /// <summary>所有附魔单位都被消化 + spawner 配额全部用完 → 立刻 Settle；否则重置 idle 计时等待剩下的。</summary>
+    private void TrySettleFromCharm()
+    {
+        if (phase != Phase.Grow && phase != Phase.Charming) return;
+        if (charmedNotes.Count == 0 && charmedHolds.Count == 0 && charmRemaining <= 0)
             Settle();
-        else if (charmedNotes.Count == 0)
-            settleIdleTimer = 0f;   // 重新开始 idle 计时
+        else if (charmedNotes.Count == 0 && charmedHolds.Count == 0)
+            settleIdleTimer = 0f;
     }
 
     /// <summary>由 NoteSpawner.RequestCharm 调用，记录本技能可附魔的名额。</summary>
@@ -142,10 +164,6 @@ public class ActiveSkillRuntime : MonoBehaviour
     private void Settle()
     {
         if (phase == Phase.Releasing || phase == Phase.Cooldown) return;
-
-        // 蓄力下限：开始到 1.2s 之前一律不允许 Settle（即使 charmedNotes 都已结算）。
-        // 与 Update 的早期 return 互为冗余；这里再次兜底以防有其他路径调 Settle。
-        if (Time.time - castStartTime < MIN_CAST_DURATION) return;
 
         phase = Phase.Releasing;
 
@@ -160,11 +178,10 @@ public class ActiveSkillRuntime : MonoBehaviour
         phase = Phase.Cooldown;
         cooldownLeft = skill.cooldown > 0f ? skill.cooldown : 20f;
 
-        Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] Settle → 命中 {3}/{4} 削减对方 {5} 连击 ({6:F2}s 后)",
+        Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] Settle → 命中 {3}/{4} 削减对方 {5} 连击",
             skill != null ? skill.displayName : "?",
             ownerSide, owner != null ? owner.characterId : -1,
-            completedCount, charmRemaining, reduce,
-            Time.time - castStartTime));
+            completedCount, charmRemaining, reduce));
     }
 
     private void SpawnShockwave()
