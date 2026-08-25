@@ -11,6 +11,8 @@ using System.Collections;
 ///
 /// 简易按键反馈：Flash() 让 cube 临时放大（popScale=1.25）后回弹，颜色短暂提亮，
 /// 由 BattleVisualsController.OnLanePress 触发，与 LaneIndicator.Flash() 并列。
+///
+/// 主动技能释放表现（大狗叫等）：GrowGlow() 让角色变大 + 持续发光；ShrinkUnglow() 缩回并熄灭。
 /// </summary>
 public class CharacterCubeMarker : MonoBehaviour
 {
@@ -30,8 +32,15 @@ public class CharacterCubeMarker : MonoBehaviour
     [Tooltip("Flash() 总时长（秒）")]
     public float flashDuration = 0.18f;
 
+    [Header("释放表现（主动技能）")]
+    [Tooltip("GrowGlow() 时放大的倍数")]
+    public float growScale = 1.5f;
+    [Tooltip("GrowGlow() 持续发光颜色")]
+    public Color releaseGlow = new Color(1f, 0.85f, 0.2f);
+
     private Vector3 baseScale;
     private Coroutine flashCo;
+    private Coroutine glowCo;
 
     void Awake()
     {
@@ -40,6 +49,7 @@ public class CharacterCubeMarker : MonoBehaviour
 
     /// <summary>
     /// 由 BattleVisualsController 调用：按下该侧对应 lane 时，让这个 cube 弹跳并提亮一下。
+    /// 也用于主动技能「每按对一个键，对应角色亮闪一次」。
     /// </summary>
     public void Flash()
     {
@@ -56,7 +66,6 @@ public class CharacterCubeMarker : MonoBehaviour
         Color baseColor = (rend != null && rend.material != null) ? rend.material.color : Color.white;
         Color boostColor = baseColor + baseColor * colorBoost;
 
-        // 前半段：放大 + 提亮
         while (t < half)
         {
             t += Time.deltaTime;
@@ -65,7 +74,6 @@ public class CharacterCubeMarker : MonoBehaviour
             if (rend != null && rend.material != null) rend.material.color = Color.Lerp(baseColor, boostColor, k);
             yield return null;
         }
-        // 后半段：回弹 + 颜色还原
         t = 0f;
         while (t < half)
         {
@@ -79,5 +87,64 @@ public class CharacterCubeMarker : MonoBehaviour
         transform.localScale = baseScale;
         if (rend != null && rend.material != null) rend.material.color = baseColor;
         flashCo = null;
+    }
+
+    /// <summary>主动技能释放开始：角色变大 + 持续发光（保持到 ShrinkUnglow）。</summary>
+    public void GrowGlow()
+    {
+        if (!isActiveAndEnabled) return;
+        if (flashCo != null) StopCoroutine(flashCo);
+        if (glowCo != null) StopCoroutine(glowCo);
+        glowCo = StartCoroutine(GrowCo());
+    }
+
+    /// <summary>主动技能释放结束：缩回原大小并熄灭发光。</summary>
+    public void ShrinkUnglow()
+    {
+        if (!isActiveAndEnabled) return;
+        if (glowCo != null) StopCoroutine(glowCo);
+        glowCo = StartCoroutine(ShrinkCo());
+    }
+
+    private System.Collections.IEnumerator GrowCo()
+    {
+        float t = 0f;
+        float dur = 0.15f;
+        Vector3 from = transform.localScale;
+        SetEmission(releaseGlow);
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / dur);
+            transform.localScale = Vector3.Lerp(from, baseScale * growScale, k);
+            yield return null;
+        }
+        transform.localScale = baseScale * growScale;
+        glowCo = null;
+    }
+
+    private System.Collections.IEnumerator ShrinkCo()
+    {
+        float t = 0f;
+        float dur = 0.15f;
+        Vector3 from = transform.localScale;
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / dur);
+            transform.localScale = Vector3.Lerp(from, baseScale, k);
+            yield return null;
+        }
+        transform.localScale = baseScale;
+        SetEmission(Color.black);
+        glowCo = null;
+    }
+
+    private void SetEmission(Color c)
+    {
+        var rend = GetComponent<Renderer>();
+        if (rend == null || rend.material == null) return;
+        rend.material.EnableKeyword("_EMISSION");
+        rend.material.SetColor("_EmissionColor", c);
     }
 }

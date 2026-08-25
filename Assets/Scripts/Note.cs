@@ -19,6 +19,9 @@ public class Note : MonoBehaviour
 
     [HideInInspector] public string finalRank = "MISS";
 
+    /// <summary>若本音符被某主动技能附魔，则指向其运行时；结算时回调通知完成数。</summary>
+    [HideInInspector] public ActiveSkillRuntime charmOwner;
+
     public bool CoversLane(int targetLane)
     {
         return targetLane >= lane && targetLane < lane + laneSpan;
@@ -32,6 +35,13 @@ public class Note : MonoBehaviour
         if (isHit) return;
         isHit = true;
         finalRank = rank;
+
+        // 附魔音符结算：非 MISS 即算完成（PASS 也算命中）
+        if (charmOwner != null)
+        {
+            charmOwner.OnCharmedNoteResolved(this, rank != "MISS");
+            charmOwner = null;
+        }
 
         NoteMover mover = GetComponent<NoteMover>();
         if (mover != null)
@@ -52,6 +62,13 @@ public class Note : MonoBehaviour
         if (isHit) return;
         isHit = true;
         finalRank = "MISS";
+
+        // 附魔音符结算：MISS 不计完成，但已消费一个附魔名额
+        if (charmOwner != null)
+        {
+            charmOwner.OnCharmedNoteResolved(this, false);
+            charmOwner = null;
+        }
 
         NoteMover mover = GetComponent<NoteMover>();
         if (mover != null)

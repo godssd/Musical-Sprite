@@ -35,6 +35,38 @@ public class CharacterBattleSystem : MonoBehaviour
         // P2：让 EnergyVFXPlaceholder 自动填充锚点
         var energyVfx = FindFirstObjectByType<EnergyVFXPlaceholder>();
         if (energyVfx != null) energyVfx.RebuildFromRosterAndMarkers();
+        // 主动技能运行时：为每个队伍角色挂载 ActiveSkillRuntime（大狗叫等）
+        SetupSkillRuntimes();
+    }
+
+    /// <summary>为每个队伍角色（非玩家）的 marker 挂载 ActiveSkillRuntime 并注入引用。</summary>
+    private bool skillRuntimesReady = false;
+    private void SetupSkillRuntimes()
+    {
+        if (skillRuntimesReady) return;
+        SkillSO.RebuildIndex();
+
+        var spawners = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
+        var combos = FindObjectsByType<ComboDisplay>(FindObjectsSortMode.None);
+        var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
+
+        for (int side = 0; side < 2; side++)
+        {
+            var spawner = System.Array.Find(spawners, s => s.side == side);
+            var oppCombo = System.Array.Find(combos, c => c.side == (1 - side));
+            for (int lane = 0; lane < 4; lane++)
+            {
+                var inst = CharacterRoster.GetTeam(side, lane);
+                if (inst == null || !inst.HasActiveSkill) continue;
+                var marker = System.Array.Find(markers, m => m != null && !m.IsPlayer && m.side == side && m.laneIndex == lane);
+                if (marker == null) continue;
+                if (marker.GetComponent<ActiveSkillRuntime>() != null) continue;
+                var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
+                rt.Setup(inst, marker, spawner, oppCombo, side);
+            }
+        }
+        skillRuntimesReady = true;
+        Debug.Log("[CharacterBattleSystem] 已为每个队伍角色挂载主动技能运行时（大狗叫等）");
     }
 
     private void InitializeFromData()

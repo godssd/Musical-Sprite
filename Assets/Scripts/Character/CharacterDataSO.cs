@@ -42,6 +42,8 @@ public class CharacterDataSO : ScriptableObject
     [Header("技能（飞书「能力1」主动 + 「过热状态」被动）")]
     [Tooltip("主动技能运行时引用（P3 路由层用）。如已用 Skill Maker 建了 SkillSO 可填；可空")]
     public SkillSO activeSkill;
+    [Tooltip("主动技能 ID 引用（与 Skill Maker / 角色文档对应）。运行时若 activeSkill 为空则用此 ID 反查 SkillSO.FindById")]
+    public string skillId;
     [Tooltip("主动技能文字描述（飞书「能力1」原文，给玩家看的。运行时此字段只读，不参与判定）")]
     [TextArea(2, 6)]
     public string activeSkillDescription;

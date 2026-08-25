@@ -89,6 +89,10 @@ public class NoteSpawner : MonoBehaviour
 
     private List<Note> activeNotes = new List<Note>();
     private List<HoldNote> activeHoldNotes = new List<HoldNote>();
+
+    // 主动技能附魔请求：角色释放后追加；spawn 音符时按 side 消耗名额
+    public struct CharmRequest { public ActiveSkillRuntime owner; public int remaining; }
+    public List<CharmRequest> activeCharms = new List<CharmRequest>();
     public HashSet<int> heldLanes = new HashSet<int>(); // 当前被按住的轨道（本侧）
     private int spawnIndex = 0;
     private Vector3[] laneOffsets;
@@ -272,6 +276,53 @@ public class NoteSpawner : MonoBehaviour
             chainTapHoldDuration);
 
         activeNotes.Add(note);
+        TryCharmNote(note);
+    }
+
+    /// <summary>角色释放主动技能时调用：登记一个附魔请求（配额 = count）。</summary>
+    public void RequestCharm(ActiveSkillRuntime owner, int count)
+    {
+        if (owner == null || count <= 0) return;
+        activeCharms.Add(new CharmRequest { owner = owner, remaining = count });
+        owner.SetCharmQuota(count);
+    }
+
+    /// <summary>音符生成时尝试附魔：取首个 side 匹配且仍有名额的请求，标记该音符并消耗一个名额。</summary>
+    private void TryCharmNote(Note note)
+    {
+        if (note == null) return;
+        for (int i = activeCharms.Count - 1; i >= 0; i--)
+        {
+            var req = activeCharms[i];
+            if (req.remaining > 0 && req.owner != null && req.owner.ownerSide == note.side)
+            {
+                note.charmOwner = req.owner;
+                req.owner.OnNoteCharmed(note);
+                req.remaining--;
+                if (req.remaining <= 0)
+                {
+                    // 配额用完：通知 runtime（让其在所有已附魔音符解决后释放）
+                    req.owner.OnCharmRequestClosed();
+                    activeCharms.RemoveAt(i);
+                }
+                else
+                {
+                    activeCharms[i] = req;
+                }
+                TintCharmed(note);
+                break;
+            }
+        }
+    }
+
+    /// <summary>把被附魔音符染成黄色发光（占位视觉）。</summary>
+    private void TintCharmed(Note note)
+    {
+        var r = note.GetComponent<Renderer>();
+        if (r == null) return;
+        r.material = new Material(r.material);
+        r.material.EnableKeyword("_EMISSION");
+        r.material.SetColor("_EmissionColor", new Color(1f, 0.85f, 0.1f));
     }
 
     /// <summary>

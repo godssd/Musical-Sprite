@@ -112,6 +112,15 @@ public class ComboDisplay : MonoBehaviour
         }
     }
 
+    /// <summary>被对手技能（如大狗叫音波）削减连击数。</summary>
+    public void ReduceBy(int amount)
+    {
+        if (amount <= 0) return;
+        currentCombo = Mathf.Max(0, currentCombo - amount);
+        UpdateText();
+        if (text != null) text.color = missColor; // 红色闪一下表示被削减
+    }
+
     private void UpdateText()
     {
         if (text == null) return;

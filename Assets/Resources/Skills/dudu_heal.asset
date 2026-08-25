@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab2f2b6730e92cd4ebdac8d61f6baea4, type: 3}
+  m_Name: dudu_heal
+  m_EditorClassIdentifier: 
+  skillId: dudu_heal
+  displayName: "\u561F\u561F\u6CBB\u7597"
+  description: "\uFF084\uFF09\u5C06\u5373\u5C06\u51FA\u73B0\u7684\u97F3\u7B26\uFF086
+    \u4E2A\uFF09\u9644\u9B54\uFF0C\u6BCF\u6210\u529F\u5B8C\u6210\u4E00\u4E2A\u97F3\u7B26\uFF0C\u5C31\u5BF9\u81EA\u5DF1\u8FDB\u884C\u4E00\u70B9\u751F\u547D\u6CBB\u6108\uFF083
+    \u70B9\u751F\u547D\uFF09\uFF08\u5FC5\u6740\uFF09"
+  cooldown: 60
+  energyCost: 200
+  inputSequence: 060000000500000006000000
+  inputWindow: 1.5
+  charmedNoteCount: 6
+  onlyCountNonMiss: 1
+  reduceComboPerCharmedNote: 3
+  releaseGlow: {r: 1, g: 0.85, b: 0.2, a: 1}
+  shockwavePrefab: {fileID: 0}
+  releaseSfxClip: {fileID: 0}
+  screenShakeAmp: 0.3
+  effectType: Heal
+  effectParamsJSON: '{"healPerNote":3,"slowRegenSeconds":9}'

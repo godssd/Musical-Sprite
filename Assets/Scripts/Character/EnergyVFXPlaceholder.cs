@@ -71,14 +71,19 @@ public class EnergyVFXPlaceholder : MonoBehaviour
         {
             if (m == null || m.IsPlayer) continue;
             if (m.GetComponent<Renderer>() == null) continue;
-            int teamId = (m.side + 1) * 100 + m.laneIndex + 1;
+            // 关键：以 CharacterRoster 注册的 CharacterClass.characterId 为准，
+            // 而不是用 (side+1)*100+lane+1 推算 —— 两者本来就不一致，
+            // 会导致 activeIds.Add(realId) 后 anchorMap.TryGetValue(realId) 找不到。
+            CharacterClass inst = CharacterRoster.GetTeam(m.side, m.laneIndex);
+            if (inst == null) continue;
+            int realId = inst.characterId;
             bool found = false;
             foreach (var a in anchors)
             {
-                if (a.characterId == teamId && a.body == m.transform) { found = true; break; }
+                if (a.characterId == realId && a.body == m.transform) { found = true; break; }
             }
             if (!found)
-                pending.Add(new CharAnchor { characterId = teamId, body = m.transform });
+                pending.Add(new CharAnchor { characterId = realId, body = m.transform });
         }
         anchors.AddRange(pending);
         RebuildAnchorMap();
@@ -185,6 +190,13 @@ public class EnergyVFXPlaceholder : MonoBehaviour
     /// <summary>由 CharacterBattleSystem 在自动补完 marker 后调用，确保锚点与角色对应。</summary>
     public void RebuildFromRosterAndMarkers()
     {
+        // 清除掉旧版本写入的 (side+1)*100+laneIndex+1 形式假 ID 锚点，防止历史脏数据卡死事件
+        for (int i = anchors.Count - 1; i >= 0; i--)
+        {
+            int id = anchors[i].characterId;
+            // 历史公式产出的 ID 都在 100..299 范围；合法的 CharacterClass.characterId 是 1..5（默认）。
+            if (id >= 100) anchors.RemoveAt(i);
+        }
         AutoFillAnchorsFromMarkers();
         Resubscribe();
     }

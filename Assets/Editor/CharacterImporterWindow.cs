@@ -191,9 +191,12 @@ public class CharacterImporterWindow : EditorWindow
     {
         for (int i = 0; i < header.Count; i++)
         {
-            string h = header[i].Trim().ToLower();
+            // 表头可能带换行/空格注释（如 "hp\n（1hp=1hp换为全队血量）"），只取第一行并去空格后比较
+            string raw = header[i];
+            int nl = raw.IndexOf('\n');
+            string h = (nl >= 0 ? raw.Substring(0, nl) : raw).Trim().ToLower().Replace(" ", "");
             foreach (var c in candidates)
-                if (h == c.ToLower()) return i;
+                if (h == c.ToLower().Replace(" ", "")) return i;
         }
         return -1;
     }
