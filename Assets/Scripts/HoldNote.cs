@@ -218,10 +218,16 @@ public class HoldNote : MonoBehaviour
         }
 
         // 连接 bar：节点 i 与 i+1 之间一段，拆成多段便于逐段变白。
-        // 连轨使用圆角扁平矩形片，片段首尾略微重叠，避免跨轨时出现断缝。
+        // 段宽度取两端节点宽度的最大值（节点一宽一窄时也按宽的那端走），
+        // mesh 与 localScale 都按段独立决定，避免 chain 级"全 Linked 化"。
         baseBarSegRadius = r * 0.18f;
         for (int s = 0; s < nodeCount - 1; s++)
         {
+            int spanA = NodeSpan(s);
+            int spanB = NodeSpan(s + 1);
+            int segSpan = Mathf.Max(spanA, spanB);
+            float linkedWidth = laneSpacing * (segSpan - 1) + noteRadius * 2f;
+
             var segTs = new List<Transform>();
             var segRends = new List<MeshRenderer>();
             var segMats = new List<Material>();
@@ -231,13 +237,13 @@ public class HoldNote : MonoBehaviour
                 var segT = segGo.transform;
                 segT.SetParent(transform, false);
                 var smf = segGo.AddComponent<MeshFilter>();
-                smf.sharedMesh = laneSpan > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
+                smf.sharedMesh = segSpan > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
                 var sRend = segGo.AddComponent<MeshRenderer>();
                 sRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 sRend.receiveShadows = false;
                 var sMat = CreateColoredMaterial(Color.black);
                 sRend.material = sMat;
-                segT.localScale = laneSpan > 1
+                segT.localScale = segSpan > 1
                     ? new Vector3(0.001f, 0.12f, linkedWidth)
                     : new Vector3(baseBarSegRadius, 1f, baseBarSegRadius);
                 segTs.Add(segT);
