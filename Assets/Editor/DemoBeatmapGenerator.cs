@@ -9,8 +9,7 @@ using System.Collections.Generic;
 /// 节奏约束（让谱面"踩在拍子上"，不再杂乱）：
 /// - BPM 固定 128，一拍 = 60/128 ≈ 0.469s。
 /// - 所有音符时刻吸附到拍网格：整数拍、半拍（八分）、四分（十六分）三种网格。
-/// - 每次生成会在"整拍 / 半拍 / 四分"三种细分中随机选一个作为本次基础网格，
-///   同时整体拍点集合也会混入少量更粗/更细的网格，避免每首都一样密或一样疏。
+/// - 所有音符时刻吸附到整拍，不会落在第 n 拍与第 n+1 拍之间。
 /// - 密度三档（稀疏 / 中等 / 密集）决定在可用拍点里填充多少比例。
 /// - 左右玩家谱面完全相同（同一份 time/lane 同时写入 side=0 与 side=1）。
 /// </summary>
@@ -61,19 +60,13 @@ public class DemoBeatmapGenerator : MonoBehaviour
         float beatDur = 60f / Bpm;
         float endTime = LeadIn + totalBeats * beatDur;
 
-        // 1) 构建拍点集合：以十六分音符（最小网格）为基底，全部吸附到拍。
-        //    再按"本次基础细分"做稀疏化，并人为混入少量其他细分的拍点，增加变化。
-        int baseSubdiv = PickRandomSubdivision(); // 1=整拍, 2=半拍, 4=四分
+        // 1) 构建整拍集合。使用全局歌曲时间计算，避免 LeadIn 偏移导致音符落在拍间。
         List<float> grid = new List<float>();
-        for (float t = LeadIn; t <= endTime - 1e-4f; t += beatDur / 4f)
-        {
-            float beatPos = (t - LeadIn) / beatDur;          // 距离开头的拍数（浮点）
-            bool onBase = Mathf.Abs(beatPos * (float)baseSubdiv - Mathf.Round(beatPos * baseSubdiv)) < 1e-3f;
-            // 基础细分点必留；再随机保留约 15% 的更细点，制造少量切分/连打变化
-            if (onBase || Random.value < 0.15f)
-                grid.Add(t);
-        }
-        if (grid.Count == 0) grid.Add(LeadIn + beatDur); // 兜底
+        int firstBeat = Mathf.CeilToInt(LeadIn / beatDur);
+        int lastBeat = Mathf.FloorToInt(endTime / beatDur);
+        for (int beat = firstBeat; beat <= lastBeat; beat++)
+            grid.Add(beat * beatDur);
+        if (grid.Count == 0) grid.Add(Mathf.Ceil(LeadIn / beatDur) * beatDur); // 兜底
 
         // 2) 按密度决定保留多少拍点
         float keepRatio = density == Density.Sparse ? 0.35f : density == Density.Medium ? 0.6f : 0.9f;
@@ -90,8 +83,12 @@ public class DemoBeatmapGenerator : MonoBehaviour
         //    - 约 18% 为连轨 Linked：固定占相邻两轨，包含双轨点击、直线长按和跨轨长按。
         //    - 其余为普通大圈 Tap。
         List<NoteData> notes = new List<NoteData>();
+        float linkedBlockedUntil = -1f;
         foreach (float t in usedTimes)
         {
+            // 连轨长按占用整个时间范围，范围内不再生成点击或其它音符。
+            if (t <= linkedBlockedUntil + 1e-4f) continue;
+
             int lane = Random.Range(0, 4);
             float roll = Random.value;
             if (roll < 0.10f)
@@ -158,6 +155,7 @@ public class DemoBeatmapGenerator : MonoBehaviour
                     }
                     notes.Add(MakeLinked(t, pairLane, 0, pairLanes, times));
                     notes.Add(MakeLinked(t, pairLane, 1, pairLanes, times));
+                    linkedBlockedUntil = times[times.Length - 1];
                 }
             }
             else
@@ -219,10 +217,4 @@ public class DemoBeatmapGenerator : MonoBehaviour
         };
     }
 
-    // 随机选一种基础细分：整拍(1) / 半拍(2) / 四分(4)
-    private static int PickRandomSubdivision()
-    {
-        int r = Random.Range(0, 3);
-        return r == 0 ? 1 : r == 1 ? 2 : 4;
-    }
 }

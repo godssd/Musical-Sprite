@@ -308,10 +308,14 @@ namespace MusicalSprite.Editor
                         if (xB < timeX0 - 16 || xA > baseRect.x + baseRect.width + 16) continue;
                         Vector2 pa = new Vector2(xA, yA);
                         Vector2 pb = new Vector2(xB, yB);
-                        // 两端同为连轨 => 粗；同为普通 => 细；混合 => 沿段插值出“粗到细”渐变
-                        if (aLinked == bLinked)
+                        // 两端同为连轨时使用运行时一致的阶梯结构；普通 Hold 仍画细直线。
+                        if (aLinked && bLinked)
                         {
-                            DrawThickLine(pa, pb, aLinked ? thickTh : thinTh, lineCol);
+                            DrawLinkedStair(pa, pb, thickTh, lineCol);
+                        }
+                        else if (!aLinked && !bLinked)
+                        {
+                            DrawThickLine(pa, pb, thinTh, lineCol);
                         }
                         else
                         {
@@ -378,9 +382,12 @@ namespace MusicalSprite.Editor
                 Vector2 cur = Event.current.mousePosition;
                 float xLast = timeX0 + (linkTimes[linkTimes.Count - 1] - viewStartTime) * pixelsPerSecond;
                 float yLast = GetNoteY(baseRect, linkLanes[linkLanes.Count - 1], lastLinked);
-                // 亮蓝主线（更粗、更高不透明）
-                DrawThickLine(new Vector2(xLast, yLast), cur, lastLinked ? LaneHeight * 1.45f : 5f,
-                    new Color(0.25f, 0.85f, 1f, 0.95f));
+                // 亮蓝主线（连轨使用阶梯结构，普通 Hold 使用直线）
+                Color previewColor = new Color(0.25f, 0.85f, 1f, 0.95f);
+                if (lastLinked)
+                    DrawLinkedStair(new Vector2(xLast, yLast), cur, LaneHeight * 1.45f, previewColor);
+                else
+                    DrawThickLine(new Vector2(xLast, yLast), cur, 5f, previewColor);
                 // 鼠标处的"实时端点"圆环 + 上一节点的白色连接点，强调正在跟手
                 if (Event.current.type == EventType.Repaint)
                 {
@@ -795,6 +802,40 @@ namespace MusicalSprite.Editor
             GUIUtility.RotateAroundPivot(ang, a);
             EditorGUI.DrawRect(new Rect(a.x, a.y - thickness * 0.5f, len, thickness), col);
             GUI.matrix = m;
+        }
+
+        private static void DrawLinkedStair(Vector2 a, Vector2 b, float thickness, Color col)
+        {
+            float dx = b.x - a.x;
+            if (Mathf.Abs(dx) < 0.001f)
+            {
+                EditorGUI.DrawRect(new Rect(a.x - thickness * 0.5f, a.y - thickness * 0.5f,
+                    thickness, thickness), col);
+                return;
+            }
+
+            // 每个小段保持水平，只逐段改变 Y，和运行时的跨轨阶梯带保持一致。
+            float direction = Mathf.Sign(dx);
+            float startX = a.x + direction * 6f;
+            float endX = b.x - direction * 6f;
+            float usableWidth = Mathf.Abs(endX - startX);
+            if (usableWidth <= 1f)
+            {
+                EditorGUI.DrawRect(new Rect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y) - thickness * 0.5f,
+                    Mathf.Max(1f, Mathf.Abs(dx)), thickness), col);
+                return;
+            }
+
+            int segmentCount = Mathf.Clamp(Mathf.CeilToInt(usableWidth / 10f), 2, 32);
+            float segmentWidth = usableWidth / segmentCount * 1.12f;
+            for (int i = 0; i < segmentCount; i++)
+            {
+                float p = (i + 0.5f) / segmentCount;
+                float x = Mathf.Lerp(startX, endX, p);
+                float y = Mathf.Lerp(a.y, b.y, p);
+                EditorGUI.DrawRect(new Rect(x - segmentWidth * 0.5f, y - thickness * 0.5f,
+                    segmentWidth, thickness), col);
+            }
         }
 
         private float Snap(float time)
