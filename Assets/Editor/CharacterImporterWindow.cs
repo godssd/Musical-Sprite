@@ -9,19 +9,24 @@ using System.Collections.Generic;
 /// 选择 Characters.xlsx → 解析 Sheet1 → 按 characterId 生成/更新 CharacterDataSO
 /// 到 Assets/Data/Characters/，并把可选的 activeSkill / passiveSkill 按 skillId 反查为 SkillSO 引用。
 ///
-/// 表头列含义（兼容中英文）：
-///   编号 / id             → 角色编号
-///   角色 / name           → 显示名
-///   职业 / profession     → 职业
-///   hp / 血量             → 角色血量
-///   战斗力 / combat       → 战斗力数值
-///   能力1 / activeDesc    → 主动技能描述（写回 SO.activeSkillDescription）
-///   能量需求 / activeEnergy → 主动技能能量需求（"无" / 整数）
-///   过热状态 / passiveDesc → 被动/过热描述（写回 SO.passiveSkillDescription）
-///   技能冷却 / cooldown    → 释放后冷却秒数（写回 SO.skillCooldown；0=用 SkillSO 默认）
-///   备注 / notes          → 仅展示，不入 SO
-///   activeSkillId         → 反查 SkillSO 引用（可空，缺则 import 警告）
-///   passiveSkillId        → 反查 SkillSO 引用（可空）
+/// 表头列含义（兼容飞书新表与旧表）：
+///   编号 / id                  → 角色编号
+///   角色 / name                → 显示名
+///   角色类型 / type            → 玩家自身角色 / 队伍角色（可选，缺则按 id 推断）
+///   职业 / profession          → 职业
+///   hp / 血量                  → 角色血量
+///   战斗力 / combat            → 战斗力数值
+///   能力1 / activeDesc         → 主动技能(必杀)描述（写回 SO.activeSkillDescription）
+///   能力1.技能冷却 / cooldown   → 释放后冷却秒数（写回 SO.skillCooldown；0=用 SkillSO 默认）
+///   能力1.技能引用ID / activeSkillId → 反查 SkillSO 引用（可空，缺则 import 警告）
+///   能力1.能量需求 / activeEnergy → 主动技能能量需求（"无" / 整数）
+///   能力1.过热状态 / passiveDesc → 过热描述（写回 SO.passiveSkillDescription）
+///   能力1.超级过热状态          → 超级过热描述（暂仅展示，写回 SO.passiveSkillDescription 末尾）
+///   能力1.输入方式              → 输入序列（仅展示，运行时走 SkillInputUI）
+///
+/// 注：飞书新表为每个能力(能力1/能力2/能力3)都重复 技能冷却/技能引用ID/能量需求/过热状态/超级过热状态/输入方式 一组列。
+///     导入器按"同名列首次出现"规则，只消费「能力1」那一组；能力2/能力3 目前仅作为设计备注保留，待运行时扩展多技能后启用。
+///     activeSkillId / passiveSkillId（英文旧列名）仍兼容。
 ///
 /// isPlayer / laneIndex 由 importer 按 characterId 推断：
 ///   id == 1 → isPlayer = true, laneIndex = -1
@@ -47,9 +52,9 @@ public class CharacterImporterWindow : EditorWindow
         GUILayout.Label("角色导入器 (Character Importer)", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
             "选择 Characters.xlsx → 解析 → 按 characterId 生成/更新 CharacterDataSO 到 Assets/Data/Characters/。\n" +
-            "支持飞书原表 1:1 列名（编号 / 角色 / 职业 / hp / 战斗力 / 能力1 / 能量需求 / 过热状态 / 技能冷却 / 备注）。\n" +
-            "若工程里已有 Skill Maker 生成的 SkillSO，可额外列 activeSkillId / passiveSkillId 自动反查。\n" +
-            "「技能冷却」列填秒数（如 60）；「无 / — / 空」表示用 SkillSO 默认值。",
+            "支持飞书新表列名（编号 / 角色 / 角色类型 / 职业 / hp / 战斗力 / 能力1 / 技能冷却 / 技能引用ID / 能量需求 / 过热状态 / 超级过热状态 / 输入方式；能力2/能力3 同名列为预留）。\n" +
+            "若工程里已有 Skill Maker 生成的 SkillSO，可在「技能引用ID」列填 skillId 自动反查（英文 activeSkillId 旧列名仍兼容）。\n" +
+            "「技能冷却」列填秒数（如 60）；「无 / — / 空」表示用 SkillSO 默认值。导入器只消费「能力1」那一组列。",
             MessageType.Info);
 
         EditorGUILayout.BeginHorizontal();
@@ -108,9 +113,10 @@ public class CharacterImporterWindow : EditorWindow
         int iActiveDesc  = FindHeader(header, "能力1", "activedesc", "active_skill_description");
         int iActiveCost  = FindHeader(header, "能量需求", "activeenergy", "active_energy");
         int iPassiveDesc = FindHeader(header, "过热状态", "passivedesc", "passive_skill_description");
+        int iSuperDesc   = FindHeader(header, "超级过热状态", "superoverheat", "super_fever");
         int iCooldown    = FindHeader(header, "技能冷却", "技能冷却（秒）", "cooldown", "skillcooldown");
         int iNotes       = FindHeader(header, "备注", "notes");
-        int iActiveId    = FindHeader(header, "activeskillid");
+        int iActiveId    = FindHeader(header, "activeskillid", "技能引用ID", "skillid");
         int iPassiveId   = FindHeader(header, "passiveskillid");
         int iType        = FindHeader(header, "type", "isplayer");
         int iLane        = FindHeader(header, "lane", "laneindex");
@@ -147,6 +153,9 @@ public class CharacterImporterWindow : EditorWindow
                 else activeCost = 100;
             }
             string passiveDesc = CellStr(row, iPassiveDesc, "");
+            string superDesc = CellStr(row, iSuperDesc, "");
+            if (!string.IsNullOrEmpty(superDesc))
+                passiveDesc = (passiveDesc + "\n" + superDesc).Trim();
 
             // 技能冷却：数值=秒；"无"/"—"/"空" → 0（运行时回退 SkillSO.cooldown）
             float cooldown = CellFloat(row, iCooldown, 0f);
