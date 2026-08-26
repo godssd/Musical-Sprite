@@ -37,12 +37,12 @@ public class PassiveSkillController : MonoBehaviour
             if (cond && !on)
             {
                 active.Add(key);
-                Debug.Log($"[Passive] side={owner != null ? owner.characterId : -1} 被动技能「{key}」生效（满足条件）");
+                Debug.Log($"[Passive] side={(owner != null ? owner.characterId : -1)} 被动技能「{key}」生效（满足条件）");
             }
             else if (!cond && on)
             {
                 active.Remove(key);
-                Debug.Log($"[Passive] side={owner != null ? owner.characterId : -1} 被动技能「{key}」失效（条件不再满足）");
+                Debug.Log($"[Passive] side={(owner != null ? owner.characterId : -1)} 被动技能「{key}」失效（条件不再满足）");
             }
         }
     }
