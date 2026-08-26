@@ -57,7 +57,11 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (phase == Phase.Cooldown)
         {
             cooldownLeft -= Time.deltaTime;
-            if (cooldownLeft <= 0f) phase = Phase.Standby;
+            if (cooldownLeft <= 0f)
+            {
+                phase = Phase.Standby;
+                if (owner != null) owner.SetSkillBusy(false);  // 技能彻底结束：若能量已再次充满则恢复冒烟
+            }
             return;
         }
 
@@ -93,7 +97,11 @@ public class ActiveSkillRuntime : MonoBehaviour
         settleIdleTimer = 0f;
 
         // 释放成功：立刻清空能量（大狗身上的冒气表现随之停止，因为 EnergyVFXPlaceholder 订阅了 OnEnergyDepleted）
-        if (owner != null) owner.ConsumeEnergy(owner.maxEnergy);
+        if (owner != null)
+        {
+            owner.ConsumeEnergy(owner.maxEnergy);
+            owner.SetSkillBusy(true);   // 整个技能进行期（含过热连叫）抑制"能量充满冒烟"，回到 Standby 时才可能恢复
+        }
 
         if (marker != null) marker.GrowGlow();
         if (ownerSpawner != null)

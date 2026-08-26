@@ -22,6 +22,7 @@ public class CharacterClass
     public float maxEnergy;        // 装配时缓存：优先 SO.activeEnergyCost，否则 SkillSO.energyCost，再否则 100
     public float currentEnergy;
     public bool isFullyCharged;
+    public bool skillBusy;          // 主动技能进行中（Grow/Charming/Releasing/Cooldown）为 true；期间抑制"能量充满冒烟"，结束回到 Standby 时若能量已满则补发
 
     public SkillSO activeSkill;
     public SkillSO passiveSkill;
@@ -67,8 +68,19 @@ public class CharacterClass
         if (nowFull && !isFullyCharged)
         {
             isFullyCharged = true;
-            OnEnergyFull?.Invoke(characterId);
+            // 技能进行中时即使能量再次充满也抑制冒烟：等待 ActiveSkillRuntime 调 SetSkillBusy(false) 时再补发
+            if (!skillBusy) OnEnergyFull?.Invoke(characterId);
         }
+    }
+
+    /// <summary>由 ActiveSkillRuntime 调用：标记技能是否处于进行中。
+    /// 进行中时即使能量再次充满也抑制冒烟；结束回到 Standby 时若能量已满则立即补发 OnEnergyFull 让冒烟恢复。</summary>
+    public void SetSkillBusy(bool busy)
+    {
+        if (skillBusy == busy) return;
+        skillBusy = busy;
+        if (!busy && isFullyCharged)
+            OnEnergyFull?.Invoke(characterId);
     }
 
     /// <summary>施放主动技能时调用，扣除能量；低于上限则取消"已充满"状态（停止上浮方块表现）。</summary>
