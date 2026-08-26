@@ -41,6 +41,18 @@ namespace MusicalSprite.Editor
             public int[] holdLaneSpans;
         }
 
+        /// <summary>
+        /// 谱面文本备份（纵深防御层）。与 .asset 同源同步写出的 JSON 镜像，
+        /// 用于"资产序列化万一再丢连轨宽度时"一次性恢复，也便于人直接阅读 / 手改谱面。
+        /// 仅含 bpm 与音符数组（含 holdLaneSpans），不含任何运行期引用类型。
+        /// </summary>
+        [System.Serializable]
+        private class BeatmapTextDump
+        {
+            public float bpm;
+            public NoteData[] notes;
+        }
+
         [SerializeField] private string beatmapName = "NewBeatmap";
         [SerializeField] private float bpm = 128f;
         [SerializeField] private float songLength = 60f;
@@ -220,6 +232,19 @@ namespace MusicalSprite.Editor
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("新建", GUILayout.Width(60))) NewChart();
             if (GUILayout.Button("保存", GUILayout.Width(60))) SaveBeatmap();
+            if (GUILayout.Button("从文本恢复", GUILayout.Width(80)))
+            {
+                if (!string.IsNullOrEmpty(currentEditingPath))
+                {
+                    RestoreFromText(currentEditingPath);
+                }
+                else
+                {
+                    string p = EditorUtility.OpenFilePanel("选择谱面文本备份(.json)", BeatmapsDir, "json");
+                    if (!string.IsNullOrEmpty(p))
+                        RestoreFromText(Path.ChangeExtension(p, ".asset"));
+                }
+            }
             if (!isPlaying)
             {
                 if (GUILayout.Button("播放", GUILayout.Width(60))) Play();
@@ -1259,34 +1284,19 @@ namespace MusicalSprite.Editor
             beatmapName = Path.GetFileNameWithoutExtension(path);
             bpm = bm.bpm;
             beatmapAudioClip = bm.audioClip;
+            // 从资产音符数组重建单边谱面（含连轨宽度还原）
+            LoadNotesFromNoteData(bm.notes);
+            // 自检：若资产丢失连轨宽度而文本备份有，提示从文本恢复（纵深防御）
+            VerifyAndMaybeRecoverOnLoad(path);
+        }
+
+        /// <summary>
+        /// 从一组 NoteData（单边 side==0）重建编辑器内部谱面。同时清零撤销 / 链接编辑态。
+        /// 被 LoadBeatmap（从资产）与 RestoreFromText（从 JSON）共用。
+        /// </summary>
+        private void LoadNotesFromNoteData(NoteData[] arr)
+        {
             notes = new List<ChartNote>();
-            if (bm.notes != null)
-            {
-                foreach (var n in bm.notes)
-                {
-                    if (n.side == 0)
-                    {
-                        var cn = new ChartNote
-                        {
-                            time = n.time,
-                            lane = n.lane,
-                            type = n.type,
-                            chainTapCount = n.type == NoteData.NoteType.ChainTap
-                                ? Mathf.Clamp(n.chainTapCount, 3, 10)
-                                : n.chainTapCount,
-                            holdDuration = n.holdDuration,
-                            holdEndLane = n.holdEndLane
-                        };
-                        if (n.type == NoteData.NoteType.SmallTap) cn.isSmallTap = true;
-                        // 多节点 Hold 字段：若谱面存了则还原（编辑器当前只生成 2 节点，保持 null）
-                        if (n.holdLanes != null) cn.holdLanes = (int[])n.holdLanes.Clone();
-                        if (n.holdTimes != null) cn.holdTimes = (float[])n.holdTimes.Clone();
-                        if (n.holdLaneSpans != null) cn.holdLaneSpans = (int[])n.holdLaneSpans.Clone();
-                        notes.Add(cn);
-                    }
-                }
-            }
-            if (notes.Count > 0) songLength = Mathf.Max(songLength, notes.Max(n => n.time) + 4f);
             selectedIndex = -1;
             dragIndex = -1;
             dragNote = null;
@@ -1298,8 +1308,104 @@ namespace MusicalSprite.Editor
             linkLaneSpans.Clear();
             pendingLinkDown = false;
             undoStack.Clear(); // 载入新谱面后清空旧撤销历史
+
+            if (arr != null)
+            {
+                foreach (var n in arr)
+                {
+                    if (n.side != 0) continue;
+                    var cn = new ChartNote
+                    {
+                        time = n.time,
+                        lane = n.lane,
+                        type = n.type,
+                        chainTapCount = n.type == NoteData.NoteType.ChainTap
+                            ? Mathf.Clamp(n.chainTapCount, 3, 10)
+                            : n.chainTapCount,
+                        holdDuration = n.holdDuration,
+                        holdEndLane = n.holdEndLane
+                    };
+                    if (n.type == NoteData.NoteType.SmallTap) cn.isSmallTap = true;
+                    if (n.holdLanes != null) cn.holdLanes = (int[])n.holdLanes.Clone();
+                    if (n.holdTimes != null) cn.holdTimes = (float[])n.holdTimes.Clone();
+                    if (n.holdLaneSpans != null) cn.holdLaneSpans = (int[])n.holdLaneSpans.Clone();
+                    notes.Add(cn);
+                }
+            }
+            if (notes.Count > 0) songLength = Mathf.Max(songLength, notes.Max(cn => cn.time) + 4f);
             playTime = 0f;
             Repaint();
+        }
+
+        /// <summary>返回与 .asset 同名的 .json 文本备份路径。</summary>
+        private static string GetJsonPath(string assetPath)
+        {
+            return Path.ChangeExtension(assetPath, ".json");
+        }
+
+        /// <summary>把已保存的 BeatmapSO 同步导出为同级 .json 文本镜像（纵深防御 / 可 git 提交）。</summary>
+        private void ExportBeatmapText(BeatmapSO asset, string assetPath)
+        {
+            if (asset == null) return;
+            try
+            {
+                string jsonPath = GetJsonPath(assetPath);
+                var dump = new BeatmapTextDump { bpm = asset.bpm, notes = asset.notes };
+                File.WriteAllText(jsonPath, JsonUtility.ToJson(dump, true));
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[谱面编辑器] 导出文本备份失败：{e.Message}");
+            }
+        }
+
+        /// <summary>从同级 .json 文本备份恢复编辑器谱面（含连轨宽度），并立即写回 .asset 固化。</summary>
+        private void RestoreFromText(string assetPath)
+        {
+            string jsonPath = GetJsonPath(assetPath);
+            if (!File.Exists(jsonPath))
+            {
+                EditorUtility.DisplayDialog("从文本恢复", "未找到同名的 .json 文本备份文件。", "确定");
+                return;
+            }
+            string json = File.ReadAllText(jsonPath);
+            BeatmapTextDump dump = JsonUtility.FromJson<BeatmapTextDump>(json);
+            if (dump == null || dump.notes == null)
+            {
+                EditorUtility.DisplayDialog("从文本恢复", "文本备份解析失败或为空。", "确定");
+                return;
+            }
+            bpm = dump.bpm;
+            currentEditingPath = assetPath;
+            beatmapName = Path.GetFileNameWithoutExtension(assetPath);
+            LoadNotesFromNoteData(dump.notes);
+            SaveBeatmap(); // 立即把恢复出的连轨宽度固化进 .asset（与 .json 保持一致）
+            ShowNotification(new GUIContent("已从文本恢复：" + Path.GetFileNameWithoutExtension(assetPath)));
+        }
+
+        /// <summary>
+        /// 载入资产后自检：若资产中多节点 Hold 的逐节点宽度不完整，但同目录 .json 备份完整，
+        /// 则提示用户从文本恢复（绝不静默丢数据）。
+        /// </summary>
+        private void VerifyAndMaybeRecoverOnLoad(string assetPath)
+        {
+            string jsonPath = GetJsonPath(assetPath);
+            if (!File.Exists(jsonPath)) return;
+            bool assetLost = false;
+            foreach (var cn in notes)
+            {
+                if (cn.holdLanes == null || cn.holdLanes.Length < 2) continue; // 仅检查多节点链
+                bool spanOk = cn.holdLaneSpans != null
+                    && cn.holdLaneSpans.Length == cn.holdLanes.Length
+                    && System.Linq.Enumerable.Any(cn.holdLaneSpans, v => v > 1);
+                if (!spanOk) { assetLost = true; break; }
+            }
+            if (assetLost && EditorUtility.DisplayDialog("检测到连轨宽度可能丢失",
+                "当前资产中部分连轨音符的逐节点宽度不完整，但同目录存在 .json 文本备份。是否从文本恢复连轨信息？",
+                "从文本恢复", "忽略"))
+            {
+                RestoreFromText(assetPath);
+            }
         }
 
         private void NewChart()
@@ -1360,6 +1466,10 @@ namespace MusicalSprite.Editor
             if (created) AssetDatabase.CreateAsset(asset, path);
             else AssetDatabase.SaveAssetIfDirty(asset);
             AssetDatabase.SaveAssets();
+
+            // 同步写出同级 .json 文本备份（连轨宽度纵深防御，可 git 提交）
+            ExportBeatmapText(asset, path);
+
             AssetDatabase.Refresh();
 
             currentEditingPath = path;
@@ -1392,12 +1502,21 @@ namespace MusicalSprite.Editor
                         nd1.holdLanes = (int[])lanes.Clone();
                         nd0.holdTimes = (float[])n.holdTimes.Clone();
                         nd1.holdTimes = (float[])n.holdTimes.Clone();
-                        // 逐节点宽度（1=普通，2=连轨），与节点一一对应，直接克隆（与轨号无关）
-                        if (n.holdLaneSpans != null && n.holdLaneSpans.Length == lanes.Length)
+                        // 逐节点宽度（1=普通，2=连轨），与节点一一对应。
+                        // 修复：绝不再因"长度不符"静默丢弃连轨信息——无条件写出归一化宽度
+                        // （缺位补 1、超出截断；值 >1 即视为连轨宽节点）。
+                        int[] spans = new int[lanes.Length];
+                        if (n.holdLaneSpans != null)
                         {
-                            nd0.holdLaneSpans = (int[])n.holdLaneSpans.Clone();
-                            nd1.holdLaneSpans = (int[])n.holdLaneSpans.Clone();
+                            for (int i = 0; i < lanes.Length; i++)
+                                spans[i] = (i < n.holdLaneSpans.Length && n.holdLaneSpans[i] > 1) ? 2 : 1;
                         }
+                        else
+                        {
+                            for (int i = 0; i < lanes.Length; i++) spans[i] = 1;
+                        }
+                        nd0.holdLaneSpans = (int[])spans.Clone();
+                        nd1.holdLaneSpans = (int[])spans.Clone();
                     }
                     else if (type == NoteData.NoteType.Hold)
                     {

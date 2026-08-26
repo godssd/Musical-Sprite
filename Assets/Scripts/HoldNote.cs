@@ -57,6 +57,9 @@ public class HoldNote : MonoBehaviour
     [Tooltip("断连判定：所需轨道超过该秒数未被按住即断连 MISS。越小越严格。")]
     public float breakThreshold = 0.2f;
 
+    [Tooltip("连轨滑动「提前完成滑动」容错：在节点时间中点之前 earlySlideGrace 秒内提前滑到 toLane（下一轨），视为已完成滑动、不报警（容\"过早\"手感）。与 slideSettleWindow（过晚/停滞）对称。")]
+    public float earlySlideGrace = 0.18f;
+
     [Tooltip("收尾后透明度淡出时长（秒）。在此期间音符继续移动并被判定线裁剪。")]
     public float fadeDuration = 0.35f;
 
@@ -100,6 +103,11 @@ public class HoldNote : MonoBehaviour
     private bool missMode = false;        // 漏击后改为逐段越过判定线缩小消失（而非整条统一缩小）
     private bool missReported = false;    // MISS 反馈是否已上报（只报一次）
     private float missShrinkSpan = 0.5f;  // 越过判定线后多少距离内完成缩小消失
+
+    // 命中放大（pop）表现：命中瞬间节点球体放大并变白，随后回落到基础缩放（与点击音符"放大变白"语义一致）
+    private float[] nodePop;              // 每节点弹跳计时（>0 时放大），初始化于 BuildVisuals
+    private float hitPopDuration = 0.18f; // 命中放大持续（秒）[PLACEHOLDER 可微调]
+    private float hitPopScale = 1.35f;    // 命中峰值放大倍数 [PLACEHOLDER 可微调]
 
     // 已完成的段数（段 i 表示 node[i] -> node[i+1]）
     private int completedSegments = 0;
@@ -193,6 +201,27 @@ public class HoldNote : MonoBehaviour
         }
     }
 
+    /// <summary>触发某节点命中弹跳：放大 + 变白，随后由 UpdateHitPops 回落到基础缩放。</summary>
+    private void PlayHitPop(int nodeIndex)
+    {
+        if (nodeIndex < 0 || nodeIndex >= nodeCount) return;
+        nodePop[nodeIndex] = 1f; // 触发弹跳（从峰值开始回落）
+        if (nodeMats[nodeIndex] != null) nodeMats[nodeIndex].color = Color.white;
+    }
+
+    /// <summary>每帧推进各节点命中弹跳：放大倍数从峰值随时间回落到 1。漏击/断连时由 ApplyMissDisappear 接管缩放，此处跳过。</summary>
+    private void UpdateHitPops()
+    {
+        if (missMode) return; // 漏击/断连时由 ApplyMissDisappear 接管缩放
+        for (int i = 0; i < nodeCount; i++)
+        {
+            if (nodePop[i] <= 0f) continue;
+            nodePop[i] = Mathf.Max(0f, nodePop[i] - Time.deltaTime / Mathf.Max(hitPopDuration, 0.0001f));
+            float sc = 1f + (hitPopScale - 1f) * nodePop[i]; // 从峰值回落到基础
+            nodeTransforms[i].localScale = nodeBaseScales[i] * sc;
+        }
+    }
+
     void Start()
     {
         BuildVisuals();
@@ -209,6 +238,7 @@ public class HoldNote : MonoBehaviour
         }
         nodeCount = lanes.Length;
         nodeBaseScales = new Vector3[nodeCount];
+        nodePop = new float[nodeCount];
 
         // 节点圆柱（逐节点宽度：连轨节点覆盖相邻两轨，普通节点单轨）
         float r = noteRadius / 0.5f;
@@ -311,6 +341,8 @@ public class HoldNote : MonoBehaviour
         if (finished) return;
 
         float songTime = conductor.songPosition;
+
+        UpdateHitPops(); // 推进各节点命中放大弹跳（missMode 时内部跳过，由 ApplyMissDisappear 接管缩放）
 
         if (fadeTimer < 0f)
         {
@@ -494,7 +526,7 @@ public class HoldNote : MonoBehaviour
     }
 
     /// <summary>
-    /// 按住期间：已完成段保持白色，当前进行中的段按进度逐段变白，未到达段保持黑色。
+    /// 按住期间：已完成段保持白色，当前进行中的段按"子片世界坐标是否已越过判定线"逐片点亮（发白前沿严格落在判定线上），未到达段保持黑色。
     /// </summary>
     private void UpdateSegmentColors(float songTime)
     {
@@ -502,22 +534,27 @@ public class HoldNote : MonoBehaviour
 
         for (int s = 0; s < segmentGroups.Count; s++)
         {
-            // 该段整体进度：从 times[s] 到 times[s+1]
-            float segStart = times[s];
-            float segEnd = times[s + 1];
-            float segProg = Mathf.Clamp01((songTime - segStart) / Mathf.Max(segEnd - segStart, 0.0001f));
-
-            // 已完成的段（s < completedSegments）全白；当前段按 segProg 逐细分变白；未来段全黑
-            int litCount;
-            if (s < completedSegments) litCount = BarSegmentCount;
-            else if (s == completedSegments) litCount = Mathf.FloorToInt(segProg * BarSegmentCount);
-            else litCount = 0;
-
+            if (s < completedSegments)        // 已完成段：全白
+            {
+                var mc = segmentMatGroups[s];
+                for (int k = 0; k < mc.Count; k++) if (mc[k] != null) mc[k].color = Color.white;
+                continue;
+            }
+            if (s > completedSegments)        // 未来段：全黑
+            {
+                var mf = segmentMatGroups[s];
+                for (int k = 0; k < mf.Count; k++) if (mf[k] != null) mf[k].color = Color.black;
+                continue;
+            }
+            // 当前段：按子片世界坐标是否已越过判定线逐片点亮，白边严格落在判定线上
+            // （复用与可见性一致的 IsBeyondLine，方向语义正确；不再用时间比例导致超前发白）
+            var segs = segmentGroups[s];
             var mats = segmentMatGroups[s];
-            for (int k = 0; k < BarSegmentCount; k++)
+            for (int k = 0; k < segs.Count; k++)
             {
                 if (mats[k] == null) continue;
-                mats[k].color = k < litCount ? Color.white : Color.black;
+                bool passed = IsBeyondLine(segs[k].position.x, judgeLineX);
+                mats[k].color = passed ? Color.white : Color.black;
             }
         }
     }
@@ -716,15 +753,24 @@ public class HoldNote : MonoBehaviour
         }
 
         // 滑动段（如 第2轨→第3轨）：在节点时间中点"强制切换"应被按住的轨道，要求玩家跟随滑动。
-        // 前半段必须按 fromLane，后半段必须按 toLane；中点前后各 slideSettleWindow 秒内两条轨都允许，
-        // 给滑动手感的宽容度（不必正好在中点瞬间切换）。
+        // 前半段（songTime<midTime）主按 fromLane；后半段（songTime>=midTime）主按 toLane。
+        // 双向容错，各管中点一侧（不是单纯调宽严，而是补齐"过早"这一维）：
+        // - 过早：比中点提前 earlySlideGrace 之内就滑到 toLane（提前完成滑动），容忍；
+        // - 过晚（停滞）：比中点滞后 slideSettleWindow 之内仍停在 fromLane（或已到 toLane），容忍。
         float midTime = (times[seg] + times[seg + 1]) * 0.5f;
         int phaseLane = songTime < midTime ? fromLane : toLane;
         if (spawner.heldLanes.Contains(phaseLane)) return true;
 
-        if (Mathf.Abs(songTime - midTime) <= slideSettleWindow)
+        if (songTime < midTime)
         {
-            if (spawner.heldLanes.Contains(fromLane) || spawner.heldLanes.Contains(toLane)) return true;
+            // 过早滑动容错：提前完成滑动（已进入下一轨）且在中点前 earlySlideGrace 内
+            if ((midTime - songTime) <= earlySlideGrace && spawner.heldLanes.Contains(toLane)) return true;
+        }
+        else
+        {
+            // 过晚/停滞容错：与原有 slideSettleWindow 一致
+            if ((songTime - midTime) <= slideSettleWindow
+                && (spawner.heldLanes.Contains(fromLane) || spawner.heldLanes.Contains(toLane))) return true;
         }
         return false;
     }
@@ -792,8 +838,8 @@ public class HoldNote : MonoBehaviour
             while (completedSegments < nodeCount - 1 && songTime >= times[completedSegments + 1])
             {
                 completedSegments++;
-                // 节点变白
-                if (nodeMats[completedSegments] != null) nodeMats[completedSegments].color = Color.white;
+                // 节点变白 + 放大弹跳（命中反馈）
+                PlayHitPop(completedSegments);
                 // 上报该段 CLEAR：位置取该段"结束节点"的判定线处
                 Vector3 segEndPos = hitPositions[completedSegments];
                 onJudge?.Invoke(side, lanes[completedSegments], "CLEAR", segEndPos);
@@ -843,8 +889,8 @@ public class HoldNote : MonoBehaviour
         float absDt = Mathf.Abs(dt);
         string rank = absDt <= perfectWindow ? "PERFECT" : "GOOD";
 
-        // 命中反馈：head 变白
-        if (nodeMats[0] != null) nodeMats[0].color = Color.white;
+        // 命中反馈：head 变白 + 放大弹跳
+        PlayHitPop(0);
 
         onJudge?.Invoke(side, lanes[0], rank, hitPositions[0]);
         // 附魔：头节点达成 = 1 个附魔单位成功
@@ -873,9 +919,10 @@ public class HoldNote : MonoBehaviour
     {
         state = HoldState.Done;
         broken = true;
-        fadeTimer = 0f;
-        ResetAllToBlack();
-        // 断连在"最后成功节点"处报 MISS
+        fadeTimer = -1f;     // 走漏击"逐段滑过判定线缩小"路径（与 MissHead 一致）
+        missMode = true;     // 同上：由 MoveAndFade 的 ApplyMissDisappear 处理滑走消失
+        missReported = true; // 关键：阻止 MoveAndFade 的 missMode 分支重复上报 MISS（避免一次断连两个 MISS）
+        // 唯一一次评价：在最后成功节点处报 MISS
         int lastNode = Mathf.Max(0, completedSegments);
         onJudge?.Invoke(side, lanes[lastNode], "MISS", hitPositions[lastNode]);
 
@@ -893,8 +940,8 @@ public class HoldNote : MonoBehaviour
         state = HoldState.Done;
         broken = false;
         fadeTimer = 0f;
-        // 尾节点变白 + 全部段白色
-        if (nodeMats[nodeCount - 1] != null) nodeMats[nodeCount - 1].color = Color.white;
+        // 尾节点变白 + 放大弹跳；全部段白色
+        PlayHitPop(nodeCount - 1);
         for (int s = 0; s < segmentMatGroups.Count; s++)
             for (int k = 0; k < segmentMatGroups[s].Count; k++)
                 if (segmentMatGroups[s][k] != null) segmentMatGroups[s][k].color = Color.white;

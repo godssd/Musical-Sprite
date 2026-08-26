@@ -34,6 +34,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private float holdSlideSettleWindow = 0.15f;
     private float holdBreakThreshold = 0.2f;
     private float holdLaneTolerance = 1.0f;
+    private float holdEarlySlideGrace = 0.18f;  // 连轨滑动「过早」容错（与 slideSettleWindow 对称）[PLACEHOLDER 可微调]
     private float chainTapHoldDuration = 0.4f;
 
     // 过热加成（Fever / Super Fever）
@@ -97,6 +98,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         density = (DemoBeatmapGenerator.Density)EditorPrefs.GetInt(PREFS + "density", (int)density);
         holdSlideSettleWindow = EditorPrefs.GetFloat(PREFS + "holdSlideSettleWindow", holdSlideSettleWindow);
         holdBreakThreshold = EditorPrefs.GetFloat(PREFS + "holdBreakThreshold", holdBreakThreshold);
+        holdEarlySlideGrace = EditorPrefs.GetFloat(PREFS + "holdEarlySlideGrace", holdEarlySlideGrace);
         holdLaneTolerance = EditorPrefs.GetFloat(PREFS + "holdLaneTolerance", holdLaneTolerance);
         chainTapHoldDuration = EditorPrefs.GetFloat(PREFS + "chainTapHoldDuration", chainTapHoldDuration);
         feverMult = EditorPrefs.GetFloat(PREFS + "feverMult", feverMult);
@@ -125,6 +127,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorPrefs.SetInt(PREFS + "density", (int)density);
         EditorPrefs.SetFloat(PREFS + "holdSlideSettleWindow", holdSlideSettleWindow);
         EditorPrefs.SetFloat(PREFS + "holdBreakThreshold", holdBreakThreshold);
+        EditorPrefs.SetFloat(PREFS + "holdEarlySlideGrace", holdEarlySlideGrace);
         EditorPrefs.SetFloat(PREFS + "holdLaneTolerance", holdLaneTolerance);
         EditorPrefs.SetFloat(PREFS + "chainTapHoldDuration", chainTapHoldDuration);
         EditorPrefs.SetFloat(PREFS + "feverMult", feverMult);
@@ -164,6 +167,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             noteRadius = spawner.noteRadius;
             holdSlideSettleWindow = spawner.holdSlideSettleWindow;
             holdBreakThreshold = spawner.holdBreakThreshold;
+            holdEarlySlideGrace = spawner.holdEarlySlideGrace;
             holdLaneTolerance = spawner.holdLaneTolerance;
             chainTapHoldDuration = spawner.chainTapHoldDuration;
         }
@@ -303,6 +307,9 @@ public class MusicalSpriteDebugWindow : EditorWindow
         holdBreakThreshold = EditorGUILayout.Slider("断连阈值 breakThreshold", holdBreakThreshold, 0.05f, 0.5f);
         EditorGUILayout.HelpBox("所需轨道超过该秒数未被按住即断连 MISS。调小=更快断（更严格）。", MessageType.None);
 
+        holdEarlySlideGrace = EditorGUILayout.Slider("过早容错 earlySlideGrace", holdEarlySlideGrace, 0f, 0.5f);
+        EditorGUILayout.HelpBox("连轨滑动「提前完成滑动」的容错：在中点之前该秒数内提前滑到下一轨（toLane），视为已完成滑动、不报警（容「过早」手感）。与 slideSettleWindow（过晚/停滞）对称。", MessageType.None);
+
         holdLaneTolerance = EditorGUILayout.Slider("单轨容差 laneTolerance", holdLaneTolerance, 0f, 2f);
         EditorGUILayout.HelpBox("仅普通单轨 Hold 的跟随容差：按住轨道与当前插值轨道相差多少条轨道内算命中。", MessageType.None);
 
@@ -411,6 +418,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             s.noteRadius = noteRadius;
             s.holdSlideSettleWindow = holdSlideSettleWindow;
             s.holdBreakThreshold = holdBreakThreshold;
+            s.holdEarlySlideGrace = holdEarlySlideGrace;
             s.holdLaneTolerance = holdLaneTolerance;
             s.chainTapHoldDuration = Mathf.Max(0.05f, chainTapHoldDuration);
             s.RecomputeWindows();
@@ -424,6 +432,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             h.slideSettleWindow = holdSlideSettleWindow;
             h.breakThreshold = holdBreakThreshold;
             h.laneTolerance = holdLaneTolerance;
+            h.earlySlideGrace = holdEarlySlideGrace;
             EditorUtility.SetDirty(h);
         }
 
@@ -460,7 +469,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             Debug.Log("[MS Debug] 参数已应用：aimOffset=" + aiAimOffset + " miss=" + aiMissChance +
                       " perfect=" + perfectScore + " good=" + goodScore + " clear=" + clearScore +
                       " pass=" + passScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius +
-                      " chainTapHold=" + chainTapHoldDuration + " slideSettle=" + holdSlideSettleWindow + " breakTh=" + holdBreakThreshold + " laneTol=" + holdLaneTolerance +
+                      " chainTapHold=" + chainTapHoldDuration + " slideSettle=" + holdSlideSettleWindow + " breakTh=" + holdBreakThreshold + " earlyGrace=" + holdEarlySlideGrace + " laneTol=" + holdLaneTolerance +
                       " | Fever 系数=" + feverMult + " Super 系数=" + superMult + " Fever阈值=" + feverThresh + " Super阈值=" + superThresh);
     }
 

@@ -66,6 +66,8 @@ public class NoteSpawner : MonoBehaviour
     public float holdSlideSettleWindow = 0.15f;
     [Tooltip("所需轨道超过该秒数未被按住即断连 MISS。越小越严格。")]
     public float holdBreakThreshold = 0.2f;
+    [Tooltip("连轨滑动「提前完成滑动」容错：中点之前该秒数内提前滑到下一轨即视为已完成滑动（容\"过早\"手感）。与 holdSlideSettleWindow（过晚/停滞）对称。")]
+    public float holdEarlySlideGrace = 0.18f;
     [Tooltip("普通单轨 Hold 跟随判定容差：按住轨道与当前插值轨道相差多少条轨道内算命中。")]
     public float holdLaneTolerance = 1.0f;
 
@@ -441,6 +443,7 @@ public class NoteSpawner : MonoBehaviour
         hn.perfectWindow = perfectWindow;
         hn.slideSettleWindow = holdSlideSettleWindow;
         hn.breakThreshold = holdBreakThreshold;
+        hn.earlySlideGrace = holdEarlySlideGrace;
         hn.laneTolerance = holdLaneTolerance;
         hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p, hn);
 
