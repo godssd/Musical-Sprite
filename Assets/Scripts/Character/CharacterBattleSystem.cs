@@ -42,7 +42,7 @@ public class CharacterBattleSystem : MonoBehaviour
         SetupSkillRuntimes();
     }
 
-    /// <summary>为每个队伍角色（非玩家）的 marker 挂载 ActiveSkillRuntime 并注入引用。</summary>
+    /// <summary>为每个角色（玩家 + 队伍）的 marker 挂载 ActiveSkillRuntime（每个主动槽一个）与 PassiveSkillController。</summary>
     private bool skillRuntimesReady = false;
     private void SetupSkillRuntimes()
     {
@@ -52,25 +52,60 @@ public class CharacterBattleSystem : MonoBehaviour
         var spawners = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
         var combos = FindObjectsByType<ComboDisplay>(FindObjectsSortMode.None);
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
+        var fever = FindFirstObjectByType<FeverManager>();
 
         for (int side = 0; side < 2; side++)
         {
             var spawner = System.Array.Find(spawners, s => s.side == side);
             var oppCombo = System.Array.Find(combos, c => c.side == (1 - side));
+
+            // 玩家自身角色（无音轨、无能量门槛；其主动技能随时可释放）
+            var playerInst = CharacterRoster.GetPlayer(side);
+            if (playerInst != null)
+            {
+                var pMarker = System.Array.Find(markers, m => m != null && m.IsPlayer && m.side == side);
+                AttachSkillRuntimes(playerInst, pMarker, spawner, oppCombo, side, fever);
+                AttachPassiveController(playerInst, pMarker);
+            }
+
+            // 队伍角色（lane 0..3，有音轨；主动技能按能量门槛释放）
             for (int lane = 0; lane < 4; lane++)
             {
                 var inst = CharacterRoster.GetTeam(side, lane);
-                if (inst == null || !inst.HasActiveSkill) continue;
+                if (inst == null) continue;
                 var marker = System.Array.Find(markers, m => m != null && !m.IsPlayer && m.side == side && m.laneIndex == lane);
-                if (marker == null) continue;
-                if (marker.GetComponent<ActiveSkillRuntime>() != null) continue;
-                var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
-                var fever = FindFirstObjectByType<FeverManager>();
-                rt.Setup(inst, marker, spawner, oppCombo, side, fever);
+                AttachSkillRuntimes(inst, marker, spawner, oppCombo, side, fever);
+                AttachPassiveController(inst, marker);
             }
         }
         skillRuntimesReady = true;
-        Debug.Log("[CharacterBattleSystem] 已为每个队伍角色挂载主动技能运行时（大狗叫等）");
+        Debug.Log("[CharacterBattleSystem] 已为每个角色挂载主动技能运行时与被动控制器（能力1~能力5）");
+    }
+
+    /// <summary>为每个「主动槽」在该角色的 marker 上挂一个 ActiveSkillRuntime。
+    /// 输入序列以角色文档「输入方式」为准（←↓→/AAB 等），兜底用 SkillSO.inputSequence。</summary>
+    private void AttachSkillRuntimes(CharacterClass inst, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever)
+    {
+        if (inst == null || marker == null || inst.activeSlots == null) return;
+        foreach (var slot in inst.activeSlots)
+        {
+            if (slot == null || !slot.Exists || slot.IsPassive) continue;
+            var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
+            SkillInputStep[] seq = SkillSO.ParseInputMethod(slot.inputMethod);
+            if (seq.Length == 0 && slot.skill != null) seq = slot.skill.inputSequence;
+            rt.Setup(inst, marker, spawner, oppCombo, side, fever, slot.skill, slot.cooldown, slot.NeedsEnergy, seq);
+        }
+    }
+
+    /// <summary>给角色 marker 挂 PassiveSkillController，跟踪其所有被动槽（输入方式留空的能力）。</summary>
+    private void AttachPassiveController(CharacterClass inst, CharacterCubeMarker marker)
+    {
+        if (inst == null || marker == null || inst.passiveSlots == null || inst.passiveSlots.Count == 0) return;
+        var ctrl = marker.GetComponent<PassiveSkillController>();
+        if (ctrl == null) ctrl = marker.gameObject.AddComponent<PassiveSkillController>();
+        ctrl.owner = inst;
+        ctrl.passiveSlots = inst.passiveSlots;
+        ctrl.enabled = true;
     }
 
     private void InitializeFromData()

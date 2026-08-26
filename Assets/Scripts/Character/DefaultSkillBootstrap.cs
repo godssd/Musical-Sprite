@@ -57,6 +57,39 @@ public static class DefaultSkillBootstrap
          "BCA"),
     };
 
+    /// <summary>默认「能力2」占位数据（与飞书表 1:1）。按 characterId-1 索引。
+    /// 团队角色（大狗/嘟嘟/爱格）的 能力2 是被动（输入方式留空）；玩家（宝宝）的 能力2 是第二个主动（全体进攻，AAB，无能量）。小黑无 能力2。</summary>
+    public static readonly (string desc, string inputMethod, string overheat, string super)[] DefaultAbility2 = new (string, string, string, string)[]
+    {
+        // id=1 宝宝：第二个主动（全体进攻）AAB，无能量
+        ("（2）全体进攻（整个队伍战斗力上升（20%）但受到伤害增加20%）持续4s", "AAB", "战斗力额外提升5%", "战斗力额外提升15%"),
+        // id=2 大狗：被动（每次扣血微增必杀积累）
+        ("每次扣除生命都会微量增加必杀技积累", "", "", ""),
+        // id=3 嘟嘟：被动（全体防御下释放必杀回复更强）
+        ("全体防御下释放必杀回复效果更强", "", "", ""),
+        // id=4 爱格：被动（全体进攻下间隔附魔投射炸弹）
+        ("全体进攻下每隔一段时间会对一个音符进行附魔，成功完成后会投射一颗小型炸弹（解除进攻重置间隔）", "", "", ""),
+        // id=5 小黑：无 能力2
+        ("", "", "", ""),
+    };
+
+    /// <summary>构造一个技能槽（能力N 列组）。skillId 为空则 skill=null（纯文案/玩家技能，P3 路由）。</summary>
+    private static SkillSlot MakeSlot(string skillId, int energyCost, float cooldown, string inputMethod, string desc, string overheat, string super, SkillSO resolved = null)
+    {
+        return new SkillSlot
+        {
+            skillId = skillId,
+            energyCost = energyCost,
+            cooldown = cooldown,
+            inputMethod = inputMethod,
+            description = desc,
+            overheatDesc = overheat,
+            superOverheatDesc = super,
+            skill = string.IsNullOrEmpty(skillId) ? null : (resolved ?? SkillSO.FindById(skillId)),
+        };
+    }
+
+
     public static SkillSO MakeDefaultActiveSkill(string display, string desc, int energyCost, string effectType, string paramsJson, string skillId = "")
     {
         var s = ScriptableObject.CreateInstance<SkillSO>();
@@ -125,6 +158,10 @@ public static class DefaultSkillBootstrap
         c.passiveSkillDescription = row.passiveDesc;
         c.activeSkill = null; // 玩家走 PlayerCommand 类走另一条路（暂未实现）
         c.passiveSkill = MakeDefaultPassiveSkill("damage_reduce_5", "过热时获得 5% 伤害减少", "ReduceIncomingDamagePercent", "{\"percent\":0.05}", "baby_damage_reduce");
+        // 多技能槽：玩家（宝宝）有两个无能量主动（能力1=↓↓← 全体防御；能力2=AAB 全体进攻），无被动。
+        c.skills = new SkillSlot[5];
+        c.skills[0] = MakeSlot("", 0, 0f, "↓↓←", row.activeDesc, row.passiveDesc, "", null);
+        c.skills[1] = MakeSlot("", 0, 0f, "AAB", DefaultAbility2[0].desc, DefaultAbility2[0].overheat, DefaultAbility2[0].super, null);
         c.feverEligible = true;
         c.blockColor = CharacterPalette.GetColor(c.characterId);
         return c;
@@ -158,6 +195,14 @@ public static class DefaultSkillBootstrap
             c.activeSkill.reduceComboPerCharmedNote = 3;
             if (!string.IsNullOrEmpty(row.activeSkillId)) c.activeSkill.skillId = row.activeSkillId;
         }
+        // 多技能槽：能力1=主动（有能量门槛）；能力2=被动（输入方式留空→满足条件持续生效）。
+        var a2 = DefaultAbility2[rowIdx];
+        c.skills = new SkillSlot[5];
+        c.skills[0] = MakeSlot(row.activeSkillId, row.activeCost, 0f, row.inputMethod, row.activeDesc, row.passiveDesc, "", c.activeSkill);
+        // 能力2：有输入方式=主动（玩家用），否则=被动；默认团队数据均为被动。
+        bool a2Active = !string.IsNullOrWhiteSpace(a2.inputMethod);
+        c.skills[1] = MakeSlot("", 0, 0f, a2.inputMethod, a2.desc, a2.overheat, a2.super, null);
+        if (!a2Active && string.IsNullOrWhiteSpace(a2.desc)) c.skills[1] = null; // 小黑等无能力2 → 空槽
         c.feverEligible = true;
         c.blockColor = CharacterPalette.GetColor(c.characterId);
         return c;

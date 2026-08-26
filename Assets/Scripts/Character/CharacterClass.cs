@@ -24,14 +24,20 @@ public class CharacterClass
     public bool isFullyCharged;
     public bool skillBusy;          // 主动技能进行中（Grow/Charming/Releasing/Cooldown）为 true；期间抑制"能量充满冒烟"，结束回到 Standby 时若能量已满则补发
 
-    public SkillSO activeSkill;
-    public SkillSO passiveSkill;
+    public SkillSO activeSkill;       // 兼容旧运行时：首个主动(非被动)槽的 SkillSO
+    public SkillSO passiveSkill;      // 兼容旧：首个被动槽的 SkillSO（仅展示）
 
-    // 技能冷却（秒）；由 CharacterDataSO.skillCooldown 装配（完全来自角色文档，技能库不再持有 cooldown）。0 = 兜底 20s
-    public float skillCooldown = 20f;
+    // 多技能槽：与 CharacterDataSO.skills 对应（索引 0=能力1 … 4=能力5）
+    public SkillSlot[] skills;
+    public List<SkillSlot> passiveSlots = new List<SkillSlot>();   // inputMethod 空的槽（被动）
+    public List<SkillSlot> activeSlots = new List<SkillSlot>();    // inputMethod 非空（主动）的槽（供运行时逐个建 ActiveSkillRuntime）
+    public List<SkillSO> activeSkills = new List<SkillSO>();        // 兼容旧引用：首个主动槽的 SkillSO
 
-    public bool HasActiveSkill => activeSkill != null;
-    public bool HasPassiveSkill => passiveSkill != null;
+    // 技能冷却（秒）；由 CharacterDataSO.skills[首个主动槽].cooldown 装配（完全来自角色文档）。0 = 无冷却
+    public float skillCooldown = 0f;
+
+    public bool HasActiveSkill => (activeSkill != null) || (activeSlots != null && activeSlots.Count > 0);
+    public bool HasPassiveSkill => passiveSkill != null || (passiveSlots != null && passiveSlots.Count > 0);
 
     public event Action<int> OnEnergyFull;       // 参数 characterId
     public event Action<int> OnEnergyDepleted;   // 参数 characterId
@@ -49,14 +55,49 @@ public class CharacterClass
             blockColor = data.blockColor,
             maxHP = data.maxHP,
             currentHP = data.maxHP,
-            activeSkill = data.activeSkill,
-            passiveSkill = data.passiveSkill,
-            skillCooldown = data.skillCooldown,
         };
-        c.maxEnergy = data.activeEnergyCost > 0
-            ? data.activeEnergyCost
-            : (data.activeSkill != null ? data.activeSkill.energyCost : 0f);
-        if (c.maxEnergy <= 0f) c.maxEnergy = 100f; // 兜底
+
+        // 多技能槽：缓存并派生 active / passive 列表
+        c.skills = data.skills;
+        c.passiveSlots = new List<SkillSlot>();
+        c.activeSlots = new List<SkillSlot>();
+        c.activeSkills = new List<SkillSO>();
+        SkillSlot firstActive = null;
+        if (data.skills != null)
+        {
+            foreach (var s in data.skills)
+            {
+                if (s == null || !s.Exists) continue;
+                if (s.IsPassive)
+                {
+                    c.passiveSlots.Add(s);
+                    if (c.passiveSkill == null) c.passiveSkill = s.skill;
+                }
+                else
+                {
+                    c.activeSlots.Add(s);                 // 主动槽：运行时逐个建 ActiveSkillRuntime
+                    if (s.skill != null) c.activeSkills.Add(s.skill);
+                    if (firstActive == null) firstActive = s;
+                }
+            }
+        }
+
+        // 兼容旧运行时：activeSkill = 首个主动槽的 SkillSO；skillCooldown / maxEnergy 取该槽
+        if (firstActive != null)
+        {
+            c.activeSkill = firstActive.skill;
+            c.skillCooldown = firstActive.cooldown;
+            c.maxEnergy = firstActive.NeedsEnergy ? firstActive.energyCost : 0f;
+        }
+        else
+        {
+            c.activeSkill = data.activeSkill;        // 旧字段兜底
+            c.skillCooldown = data.skillCooldown;
+            c.maxEnergy = data.activeEnergyCost > 0
+                ? data.activeEnergyCost
+                : (data.activeSkill != null ? data.activeSkill.energyCost : 0f);
+        }
+        c.maxEnergy = Mathf.Max(0f, c.maxEnergy);   // 无能量需求 = 0（不再兜底 100，避免玩家/无能量技能误冒烟）
         c.currentEnergy = 0f;
         c.isFullyCharged = false;
         return c;

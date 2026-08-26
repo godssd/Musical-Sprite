@@ -42,8 +42,15 @@ public class SkillInputUI : MonoBehaviour
     private readonly string[] skillLabels = { "←", "↓", "→" };
     // 触摸按钮：按下 idx 0/1/2 → 直接对应 Left/Down/Right（不需要再走 KeyToStep 二次映射）
     private readonly SkillInputStep[] touchSteps = { SkillInputStep.Left, SkillInputStep.Down, SkillInputStep.Right };
-    private Dictionary<int, int> progress = new Dictionary<int, int>();   // characterId -> 已按对步数
-    private Dictionary<int, float> lastInput = new Dictionary<int, float>();
+    private Dictionary<string, int> progress = new Dictionary<string, int>();   // 运行时唯一键 -> 已按对步数
+    private Dictionary<string, float> lastInput = new Dictionary<string, float>();
+
+    /// <summary>每个 ActiveSkillRuntime 的唯一定位键（characterId + skillId + 实例），使同一角色多个主动技能互不干扰。</summary>
+    private string Key(ActiveSkillRuntime rt)
+    {
+        string sid = (rt.SkillRef != null) ? rt.SkillRef.skillId : "_";
+        return rt.owner.characterId + "_" + sid + "_" + rt.GetInstanceID();
+    }
     private Coroutine[] popCo = new Coroutine[3];
 
     void Start()
@@ -119,11 +126,11 @@ public class SkillInputUI : MonoBehaviour
         foreach (var rt in runtimes)
         {
             if (rt.ownerSide != 0 || rt.owner == null) continue;
-            int id = rt.owner.characterId;
-            if (progress.ContainsKey(id) && progress[id] > 0)
+            string key = Key(rt);
+            if (progress.ContainsKey(key) && progress[key] > 0)
             {
-                float last = lastInput.ContainsKey(id) ? lastInput[id] : -99f;
-                if (Time.time - last > inputWindow) progress[id] = 0;
+                float last = lastInput.ContainsKey(key) ? lastInput[key] : -99f;
+                if (Time.time - last > inputWindow) progress[key] = 0;
             }
         }
 
@@ -140,34 +147,35 @@ public class SkillInputUI : MonoBehaviour
         }
     }
 
-    /// <summary>按下一个技能输入步：对每个「能量满」的己方队伍角色匹配其 inputSequence。</summary>
+    /// <summary>按下一个技能输入步：对每个「可释放」的己方角色运行时匹配其 inputSequence。
+    /// 能量技能需能量满才能释放（但序列可正常亮闪）；无能量技能（玩家主动）随时可输入。</summary>
     private void OnKeyPressed(SkillInputStep step)
     {
         var runtimes = FindObjectsByType<ActiveSkillRuntime>(FindObjectsSortMode.None);
         foreach (var rt in runtimes)
         {
             if (rt.ownerSide != 0 || rt.owner == null || !rt.owner.HasActiveSkill) continue;
-            if (!rt.owner.isFullyCharged) continue;   // 能量未满：只亮闪不释放
-            var seq = rt.owner.activeSkill != null ? rt.owner.activeSkill.inputSequence : null;
+            if (rt.NeedsEnergyGate && !rt.owner.isFullyCharged) continue;   // 仅能量技能卡能量门槛；无能量技能随时可输入
+            var seq = rt.inputSequence;
             if (seq == null || seq.Length == 0) continue;
 
-            int id = rt.owner.characterId;
-            int p = progress.ContainsKey(id) ? progress[id] : 0;
+            string key = Key(rt);
+            int p = progress.ContainsKey(key) ? progress[key] : 0;
             if (p < seq.Length && seq[p] == step)
             {
                 p++;
-                progress[id] = p;
-                lastInput[id] = Time.time;
+                progress[key] = p;
+                lastInput[key] = Time.time;
                 if (rt.marker != null) rt.marker.Flash();   // 对应角色亮闪一次
                 if (p >= seq.Length)
                 {
                     rt.BeginCast();
-                    progress[id] = 0;
+                    progress[key] = 0;
                 }
             }
             else
             {
-                progress[id] = 0;   // 按错：重置该角色进度
+                progress[key] = 0;   // 按错：重置该运行时进度
             }
         }
     }

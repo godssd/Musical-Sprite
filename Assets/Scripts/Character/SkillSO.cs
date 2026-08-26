@@ -105,4 +105,26 @@ public class SkillSO : ScriptableObject
             default: return SkillInputStep.Left;
         }
     }
+
+    /// <summary>把角色文档「输入方式」字符串解析为输入序列。同时支持箭头脑格（←↓→↑）与字母（A/B/C/L/D/R/U/S/空格）：
+    ///   ←/L/A → Left，↓/D/B → Down，→/R/C → Right，↑/U/W → Up，空格/S → Space。
+    /// 空串返回空数组（被动技能无输入方式）。</summary>
+    public static SkillInputStep[] ParseInputMethod(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return System.Array.Empty<SkillInputStep>();
+        var list = new System.Collections.Generic.List<SkillInputStep>();
+        foreach (char ch in s)
+        {
+            switch (ch)
+            {
+                case '←': case 'L': case 'A': list.Add(SkillInputStep.Left); break;
+                case '↓': case 'D': case 'B': list.Add(SkillInputStep.Down); break;
+                case '→': case 'R': case 'C': list.Add(SkillInputStep.Right); break;
+                case '↑': case 'U': case 'W': list.Add(SkillInputStep.Up); break;
+                case ' ': case 'S': list.Add(SkillInputStep.Space); break;
+                default: break;
+            }
+        }
+        return list.ToArray();
+    }
 }

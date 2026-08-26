@@ -14,6 +14,44 @@ using UnityEngine;
 /// 「上场角色不能重复」的不变量由 CharacterBattleSystem.InitializeFromData 的"每个 lane
 /// 取首个匹配"保证——同一 characterId 不会被两个 lane 同时占据。
 /// </summary>
+/// <summary>单个技能槽（对应文档里的一个「能力N」列组）。</summary>
+[Serializable]
+public class SkillSlot
+{
+    [Tooltip("技能引用ID；空 = 该能力不存在（视为没有）")]
+    public string skillId;
+    [HideInInspector] public SkillSO skill;   // 导入时按 skillId 反查缓存
+
+    [Tooltip("能量需求（10分=1能量）。0 / 无 = 无需任何能量即可释放（跳过充能/能量满/清空的流程与表现）")]
+    public int energyCost;
+
+    [Tooltip("释放冷却（秒）。0 / 空 = 无冷却（立刻可再次释放）")]
+    public float cooldown;
+
+    [Tooltip("输入方式（如 ←←← / AAB）。空 = 视为被动技能（无需输入，满足条件持续生效）")]
+    public string inputMethod;
+
+    [TextArea(2, 4)] public string description;
+    [TextArea(1, 3)] public string overheatDesc;
+    [TextArea(1, 3)] public string superOverheatDesc;
+
+    /// <summary>该「能力N」列组是否真的填写了内容（skillId / 输入方式 / 描述任一非空即视为存在）。
+    /// 注意：被动技能（满足条件持续生效）通常没有 skillId（由文案描述，并非 SkillSO 驱动），
+    /// 因此不能只用 skillId 判存在——否则所有队伍被动都会被误判为"没有"。</summary>
+    public bool HasContent =>
+        !string.IsNullOrEmpty(skillId)
+        || !string.IsNullOrWhiteSpace(inputMethod)
+        || !string.IsNullOrWhiteSpace(description)
+        || !string.IsNullOrWhiteSpace(overheatDesc);
+
+    /// <summary>是否存在该能力。空列组（技能ID/输入方式/描述全空）= 不存在该技能。</summary>
+    public bool Exists => HasContent;
+    /// <summary>输入方式留空 → 视为被动技能（满足条件持续生效）。</summary>
+    public bool IsPassive => Exists && string.IsNullOrWhiteSpace(inputMethod);
+    /// <summary>主动技能且能量需求>0 → 需要能量门槛（满能量才能释放、释放清空）。能量需求=无/0 → 跳过充能/能量满/清空流程。</summary>
+    public bool NeedsEnergy => Exists && !IsPassive && energyCost > 0;
+}
+
 [CreateAssetMenu(fileName = "Character", menuName = "Musical Sprite/Character", order = 3)]
 public class CharacterDataSO : ScriptableObject
 {
@@ -56,9 +94,13 @@ public class CharacterDataSO : ScriptableObject
     [TextArea(2, 4)]
     public string passiveSkillDescription;
 
+    [Header("多技能槽（飞书「能力1」~「能力5」列组；玩家最多5个 / 队伍最多3个）")]
+    [Tooltip("每个槽对应文档一个「能力N」。空 skillId=无此技能；inputMethod 空=被动；energyCost=无/0=无能量。由 Character Importer 写入。索引 0=能力1 … 4=能力5。")]
+    public SkillSlot[] skills = new SkillSlot[5];
+
     [Header("技能冷却（飞书「技能冷却」列，表格可调）")]
-    [Tooltip("释放后进入冷却的秒数。完全由角色文档决定（技能库 SkillSO 不再持有 cooldown）。0 / 未填 = 用兜底 20s。由 Character Importer 从 Characters.xlsx 的「技能冷却」列写入")]
-    public float skillCooldown = 20f;
+    [Tooltip("释放后进入冷却的秒数。完全由角色文档决定（技能库 SkillSO 不再持有 cooldown）。0 / 未填 = 无冷却（立刻回到 Standby 可再次释放）。由 Character Importer 从 Characters.xlsx 的「技能冷却」列写入")]
+    public float skillCooldown = 0f;
 
     [Header("过热")]
     [Tooltip("预留：是否参与该 side 的过热连击统计（P1 暂未使用，默认 true）")]

@@ -34,6 +34,13 @@ public class ActiveSkillRuntime : MonoBehaviour
     public Phase phase = Phase.Standby;
 
     private SkillSO skill;
+    public SkillSO SkillRef => skill;      // 供 SkillInputUI 等按运行时唯一定位
+    private float slotCooldown;           // 本槽冷却（秒），来自角色文档「技能冷却」列
+    private bool needsEnergy = true;      // 是否需要能量门槛（无能量技能=false：跳过充能/能量满/清空）
+    public SkillInputStep[] inputSequence; // 本槽输入序列（供 SkillInputUI 匹配）
+
+    /// <summary>供 SkillInputUI 判断：该技能是否需要"能量满"才能开始输入。无能量技能=false（随时可输入）。</summary>
+    public bool NeedsEnergyGate => needsEnergy;
     private int charmQuotaTotal;          // 本次释放可附魔的总单位数（= skill.charmedNoteCount）
     private int charmUnitsOutstanding;    // 已分配给本技能、但尚未结算的附魔单位数（tap +-1, hold +-N）
     private int completedCount;           // 成功数（非 MISS）
@@ -41,7 +48,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     private float cooldownLeft;
     private float settleIdleTimer;        // 兜底：已无 outstanding 但配额未用完（歌结束），超过 0.6s 强制 Settle
 
-    public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever)
+    public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever, SkillSO skill, float cooldown, bool needsEnergy, SkillInputStep[] inputSequence)
     {
         this.owner = owner;
         this.marker = marker;
@@ -49,7 +56,10 @@ public class ActiveSkillRuntime : MonoBehaviour
         this.opponentCombo = oppCombo;
         this.ownerSide = side;
         this.feverManager = fever;
-        this.skill = owner != null ? owner.activeSkill : null;
+        this.skill = skill;
+        this.slotCooldown = cooldown;
+        this.needsEnergy = needsEnergy;
+        this.inputSequence = inputSequence;
     }
 
     void Update()
@@ -87,7 +97,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     {
         if (phase != Phase.Standby) return;
         if (owner == null || !owner.HasActiveSkill) return;
-        if (!owner.isFullyCharged) return;   // 能量未满不允许释放
+        if (needsEnergy && !owner.isFullyCharged) return;   // 仅需要能量的技能才卡能量门槛
         if (skill == null) return;
 
         phase = Phase.Grow;
@@ -96,10 +106,10 @@ public class ActiveSkillRuntime : MonoBehaviour
         requestClosed = false;
         settleIdleTimer = 0f;
 
-        // 释放成功：立刻清空能量（大狗身上的冒气表现随之停止，因为 EnergyVFXPlaceholder 订阅了 OnEnergyDepleted）
+        // 释放成功：需要能量的技能立刻清空能量（冒气停止）；无能量技能跳过充能/清空流程与表现
         if (owner != null)
         {
-            owner.ConsumeEnergy(owner.maxEnergy);
+            if (needsEnergy) owner.ConsumeEnergy(owner.maxEnergy);
             owner.SetSkillBusy(true);   // 整个技能进行期（含过热连叫）抑制"能量充满冒烟"，回到 Standby 时才可能恢复
         }
 
@@ -221,10 +231,8 @@ public class ActiveSkillRuntime : MonoBehaviour
         // 彻底结算完毕：大狗缩回正常状态 + 冷却
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
-        // 技能冷却完全由角色文档决定（Characters.xlsx「技能冷却」列 → CharacterDataSO.skillCooldown → owner.skillCooldown）。
-        // 技能库(SkillSO)不再持有 cooldown。0/未填 = 用兜底 20s（请在角色文档填写具体值）。
-        float cd = (owner != null && owner.skillCooldown > 0f) ? owner.skillCooldown : 20f;
-        cooldownLeft = cd;
+        // 冷却取本槽在角色文档配置的「技能冷却」；0 / 未填 = 无冷却（立刻回到 Standby 可再次释放）。
+        cooldownLeft = slotCooldown;
     }
 
     private void FireOneShot()
