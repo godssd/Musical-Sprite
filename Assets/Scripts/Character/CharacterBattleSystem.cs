@@ -62,7 +62,8 @@ public class CharacterBattleSystem : MonoBehaviour
                 if (marker == null) continue;
                 if (marker.GetComponent<ActiveSkillRuntime>() != null) continue;
                 var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
-                rt.Setup(inst, marker, spawner, oppCombo, side);
+                var fever = FindFirstObjectByType<FeverManager>();
+                rt.Setup(inst, marker, spawner, oppCombo, side, fever);
             }
         }
         skillRuntimesReady = true;

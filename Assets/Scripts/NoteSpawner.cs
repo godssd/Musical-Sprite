@@ -81,8 +81,8 @@ public class NoteSpawner : MonoBehaviour
     [Tooltip("是否启用本侧键盘输入。红方（本地玩家）为 true；蓝方为联网对手，由网络驱动，应设为 false")]
     public bool useKeyboard = true;
 
-    // 判定事件：side, lane, rank, position
-    public event Action<int, int, string, Vector3> OnJudge;
+    // 判定事件：side, lane, rank, position, source（source = 触发判定的 Note / HoldNote；用于区分是否被附魔）
+    public event Action<int, int, string, Vector3, UnityEngine.Object> OnJudge;
 
     // 输入事件：side, lane。任意输入（键盘/触摸/AI）触发轨道时调用
     public event Action<int, int> OnLanePress;
@@ -188,7 +188,7 @@ public class NoteSpawner : MonoBehaviour
             if (mover != null && mover.MissShrinkComplete)
             {
                 Vector3 missPos = mover.HitPosition;
-                OnJudge?.Invoke(side, note.lane, "MISS", missPos);
+                OnJudge?.Invoke(side, note.lane, "MISS", missPos, note);
                 activeNotes.RemoveAt(i);
                 Destroy(note.gameObject);
             }
@@ -290,13 +290,14 @@ public class NoteSpawner : MonoBehaviour
     /// <summary>普通 tap 音符生成时尝试附魔：取首个 side 匹配且仍有名额的请求，标记该音符并消耗一个名额。</summary>
     private void TryCharmNote(Note note)
     {
-        if (note == null) return;
-        for (int i = activeCharms.Count - 1; i >= 0; i--)
+        if (note == null || note.charmOwner != null) return;   // 已附魔的音符不可二次附魔
+        for (int i = 0; i < activeCharms.Count; i++)           // FIFO：最旧的请求优先吃满 6 个名额
         {
             var req = activeCharms[i];
             if (req.remaining > 0 && req.owner != null && req.owner.ownerSide == note.side)
             {
                 note.charmOwner = req.owner;
+                note.wasCharmed = true;
                 req.owner.OnNoteCharmed(note);
                 req.remaining--;
                 if (req.remaining <= 0)
@@ -319,15 +320,18 @@ public class NoteSpawner : MonoBehaviour
     /// 整条链算 1 个附魔单位（不管它有几个节点）。</summary>
     private void TryCharmHoldNote(HoldNote hn)
     {
-        if (hn == null) return;
-        for (int i = activeCharms.Count - 1; i >= 0; i--)
+        if (hn == null || hn.charmOwner != null) return;   // 已附魔的链不可二次附魔
+        int nodes = hn.NodeCount;                          // 一个节点 = 1 个附魔单位
+        for (int i = 0; i < activeCharms.Count; i++)       // FIFO：最旧的请求优先
         {
             var req = activeCharms[i];
-            if (req.remaining > 0 && req.owner != null && req.owner.ownerSide == hn.side)
+            // 整条链原子附魔：仅当该请求剩余名额 >= 节点数时整体附魔（不拆节点）
+            if (req.remaining >= nodes && req.owner != null && req.owner.ownerSide == hn.side)
             {
                 hn.charmOwner = req.owner;
-                req.owner.OnHoldCharmed(hn);
-                req.remaining--;
+                hn.wasCharmed = true;
+                req.owner.OnHoldCharmed(hn, nodes);
+                req.remaining -= nodes;
                 if (req.remaining <= 0)
                 {
                     // 配额用完：通知 runtime（让其在所有已附魔单位解决后释放）
@@ -348,9 +352,8 @@ public class NoteSpawner : MonoBehaviour
     private void TintCharmedHold(HoldNote hn)
     {
         if (hn == null) return;
-        // head 节点（lanes[0] 所在）上色；其它段带先不上色，避免打断长按时的白→黄切换
-        // 真正染色交由 charm owner 完成后由 HoldNote 自身视觉处理
-        // 这里仅给第一个节点上一个黄色 emissive 占位
+        // 整条链染黄（节点 + 连接段），大狗叫附魔表现
+        hn.TintCharmed();
     }
 
     /// <summary>把被附魔音符染成黄色发光（占位视觉）。</summary>
@@ -439,7 +442,7 @@ public class NoteSpawner : MonoBehaviour
         hn.slideSettleWindow = holdSlideSettleWindow;
         hn.breakThreshold = holdBreakThreshold;
         hn.laneTolerance = holdLaneTolerance;
-        hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p);
+        hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p, hn);
 
         activeHoldNotes.Add(hn);
         TryCharmHoldNote(hn);
@@ -528,7 +531,7 @@ public class NoteSpawner : MonoBehaviour
         // 反馈位置放在对应轨道的判定线处
         NoteMover bestMover = best.GetComponent<NoteMover>();
         Vector3 judgePos = bestMover != null ? bestMover.HitPosition : hitPoint.position + GetLaneSpanOffset(best.lane, best.laneSpan);
-        OnJudge?.Invoke(side, best.lane, rank, judgePos);
+        OnJudge?.Invoke(side, best.lane, rank, judgePos, best);
 
         if (best.isChainTap)
         {

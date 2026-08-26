@@ -41,6 +41,7 @@ public class CharacterCubeMarker : MonoBehaviour
     private Vector3 baseScale;
     private Coroutine flashCo;
     private Coroutine glowCo;
+    private Coroutine pulseCo;
 
     void Awake()
     {
@@ -146,5 +147,25 @@ public class CharacterCubeMarker : MonoBehaviour
         if (rend == null || rend.material == null) return;
         rend.material.EnableKeyword("_EMISSION");
         rend.material.SetColor("_EmissionColor", c);
+    }
+
+    /// <summary>
+    /// 主动技能"附魔音符命中"时的高亮脉冲：仅短暂提亮发光（emission），不动 scale。
+    /// 用于变大/发光中的大狗被命中时闪一下，而不会把放大中的狗缩回原尺寸。
+    /// </summary>
+    public void PulseGlow()
+    {
+        if (!isActiveAndEnabled) return;
+        if (pulseCo != null) StopCoroutine(pulseCo);
+        pulseCo = StartCoroutine(PulseCo());
+    }
+
+    private System.Collections.IEnumerator PulseCo()
+    {
+        // 在 steady releaseGlow 基础上短暂提亮，再回落
+        SetEmission(releaseGlow * 2.6f);
+        yield return new WaitForSeconds(0.09f);
+        SetEmission(releaseGlow);
+        pulseCo = null;
     }
 }

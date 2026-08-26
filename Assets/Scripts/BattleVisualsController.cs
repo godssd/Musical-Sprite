@@ -125,14 +125,11 @@ public class BattleVisualsController : MonoBehaviour
         {
             indicators[idx].Flash();
         }
-        // 同时让该侧该 lane 的角色 cube 也弹一下（按键反馈延伸到角色方块）
-        if (idx < markerByKey.Length && markerByKey[idx] != null)
-        {
-            markerByKey[idx].Flash();
-        }
+        // 角色 cube 的反馈改为"命中判定时"才闪（见 OnJudge），避免按键阶段误闪；
+        // 按键阶段只保留轨道指示灯闪烁。
     }
 
-    private void OnJudge(int side, int lane, string rank, Vector3 position)
+    private void OnJudge(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)
     {
         ComboDisplay target = side == 0 ? leftComboDisplay : rightComboDisplay;
         if (target == null) return;
@@ -146,6 +143,22 @@ public class BattleVisualsController : MonoBehaviour
             // PERFECT / GOOD / CLEAR 都记一次连击。
             // 一个完整长按 = 起手命中 +1、完成时 CLEAR +1，共 +2。
             target.AddCombo(1);
+        }
+
+        // 命中角色闪烁（修复①"平时命中角色不闪"）：
+        // - 普通音符命中 -> 该 (side, lane) 队伍角色闪烁
+        // - 被附魔的音符命中 -> 不闪该 lane 角色，改由施法大狗闪（见 ActiveSkillRuntime 成功分支 PulseGlow）
+        if (rank != "MISS")
+        {
+            bool charmed = false;
+            if (source is Note n) charmed = n.wasCharmed;
+            else if (source is HoldNote h) charmed = h.wasCharmed;
+            if (!charmed)
+            {
+                int idx = side * 4 + lane;
+                if (idx >= 0 && idx < markerByKey.Length && markerByKey[idx] != null)
+                    markerByKey[idx].Flash();
+            }
         }
     }
 }

@@ -70,8 +70,14 @@ public class HoldNote : MonoBehaviour
 
     public event System.Action<int, int, string, Vector3> onJudge;
 
-    /// <summary>若本整条链接链被某主动技能附魔，则指向其运行时；链整体结束（CLEAR/BREAK/MISSHEAD）时回调通知。</summary>
+    /// <summary>若本整条链接链被某主动技能附魔，则指向其运行时；逐节点结算时回调通知。</summary>
     [HideInInspector] public ActiveSkillRuntime charmOwner;
+
+    /// <summary>本整条链接链是否曾经被附魔（即使结算后 charmOwner 被置空也保持 true）。</summary>
+    [HideInInspector] public bool wasCharmed = false;
+
+    /// <summary>节点总数（头 + 中间 + 尾）。被附魔时一个节点算 1 个附魔单位。</summary>
+    public int NodeCount => nodeCount;
 
     // ===== 视觉 =====
     private List<Transform> nodeTransforms = new List<Transform>();
@@ -610,6 +616,28 @@ public class HoldNote : MonoBehaviour
     }
 
     /// <summary>设置单个材质实例的透明度（不影响颜色，供漏击逐片淡出用）。</summary>
+    /// <summary>被附魔：把所有节点与连接段染成黄色发光（大狗叫 = 变黄）。由 NoteSpawner.TintCharmedHold 调用。</summary>
+    public void TintCharmed()
+    {
+        Color yellow = new Color(1f, 0.85f, 0.1f);
+        for (int i = 0; i < nodeMats.Count; i++)
+        {
+            if (nodeMats[i] == null) continue;
+            nodeMats[i].EnableKeyword("_EMISSION");
+            nodeMats[i].SetColor("_EmissionColor", yellow);
+        }
+        for (int s = 0; s < segmentMatGroups.Count; s++)
+        {
+            for (int k = 0; k < segmentMatGroups[s].Count; k++)
+            {
+                var m = segmentMatGroups[s][k];
+                if (m == null) continue;
+                m.EnableKeyword("_EMISSION");
+                m.SetColor("_EmissionColor", yellow);
+            }
+        }
+    }
+
     private void SetMatAlpha(Material mat, float a)
     {
         if (mat == null) return;
@@ -769,6 +797,8 @@ public class HoldNote : MonoBehaviour
                 // 上报该段 CLEAR：位置取该段"结束节点"的判定线处
                 Vector3 segEndPos = hitPositions[completedSegments];
                 onJudge?.Invoke(side, lanes[completedSegments], "CLEAR", segEndPos);
+                // 附魔：该段完成 = 1 个附魔单位（节点）成功
+                if (charmOwner != null) charmOwner.OnCharmNodeSuccess();
             }
 
             // 全部节点完成 -> Done
@@ -817,6 +847,8 @@ public class HoldNote : MonoBehaviour
         if (nodeMats[0] != null) nodeMats[0].color = Color.white;
 
         onJudge?.Invoke(side, lanes[0], rank, hitPositions[0]);
+        // 附魔：头节点达成 = 1 个附魔单位成功
+        if (charmOwner != null) charmOwner.OnCharmNodeSuccess();
     }
 
     private void MissHead()
@@ -829,10 +861,10 @@ public class HoldNote : MonoBehaviour
         // 由 MoveAndFade 每帧调用 ApplyMissDisappear 处理，而不是整条统一缩小。
         missMode = true;
 
-        // 通知 charm owner：整条链漏击（不算 success）
+        // 通知 charm owner：整条链漏击（所有节点均失败）
         if (charmOwner != null)
         {
-            charmOwner.OnCharmedHoldResolved(this, false);
+            for (int k = 0; k < nodeCount; k++) charmOwner.OnCharmNodeFail();
             charmOwner = null;
         }
     }
@@ -847,10 +879,11 @@ public class HoldNote : MonoBehaviour
         int lastNode = Mathf.Max(0, completedSegments);
         onJudge?.Invoke(side, lanes[lastNode], "MISS", hitPositions[lastNode]);
 
-        // 通知 charm owner：整条链断连（不算 success）
+        // 通知 charm owner：头节点 + completedSegments 段已成功，剩余节点失败
         if (charmOwner != null)
         {
-            charmOwner.OnCharmedHoldResolved(this, false);
+            int fails = nodeCount - 1 - completedSegments;
+            for (int k = 0; k < fails; k++) charmOwner.OnCharmNodeFail();
             charmOwner = null;
         }
     }
@@ -867,10 +900,10 @@ public class HoldNote : MonoBehaviour
                 if (segmentMatGroups[s][k] != null) segmentMatGroups[s][k].color = Color.white;
         // 最后一段 CLEAR 已在 Judge 循环中于尾节点处上报，这里不再重复上报
 
-        // 通知 charm owner：整条链完整成功（不算 MISS）
+        // 通知 charm owner：整条链完整成功。
+        // 头节点（StartHold）+ 每段 CLEAR 已逐节点上报成功，此处只需断开引用。
         if (charmOwner != null)
         {
-            charmOwner.OnCharmedHoldResolved(this, true);
             charmOwner = null;
         }
     }

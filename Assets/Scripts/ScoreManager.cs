@@ -394,7 +394,7 @@ public class ScoreManager : MonoBehaviour
             rightSpawner.OnJudge -= HandleJudge;
     }
 
-    private void HandleJudge(int side, int lane, string rank, Vector3 position)
+    private void HandleJudge(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)
     {
         int delta = 0;
         switch (rank)

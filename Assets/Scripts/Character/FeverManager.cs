@@ -45,7 +45,7 @@ public class FeverManager : MonoBehaviour
             s.OnJudge -= HandleJudge;
     }
 
-    private void HandleJudge(int side, int lane, string rank, Vector3 pos)
+    private void HandleJudge(int side, int lane, string rank, Vector3 pos, UnityEngine.Object source)
     {
         if (rank == "MISS")
             OnNoteMiss(side);

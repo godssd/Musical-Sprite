@@ -22,6 +22,10 @@ public class Note : MonoBehaviour
     /// <summary>若本音符被某主动技能附魔，则指向其运行时；结算时回调通知完成数。</summary>
     [HideInInspector] public ActiveSkillRuntime charmOwner;
 
+    /// <summary>本音符是否曾经被附魔（即使结算后 charmOwner 被置空也保持 true）。
+    /// 供 BattleVisualsController 判断"命中时该音轨角色是否应闪烁"：被附魔的音符命中由施法大狗闪，而非该 lane 角色。</summary>
+    [HideInInspector] public bool wasCharmed = false;
+
     public bool CoversLane(int targetLane)
     {
         return targetLane >= lane && targetLane < lane + laneSpan;

@@ -22,7 +22,7 @@ public class JudgeFeedbackManager : MonoBehaviour
     [Header("飘字偏移")]
     public Vector3 spawnOffset = new Vector3(0f, 0.25f, 0f);
 
-    public void ShowFeedback(int side, int lane, string rank, Vector3 position)
+    public void ShowFeedback(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)
     {
         GameObject prefab = null;
         Color color = Color.white;
