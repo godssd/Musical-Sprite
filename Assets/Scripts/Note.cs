@@ -110,6 +110,11 @@ public class Note : MonoBehaviour
         if (chainTapRemaining <= 0)
         {
             isHit = true;
+            if (charmOwner != null)
+            {
+                charmOwner.OnCharmedNoteResolved(this, true);
+                charmOwner = null;
+            }
             if (mover != null) mover.CompleteChainTap();
             return true;
         }

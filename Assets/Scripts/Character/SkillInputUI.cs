@@ -129,8 +129,8 @@ public class SkillInputUI : MonoBehaviour
         {
             if (Input.GetKeyDown(k))
             {
-                OnKeyPressed(SkillSO.KeyToStep(k));
                 FlashButtonByKey(k);
+                OnKeyPressed(SkillSO.KeyToStep(k));
             }
         }
     }
@@ -200,8 +200,8 @@ public class SkillInputUI : MonoBehaviour
     public void OnButtonPushed(int idx)
     {
         if (idx < 0 || idx > 2) return;
-        OnKeyPressed(touchSteps[idx]);                 // 触摸/点击：直接对应 Left/Down/Right
         Flash(touchSteps[idx]);                         // 同组按钮一起高亮
+        OnKeyPressed(touchSteps[idx]);                 // 错误反馈最后执行，保证三个按钮都保持红闪
     }
 
     private void FlashButtonByKey(KeyCode k)

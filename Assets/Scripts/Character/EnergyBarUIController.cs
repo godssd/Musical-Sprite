@@ -44,7 +44,7 @@ public class EnergyBarUIController : MonoBehaviour
     [Tooltip("Canvas sortingOrder，建议在 HPBarCanvas 之上一层（避免被血条遮挡）")]
     public int canvasSortingOrder = 55;
     [Tooltip("每根能量槽宽度 / 高度（像素）")]
-    public Vector2 barSize = new Vector2(208f, 36f);
+    public Vector2 barSize = new Vector2(69.333f, 16.2f);
     [Tooltip("能量槽中心相对角色 cube 屏幕投影点的向下偏移（像素，正值向下）")]
     public float verticalOffset = 60f;
 

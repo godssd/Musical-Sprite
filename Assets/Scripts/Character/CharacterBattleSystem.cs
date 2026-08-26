@@ -18,8 +18,12 @@ public class CharacterBattleSystem : MonoBehaviour
     [Header("角色数据（P2 手动或经 Character Importer 导入）")]
     public CharacterDataSO[] allCharacters;
 
-    [Header("调试：自动补全场上的 CharacterCubeMarker（按 x 划分侧，按 z 划分 lane）")]
+    [Header("旧场景兼容：自动补全角色 Marker")]
     public bool autoFillMarkersOnStart = true;
+
+    [Header("测试：开局技能可释放")]
+    [Tooltip("开启后，游戏开始时为所有需要能量的队伍角色充满一次能量；释放后仍按正常规则清空")]
+    public bool startWithFullSkillEnergy = true;
 
     public int[] MaxHPBySide { get; private set; } = new int[2];
     public float[] CombatSumBySide { get; private set; } = new float[2];
@@ -40,6 +44,12 @@ public class CharacterBattleSystem : MonoBehaviour
         if (energyVfx != null) energyVfx.RebuildFromRosterAndMarkers();
         // 主动技能运行时：为每个队伍角色挂载 ActiveSkillRuntime（大狗叫等）
         SetupSkillRuntimes();
+
+        if (startWithFullSkillEnergy)
+        {
+            foreach (var character in CharacterRoster.AllTeamCharacters())
+                if (character.maxEnergy > 0f) character.AddEnergy(character.maxEnergy);
+        }
     }
 
     /// <summary>为每个角色（玩家 + 队伍）的 marker 挂载 ActiveSkillRuntime（每个主动槽一个）与 PassiveSkillController。</summary>
@@ -68,12 +78,13 @@ public class CharacterBattleSystem : MonoBehaviour
                 AttachPassiveController(playerInst, pMarker);
             }
 
-            // 队伍角色（lane 0..3，有音轨；主动技能按能量门槛释放）
-            for (int lane = 0; lane < 4; lane++)
+            // 队伍角色按实际 Marker 装配，不依赖对象名或固定成员数量。
+            foreach (var marker in markers
+                .Where(m => m != null && !m.IsPlayer && m.side == side)
+                .OrderBy(m => m.laneIndex))
             {
-                var inst = CharacterRoster.GetTeam(side, lane);
+                var inst = CharacterRoster.GetTeam(side, marker.laneIndex);
                 if (inst == null) continue;
-                var marker = System.Array.Find(markers, m => m != null && !m.IsPlayer && m.side == side && m.laneIndex == lane);
                 AttachSkillRuntimes(inst, marker, spawner, oppCombo, side, fever);
                 AttachPassiveController(inst, marker);
             }
@@ -194,37 +205,64 @@ public class CharacterBattleSystem : MonoBehaviour
         // 注：AutoFillMarkers 放到 Start 执行，避免 Awake 太早拿不到 NoteSpawner。
     }
 
-    /// <summary>为场上所有 Renderer 加 CharacterCubeMarker；按 transform.x 分侧、按 transform.z 用 laneSpacing 估算 lane。</summary>
+    /// <summary>旧场景兼容：新场景在创建角色时已经直接挂 Marker；仅在完全没有 Marker 时从乐队根节点迁移。</summary>
     public void AutoFillMarkers()
     {
-        float laneSpacing = GuessLaneSpacing();
-        var renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
-        int added = 0;
-        foreach (var r in renderers)
+        var existing = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
+        if (existing.Length > 0)
         {
-            if (r == null) continue;
-            if (r.GetComponent<CharacterCubeMarker>() != null) continue;
-            // 跳过 UI Canvas/Overlay 物件
-            if (r.transform.parent != null && r.transform.parent.GetComponentInParent<Canvas>() != null) continue;
-            var go = r.gameObject;
-            // 玩家自身 cube 比队立方块大（粗略判断：scale 体积更大的为 player）
-            bool bigSize = r.bounds.size.sqrMagnitude > 1.5f;
-            int side = go.transform.position.x < 0f ? 0 : 1;
-            int lane;
-            if (bigSize) lane = -1;
-            else
-            {
-                // z 由 NoteSpawner 约定：lane i = (i-1.5) * laneSpacing → i = z/laneSpacing + 1.5
-                float z = go.transform.position.z;
-                lane = Mathf.Clamp(Mathf.RoundToInt(z / laneSpacing + 1.5f), 0, 3);
-            }
-            var marker = go.AddComponent<CharacterCubeMarker>();
-            marker.side = side;
-            marker.laneIndex = lane;
-            ColorMarker(marker);
-            added++;
+            Debug.Log($"[CharacterBattleSystem] 使用场景预置的 CharacterCubeMarker x {existing.Length}");
+            return;
         }
-        Debug.Log($"[CharacterBattleSystem] 自动补 CharacterCubeMarker x {added}（laneSpacing={laneSpacing}）");
+
+        var visuals = FindFirstObjectByType<BattleVisualsController>();
+        if (visuals == null)
+        {
+            Debug.LogWarning("[CharacterBattleSystem] 找不到 BattleVisualsController，无法迁移旧场景角色 Marker");
+            return;
+        }
+
+        int configured = MigrateLegacyBand(visuals.leftBandRoot, 0)
+                       + MigrateLegacyBand(visuals.rightBandRoot, 1);
+        Debug.Log($"[CharacterBattleSystem] 旧场景角色 Marker 迁移完成 x {configured}");
+    }
+
+    private int MigrateLegacyBand(Transform root, int side)
+    {
+        if (root == null) return 0;
+
+        // 旧版场景结构中：角色都是根节点直属的 BoxCollider 方块；圆台是 MeshCollider，判定条带 LaneIndicator。
+        var roleObjects = root.GetComponentsInChildren<BoxCollider>(true)
+            .Where(c => c.transform.parent == root && c.GetComponent<LaneIndicator>() == null)
+            .Select(c => c.gameObject)
+            .ToArray();
+        if (roleObjects.Length == 0) return 0;
+
+        var protagonist = roleObjects.OrderByDescending(go => go.transform.localScale.sqrMagnitude).First();
+        ConfigureMarker(protagonist, side, -1);
+
+        var members = roleObjects
+            .Where(go => go != protagonist)
+            .OrderBy(go => go.transform.position.z)
+            .ToArray();
+        for (int lane = 0; lane < members.Length; lane++)
+            ConfigureMarker(members[lane], side, lane);
+
+        return members.Length + 1;
+    }
+
+    private void ConfigureMarker(GameObject go, int side, int lane)
+    {
+        if (go == null)
+        {
+            return;
+        }
+
+        var marker = go.GetComponent<CharacterCubeMarker>();
+        if (marker == null) marker = go.AddComponent<CharacterCubeMarker>();
+        marker.side = side;
+        marker.laneIndex = lane;
+        ColorMarker(marker);
     }
 
     /// <summary>按角色身份色给单个已标记方块上色：查 CharacterRoster 拿到该角色 blockColor。</summary>
@@ -283,13 +321,6 @@ public class CharacterBattleSystem : MonoBehaviour
         return list.Count > 0 ? list.ToArray() : null;
     }
 #endif
-
-    private float GuessLaneSpacing()
-    {
-        var spawner = FindFirstObjectByType<NoteSpawner>();
-        if (spawner != null && spawner.laneSpacing > 0f) return spawner.laneSpacing;
-        return 1.5f;
-    }
 
     private static CharacterDataSO[] BuildDefaultCharacterArray()
     {

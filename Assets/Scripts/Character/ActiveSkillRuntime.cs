@@ -17,9 +17,9 @@ using System.Collections.Generic;
 /// 设计要点：
 /// - 释放时机 = 等所有被附魔单位（含整条 Hold/Linked 逐节点）结算完毕（命中=成功，断连/漏击=失败），立刻释放狗叫。
 /// - 效果强度（连击削减量）= 成功数 * reduceComboPerCharmedNote；效果强度取决于玩家的命中而非时间。
-/// - 附魔单位记账：直接跟踪每个被附魔的音符对象（tap=Note / 长按=HoldNote）是否仍在场，集合为空且配额关闭才结算，避免「计数口径」与「场上实际音符数」错位导致提前放狗叫（Issue 1 修复）。
+/// - 附魔单位记账：tap 按对象跟踪，Hold/Linked 按节点计数；全部六个单位越过判定线并结算后才放狗叫。
 /// - 多角色技能同时释放：NoteSpawner 用 FIFO（最旧请求优先）+ 不可二次附魔守卫，后放的技能自动排到后面的音符。
-/// - 附魔音符命中时：变大的大狗闪烁（PulseGlow），由 success 分支触发；被附魔音符命中不闪该 lane 角色（见 BattleVisualsController）。
+/// - 附魔单位只有命中时才让变大的大狗闪烁；漏掉只消费六个单位中的名额，不增加声波削减量。
 /// </summary>
 public class ActiveSkillRuntime : MonoBehaviour
 {
@@ -43,7 +43,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     public bool NeedsEnergyGate => needsEnergy;
     private int charmQuotaTotal;          // 本次释放可附魔的总单位数（= skill.charmedNoteCount，仅参考/调试）
     private HashSet<Note> charmedNotes = new HashSet<Note>();          // 当前已被附魔、尚未结算消失的普通音符对象
-    private HashSet<HoldNote> charmedHolds = new HashSet<HoldNote>();  // 当前已被附魔、尚未整体结算消失的长按音符对象
+    private Dictionary<HoldNote, int> charmedHoldNodes = new Dictionary<HoldNote, int>(); // 每条链尚未结算的附魔节点数
     private int completedCount;           // 成功数（非 MISS，用于削减对方连击的强度）
     private bool requestClosed;           // spawner 端配额是否已全部分配完
     private float cooldownLeft;
@@ -79,7 +79,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         // 才强制结算放狗叫。绝不在音符仍在进行中时强制释放——避免「场上还有附魔音符就提前叫」（用户重点关切）。
         // 正常流程由 TrySettleFromCharm 在「所有被附魔音符对象都已结算消失 + 配额关闭」时驱动 Settle。
         if ((phase == Phase.Grow || phase == Phase.Charming)
-            && (charmedNotes.Count > 0 || charmedHolds.Count > 0)
+            && (charmedNotes.Count > 0 || charmedHoldNodes.Count > 0)
             && ownerSpawner != null && ownerSpawner.IsFinished)
         {
             if (phase != Phase.Releasing && phase != Phase.Cooldown) Settle();
@@ -97,7 +97,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         phase = Phase.Grow;
         completedCount = 0;
         charmedNotes.Clear();
-        charmedHolds.Clear();
+        charmedHoldNodes.Clear();
         requestClosed = false;
 
         // 释放成功：需要能量的技能立刻清空能量（冒气停止）；无能量技能跳过充能/清空流程与表现
@@ -131,12 +131,12 @@ public class ActiveSkillRuntime : MonoBehaviour
         TrySettleFromCharm();
     }
 
-    /// <summary>HoldNote（整条链接链）被 charm 时由 NoteSpawner 调用：占 N 个附魔单位（N = 节点数）。</summary>
+    /// <summary>Hold/Linked 节点被附魔时由 NoteSpawner 调用；同一条链可只附魔接下来的部分节点。</summary>
     public void OnHoldCharmed(HoldNote hn, int nodeCount)
     {
         if (hn == null || nodeCount <= 0) return;
-        // 整条长按链作为一个对象跟踪；节点数只用于后续削减强度参考，不再参与结算时机计数。
-        charmedHolds.Add(hn);
+        charmedHoldNodes.TryGetValue(hn, out int pending);
+        charmedHoldNodes[hn] = pending + nodeCount;
     }
 
     /// <summary>被附魔的普通 tap 音符结算（命中/MISS/消失）时由 Note 调用。success=true 表示非 MISS。</summary>
@@ -150,24 +150,29 @@ public class ActiveSkillRuntime : MonoBehaviour
     }
 
     /// <summary>被附魔的 Hold/Linked 某节点成功结算（CLEAR/头节点命中）时由 HoldNote 逐节点调用。</summary>
-    // 长按逐节点成功：只更新「成功数」与「附魔命中闪烁」；不触发结算（整条链结束由 OnCharmHoldResolved 统一结算）。
-    public void OnCharmNodeSuccess()
+    // 长按逐节点成功：更新成功数、闪烁，并立即消费该节点的等待计数。
+    public void OnCharmNodeSuccess(HoldNote hn)
     {
         completedCount++;
         if (phase == Phase.Grow) phase = Phase.Charming;
         if ((phase == Phase.Grow || phase == Phase.Charming) && marker != null) marker.PulseGlow();
+        ResolveCharmNode(hn);
     }
 
     /// <summary>被附魔的 Hold/Linked 某节点失败结算（断连/漏击）时由 HoldNote 逐节点调用。</summary>
-    public void OnCharmNodeFail()
+    public void OnCharmNodeFail(HoldNote hn)
     {
         if (phase == Phase.Grow) phase = Phase.Charming;
+        ResolveCharmNode(hn);
     }
 
-    /// <summary>整条被附魔的长按链真正结算完毕（命中/断连/漏击后销毁）时由 HoldNote 调用：从集合中移除并触发结算判定。</summary>
-    public void OnCharmHoldResolved(HoldNote hn)
+    private void ResolveCharmNode(HoldNote hn)
     {
-        charmedHolds.Remove(hn);
+        if (hn != null && charmedHoldNodes.TryGetValue(hn, out int pending))
+        {
+            if (pending <= 1) charmedHoldNodes.Remove(hn);
+            else charmedHoldNodes[hn] = pending - 1;
+        }
         TrySettleFromCharm();
     }
 
@@ -175,7 +180,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     private void TrySettleFromCharm()
     {
         if (phase != Phase.Grow && phase != Phase.Charming) return;
-        if (requestClosed && charmedNotes.Count == 0 && charmedHolds.Count == 0)
+        if (requestClosed && charmedNotes.Count == 0 && charmedHoldNodes.Count == 0)
             Settle();
     }
 
@@ -204,6 +209,7 @@ public class ActiveSkillRuntime : MonoBehaviour
             st.ToString(),
             shots));
 
+        if (marker != null) marker.PulseGlow();
         StartCoroutine(FireSequence(shots));
     }
 

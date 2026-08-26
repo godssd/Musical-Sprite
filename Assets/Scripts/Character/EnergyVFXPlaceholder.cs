@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -29,14 +30,17 @@ public class EnergyVFXPlaceholder : MonoBehaviour
     public float lifeTime = 1f;
     public float drift = 0.15f;
 
-    private Dictionary<int, Transform> anchorMap = new Dictionary<int, Transform>();
-    private readonly HashSet<int> activeIds = new HashSet<int>();
-    private readonly Dictionary<int, float> spawnTimers = new Dictionary<int, float>();
-    private readonly Dictionary<int, List<GameObject>> cubesByChar = new Dictionary<int, List<GameObject>>();
+    // 左右两侧会共享 characterId，必须按 CharacterClass 实例区分，否则同 ID 只能保留一个冒烟锚点。
+    private readonly Dictionary<CharacterClass, Transform> anchorMap = new Dictionary<CharacterClass, Transform>();
+    private readonly HashSet<CharacterClass> activeCharacters = new HashSet<CharacterClass>();
+    private readonly Dictionary<CharacterClass, float> spawnTimers = new Dictionary<CharacterClass, float>();
+    private readonly Dictionary<CharacterClass, List<GameObject>> cubesByChar = new Dictionary<CharacterClass, List<GameObject>>();
+    private readonly Dictionary<CharacterClass, Action<int>> fullHandlers = new Dictionary<CharacterClass, Action<int>>();
+    private readonly Dictionary<CharacterClass, Action<int>> depletedHandlers = new Dictionary<CharacterClass, Action<int>>();
 
     void Start()
     {
-        RebuildAnchorMap();
+        AutoFillAnchorsFromMarkers();
         CharacterRoster.OnRosterChanged += OnRosterChanged;
         Resubscribe();
     }
@@ -48,13 +52,6 @@ public class EnergyVFXPlaceholder : MonoBehaviour
         ClearAllCubes();
     }
 
-    private void RebuildAnchorMap()
-    {
-        anchorMap.Clear();
-        foreach (var a in anchors)
-            if (a.body != null) anchorMap[a.characterId] = a.body;
-    }
-
     private void OnRosterChanged()
     {
         // 花名册变化（P2 注册角色）时重新订阅事件 + 自动填充锚点
@@ -64,81 +61,83 @@ public class EnergyVFXPlaceholder : MonoBehaviour
 
     private void AutoFillAnchorsFromMarkers()
     {
+        anchors.Clear();
+        anchorMap.Clear();
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
-        // 不能在 foreach anchors 过程中 Add，先收集待添加项
-        var pending = new System.Collections.Generic.List<CharAnchor>();
         foreach (var m in markers)
         {
             if (m == null || m.IsPlayer) continue;
             if (m.GetComponent<Renderer>() == null) continue;
-            // 关键：以 CharacterRoster 注册的 CharacterClass.characterId 为准，
-            // 而不是用 (side+1)*100+lane+1 推算 —— 两者本来就不一致，
-            // 会导致 activeIds.Add(realId) 后 anchorMap.TryGetValue(realId) 找不到。
             CharacterClass inst = CharacterRoster.GetTeam(m.side, m.laneIndex);
             if (inst == null) continue;
-            int realId = inst.characterId;
-            bool found = false;
-            foreach (var a in anchors)
-            {
-                if (a.characterId == realId && a.body == m.transform) { found = true; break; }
-            }
-            if (!found)
-                pending.Add(new CharAnchor { characterId = realId, body = m.transform });
+            anchorMap[inst] = m.transform;
+            anchors.Add(new CharAnchor { characterId = inst.characterId, body = m.transform });
         }
-        anchors.AddRange(pending);
-        RebuildAnchorMap();
     }
 
     private void Resubscribe()
     {
         UnsubscribeAll();
+        activeCharacters.Clear();
+        spawnTimers.Clear();
+        ClearAllCubes();
         foreach (var c in CharacterRoster.AllTeamCharacters())
         {
-            c.OnEnergyFull += OnFull;
-            c.OnEnergyDepleted += OnDepleted;
+            CharacterClass character = c;
+            Action<int> onFull = _ => OnFull(character);
+            Action<int> onDepleted = _ => OnDepleted(character);
+            fullHandlers[character] = onFull;
+            depletedHandlers[character] = onDepleted;
+            character.OnEnergyFull += onFull;
+            character.OnEnergyDepleted += onDepleted;
+
+            // 订阅发生在充满事件之后时也要补上表现，保证“只要当前充能满就冒烟”。
+            if (character.maxEnergy > 0f && character.currentEnergy >= character.maxEnergy && !character.skillBusy)
+                OnFull(character);
         }
     }
 
     private void UnsubscribeAll()
     {
-        foreach (var c in CharacterRoster.AllTeamCharacters())
-        {
-            c.OnEnergyFull -= OnFull;
-            c.OnEnergyDepleted -= OnDepleted;
-        }
+        foreach (var pair in fullHandlers) pair.Key.OnEnergyFull -= pair.Value;
+        foreach (var pair in depletedHandlers) pair.Key.OnEnergyDepleted -= pair.Value;
+        fullHandlers.Clear();
+        depletedHandlers.Clear();
     }
 
-    private void OnFull(int characterId)
+    private void OnFull(CharacterClass character)
     {
-        activeIds.Add(characterId);
-        if (!spawnTimers.ContainsKey(characterId)) spawnTimers[characterId] = 0f;
-        if (!cubesByChar.ContainsKey(characterId)) cubesByChar[characterId] = new List<GameObject>();
+        if (character == null) return;
+        activeCharacters.Add(character);
+        if (!spawnTimers.ContainsKey(character)) spawnTimers[character] = 0f;
+        if (!cubesByChar.ContainsKey(character)) cubesByChar[character] = new List<GameObject>();
     }
 
-    private void OnDepleted(int characterId)
+    private void OnDepleted(CharacterClass character)
     {
-        activeIds.Remove(characterId);
-        ClearCharCubes(characterId);
+        if (character == null) return;
+        activeCharacters.Remove(character);
+        ClearCharCubes(character);
     }
 
     void Update()
     {
-        if (activeIds.Count == 0) return;
-        foreach (var id in activeIds)
+        if (activeCharacters.Count == 0) return;
+        foreach (var character in activeCharacters)
         {
-            if (!anchorMap.TryGetValue(id, out var body) || body == null) continue;
-            if (!cubesByChar.ContainsKey(id)) cubesByChar[id] = new List<GameObject>();
-            spawnTimers.TryGetValue(id, out float t);
+            if (!anchorMap.TryGetValue(character, out var body) || body == null) continue;
+            if (!cubesByChar.ContainsKey(character)) cubesByChar[character] = new List<GameObject>();
+            spawnTimers.TryGetValue(character, out float t);
             t -= Time.deltaTime;
             if (t <= 0f)
             {
                 t = spawnInterval;
-                SpawnCube(body.position, id);
+                SpawnCube(body.position, character);
             }
-            spawnTimers[id] = t;
+            spawnTimers[character] = t;
 
             // 推进已有方块
-            var list = cubesByChar[id];
+            var list = cubesByChar[character];
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var go = list[i];
@@ -159,7 +158,7 @@ public class EnergyVFXPlaceholder : MonoBehaviour
         }
     }
 
-    private void SpawnCube(Vector3 origin, int id)
+    private void SpawnCube(Vector3 origin, CharacterClass character)
     {
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         cube.transform.position = origin + Vector3.up * 0.5f;
@@ -167,13 +166,13 @@ public class EnergyVFXPlaceholder : MonoBehaviour
         var rend = cube.GetComponent<Renderer>();
         rend.material = new Material(Shader.Find("Standard"));
         rend.material.color = cubeColor;
-        if (!cubesByChar.ContainsKey(id)) cubesByChar[id] = new List<GameObject>();
-        cubesByChar[id].Add(cube);
+        if (!cubesByChar.ContainsKey(character)) cubesByChar[character] = new List<GameObject>();
+        cubesByChar[character].Add(cube);
     }
 
-    private void ClearCharCubes(int characterId)
+    private void ClearCharCubes(CharacterClass character)
     {
-        if (cubesByChar.TryGetValue(characterId, out var list))
+        if (cubesByChar.TryGetValue(character, out var list))
         {
             foreach (var go in list) if (go != null) Destroy(go);
             list.Clear();
@@ -190,13 +189,6 @@ public class EnergyVFXPlaceholder : MonoBehaviour
     /// <summary>由 CharacterBattleSystem 在自动补完 marker 后调用，确保锚点与角色对应。</summary>
     public void RebuildFromRosterAndMarkers()
     {
-        // 清除掉旧版本写入的 (side+1)*100+laneIndex+1 形式假 ID 锚点，防止历史脏数据卡死事件
-        for (int i = anchors.Count - 1; i >= 0; i--)
-        {
-            int id = anchors[i].characterId;
-            // 历史公式产出的 ID 都在 100..299 范围；合法的 CharacterClass.characterId 是 1..5（默认）。
-            if (id >= 100) anchors.RemoveAt(i);
-        }
         AutoFillAnchorsFromMarkers();
         Resubscribe();
     }

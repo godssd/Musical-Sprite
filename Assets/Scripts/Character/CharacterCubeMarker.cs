@@ -4,10 +4,10 @@ using System.Collections;
 /// <summary>
 /// 占位 cube 标记组件（P2）。挂在角色占位 cube 上：
 /// - side 0 = 左侧玩家阵营 / 1 = 右侧对手阵营
-/// - laneIndex -1 = 玩家自身角色（NPC）/ 0~3 = 该侧第 N 个音轨上的队伍角色
+/// - laneIndex -1 = 玩家自身角色（NPC）/ 非负数 = 该侧对应音轨上的队伍角色
 ///
 /// FeverVFXPlaceholder 通过 FindObjectsByType&lt;CharacterCubeMarker&gt; 取代 Tag 查找。
-/// 场景里临时补 marker：MS Debug 工具 → "为场景 cube 自动补 marker"按钮（按 transform.x 与 laneSpacing 估算）。
+/// 新场景在角色创建时直接挂 Marker；旧场景由 CharacterBattleSystem 按乐队层级迁移。
 ///
 /// 简易按键反馈：Flash() 让 cube 临时放大（popScale=1.25）后回弹，颜色短暂提亮，
 /// 由 BattleVisualsController.OnLanePress 触发，与 LaneIndicator.Flash() 并列。
@@ -19,7 +19,7 @@ public class CharacterCubeMarker : MonoBehaviour
     [Tooltip("0 = 左侧玩家阵营 / 1 = 右侧对手阵营")]
     public int side = 0;
 
-    [Tooltip("-1 = 玩家自身角色（不占音轨） / 0~3 = 队伍角色对应音轨")]
+    [Tooltip("-1 = 玩家自身角色（不占音轨） / 非负数 = 队伍角色对应音轨")]
     public int laneIndex = -1;
 
     public bool IsPlayer => laneIndex < 0;

@@ -94,8 +94,16 @@ public class NoteSpawner : MonoBehaviour
     private List<Note> activeNotes = new List<Note>();
     private List<HoldNote> activeHoldNotes = new List<HoldNote>();
 
-    // 主动技能附魔请求：角色释放后追加；spawn 音符时按 side 消耗名额
+    // 主动技能附魔请求：按判定时刻从近到远消费名额，包含施法时已经在场的音符。
     public struct CharmRequest { public ActiveSkillRuntime owner; public int remaining; }
+    private struct CharmCandidate
+    {
+        public float hitTime;
+        public int lane;
+        public Note note;
+        public HoldNote hold;
+        public int nodeIndex;
+    }
     public List<CharmRequest> activeCharms = new List<CharmRequest>();
     public HashSet<int> heldLanes = new HashSet<int>(); // 当前被按住的轨道（本侧）
     private int spawnIndex = 0;
@@ -165,6 +173,8 @@ public class NoteSpawner : MonoBehaviour
             spawnIndex++;
         }
 
+        AssignPendingCharms(songTime);
+
         // 2. 漏击检测：超过 GOOD 窗口仍未命中 => 进入漏击缩小（不直接出 MISS，
         //    避免“一个音符同时出现两种评价”，也避免 MISS 与同帧其它命中同时弹出）
         for (int i = activeNotes.Count - 1; i >= 0; i--)
@@ -207,6 +217,8 @@ public class NoteSpawner : MonoBehaviour
                 activeHoldNotes.RemoveAt(i);
             }
         }
+
+        CloseCharmRequestsIfFinished();
 
         // 3. 键盘输入判定（仅 PC 测试，且本侧启用键盘时）：按下 / 松开分别下发
         if (!useKeyboard) return;
@@ -281,7 +293,6 @@ public class NoteSpawner : MonoBehaviour
             chainTapHoldDuration);
 
         activeNotes.Add(note);
-        TryCharmNote(note);
     }
 
     /// <summary>角色释放主动技能时调用：登记一个附魔请求（配额 = count）。</summary>
@@ -290,75 +301,94 @@ public class NoteSpawner : MonoBehaviour
         if (owner == null || count <= 0) return;
         activeCharms.Add(new CharmRequest { owner = owner, remaining = count });
         owner.SetCharmQuota(count);
+        if (conductor != null) AssignPendingCharms(conductor.songPosition);
     }
 
-    /// <summary>普通 tap 音符生成时尝试附魔：取首个 side 匹配且仍有名额的请求，标记该音符并消耗一个名额。</summary>
-    private void TryCharmNote(Note note)
+    /// <summary>把当前已在场、接下来抵达判定线的音符/拖拽节点按时间排序后分配给最早的附魔请求。</summary>
+    private void AssignPendingCharms(float songTime)
     {
-        if (note == null || note.charmOwner != null) return;   // 已附魔的音符不可二次附魔
-        for (int i = 0; i < activeCharms.Count; i++)           // FIFO：最旧的请求优先吃满 6 个名额
+        if (activeCharms.Count == 0) return;
+
+        float visibleHorizon = songTime + leadTime + 0.0001f;
+        var candidates = new List<CharmCandidate>();
+        foreach (var note in activeNotes)
         {
-            var req = activeCharms[i];
-            if (req.remaining > 0 && req.owner != null && req.owner.ownerSide == note.side)
+            if (note == null || note.isHit || note.charmOwner != null) continue;
+            if (note.hitTime + goodWindow < songTime || note.hitTime > visibleHorizon) continue;
+            candidates.Add(new CharmCandidate { hitTime = note.hitTime, lane = note.lane, note = note, nodeIndex = -1 });
+        }
+        foreach (var hold in activeHoldNotes)
+        {
+            if (hold == null) continue;
+            for (int nodeIndex = 0; nodeIndex < hold.NodeCount; nodeIndex++)
             {
-                note.charmOwner = req.owner;
-                note.wasCharmed = true;
-                req.owner.OnNoteCharmed(note);
+                float hitTime = hold.GetNodeTime(nodeIndex);
+                if (hitTime > visibleHorizon || !hold.CanCharmNode(nodeIndex, songTime)) continue;
+                candidates.Add(new CharmCandidate
+                {
+                    hitTime = hitTime,
+                    lane = hold.GetNodeLane(nodeIndex),
+                    hold = hold,
+                    nodeIndex = nodeIndex
+                });
+            }
+        }
+
+        candidates.Sort((a, b) =>
+        {
+            int byTime = a.hitTime.CompareTo(b.hitTime);
+            return byTime != 0 ? byTime : a.lane.CompareTo(b.lane);
+        });
+
+        foreach (var candidate in candidates)
+        {
+            for (int i = 0; i < activeCharms.Count; i++)
+            {
+                var req = activeCharms[i];
+                if (req.owner == null || req.remaining <= 0)
+                {
+                    activeCharms.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+
+                if (req.owner.ownerSide != side) continue;
+                bool assigned;
+                if (candidate.note != null)
+                {
+                    if (candidate.note.charmOwner != null) break;
+                    candidate.note.charmOwner = req.owner;
+                    candidate.note.wasCharmed = true;
+                    req.owner.OnNoteCharmed(candidate.note);
+                    TintCharmed(candidate.note);
+                    assigned = true;
+                }
+                else
+                {
+                    assigned = candidate.hold != null
+                        && candidate.hold.TryCharmNode(candidate.nodeIndex, req.owner);
+                }
+                if (!assigned) break;
+
                 req.remaining--;
                 if (req.remaining <= 0)
                 {
-                    // 配额用完：通知 runtime（让其在所有已附魔音符解决后释放）
-                    req.owner.OnCharmRequestClosed();
                     activeCharms.RemoveAt(i);
+                    req.owner.OnCharmRequestClosed();
                 }
-                else
-                {
-                    activeCharms[i] = req;
-                }
-                TintCharmed(note);
+                else activeCharms[i] = req;
                 break;
             }
         }
     }
 
-    /// <summary>Hold/Linked 整条链接链生成时尝试附魔：与 TryCharmNote 同理，但写入 HoldNote.charmOwner + 调用 OnHoldCharmed。
-    /// 整条链算 1 个附魔单位（不管它有几个节点）。</summary>
-    private void TryCharmHoldNote(HoldNote hn)
+    private void CloseCharmRequestsIfFinished()
     {
-        if (hn == null || hn.charmOwner != null) return;   // 已附魔的链不可二次附魔
-        int nodes = hn.NodeCount;                          // 一个节点 = 1 个附魔单位
-        for (int i = 0; i < activeCharms.Count; i++)       // FIFO：最旧的请求优先
-        {
-            var req = activeCharms[i];
-            // 整条链原子附魔：仅当该请求剩余名额 >= 节点数时整体附魔（不拆节点）
-            if (req.remaining >= nodes && req.owner != null && req.owner.ownerSide == hn.side)
-            {
-                hn.charmOwner = req.owner;
-                hn.wasCharmed = true;
-                req.owner.OnHoldCharmed(hn, nodes);
-                req.remaining -= nodes;
-                if (req.remaining <= 0)
-                {
-                    // 配额用完：通知 runtime（让其在所有已附魔单位解决后释放）
-                    req.owner.OnCharmRequestClosed();
-                    activeCharms.RemoveAt(i);
-                }
-                else
-                {
-                    activeCharms[i] = req;
-                }
-                TintCharmedHold(hn);
-                break;
-            }
-        }
-    }
-
-    /// <summary>把被附魔的整条链接链（head 节点 + 段带）染成黄色发光。</summary>
-    private void TintCharmedHold(HoldNote hn)
-    {
-        if (hn == null) return;
-        // 整条链染黄（节点 + 连接段），大狗叫附魔表现
-        hn.TintCharmed();
+        if (!IsFinished || activeCharms.Count == 0) return;
+        var requests = activeCharms.ToArray();
+        activeCharms.Clear();
+        foreach (var request in requests)
+            if (request.owner != null) request.owner.OnCharmRequestClosed();
     }
 
     /// <summary>把被附魔音符染成黄色发光（占位视觉）。</summary>
@@ -451,7 +481,6 @@ public class NoteSpawner : MonoBehaviour
         hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p, hn);
 
         activeHoldNotes.Add(hn);
-        TryCharmHoldNote(hn);
     }
 
     /// <summary>

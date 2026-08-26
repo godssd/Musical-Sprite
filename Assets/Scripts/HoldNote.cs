@@ -73,14 +73,49 @@ public class HoldNote : MonoBehaviour
 
     public event System.Action<int, int, string, Vector3> onJudge;
 
-    /// <summary>若本整条链接链被某主动技能附魔，则指向其运行时；逐节点结算时回调通知。</summary>
-    [HideInInspector] public ActiveSkillRuntime charmOwner;
+    /// <summary>逐节点记录附魔来源；同一条链可以只占“接下来六个音符”中的部分名额。</summary>
+    private ActiveSkillRuntime[] charmOwnersByNode;
 
-    /// <summary>本整条链接链是否曾经被附魔（即使结算后 charmOwner 被置空也保持 true）。</summary>
+    /// <summary>本链接链是否至少有一个节点曾被附魔。</summary>
     [HideInInspector] public bool wasCharmed = false;
 
     /// <summary>节点总数（头 + 中间 + 尾）。被附魔时一个节点算 1 个附魔单位。</summary>
-    public int NodeCount => nodeCount;
+    public int NodeCount => lanes != null ? lanes.Length : nodeCount;
+
+    public float GetNodeTime(int index) => times[index];
+    public int GetNodeLane(int index) => lanes[index];
+
+    public bool CanCharmNode(int index, float songTime)
+    {
+        if (index < 0 || index >= NodeCount || state == HoldState.Done) return false;
+        if (charmOwnersByNode != null && charmOwnersByNode[index] != null) return false;
+        if (state == HoldState.Holding && index <= completedSegments) return false;
+        return times != null && index < times.Length && songTime <= times[index] + goodWindow;
+    }
+
+    public bool TryCharmNode(int index, ActiveSkillRuntime owner)
+    {
+        if (owner == null || index < 0 || index >= NodeCount) return false;
+        if (charmOwnersByNode == null || charmOwnersByNode.Length != NodeCount)
+            charmOwnersByNode = new ActiveSkillRuntime[NodeCount];
+        if (charmOwnersByNode[index] != null) return false;
+
+        charmOwnersByNode[index] = owner;
+        wasCharmed = true;
+        owner.OnHoldCharmed(this, 1);
+        TintCharmedNode(index);
+        return true;
+    }
+
+    private void ResolveCharmedNode(int index, bool success)
+    {
+        if (charmOwnersByNode == null || index < 0 || index >= charmOwnersByNode.Length) return;
+        ActiveSkillRuntime charmOwner = charmOwnersByNode[index];
+        if (charmOwner == null) return;
+        charmOwnersByNode[index] = null;
+        if (success) charmOwner.OnCharmNodeSuccess(this);
+        else charmOwner.OnCharmNodeFail(this);
+    }
 
     // ===== 视觉 =====
     private List<Transform> nodeTransforms = new List<Transform>();
@@ -369,6 +404,10 @@ public class HoldNote : MonoBehaviour
             segmentMatGroups.Add(segMats);
         }
 
+        if (charmOwnersByNode != null)
+            for (int i = 0; i < charmOwnersByNode.Length; i++)
+                if (charmOwnersByNode[i] != null) TintCharmedNode(i);
+
         // 预计算越过判定线的终点（再往前 1.5 单位），与 NoteMover 一致
         exitPositions = new Vector3[nodeCount];
         exitLeadTimes = new float[nodeCount];
@@ -435,6 +474,10 @@ public class HoldNote : MonoBehaviour
             {
                 ApplyMissDisappear(cx, judgeLineX);
 
+                // 断连/漏击后，附魔节点仍要等到各自越过判定线才算“经过一个音符”，不能在断连瞬间提前结算。
+                for (int i = 0; i < nodeCount; i++)
+                    if (songTime >= times[i]) ResolveCharmedNode(i, false);
+
                 // 漏击的首节点越过判定线并缩没后，立即上报一次 MISS（不等待整条链）
                 float headPast = side == 0
                     ? (judgeLineX - nodeTransforms[0].position.x)
@@ -458,6 +501,7 @@ public class HoldNote : MonoBehaviour
             }
                 if (allGone)
                 {
+                    for (int i = 0; i < nodeCount; i++) ResolveCharmedNode(i, false);
                     finished = true;
                     Destroy(gameObject);
                     return;
@@ -714,21 +758,22 @@ public class HoldNote : MonoBehaviour
     }
 
     /// <summary>设置单个材质实例的透明度（不影响颜色，供漏击逐片淡出用）。</summary>
-    /// <summary>被附魔：把所有节点与连接段染成黄色发光（大狗叫 = 变黄）。由 NoteSpawner.TintCharmedHold 调用。</summary>
-    public void TintCharmed()
+    /// <summary>把一个被附魔节点及通向它的连接段染成黄色发光。</summary>
+    private void TintCharmedNode(int nodeIndex)
     {
         Color yellow = new Color(1f, 0.85f, 0.1f);
-        for (int i = 0; i < nodeMats.Count; i++)
+        if (nodeIndex >= 0 && nodeIndex < nodeMats.Count && nodeMats[nodeIndex] != null)
         {
-            if (nodeMats[i] == null) continue;
-            nodeMats[i].EnableKeyword("_EMISSION");
-            nodeMats[i].SetColor("_EmissionColor", yellow);
+            nodeMats[nodeIndex].EnableKeyword("_EMISSION");
+            nodeMats[nodeIndex].SetColor("_EmissionColor", yellow);
         }
-        for (int s = 0; s < segmentMatGroups.Count; s++)
+
+        int segmentIndex = nodeIndex - 1;
+        if (segmentIndex >= 0 && segmentIndex < segmentMatGroups.Count)
         {
-            for (int k = 0; k < segmentMatGroups[s].Count; k++)
+            for (int k = 0; k < segmentMatGroups[segmentIndex].Count; k++)
             {
-                var m = segmentMatGroups[s][k];
+                var m = segmentMatGroups[segmentIndex][k];
                 if (m == null) continue;
                 m.EnableKeyword("_EMISSION");
                 m.SetColor("_EmissionColor", yellow);
@@ -896,7 +941,7 @@ public class HoldNote : MonoBehaviour
                 Vector3 segEndPos = hitPositions[completedSegments];
                 onJudge?.Invoke(side, lanes[completedSegments], "CLEAR", segEndPos);
                 // 附魔：该段完成 = 1 个附魔单位（节点）成功
-                if (charmOwner != null) charmOwner.OnCharmNodeSuccess();
+                ResolveCharmedNode(completedSegments, true);
             }
 
             // 全部节点完成 -> Done
@@ -947,7 +992,7 @@ public class HoldNote : MonoBehaviour
 
         onJudge?.Invoke(side, lanes[0], rank, hitPositions[0]);
         // 附魔：头节点达成 = 1 个附魔单位成功
-        if (charmOwner != null) charmOwner.OnCharmNodeSuccess();
+        ResolveCharmedNode(0, true);
     }
 
     private void MissHead()
@@ -960,13 +1005,7 @@ public class HoldNote : MonoBehaviour
         // 由 MoveAndFade 每帧调用 ApplyMissDisappear 处理，而不是整条统一缩小。
         missMode = true;
 
-        // 通知 charm owner：整条链漏击（所有节点均失败）；整条结算消失后从附魔集合移除。
-        if (charmOwner != null)
-        {
-            for (int k = 0; k < nodeCount; k++) charmOwner.OnCharmNodeFail();
-            charmOwner.OnCharmHoldResolved(this);
-            charmOwner = null;
-        }
+        ResolveCharmedNode(0, false);
     }
 
     private void Break()
@@ -982,14 +1021,6 @@ public class HoldNote : MonoBehaviour
         int lastNode = Mathf.Max(0, completedSegments);
         onJudge?.Invoke(side, lanes[lastNode], "BREAK", hitPositions[lastNode]);
 
-        // 通知 charm owner：头节点 + completedSegments 段已成功，剩余节点失败；整条结算消失后从附魔集合移除。
-        if (charmOwner != null)
-        {
-            int fails = nodeCount - 1 - completedSegments;
-            for (int k = 0; k < fails; k++) charmOwner.OnCharmNodeFail();
-            charmOwner.OnCharmHoldResolved(this);
-            charmOwner = null;
-        }
     }
 
     private void Complete()
@@ -1004,12 +1035,5 @@ public class HoldNote : MonoBehaviour
                 if (segmentMatGroups[s][k] != null) segmentMatGroups[s][k].color = Color.white;
         // 最后一段 CLEAR 已在 Judge 循环中于尾节点处上报，这里不再重复上报
 
-        // 通知 charm owner：整条链完整成功。
-        // 头节点（StartHold）+ 每段 CLEAR 已逐节点上报成功；此处整条结算消失后从附魔集合移除。
-        if (charmOwner != null)
-        {
-            charmOwner.OnCharmHoldResolved(this);
-            charmOwner = null;
-        }
     }
 }

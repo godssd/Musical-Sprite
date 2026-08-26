@@ -720,6 +720,7 @@ namespace MusicalSprite.Editor
             Material memberMat, Material protagonistMat, Material indicatorActiveMat, Material indicatorIdleMat)
         {
             // direction: -1 = 左侧乐队，+1 = 右侧乐队
+            int side = direction < 0f ? 0 : 1;
             // 场地内侧为 X=0，外侧为 X 绝对值更大的方向
             // 圆台圆弧朝向场地中心（里侧），直径朝外（靠近场地边缘）
             float stageRadius = 1.2f;
@@ -763,8 +764,11 @@ namespace MusicalSprite.Editor
             protagonist.transform.position = new Vector3(hitX + direction * protagonistOffset, 0.60f, 0f);
             protagonist.transform.localScale = new Vector3(0.65f, 0.9f, 0.65f);
             SetMaterial(protagonist, protagonistMat);
+            CharacterCubeMarker protagonistMarker = protagonist.AddComponent<CharacterCubeMarker>();
+            protagonistMarker.side = side;
+            protagonistMarker.laneIndex = -1;
 
-            // 4 个成员小方块：Z 坐标严格与 4 条判定线对齐
+            // 成员小方块数量跟随 laneCount，Z 坐标与各自判定线对齐
             for (int lane = 0; lane < spawner.laneCount; lane++)
             {
                 // 判定线 Z 坐标
@@ -780,6 +784,9 @@ namespace MusicalSprite.Editor
                 member.transform.position = new Vector3(x, 0.45f, z);
                 member.transform.localScale = new Vector3(0.45f, 0.6f, 0.45f);
                 SetMaterial(member, memberMat);
+                CharacterCubeMarker memberMarker = member.AddComponent<CharacterCubeMarker>();
+                memberMarker.side = side;
+                memberMarker.laneIndex = lane;
 
                 // 指示灯：判定线处的横向短条（横躺在地面上方）
                 GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
