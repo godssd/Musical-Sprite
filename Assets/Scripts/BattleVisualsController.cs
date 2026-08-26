@@ -145,20 +145,9 @@ public class BattleVisualsController : MonoBehaviour
             target.AddCombo(1);
         }
 
-        // 命中角色闪烁（修复①"平时命中角色不闪"）：
-        // - 普通音符命中 -> 该 (side, lane) 队伍角色闪烁
-        // - 被附魔的音符命中 -> 不闪该 lane 角色，改由施法大狗闪（见 ActiveSkillRuntime 成功分支 PulseGlow）
-        if (rank != "MISS")
-        {
-            bool charmed = false;
-            if (source is Note n) charmed = n.wasCharmed;
-            else if (source is HoldNote h) charmed = h.wasCharmed;
-            if (!charmed)
-            {
-                int idx = side * 4 + lane;
-                if (idx >= 0 && idx < markerByKey.Length && markerByKey[idx] != null)
-                    markerByKey[idx].Flash();
-            }
-        }
+        // 注意：普通音符命中不再让角色 cube 发光闪烁（用户确认：普通音符不需要该表现）。
+        // 角色发光只保留两类来源：
+        //   1) 主动技能输入按键按对 -> SkillInputUI.rt.marker.Flash()
+        //   2) 被附魔音符命中（施法角色）-> ActiveSkillRuntime 成功分支 PulseGlow()
     }
 }
