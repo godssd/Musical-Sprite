@@ -314,6 +314,36 @@ public class NoteMover : MonoBehaviour
         SetChainBodyColor(Color.Lerp(Color.black, Color.white, progress));
         if (chainCountText != null) chainCountText.text = remaining.ToString();
         transform.position = new Vector3(hitPos.x, rideY, hitPos.z);
+        // 每次命中叠加一次「白闪 + 放大缩小」反馈（不破坏 SetChainBodyColor 的进度色，淡出后回归原进度色）。
+        // 用户 2026-08-26 反馈：连点音符原本没有变大变白的命中反馈，特此补上。
+        StartCoroutine(ChainTapHitPopCo());
+    }
+
+    /// <summary>连点命中反馈：scale 1x→1.3x→1x + 颜色短暂提亮，回落到 SetChainBodyColor 设的进度色。</summary>
+    private IEnumerator ChainTapHitPopCo()
+    {
+        const float dur = 0.18f;
+        float t = 0f;
+        Vector3 baseS = transform.localScale;
+        Vector3 peakS = baseS * 1.3f;
+        Color baseC = noteMaterial != null ? noteMaterial.color : Color.white;
+
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / dur);
+            float s = Mathf.Sin(k * Mathf.PI);                                  // 0→1→0 弹跳
+            transform.localScale = Vector3.Lerp(baseS, peakS, s);
+            if (noteMaterial != null)
+            {
+                // 短暂提亮（向纯白靠拢 60%），衰减回原进度色
+                noteMaterial.color = Color.Lerp(baseC, Color.white, s * 0.6f);
+            }
+            yield return null;
+        }
+        // 结束：缩放回到原始大小，颜色保留 SetChainBodyColor 的进度色
+        transform.localScale = baseS;
+        if (noteMaterial != null) noteMaterial.color = baseC;
     }
 
     public void CompleteChainTap()

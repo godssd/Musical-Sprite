@@ -169,11 +169,9 @@ public class SkillInputUI : MonoBehaviour
             return;
         }
 
-        // 有效前缀：让匹配到的角色闪烁（只有当前缓冲是该角色序列前缀时才闪，避免按错乱闪）。
-        foreach (var rt in matching)
-            if (rt.marker != null) rt.marker.Flash();
-
-        // ③ 完整匹配某技能 → 触发释放并立刻重置为无输入状态。
+        // 删除了角色 cube 闪烁反馈（用户 2026-08-26 反馈：按右边按键不应触发地面变大闪动）。
+        // 按钮本身有 pressedColor+popScale，无匹配时有红色错误闪烁，三档反馈已足够定位。
+        // 完整匹配某技能 → 触发释放并立刻重置为无输入状态。
         foreach (var rt in matching)
         {
             if (buffer.Count == rt.inputSequence.Length)

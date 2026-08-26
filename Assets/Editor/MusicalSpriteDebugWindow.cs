@@ -207,7 +207,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         var skillUI = FindFirstObjectByType<SkillInputUI>();
         if (skillUI != null)
         {
-            skillInputWindow = skillUI.inputWindow;
+            skillInputWindow = skillUI.inputInterval;
         }
     }
 
@@ -352,7 +352,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorGUILayout.HelpBox("damage = extra × combat_total × drainRate。drainRate=0.001 即(全队+玩家战斗力总和)×0.1%。extra 为本次保底给劣势方的额外加分。仅扣劣势方。", MessageType.None);
 
         skillInputWindow = EditorGUILayout.Slider("技能按键时间窗 (秒)", skillInputWindow, 0.1f, 1.5f);
-        EditorGUILayout.HelpBox("←/↓/→ 顺序触发对应车道队伍角色的主动技能；超过该秒未完成即重置。", MessageType.None);
+        EditorGUILayout.HelpBox("←/↓/→ 顺序触发对应车道队伍角色的主动技能；相邻两次按键超过该秒数即视为超时、立刻重置输入缓冲（不会等到完整序列未完成才清）。", MessageType.None);
 
         EditorGUILayout.Space(6);
         EditorGUILayout.LabelField("角色系统辅助", EditorStyles.boldLabel);
@@ -406,7 +406,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         var skillUI = FindFirstObjectByType<SkillInputUI>();
         if (skillUI != null)
         {
-            skillUI.inputWindow = skillInputWindow;
+            skillUI.inputInterval = skillInputWindow;
             EditorUtility.SetDirty(skillUI);
         }
 

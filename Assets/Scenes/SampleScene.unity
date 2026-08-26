@@ -1680,22 +1680,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   conductor: {fileID: 844974075}
-  beatmap: {fileID: 11400000, guid: 51a65c972c8d23f4ca2f4b7dff0a0615, type: 2}
+  beatmap: {fileID: 11400000, guid: fb82484bce46f8943af8fd40a08ffebe, type: 2}
   centerLine: {fileID: 746839914}
   side: 0
   spawnPoint: {fileID: 11231575}
   hitPoint: {fileID: 793847793}
   notePrefab: {fileID: 842046556123367203, guid: 05dac682af8f6bf4db52a6a7c7f8f463, type: 3}
-  leadTime: 2
+  leadTime: 4
   laneCount: 4
   laneSpacing: 1.5
-  noteRadius: 0.45
+  noteRadius: 0.6
   perfectRatioOfGood: 0.45
-  goodWindow: 0.069230765
-  perfectWindow: 0.031153843
+  goodWindow: 0.18461539
+  perfectWindow: 0.083076924
   holdSlideSettleWindow: 0.15
   holdBreakThreshold: 0.2
+  holdEarlySlideGrace: 0.18
   holdLaneTolerance: 1
+  chainTapHoldDuration: 0.4
   keys: 20000000630000006400000077000000
   useKeyboard: 1
 --- !u!4 &298479324
@@ -4037,22 +4039,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   conductor: {fileID: 844974075}
-  beatmap: {fileID: 11400000, guid: 51a65c972c8d23f4ca2f4b7dff0a0615, type: 2}
+  beatmap: {fileID: 11400000, guid: fb82484bce46f8943af8fd40a08ffebe, type: 2}
   centerLine: {fileID: 746839914}
   side: 1
   spawnPoint: {fileID: 1806613967}
   hitPoint: {fileID: 693152385}
   notePrefab: {fileID: 842046556123367203, guid: 05dac682af8f6bf4db52a6a7c7f8f463, type: 3}
-  leadTime: 2
+  leadTime: 4
   laneCount: 4
   laneSpacing: 1.5
-  noteRadius: 0.45
+  noteRadius: 0.6
   perfectRatioOfGood: 0.45
-  goodWindow: 0.069230765
-  perfectWindow: 0.031153843
+  goodWindow: 0.18461539
+  perfectWindow: 0.083076924
   holdSlideSettleWindow: 0.15
   holdBreakThreshold: 0.2
+  holdEarlySlideGrace: 0.18
   holdLaneTolerance: 1
+  chainTapHoldDuration: 0.4
   keys: 
   useKeyboard: 0
 --- !u!114 &736520633
@@ -5462,9 +5466,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawner: {fileID: 736520632}
   conductor: {fileID: 844974075}
-  beatmap: {fileID: 11400000, guid: 51a65c972c8d23f4ca2f4b7dff0a0615, type: 2}
-  aimOffset: 0
-  missChance: 0.05
+  beatmap: {fileID: 11400000, guid: fb82484bce46f8943af8fd40a08ffebe, type: 2}
+  aimOffset: 0.009000001
+  missChance: 0.4
   showVisualFeedback: 1
 --- !u!4 &890467676
 Transform:

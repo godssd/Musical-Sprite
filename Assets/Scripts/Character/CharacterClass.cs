@@ -120,17 +120,30 @@ public class CharacterClass
     }
 
     /// <summary>由 ActiveSkillRuntime 调用：标记技能是否处于进行中。
-    /// 进行中（含冷却）时即使能量再次充满也抑制冒烟（skillBusy 在 Update 中持续为真直到冷却结束）。
-    /// 冷却结束（busy=false）时不再「补发」冒烟，而是重置充满标记，让技能结束后必须重新攒满能量
-    /// 才会触发真实充满冒烟（OnEnergyFull）。满足「技能处于 CD 时不能冒烟」。
-    /// 注：BeginCast 已通过 ConsumeEnergy 把 isFullyCharged 置否；此处仅覆盖「冷却结束」边界。</summary>
+    /// 进行中（含冷却）时即使能量再次充满也抑制冒烟。
+    /// 冷却结束（busy=false）时做一次边界兜底：
+    ///   - 如果技能+CD 期间 currentEnergy 已 ≥ maxEnergy（被抑制未触发 OnEnergyFull）
+    ///     → 立刻补发一次 OnEnergyFull，保证能量满时一定会冒烟；
+    ///   - 否则按预期重置充满标记，等下一次真实跨越阈值时再触发。
+    /// 满足「技能处于 CD 时不能冒烟」+「CD 结束后若能量已满则必然冒烟（防止间歇性漏发）」。</summary>
     public void SetSkillBusy(bool busy)
     {
         if (skillBusy == busy) return;
         skillBusy = busy;
-        // 冷却结束：重置充满标记。若能量在技能期间已充满（被抑制未冒烟），
-        // 下一次 AddEnergy 真实跨越阈值时会重新触发 OnEnergyFull（真实充满冒烟），而非「补发」。
-        if (!busy) isFullyCharged = false;
+        if (!busy)
+        {
+            // 兜底补发：CD 期间能量已被加满但 isFullyCharged 仍 false（被抑制未冒烟）→ 补发一次
+            if (maxEnergy > 0f && currentEnergy >= maxEnergy - 0.0001f && !isFullyCharged)
+            {
+                isFullyCharged = true;
+                OnEnergyFull?.Invoke(characterId);
+            }
+            else
+            {
+                // 常规分支：重置充满标记
+                isFullyCharged = false;
+            }
+        }
     }
 
     /// <summary>施放主动技能时调用，扣除能量；低于上限则取消"已充满"状态（停止上浮方块表现）。</summary>
