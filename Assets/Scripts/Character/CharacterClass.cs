@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// 角色运行时实例（非 MonoBehaviour，由 CharacterDataSO 装配，战斗初始化时创建）。
