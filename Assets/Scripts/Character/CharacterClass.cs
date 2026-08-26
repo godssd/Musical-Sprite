@@ -27,6 +27,9 @@ public class CharacterClass
     public SkillSO activeSkill;
     public SkillSO passiveSkill;
 
+    // 技能冷却（秒）；由 CharacterDataSO.skillCooldown 装配。0 = 使用 SkillSO.cooldown 默认
+    public float skillCooldown = 20f;
+
     public bool HasActiveSkill => activeSkill != null;
     public bool HasPassiveSkill => passiveSkill != null;
 
@@ -48,6 +51,7 @@ public class CharacterClass
             currentHP = data.maxHP,
             activeSkill = data.activeSkill,
             passiveSkill = data.passiveSkill,
+            skillCooldown = data.skillCooldown,
         };
         c.maxEnergy = data.activeEnergyCost > 0
             ? data.activeEnergyCost

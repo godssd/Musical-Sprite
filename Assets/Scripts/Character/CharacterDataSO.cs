@@ -7,7 +7,7 @@ using UnityEngine;
 /// 玩家自身角色 isPlayer=true（不占音轨、无能量充能、走 PlayerCommand 类技能）；
 /// 队伍角色 isPlayer=false 且 laneIndex 对应其音轨（0=最底、3=最顶）。
 ///
-/// 数据来源：飞书「角色系统」表 1:1（编号 / 角色 / 职业 / hp / 战斗力 / 能力1 / 能量需求 / 过热状态）。
+/// 数据来源：飞书「角色系统」表 1:1（编号 / 角色 / 职业 / hp / 战斗力 / 能力1 / 能量需求 / 过热状态 / 技能冷却）。
 /// 运行时 HP 上限 = (玩家 hp) + (lane0 hp) + (lane1 hp) + (lane2 hp) + (lane3 hp) 之和；
 ///       战斗力 = 同样的五个 combatPower 之和（见 CharacterBattleSystem.InitializeFromData）。
 ///
@@ -55,6 +55,10 @@ public class CharacterDataSO : ScriptableObject
     [Tooltip("被动/过热技能文字描述（飞书「过热状态」原文，给玩家看的）")]
     [TextArea(2, 4)]
     public string passiveSkillDescription;
+
+    [Header("技能冷却（飞书「技能冷却」列，表格可调）")]
+    [Tooltip("释放后进入冷却的秒数。0 = 使用 SkillSO.cooldown 默认值。由 Character Importer 从 Characters.xlsx 的「技能冷却」列写入")]
+    public float skillCooldown = 20f;
 
     [Header("过热")]
     [Tooltip("预留：是否参与该 side 的过热连击统计（P1 暂未使用，默认 true）")]

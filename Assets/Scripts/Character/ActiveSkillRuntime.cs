@@ -221,7 +221,11 @@ public class ActiveSkillRuntime : MonoBehaviour
         // 彻底结算完毕：大狗缩回正常状态 + 冷却
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
-        cooldownLeft = skill.cooldown > 0f ? skill.cooldown : 20f;
+        // 优先用角色自身在 Characters 表配置的技能冷却；未配置(0)则回退 SkillSO.cooldown；再否则 20s 兜底
+        float cd = (owner != null && owner.skillCooldown > 0f) ? owner.skillCooldown
+                 : (skill != null && skill.cooldown > 0f) ? skill.cooldown
+                 : 20f;
+        cooldownLeft = cd;
     }
 
     private void FireOneShot()

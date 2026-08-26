@@ -18,6 +18,7 @@ using System.Collections.Generic;
 ///   能力1 / activeDesc    → 主动技能描述（写回 SO.activeSkillDescription）
 ///   能量需求 / activeEnergy → 主动技能能量需求（"无" / 整数）
 ///   过热状态 / passiveDesc → 被动/过热描述（写回 SO.passiveSkillDescription）
+///   技能冷却 / cooldown    → 释放后冷却秒数（写回 SO.skillCooldown；0=用 SkillSO 默认）
 ///   备注 / notes          → 仅展示，不入 SO
 ///   activeSkillId         → 反查 SkillSO 引用（可空，缺则 import 警告）
 ///   passiveSkillId        → 反查 SkillSO 引用（可空）
@@ -46,8 +47,9 @@ public class CharacterImporterWindow : EditorWindow
         GUILayout.Label("角色导入器 (Character Importer)", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
             "选择 Characters.xlsx → 解析 → 按 characterId 生成/更新 CharacterDataSO 到 Assets/Data/Characters/。\n" +
-            "支持飞书原表 1:1 列名（编号 / 角色 / 职业 / hp / 战斗力 / 能力1 / 能量需求 / 过热状态 / 备注）。\n" +
-            "若工程里已有 Skill Maker 生成的 SkillSO，可额外列 activeSkillId / passiveSkillId 自动反查。",
+            "支持飞书原表 1:1 列名（编号 / 角色 / 职业 / hp / 战斗力 / 能力1 / 能量需求 / 过热状态 / 技能冷却 / 备注）。\n" +
+            "若工程里已有 Skill Maker 生成的 SkillSO，可额外列 activeSkillId / passiveSkillId 自动反查。\n" +
+            "「技能冷却」列填秒数（如 60）；「无 / — / 空」表示用 SkillSO 默认值。",
             MessageType.Info);
 
         EditorGUILayout.BeginHorizontal();
@@ -106,6 +108,7 @@ public class CharacterImporterWindow : EditorWindow
         int iActiveDesc  = FindHeader(header, "能力1", "activedesc", "active_skill_description");
         int iActiveCost  = FindHeader(header, "能量需求", "activeenergy", "active_energy");
         int iPassiveDesc = FindHeader(header, "过热状态", "passivedesc", "passive_skill_description");
+        int iCooldown    = FindHeader(header, "技能冷却", "技能冷却（秒）", "cooldown", "skillcooldown");
         int iNotes       = FindHeader(header, "备注", "notes");
         int iActiveId    = FindHeader(header, "activeskillid");
         int iPassiveId   = FindHeader(header, "passiveskillid");
@@ -145,6 +148,9 @@ public class CharacterImporterWindow : EditorWindow
             }
             string passiveDesc = CellStr(row, iPassiveDesc, "");
 
+            // 技能冷却：数值=秒；"无"/"—"/"空" → 0（运行时回退 SkillSO.cooldown）
+            float cooldown = CellFloat(row, iCooldown, 0f);
+
             // isPlayer / laneIndex 推断
             bool isPlayer; int lane;
             if (id == 1) { isPlayer = true; lane = -1; }
@@ -173,6 +179,7 @@ public class CharacterImporterWindow : EditorWindow
             so.activeSkillDescription = activeDesc;
             so.activeEnergyCost = activeCost;
             so.passiveSkillDescription = passiveDesc;
+            so.skillCooldown = cooldown;
             so.activeSkill = string.IsNullOrEmpty(activeSkillId) ? null : FindSkill(activeSkillId);
             so.passiveSkill = string.IsNullOrEmpty(passiveSkillId) ? null : FindSkill(passiveSkillId);
             so.blockColor = CharacterPalette.GetColor(id); // 按 characterId 自动上身份色（宝宝灰/大狗橙/嘟嘟绿/爱格白/小黑黑）
