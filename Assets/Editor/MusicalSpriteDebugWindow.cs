@@ -475,33 +475,11 @@ public class MusicalSpriteDebugWindow : EditorWindow
 
     private void ApplyAll()
     {
+        // 仅把 MS Debug 参数推到运行实例（ApplyValues 已实时写入 ScoreManager / NoteSpawner / HoldNote / FeverManager.config 等），
+        // 不碰谱面、不重启战斗。用户正在调用的谱面与场上音符流保持不变（2026-08-26 Issue 3 修复）。
+        // 需要换谱面请用谱面编辑器的「生成随机测试谱面（并调用）」按钮。
         ApplyValues(true);
 
-        // 4. 重新生成谱面并重启
-        BeatmapSO newBeatmap = DemoBeatmapGenerator.CreateDemoBeatmapWithBeats(totalBeats, density);
-
-        GameManager gm = FindFirstObjectByType<GameManager>();
-        if (gm != null)
-        {
-            NoteSpawner[] spawners = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
-            foreach (var s in spawners)
-            {
-                s.beatmap = newBeatmap;
-                s.ResetSpawner();
-                EditorUtility.SetDirty(s);
-            }
-            if (gm.leftSpawner != null) gm.leftSpawner.beatmap = newBeatmap;
-            if (gm.rightSpawner != null) gm.rightSpawner.beatmap = newBeatmap;
-
-            if (gm.opponentInput != null)
-            {
-                gm.opponentInput.beatmap = newBeatmap;
-                EditorUtility.SetDirty(gm.opponentInput);
-            }
-
-            gm.RestartGame();
-        }
-
-        EditorUtility.DisplayDialog("完成", "调试参数已应用，谱面已重新生成并重启。", "确定");
+        EditorUtility.DisplayDialog("完成", "调试参数已应用，活跃谱面保持不变。", "确定");
     }
 }

@@ -104,8 +104,12 @@ public class HoldNote : MonoBehaviour
     private bool missReported = false;    // MISS 反馈是否已上报（只报一次）
     private float missShrinkSpan = 0.5f;  // 越过判定线后多少距离内完成缩小消失
 
+    [Tooltip("节点越过各自判定线后「按时间」缩小消失的时长（秒）。替代硬切隐藏，让音符是「变小」而非瞬间不见。[PLACEHOLDER 可微调]")]
+    public float holdNodeShrinkDuration = 0.25f;
+
     // 命中放大（pop）表现：命中瞬间节点球体放大并变白，随后回落到基础缩放（与点击音符"放大变白"语义一致）
     private float[] nodePop;              // 每节点弹跳计时（>0 时放大），初始化于 BuildVisuals
+    private float[] nodeShrinkStart;      // 每节点缩没动画起始时间（Time.time），-1 表示未开始，初始化于 BuildVisuals
     private float hitPopDuration = 0.18f; // 命中放大持续（秒）[PLACEHOLDER 可微调]
     private float hitPopScale = 1.35f;    // 命中峰值放大倍数 [PLACEHOLDER 可微调]
 
@@ -227,6 +231,57 @@ public class HoldNote : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 单节点可见性 + 缩没动画（2026-08-26 Issue 4 核心修复）。
+    /// 节点尚未抵达粉杠（reveal line）：保持隐藏，绝不启动缩没。
+    /// 已抵达粉杠、但尚未完全越过各自判定线（hitPositions[i].x，含命中缓冲 glowBufferDist）：
+    ///   正常显隐，scale 交给 UpdateHitPops（命中小弹跳）处理，此处不动 scale。
+    /// 已完全越过各自判定线：不再瞬间硬切隐藏，而是「按时间」把 scale 从基准缩到 0，
+    ///   时长 holdNodeShrinkDuration，缩没完成后才 disabled —— 让长按节点是「变小」而非「突然不见」。
+    /// 用各自节点的判定线（而非统一的 head judgeLineX），保证节点 i 在到达“自己”的判定线之前不被裁掉。
+    /// </summary>
+    private void UpdateNodeVisual(int i, float cx, bool litGlow)
+    {
+        if (nodeRends[i] == null) return;
+
+        bool revealed = IsBeyondLine(nodeTransforms[i].position.x, cx);
+        float nodeJudgeX = hitPositions[i].x;
+        float glowLineX = nodeJudgeX + (litGlow ? glowBufferDist : 0f);
+        bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, glowLineX);
+
+        // 尚未抵达粉杠：保持隐藏，不启动缩没
+        if (!revealed)
+        {
+            nodeRends[i].enabled = false;
+            return;
+        }
+
+        // 已抵达粉杠、但还没完全越过各自判定线：正常显隐，scale 留给 UpdateHitPops
+        if (stillBeforeJudge)
+        {
+            nodeRends[i].enabled = true;
+            return;
+        }
+
+        // 已完全越过各自判定线：启动/推进「按时间」缩没动画（替代硬切隐藏）
+        if (nodeShrinkStart[i] < 0f) nodeShrinkStart[i] = Time.time;
+        float t = (Time.time - nodeShrinkStart[i]) / Mathf.Max(holdNodeShrinkDuration, 0.0001f);
+        if (t >= 1f)
+        {
+            nodeRends[i].enabled = false;
+            nodeTransforms[i].localScale = Vector3.zero;
+            return;
+        }
+        nodeRends[i].enabled = true;
+        Vector3 baseScale = nodeBaseScales[i] * (1f - t);
+        if (nodePop[i] > 0f)
+        {
+            float sc = 1f + (hitPopScale - 1f) * nodePop[i];
+            baseScale = baseScale * sc;
+        }
+        nodeTransforms[i].localScale = baseScale;
+    }
+
     void Start()
     {
         BuildVisuals();
@@ -244,6 +299,8 @@ public class HoldNote : MonoBehaviour
         nodeCount = lanes.Length;
         nodeBaseScales = new Vector3[nodeCount];
         nodePop = new float[nodeCount];
+        nodeShrinkStart = new float[nodeCount];
+        for (int i = 0; i < nodeCount; i++) nodeShrinkStart[i] = -1f; // -1 表示尚未开始缩没
 
         // 节点圆柱（逐节点宽度：连轨节点覆盖相邻两轨，普通节点单轨）
         float r = noteRadius / 0.5f;
@@ -364,17 +421,12 @@ public class HoldNote : MonoBehaviour
 
             // 可见性：按元素"前沿"是否越过粉杠决定显示
             float cx = centerLine != null ? centerLine.currentX : 0f;
+            // 修复（2026-08-26 Issue 4）：节点可见性 + 缩没动画统一交给 UpdateNodeVisual，
+            // 逾越各自判定线后「按时间」缩小消失（holdNodeShrinkDuration），而非瞬间硬切隐藏。
             for (int i = 0; i < nodeCount; i++)
             {
                 if (nodeRends[i] != null)
-                {
-                    bool revealed = IsBeyondLine(nodeTransforms[i].position.x, cx);
-                    // 已命中或正在放大弹跳的节点：过判定线后保留一小段可见，让发白反馈被看到（2b）
-                    bool litGlow = hasLit || nodePop[i] > 0f;
-                    float glowLineX = judgeLineX + (litGlow ? glowBufferDist : 0f);
-                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, glowLineX);
-                    nodeRends[i].enabled = revealed && stillBeforeJudge;
-                }
+                    UpdateNodeVisual(i, cx, hasLit || nodePop[i] > 0f);
             }
             UpdateSegmentVisibility(cx, judgeLineX);
 
@@ -393,15 +445,17 @@ public class HoldNote : MonoBehaviour
                     onJudge?.Invoke(side, lanes[0], "MISS", hitPositions[0]);
                 }
 
-                // 所有节点都缩没后才销毁对象（期间其余节点继续逐片消失）
-                bool allGone = true;
-                for (int i = 0; i < nodeCount; i++)
-                {
-                    float past = side == 0
-                        ? (judgeLineX - nodeTransforms[i].position.x)
-                        : (nodeTransforms[i].position.x - judgeLineX);
-                    if (past < missShrinkSpan) { allGone = false; break; }
-                }
+// 所有节点都缩没后才销毁对象（期间其余节点继续逐片消失）
+            // 修复（2026-08-26 Issue 4）：逐节点用各自判定线 + 缩没动画完成作为销毁条件，
+            // 节点越过判定线后必须等 holdNodeShrinkDuration 缩没动画跑完才视为消失，避免硬切 / 过早销毁。
+            bool allGone = true;
+            for (int i = 0; i < nodeCount; i++)
+            {
+                float nodeJudgeX = hitPositions[i].x;
+                bool fullyPast = IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, nodeJudgeX);
+                if (!fullyPast) { allGone = false; break; }
+                if (nodeShrinkStart[i] < 0f || (Time.time - nodeShrinkStart[i]) < holdNodeShrinkDuration) { allGone = false; break; }
+            }
                 if (allGone)
                 {
                     finished = true;
@@ -429,16 +483,12 @@ public class HoldNote : MonoBehaviour
             UpdateAllSegments();
 
             float judgeX = judgeLineX;
+            // 修复（2026-08-26 Issue 4）：收尾阶段节点可见性 + 缩没动画同样交给 UpdateNodeVisual，
+            // 逾越各自判定线后「按时间」缩小消失，避免刚越过判定线就被销毁而看不到缩没。
             for (int i = 0; i < nodeCount; i++)
             {
                 if (nodeRends[i] != null)
-                {
-                    bool revealed = IsBeyondLine(nodeTransforms[i].position.x, centerLine != null ? centerLine.currentX : 0f);
-                    bool litGlow = hasLit || nodePop[i] > 0f;
-                    float glowLineX = judgeX + (litGlow ? glowBufferDist : 0f);
-                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, glowLineX);
-                    nodeRends[i].enabled = revealed && stillBeforeJudge;
-                }
+                    UpdateNodeVisual(i, centerLine != null ? centerLine.currentX : 0f, hasLit || nodePop[i] > 0f);
             }
             UpdateSegmentVisibility(centerLine != null ? centerLine.currentX : 0f, judgeX);
 
@@ -450,10 +500,14 @@ public class HoldNote : MonoBehaviour
             }
 
             // 结束条件：整根越过判定线（以尾节点或最前节点为准），或超过最大存活时间
+            // 修复（2026-08-26 Issue 4）：收尾阶段节点越过各自判定线后，同样要等缩没动画跑完才算消失，
+            // 否则节点刚越过判定线就被销毁、缩没动画看不到（"突然不见"）。
             bool allGone = true;
             for (int i = 0; i < nodeCount; i++)
             {
-                if (!IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, judgeX)) { allGone = false; break; }
+                float nodeJudgeX = hitPositions[i].x;
+                if (!IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, nodeJudgeX)) { allGone = false; break; }
+                if (nodeShrinkStart[i] < 0f || (Time.time - nodeShrinkStart[i]) < holdNodeShrinkDuration) { allGone = false; break; }
             }
             if (allGone || fadeTimer > maxFadeLife)
             {
@@ -585,13 +639,17 @@ public class HoldNote : MonoBehaviour
             float totalLen = dir.magnitude;
             Vector3 normDir = totalLen < 0.001f ? Vector3.right : dir.normalized;
 
+            // 修复（2026-08-26 Issue 4）：每段用自己的中点判定线（两端节点判定线中点），
+            // 而非统一的 head 判定线，避免整条段带过早/过晚被裁切。
+            float segJudgeX = (hitPositions[s].x + hitPositions[s + 1].x) * 0.5f;
+
             for (int k = 0; k < segs.Count; k++)
             {
                 if (rends[k] == null) continue;
                 // 已命中的整条链：段带过判定线后保留一小段可见，逐片发白反馈被看到（2b）。
                 // 整个 for 循环只声明一次，避免 CS0136 重名。
                 bool litGlow = hasLit;
-                float glowLineX = hideLineX + (litGlow ? glowBufferDist : 0f);
+                float glowLineX = segJudgeX + (litGlow ? glowBufferDist : 0f);
                 if (totalLen < 0.001f)
                 {
                     bool collapsedRevealed = IsBeyondLine(segs[k].position.x, revealLineX);
@@ -624,29 +682,18 @@ public class HoldNote : MonoBehaviour
     /// </summary>
     private void ApplyMissDisappear(float revealLineX, float judgeX)
     {
-        // 节点：越过判定线后逐个缩小消失
-        for (int i = 0; i < nodeCount; i++)
-        {
-            if (nodeRends[i] == null) continue;
-            bool revealed = IsBeyondLine(nodeTransforms[i].position.x, revealLineX);
-            if (!revealed) { nodeRends[i].enabled = false; continue; }
+        // 节点缩没已由 MoveAndFade 的 UpdateNodeVisual 统一处理（按时间逐节点缩小消失），
+        // 这里不再对节点做距离缩放，避免与缩没动画冲突或硬切。
 
-            float past = side == 0
-                ? (judgeX - nodeTransforms[i].position.x)
-                : (nodeTransforms[i].position.x - judgeX);
-            float shrink = past <= 0f ? 1f : 1f - Mathf.Clamp01(past / missShrinkSpan);
-
-            nodeTransforms[i].localScale = nodeBaseScales[i] * shrink;
-            SetMatAlpha(nodeMats[i], shrink);
-            nodeRends[i].enabled = shrink > 0.02f;
-        }
-
-        // 段带：同上，每个细分小片各自缩小消失
+        // 段带：每个细分小片在“越过各自段中点的判定线后”缩小消失（漏击/断连时逐段滑走消失）
         for (int s = 0; s < segmentGroups.Count; s++)
         {
             var segs = segmentGroups[s];
             var rends = segmentRendGroups[s];
             var mats = segmentMatGroups[s];
+            // 修复（2026-08-26 Issue 4）：每段用自己的中点判定线（两端节点判定线中点），
+            // 而非统一的 head 判定线，避免整条段带过早/过晚被裁切。
+            float segJudgeX = (hitPositions[s].x + hitPositions[s + 1].x) * 0.5f;
             for (int k = 0; k < segs.Count; k++)
             {
                 if (rends[k] == null) continue;
@@ -654,8 +701,8 @@ public class HoldNote : MonoBehaviour
                 if (!revealed) { rends[k].enabled = false; continue; }
 
                 float past = side == 0
-                    ? (judgeX - segs[k].position.x)
-                    : (segs[k].position.x - judgeX);
+                    ? (segJudgeX - segs[k].position.x)
+                    : (segs[k].position.x - segJudgeX);
                 float shrink = past <= 0f ? 1f : 1f - Mathf.Clamp01(past / missShrinkSpan);
 
                 // 段缩放每帧由 UpdateAllSegments 重新写回基准值，这里直接乘以收缩系数即可

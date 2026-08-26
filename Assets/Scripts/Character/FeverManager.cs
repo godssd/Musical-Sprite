@@ -36,6 +36,7 @@ public class FeverManager : MonoBehaviour
         EnsureFeverVFX();
         EnsureFeverBanner();
         EnsureEnergyVFX();
+        EnsureEnergyBar();
     }
 
     void OnDestroy()
@@ -150,5 +151,13 @@ public class FeverManager : MonoBehaviour
         if (FindFirstObjectByType<EnergyVFXPlaceholder>() != null) return;
         var go = new GameObject("EnergyVFXPlaceholder");
         go.AddComponent<EnergyVFXPlaceholder>();
+    }
+
+    /// <summary>兜底创建能量槽 UI：Unity 6 Domain Reload Off 模式下 [RuntimeInitializeOnLoadMethod] 不重跑，
+    /// 故在 Manager.Start 主动调用 EnergyBarUIController.EnsureExists()（与 EnsureEnergyVFX / EnsureFeverBanner 同模式）。</summary>
+    private void EnsureEnergyBar()
+    {
+        if (FindFirstObjectByType<EnergyBarUIController>() != null) return;
+        EnergyBarUIController.EnsureExists();
     }
 }

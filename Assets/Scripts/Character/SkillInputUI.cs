@@ -169,8 +169,12 @@ public class SkillInputUI : MonoBehaviour
             return;
         }
 
-        // 删除了角色 cube 闪烁反馈（用户 2026-08-26 反馈：按右边按键不应触发地面变大闪动）。
-        // 按钮本身有 pressedColor+popScale，无匹配时有红色错误闪烁，三档反馈已足够定位。
+        // 用户 2026-08-26 反馈：恢复「右侧按键有效前缀命中时角色 cube 呼应」反馈（曾因外部反馈误删，现恢复）。
+        // 注意：呼应 = 只脉冲发光（PulseGlow），不弹跳——弹跳是「命中音符」的语义（NoteMover.PlayHitAnimation / HoldNote.PlayHitPop），
+        // 技能按键呼应若带弹跳会与命中表现混淆，故用 PulseGlow 而非 Flash。
+        foreach (var rt in matching)
+            if (rt.marker != null) rt.marker.PulseGlow();
+
         // 完整匹配某技能 → 触发释放并立刻重置为无输入状态。
         foreach (var rt in matching)
         {

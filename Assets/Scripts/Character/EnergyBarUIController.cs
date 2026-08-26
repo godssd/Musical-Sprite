@@ -4,29 +4,36 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 主动技能能量槽 UI（2026-08-26 用户新增需求）。
+/// 主动技能能量槽 UI（2026-08-26 用户需求）。
 ///
 /// 【样式要求】
 /// - 边框棕黄色、能量条黄色；
 /// - 能量累积时 Fill 从一侧平铺到另一侧，长度随 currentEnergy/maxEnergy 平滑变化；
-/// - 满能量（OnEnergyFull）时整条能量条发光持续闪动（Fill 颜色在 fillColor 与 glowColor 间正弦振荡）；
-/// - 释放瞬间（OnEnergyDepleted）整条能量条闪白并持续衰减长度到 0（ConsumeShrinkCo）；
+/// - 满能量（OnEnergyFull）时整条能量条发光持续闪动；
+/// - 释放瞬间（OnEnergyDepleted）整条能量条闪白并持续衰减长度到 0；
 /// - 衰减结束后重新显示空 bar，等待下一次充能。
 ///
 /// 【结构】
 /// 单文件两个类：
-/// - EnergyBarUI          : 单根能量槽的视图/动画组件（含 Fill 锚点控制、闪动/衰减协程）；
+/// - EnergyBarUI          : 单根能量槽的视图/动画组件（Fill 锚点控制、闪动/衰减协程）；
 /// - EnergyBarUIController: 全局管理器，启动时为左/右玩家 4 个队伍角色（共 8 个）各建一根能量槽，
 ///                          自动跟随 CharacterRoster（OnRosterChanged 时清掉旧 bar 并重建），
 ///                          与 EnergyVFXPlaceholder 一样的「运行时兜底创建」模式。
 ///
-/// 挂载：场景任意 GameObject（场景无实例时由 RuntimeInitializeOnLoadMethod 兜底自建）。
+/// 挂载：场景任意 GameObject（场景无实例时由 FeverManager.EnsureEnergyBar() 主动兜底创建）。
+///
+/// 【布局：方案 B（2026-08-26 用户确认）】
+/// 不固定在屏幕底部一条带，而是「跟随每个队伍角色 cube」：
+/// 每根能量槽在 ScreenSpaceOverlay Canvas 下，每帧把其 owner 角色 cube 的世界坐标
+/// 投影到屏幕，锚定在 cube 投影点正下方 verticalOffset 像素处，并随角色移动。
+/// 尺寸固定、永远可见、不被场地几何遮挡。
 /// </summary>
 public class EnergyBarUIController : MonoBehaviour
 {
-    /// <summary>场景加载后若无 EnergyBarUIController 实例则自动创建（与 FeverManager.EnsureEnergyVFX 同套路）。</summary>
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void EnsureExists()
+    /// <summary>由 FeverManager.EnsureEnergyBar() 在 Start 阶段主动调用一次，确保场景里有且仅有一个 EnergyBarUIController。
+    /// 设计原因：Unity 6 默认 Domain Reload Off 模式下 [RuntimeInitializeOnLoadMethod] 不会在每次 EnterPlayMode 重跑，
+    /// 故不使用该套路，改用 Manager.Start 主动兜底的方式（与 EnsureFeverVFX / EnsureFeverBanner 一致）。</summary>
+    public static void EnsureExists()
     {
         if (FindFirstObjectByType<EnergyBarUIController>() != null) return;
         var go = new GameObject("EnergyBarUIController");
@@ -36,14 +43,10 @@ public class EnergyBarUIController : MonoBehaviour
     [Header("整体配置（运行时创建 Canvas）")]
     [Tooltip("Canvas sortingOrder，建议在 HPBarCanvas 之上一层（避免被血条遮挡）")]
     public int canvasSortingOrder = 55;
-    [Tooltip("距离屏幕底部的偏移（像素，正值向上）")]
-    public float bottomOffset = 36f;
-    [Tooltip("左右玩家 4 个能量槽的总横向跨度（像素）")]
-    public float rowWidth = 880f;
     [Tooltip("每根能量槽宽度 / 高度（像素）")]
     public Vector2 barSize = new Vector2(208f, 36f);
-    [Tooltip("单侧 4 根能量槽之间的水平间距（像素）")]
-    public float barSpacing = 16f;
+    [Tooltip("能量槽中心相对角色 cube 屏幕投影点的向下偏移（像素，正值向下）")]
+    public float verticalOffset = 60f;
 
     [Header("主题色（用户指定：边框棕黄、能量条黄色）")]
     [Tooltip("未填充区颜色（同时充当「边框」视觉）—— 棕黄色")]
@@ -65,8 +68,7 @@ public class EnergyBarUIController : MonoBehaviour
 
     // —— 运行时状态 —— //
     private GameObject canvasGo;
-    private RectTransform rowLeft;   // 屏幕底部左侧容器（4 个能量槽）
-    private RectTransform rowRight;  // 屏幕底部右侧容器（4 个能量槽）
+    private RectTransform canvasRect;
     private readonly List<EnergyBarUI> bars = new List<EnergyBarUI>();
     private readonly HashSet<CharacterClass> subscribed = new HashSet<CharacterClass>();
 
@@ -83,10 +85,16 @@ public class EnergyBarUIController : MonoBehaviour
         UnsubscribeAll();
     }
 
+    void LateUpdate()
+    {
+        // 方案 B：每帧把每根 bar 跟随到其角色 cube 的屏幕投影位置（正下方 verticalOffset）。
+        for (int i = 0; i < bars.Count; i++)
+            if (bars[i] != null) bars[i].FollowOwner();
+    }
+
     /// <summary>花名册变化时清掉所有旧 bar 并重新为在场角色建立（支持重启用）。</summary>
     private void OnRosterChanged()
     {
-        // 延迟一帧重建 —— CharacterBattleSystem 在同一帧内多次触发（RegisterXxx 各调用一次）
         if (!isPendingRebuild)
         {
             isPendingRebuild = true;
@@ -124,20 +132,18 @@ public class EnergyBarUIController : MonoBehaviour
 
     private void CreateBar(int side, int lane, CharacterClass owner)
     {
-        RectTransform row = side == 0 ? rowLeft : rowRight;
-        if (row == null) return;                                   // Canvas 还没建好（边界）
+        Transform cubeTr = FindCubeMarker(side, lane);
+        if (cubeTr == null)
+            Debug.LogWarning($"[EnergyBarUI] 未找到 side={side} lane={lane} 的 cube marker，能量槽将等待其出现后再跟随。");
 
-        // —— 创建 Box（棕黄色背景当作「边框/未填充区」）—— //
         GameObject boxGo = new GameObject($"EnergyBar_S{side}_L{lane}_{owner.displayName}");
-        boxGo.transform.SetParent(row, false);
+        boxGo.transform.SetParent(canvasGo.transform, false);
         RectTransform boxRect = boxGo.AddComponent<RectTransform>();
-        boxRect.anchorMin = new Vector2(0f, 0f);
-        boxRect.anchorMax = new Vector2(0f, 0f);
-        boxRect.pivot = new Vector2(0f, 1f);
+        boxRect.anchorMin = new Vector2(0.5f, 0.5f);
+        boxRect.anchorMax = new Vector2(0.5f, 0.5f);
+        boxRect.pivot = new Vector2(0.5f, 0.5f);
         boxRect.sizeDelta = barSize;
-        // 横排位置：单侧 4 个，从 row 锚点开始向右逐个排列
-        float perBarStep = barSize.x + barSpacing;
-        boxRect.anchoredPosition = new Vector2(lane * perBarStep, 0f);
+        boxRect.anchoredPosition = Vector2.zero; // 初始在中心，LateUpdate 会跟随到 cube 位置
 
         // 背景（棕黄色 = "边框/未填充区" 视觉）
         GameObject bgGo = new GameObject("Background");
@@ -159,15 +165,12 @@ public class EnergyBarUIController : MonoBehaviour
         fillImage.color = fillColor;
         fillImage.raycastTarget = false;
 
-        // 在 Background 之上绘制 Fill
         fillGo.transform.SetSiblingIndex(bgGo.transform.GetSiblingIndex() + 1);
 
-        // —— 安装 UI 行为组件 —— //
         EnergyBarUI bar = boxGo.AddComponent<EnergyBarUI>();
-        bar.Setup(owner, side, lane, fillImage, fillRect, this);
+        bar.Setup(owner, side, lane, fillImage, fillRect, this, cubeTr);
         bars.Add(bar);
 
-        // —— 订阅事件 —— //
         owner.OnEnergyFull += bar.OnEnergyFull;
         owner.OnEnergyDepleted += bar.OnEnergyDepleted;
         subscribed.Add(owner);
@@ -207,29 +210,22 @@ public class EnergyBarUIController : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
         canvasGo.AddComponent<GraphicRaycaster>();
 
-        // 屏幕底部居中的一条横向容器，分左右镜像
-        float rowH = barSize.y + 24f;
-        GameObject rowLeftGo = new GameObject("RowLeft");
-        rowLeftGo.transform.SetParent(canvasGo.transform, false);
-        rowLeft = rowLeftGo.AddComponent<RectTransform>();
-        rowLeft.anchorMin = new Vector2(0.5f, 0f);
-        rowLeft.anchorMax = new Vector2(0.5f, 0f);
-        rowLeft.pivot = new Vector2(1f, 1f);                                       // 左行：pivot 在右，便于靠拢中央
-        rowLeft.sizeDelta = new Vector2(rowWidth, rowH);
-        // 整行向左平移 (rowWidth/2 + 中线间距)
-        rowLeft.anchoredPosition = new Vector2(-12f, bottomOffset);                // 中线左侧 12px
+        canvasRect = canvasGo.GetComponent<RectTransform>();
+    }
 
-        GameObject rowRightGo = new GameObject("RowRight");
-        rowRightGo.transform.SetParent(canvasGo.transform, false);
-        rowRight = rowRightGo.AddComponent<RectTransform>();
-        rowRight.anchorMin = new Vector2(0.5f, 0f);
-        rowRight.anchorMax = new Vector2(0.5f, 0f);
-        rowRight.pivot = new Vector2(0f, 1f);                                       // 右行：pivot 在左
-        rowRight.sizeDelta = new Vector2(rowWidth, rowH);
-        rowRight.anchoredPosition = new Vector2(12f, bottomOffset);                  // 中线右侧 12px
+    /// <summary>按 (side, lane) 查找对应的角色 cube（CharacterCubeMarker），用于能量槽跟随。</summary>
+    public static Transform FindCubeMarker(int side, int lane)
+    {
+        var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
+        foreach (var m in markers)
+        {
+            if (m.side == side && m.laneIndex == lane) return m.transform;
+        }
+        return null;
     }
 
     // —— 公开给 EnergyBarUI 访问主题色的快捷接口 —— //
+    public RectTransform CanvasRect => canvasRect;
     public Color FillColor   => fillColor;
     public Color BorderColor => borderColor;
     public Color GlowColor   => glowColor;
@@ -248,19 +244,19 @@ public class EnergyBarUI : MonoBehaviour
 
     private Image fillImage;
     private RectTransform fillRect;
+    private RectTransform boxRect;
     private EnergyBarUIController controller;
+    private Transform ownerCube;
 
     private float currentFillAmount = 0f;     // 当前显示长度 (0..1)
     private float targetFillAmount  = 0f;     // 目标长度（随 currentEnergy/maxEnergy 变化）
     private bool  isConsuming = false;        // 释放衰减协程进行中
-    private Coroutine fullGlowCo;
     private Coroutine consumeCo;
-    private float lastConsumeSnapRatio = 0f;  // ConsumeShrinkCo 起始长度
 
     /// <summary>由 EnergyBarUIController.CreateBar 调用：绑定数据和主题。</summary>
     public void Setup(CharacterClass owner, int side, int lane,
                       Image fillImage, RectTransform fillRect,
-                      EnergyBarUIController controller)
+                      EnergyBarUIController controller, Transform ownerCube)
     {
         this.owner = owner;
         this.side = side;
@@ -268,10 +264,10 @@ public class EnergyBarUI : MonoBehaviour
         this.fillImage = fillImage;
         this.fillRect = fillRect;
         this.controller = controller;
+        this.ownerCube = ownerCube;
+        this.boxRect = GetComponent<RectTransform>();
 
-        // 初始 Fill 锚点 = 0（左侧玩家从左向右长；右侧玩家从右向左长）
         ApplyFillAnchors(0f);
-        // 颜色初始化为主题 fillColor
         if (fillImage != null) fillImage.color = controller.FillColor;
     }
 
@@ -286,20 +282,35 @@ public class EnergyBarUI : MonoBehaviour
         }
         else
         {
-            // 让 bar 立即追上 energy 实际比例（重启用或新玩家加入时补正）
             targetFillAmount = Mathf.Clamp01(owner.currentEnergy / owner.maxEnergy);
         }
 
-        // MoveTowards 平滑
         currentFillAmount = Mathf.MoveTowards(currentFillAmount, targetFillAmount,
                                               controller.FillSpeed * Time.deltaTime);
         ApplyFillAnchors(currentFillAmount);
 
-        // 满能闪动阶段：维持 Fill 颜色振荡（不重启协程，节省 GC）
         if (owner.isFullyCharged && !isConsuming)
             UpdateFullGlowFillColor();
         else if (fillImage != null && owner.currentEnergy < owner.maxEnergy)
             fillImage.color = controller.FillColor;
+    }
+
+    /// <summary>方案 B：每帧把本 bar 跟随到其角色 cube 的屏幕投影位置（正下方 verticalOffset）。</summary>
+    public void FollowOwner()
+    {
+        if (boxRect == null || controller == null) return;
+        if (ownerCube == null) ownerCube = EnergyBarUIController.FindCubeMarker(side, laneIndex);
+        if (ownerCube == null) { boxRect.gameObject.SetActive(false); return; }
+
+        Camera cam = Camera.main;
+        if (cam == null) { boxRect.gameObject.SetActive(false); return; }
+
+        Vector3 screen = cam.WorldToScreenPoint(ownerCube.position);
+        if (screen.z < 0f) { boxRect.gameObject.SetActive(false); return; }  // cube 在相机背后
+
+        boxRect.gameObject.SetActive(true);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(controller.CanvasRect, screen, null, out Vector2 local);
+        boxRect.anchoredPosition = local + new Vector2(0f, -controller.verticalOffset);
     }
 
     /// <summary>调整 Fill 的 anchor 比例，模拟「变长」效果。</summary>
@@ -327,20 +338,17 @@ public class EnergyBarUI : MonoBehaviour
     {
         if (fillImage == null || controller == null) return;
         float cycle = Mathf.Max(0.05f, controller.GlowCycleSeconds);
-        float k = (Time.time % cycle) / cycle;                  // 0..1
-        float wave = Mathf.Sin(k * Mathf.PI * 2f) * 0.5f + 0.5f; // 0..1..0
+        float k = (Time.time % cycle) / cycle;
+        float wave = Mathf.Sin(k * Mathf.PI * 2f) * 0.5f + 0.5f;
         fillImage.color = Color.Lerp(controller.FillColor, controller.GlowColor, wave);
     }
 
-    /// <summary>事件回调：能量充满 → 启动持续发光闪动（实际每帧在 Update 中更新）。</summary>
     public void OnEnergyFull(int characterId)
     {
         if (owner == null || !owner.isFullyCharged) return;
         if (isConsuming) return;                                  // 衰减阶段不接受「满能量」事件覆盖
-        // 直接让下一帧 Update 检测到 isFullyCharged 并切到 UpdateFullGlowFillColor
     }
 
-    /// <summary>事件回调：能量耗尽（大招释放）→ 启动闪白 + 长度衰减协程。</summary>
     public void OnEnergyDepleted(int characterId)
     {
         if (controller == null) return;
@@ -352,7 +360,6 @@ public class EnergyBarUI : MonoBehaviour
     private IEnumerator ConsumeShrinkCo(float startRatio)
     {
         isConsuming = true;
-        // 关键：第一帧立刻把 Fill 显示长度锁成 startRatio（防止 Update 与协程打架）
         currentFillAmount = Mathf.Max(currentFillAmount, startRatio);
         ApplyFillAnchors(currentFillAmount);
 
@@ -362,22 +369,18 @@ public class EnergyBarUI : MonoBehaviour
         {
             t += Time.deltaTime;
             float k = Mathf.Clamp01(t / dur);
-            // 长度：从 startRatio 平滑到 0（用 smoothstep 让头部/尾部更柔和）
             float len = Mathf.Lerp(startRatio, 0f, Mathf.SmoothStep(0f, 1f, k));
             ApplyFillAnchors(len);
             currentFillAmount = len;
-            // 颜色：起始 flash 到白色 → 渐变到 releaseFadeColor → 到 borderColor
             if (fillImage != null)
             {
                 if (k < 0.20f)
                 {
-                    // 前 20%：闪白（白 → 释放 fade 色）
                     float kk = k / 0.20f;
                     fillImage.color = Color.Lerp(controller.GlowColor, controller.ReleaseFadeColor, kk);
                 }
                 else
                 {
-                    // 后 80%：渐变到 borderColor（让消耗后视觉回归空槽）
                     float kk = (k - 0.20f) / 0.80f;
                     fillImage.color = Color.Lerp(controller.ReleaseFadeColor, controller.BorderColor, kk);
                 }
@@ -385,7 +388,6 @@ public class EnergyBarUI : MonoBehaviour
             yield return null;
         }
 
-        // 收尾
         currentFillAmount = 0f;
         targetFillAmount = 0f;
         ApplyFillAnchors(0f);
