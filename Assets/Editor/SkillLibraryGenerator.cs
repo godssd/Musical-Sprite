@@ -55,27 +55,27 @@ public static class SkillLibraryGenerator
         created += Make("dog_howl", "大狗叫",
             "（3）大狗叫（将即将出现的音符附魔，每成功完成一个音符，增加分贝，结算完后发出狗叫按照分贝惊吓对手降低对方连击数）（必杀）",
             300f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Left, SkillInputStep.Left },   // AAA → ←←←
-            6, 3, 60f, "DogHowl", "{}", dir);
+            6, 3, "DogHowl", "{}", dir);
 
         created += Make("dudu_heal", "嘟嘟治疗",
             "（4）将即将出现的音符（6 个）附魔，每成功完成一个音符，就对自己进行一点生命治愈（3 点生命）（必杀）",
             200f, new SkillInputStep[] { SkillInputStep.Right, SkillInputStep.Down, SkillInputStep.Right }, // CBC → →↓→
-            6, 3, 60f, "Heal", "{\"healPerNote\":3,\"slowRegenSeconds\":9}", dir);
+            6, 3, "Heal", "{\"healPerNote\":3,\"slowRegenSeconds\":9}", dir);
 
         created += Make("aige_bomb", "爱格炸弹雨",
             "（5）炸弹雨（将即将出现的音符（3 个）附魔，每完成一个音符就朝对手随机投射一颗小型炸弹（10 点伤害），造成直接生命伤害直到结算完毕）（必杀）",
             280f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Down, SkillInputStep.Left },    // ABA → ←↓←
-            3, 3, 60f, "Bomb", "{\"bombDamage\":10}", dir);
+            3, 3, "Bomb", "{\"bombDamage\":10}", dir);
 
         created += Make("xiaohei_clear", "小黑清屏",
             "（6）将身前区域的所有音符全部电没（视为完成最佳击中自己获得所有大招充能）之后陷入 3 秒沉睡",
             330f, new SkillInputStep[] { SkillInputStep.Down, SkillInputStep.Right, SkillInputStep.Left },   // BCA → ↓→←
-            0, 0, 60f, "ClearScreen", "{\"sleepSeconds\":3}", dir);
+            0, 0, "ClearScreen", "{\"sleepSeconds\":3}", dir);
 
         created += Make("baby_damage_reduce", "宝宝全体防御减伤",
             "获得 5% 的伤害减少；超级过热：获得 15% 的伤害减少",
             0f, new SkillInputStep[0],
-            0, 0, 0f, "ReduceIncomingDamagePercent", "{\"percent\":0.05}", dir);
+            0, 0, "ReduceIncomingDamagePercent", "{\"percent\":0.05}", dir);
 
         if (!silent)
             AssetDatabase.SaveAssets();
@@ -113,7 +113,7 @@ public static class SkillLibraryGenerator
     }
 
     static int Make(string skillId, string displayName, string desc, float energyCost,
-        SkillInputStep[] seq, int charmed, int reducePer, float cooldown, string effectType, string effectParams, string dir)
+        SkillInputStep[] seq, int charmed, int reducePer, string effectType, string effectParams, string dir)
     {
         string path = dir + "/" + skillId + ".asset";
         if (File.Exists(path))
@@ -139,7 +139,6 @@ public static class SkillLibraryGenerator
         so.charmedNoteCount = charmed;
         so.onlyCountNonMiss = true;
         so.reduceComboPerCharmedNote = reducePer;
-        so.cooldown = cooldown;
         so.releaseGlow = new Color(1f, 0.85f, 0.2f);
         so.effectType = effectType;
         so.effectParamsJSON = effectParams;

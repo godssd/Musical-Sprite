@@ -1,5 +1,8 @@
 using UnityEngine;
 using System.Linq;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// 角色战斗系统（P2）。
@@ -77,9 +80,22 @@ public class CharacterBattleSystem : MonoBehaviour
         bool usedDefault = false;
         if (allCharacters == null || allCharacters.Length == 0)
         {
-            // 临时默认数据（飞书 1:1：宝宝 + 大狗 + 嘟嘟 + 爱格 + 小黑），让系统可启动
-            allCharacters = BuildDefaultCharacterArray();
-            usedDefault = true;
+#if UNITY_EDITOR
+            // 场景未手动配置 allCharacters：优先加载「角色导入器」的输出目录（Assets/Data/Characters），
+            // 让用户在表格里改的 hp / 战斗力 / 技能冷却 等真正生效，而不是被写死的默认数据覆盖。
+            var imported = LoadImportedCharacters();
+            if (imported != null && imported.Length > 0)
+            {
+                allCharacters = imported;
+                Debug.Log($"[CharacterBattleSystem] 未手动配置 allCharacters，已从 Assets/Data/Characters 加载 {imported.Length} 个已导入角色（表格改动生效）。");
+            }
+            else
+#endif
+            {
+                // 临时默认数据（飞书 1:1：宝宝 + 大狗 + 嘟嘟 + 爱格 + 小黑），让系统可启动
+                allCharacters = BuildDefaultCharacterArray();
+                usedDefault = true;
+            }
         }
 
         // 不变量：同一 side 内，一个 characterId 不能被两个 lane 重复上场（两侧互不影响，镜像阵容合法）。
@@ -210,6 +226,28 @@ public class CharacterBattleSystem : MonoBehaviour
         foreach (var m in markers) { ColorMarker(m); n++; }
         Debug.Log($"[CharacterBattleSystem] 已按角色身份色上色 x {n} 个方块（宝宝灰 / 大狗橙 / 嘟嘟绿 / 爱格白 / 小黑黑）");
     }
+
+#if UNITY_EDITOR
+    /// <summary>从「角色导入器」的输出目录（Assets/Data/Characters）加载所有已导入的 CharacterDataSO。
+    /// 仅 Editor 下可用（依赖 AssetDatabase）；玩家构建里走 #else 的默认数据或场景里手动配好的 allCharacters。</summary>
+    private static CharacterDataSO[] LoadImportedCharacters()
+    {
+        string dir = "Assets/Data/Characters";
+        if (!AssetDatabase.IsValidFolder(dir)) return null;
+        var guids = AssetDatabase.FindAssets("t:CharacterDataSO", new[] { dir });
+        var list = new System.Collections.Generic.List<CharacterDataSO>();
+        foreach (var g in guids)
+        {
+            var so = AssetDatabase.LoadAssetAtPath<CharacterDataSO>(AssetDatabase.GUIDToAssetPath(g));
+            if (so == null) continue;
+            // 只加载游戏内 5 名角色（characterId 1=玩家，2..5=四条音轨）。
+            // 忽略飞书表里更靠后的占位/未启用行（它们被导入器以 laneIndex=-1 标记为"仅花名册"，不会进战斗）。
+            if (so.characterId < 1 || so.characterId > 5) continue;
+            list.Add(so);
+        }
+        return list.Count > 0 ? list.ToArray() : null;
+    }
+#endif
 
     private float GuessLaneSpacing()
     {

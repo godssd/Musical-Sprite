@@ -81,7 +81,6 @@ public class SkillMakerWindow : EditorWindow
         EditorGUILayout.LabelField("输入方式", InputString(s.inputSequence));
         EditorGUILayout.LabelField("附魔音符数", s.charmedNoteCount.ToString());
         EditorGUILayout.LabelField("每完成削减连击", "× " + s.reduceComboPerCharmedNote);
-        EditorGUILayout.LabelField("冷却(s)", s.cooldown.ToString());
         EditorGUILayout.LabelField("效果路由", s.effectType);
         EditorGUILayout.LabelField("资源路径", AssetDatabase.GetAssetPath(s));
 

@@ -57,7 +57,7 @@ public class CharacterDataSO : ScriptableObject
     public string passiveSkillDescription;
 
     [Header("技能冷却（飞书「技能冷却」列，表格可调）")]
-    [Tooltip("释放后进入冷却的秒数。0 = 使用 SkillSO.cooldown 默认值。由 Character Importer 从 Characters.xlsx 的「技能冷却」列写入")]
+    [Tooltip("释放后进入冷却的秒数。完全由角色文档决定（技能库 SkillSO 不再持有 cooldown）。0 / 未填 = 用兜底 20s。由 Character Importer 从 Characters.xlsx 的「技能冷却」列写入")]
     public float skillCooldown = 20f;
 
     [Header("过热")]

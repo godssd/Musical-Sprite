@@ -23,9 +23,7 @@ public class SkillSO : ScriptableObject
     [TextArea(2, 4)]
     public string description;
 
-    [Header("消耗与冷却")]
-    [Tooltip("冷却时间（秒）。释放后进入冷却")]
-    public float cooldown = 20f;
+    [Header("消耗")]
     [Tooltip("仅 Active 需要：释放所需能量（= 角色能量上限）。其余填 0")]
     public float energyCost = 0f;
 

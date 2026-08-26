@@ -17,7 +17,7 @@ using System.Collections.Generic;
 ///   hp / 血量                  → 角色血量
 ///   战斗力 / combat            → 战斗力数值
 ///   能力1 / activeDesc         → 主动技能(必杀)描述（写回 SO.activeSkillDescription）
-///   能力1.技能冷却 / cooldown   → 释放后冷却秒数（写回 SO.skillCooldown；0=用 SkillSO 默认）
+///   能力1.技能冷却 / cooldown   → 释放后冷却秒数（写回 SO.skillCooldown；0=用兜底 20s。技能库 SkillSO 不再持有 cooldown）
 ///   能力1.技能引用ID / activeSkillId → 反查 SkillSO 引用（可空，缺则 import 警告）
 ///   能力1.能量需求 / activeEnergy → 主动技能能量需求（"无" / 整数）
 ///   能力1.过热状态 / passiveDesc → 过热描述（写回 SO.passiveSkillDescription）
@@ -54,7 +54,7 @@ public class CharacterImporterWindow : EditorWindow
             "选择 Characters.xlsx → 解析 → 按 characterId 生成/更新 CharacterDataSO 到 Assets/Data/Characters/。\n" +
             "支持飞书新表列名（编号 / 角色 / 角色类型 / 职业 / hp / 战斗力 / 能力1 / 技能冷却 / 技能引用ID / 能量需求 / 过热状态 / 超级过热状态 / 输入方式；能力2/能力3 同名列为预留）。\n" +
             "若工程里已有 Skill Maker 生成的 SkillSO，可在「技能引用ID」列填 skillId 自动反查（英文 activeSkillId 旧列名仍兼容）。\n" +
-            "「技能冷却」列填秒数（如 60）；「无 / — / 空」表示用 SkillSO 默认值。导入器只消费「能力1」那一组列。",
+            "「技能冷却」列填秒数（如 10）；「无 / — / 空」表示用兜底 20s（技能库 SkillSO 已不再持有 cooldown，冷却完全由本列决定）。导入器只消费「能力1」那一组列。",
             MessageType.Info);
 
         EditorGUILayout.BeginHorizontal();
@@ -140,6 +140,15 @@ public class CharacterImporterWindow : EditorWindow
                 continue;
             }
 
+            // 跳过空白行（飞书表里占位的空行：编号有，但「角色」与「hp」都空 → 不是真实角色，避免生成垃圾资产）
+            string rawName = (iName >= 0 && iName < row.Count) ? (row[iName] ?? "") : "";
+            string rawHp = (iHp >= 0 && iHp < row.Count) ? (row[iHp] ?? "") : "";
+            if (string.IsNullOrWhiteSpace(rawName) && string.IsNullOrWhiteSpace(rawHp))
+            {
+                Debug.Log($"[CharacterImporter] 行 {r + 1} 为空行（无角色名且无 hp），跳过");
+                continue;
+            }
+
             string name = CellStr(row, iName, "Char" + id);
             string profession = CellStr(row, iProfession, "");
             int hp = CellInt(row, iHp, 100);
@@ -157,7 +166,7 @@ public class CharacterImporterWindow : EditorWindow
             if (!string.IsNullOrEmpty(superDesc))
                 passiveDesc = (passiveDesc + "\n" + superDesc).Trim();
 
-            // 技能冷却：数值=秒；"无"/"—"/"空" → 0（运行时回退 SkillSO.cooldown）
+            // 技能冷却：数值=秒；"无"/"—"/"空" → 0（运行时回退兜底 20s）。完全来自角色文档，技能库 SkillSO 已不再持有 cooldown。
             float cooldown = CellFloat(row, iCooldown, 0f);
 
             // isPlayer / laneIndex 推断
@@ -166,8 +175,9 @@ public class CharacterImporterWindow : EditorWindow
             else if (id >= 2 && id <= 5) { isPlayer = false; lane = id - 2; }
             else
             {
+                // 飞书表里更靠后的角色（编号 >5）：当前游戏只上场 5 名，标记为"仅花名册"（不占音轨、不进战斗），避免误占 lane 0
                 isPlayer = (iType >= 0 && iType < row.Count && row[iType].Trim().ToLower() == "player");
-                lane = (iLane >= 0 && iLane < row.Count && !string.IsNullOrWhiteSpace(row[iLane])) ? CellInt(row, iLane, 0) : 0;
+                lane = (iLane >= 0 && iLane < row.Count && !string.IsNullOrWhiteSpace(row[iLane])) ? CellInt(row, iLane, -1) : -1;
             }
 
             string activeSkillId = CellStr(row, iActiveId, "");
@@ -175,6 +185,7 @@ public class CharacterImporterWindow : EditorWindow
 
             string path = dir + "/" + Sanitize(name) + "_" + id + ".asset";
             CharacterDataSO so = AssetDatabase.LoadAssetAtPath<CharacterDataSO>(path);
+            if (so == null) so = FindExistingByCharacterId(dir, id); // 同 id 但文件名不同（避免重复创建垃圾资产）
             bool isNew = so == null;
             if (isNew) so = ScriptableObject.CreateInstance<CharacterDataSO>();
 
@@ -253,4 +264,17 @@ public class CharacterImporterWindow : EditorWindow
     }
 
     private static string Sanitize(string s) => string.IsNullOrEmpty(s) ? "Char" : s.Replace(" ", "_");
+
+    /// <summary>在 dir 内按 characterId 查找已存在的 CharacterDataSO（文件名与 characterId 不一定同名时用）。</summary>
+    private static CharacterDataSO FindExistingByCharacterId(string dir, int id)
+    {
+        if (!AssetDatabase.IsValidFolder(dir)) return null;
+        var guids = AssetDatabase.FindAssets("t:CharacterDataSO", new[] { dir });
+        foreach (var g in guids)
+        {
+            var so = AssetDatabase.LoadAssetAtPath<CharacterDataSO>(AssetDatabase.GUIDToAssetPath(g));
+            if (so != null && so.characterId == id) return so;
+        }
+        return null;
+    }
 }

@@ -27,7 +27,7 @@ public class CharacterClass
     public SkillSO activeSkill;
     public SkillSO passiveSkill;
 
-    // 技能冷却（秒）；由 CharacterDataSO.skillCooldown 装配。0 = 使用 SkillSO.cooldown 默认
+    // 技能冷却（秒）；由 CharacterDataSO.skillCooldown 装配（完全来自角色文档，技能库不再持有 cooldown）。0 = 兜底 20s
     public float skillCooldown = 20f;
 
     public bool HasActiveSkill => activeSkill != null;

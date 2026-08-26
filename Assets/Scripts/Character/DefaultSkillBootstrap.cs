@@ -63,7 +63,6 @@ public static class DefaultSkillBootstrap
         s.skillId = string.IsNullOrEmpty(skillId) ? ("default_active_" + display.Replace(" ", "_")) : skillId;
         s.displayName = display + " (占位)";
         s.description = desc;
-        s.cooldown = 0f;
         s.energyCost = energyCost;
         s.effectType = effectType;
         s.effectParamsJSON = paramsJson;
@@ -76,7 +75,6 @@ public static class DefaultSkillBootstrap
         s.skillId = string.IsNullOrEmpty(skillId) ? ("default_passive_" + display.Replace(" ", "_")) : skillId;
         s.displayName = display + " (占位)";
         s.description = desc;
-        s.cooldown = 0f;
         s.energyCost = 0f;
         s.effectType = effectType;
         s.effectParamsJSON = paramsJson;
@@ -158,7 +156,6 @@ public static class DefaultSkillBootstrap
             c.activeSkill.inputSequence = ParseInputMethod(row.inputMethod);
             c.activeSkill.charmedNoteCount = 6;
             c.activeSkill.reduceComboPerCharmedNote = 3;
-            c.activeSkill.cooldown = 60f; // 必杀级冷却
             if (!string.IsNullOrEmpty(row.activeSkillId)) c.activeSkill.skillId = row.activeSkillId;
         }
         c.feverEligible = true;

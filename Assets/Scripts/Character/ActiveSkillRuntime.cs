@@ -221,10 +221,9 @@ public class ActiveSkillRuntime : MonoBehaviour
         // 彻底结算完毕：大狗缩回正常状态 + 冷却
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
-        // 优先用角色自身在 Characters 表配置的技能冷却；未配置(0)则回退 SkillSO.cooldown；再否则 20s 兜底
-        float cd = (owner != null && owner.skillCooldown > 0f) ? owner.skillCooldown
-                 : (skill != null && skill.cooldown > 0f) ? skill.cooldown
-                 : 20f;
+        // 技能冷却完全由角色文档决定（Characters.xlsx「技能冷却」列 → CharacterDataSO.skillCooldown → owner.skillCooldown）。
+        // 技能库(SkillSO)不再持有 cooldown。0/未填 = 用兜底 20s（请在角色文档填写具体值）。
+        float cd = (owner != null && owner.skillCooldown > 0f) ? owner.skillCooldown : 20f;
         cooldownLeft = cd;
     }
 
