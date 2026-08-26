@@ -88,6 +88,8 @@ public class NoteSpawner : MonoBehaviour
 
     // 输入事件：side, lane。任意输入（键盘/触摸/AI）触发轨道时调用
     public event Action<int, int> OnLanePress;
+    // 轨道“松开”事件：side, lane。长按松开时触发，用于指示灯保持亮、松开即灭。
+    public event Action<int, int> OnLaneUp;
 
     private List<Note> activeNotes = new List<Note>();
     private List<HoldNote> activeHoldNotes = new List<HoldNote>();
@@ -242,6 +244,7 @@ public class NoteSpawner : MonoBehaviour
     public void TriggerLaneUp(int lane)
     {
         heldLanes.Remove(lane);
+        OnLaneUp?.Invoke(side, lane);
     }
 
     private void SpawnNote(NoteData data)

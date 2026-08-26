@@ -30,11 +30,13 @@ public class BattleVisualsController : MonoBehaviour
         if (leftSpawner != null)
         {
             leftSpawner.OnLanePress += OnLanePress;
+            leftSpawner.OnLaneUp += OnLaneUp;
             leftSpawner.OnJudge += OnJudge;
         }
         if (rightSpawner != null)
         {
             rightSpawner.OnLanePress += OnLanePress;
+            rightSpawner.OnLaneUp += OnLaneUp;
             rightSpawner.OnJudge += OnJudge;
         }
 
@@ -58,11 +60,13 @@ public class BattleVisualsController : MonoBehaviour
         if (leftSpawner != null)
         {
             leftSpawner.OnLanePress -= OnLanePress;
+            leftSpawner.OnLaneUp -= OnLaneUp;
             leftSpawner.OnJudge -= OnJudge;
         }
         if (rightSpawner != null)
         {
             rightSpawner.OnLanePress -= OnLanePress;
+            rightSpawner.OnLaneUp -= OnLaneUp;
             rightSpawner.OnJudge -= OnJudge;
         }
     }
@@ -73,11 +77,21 @@ public class BattleVisualsController : MonoBehaviour
         int idx = side * 4 + lane;
         if (idx < indicators.Length && indicators[idx] != null)
         {
-            indicators[idx].Flash();
+            indicators[idx].Hold(true);   // 按下即亮，长按期间持续亮
         }
         // 按键阶段只闪轨道指示灯；角色 cube 的发光表现现在只来自主动技能相关事件
         // （技能输入按键按对: SkillInputUI；被附魔音符命中: ActiveSkillRuntime.PulseGlow），
         // 普通音符命中不再触发角色发光。
+    }
+
+    private void OnLaneUp(int side, int lane)
+    {
+        if (lane < 0 || lane >= 4 || side < 0 || side > 1) return;
+        int idx = side * 4 + lane;
+        if (idx < indicators.Length && indicators[idx] != null)
+        {
+            indicators[idx].Hold(false);  // 松开即灭
+        }
     }
 
     private void OnJudge(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)

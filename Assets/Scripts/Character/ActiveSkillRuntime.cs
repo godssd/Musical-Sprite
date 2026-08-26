@@ -17,7 +17,7 @@ using System.Collections.Generic;
 /// 设计要点：
 /// - 释放时机 = 等所有被附魔单位（含整条 Hold/Linked 逐节点）结算完毕（命中=成功，断连/漏击=失败），立刻释放狗叫。
 /// - 效果强度（连击削减量）= 成功数 * reduceComboPerCharmedNote；效果强度取决于玩家的命中而非时间。
-/// - 附魔单位记账：tap 占 1，N 节点 Hold 占 N（一个节点 = 1 个附魔单位），统一用 charmUnitsOutstanding 计数。
+/// - 附魔单位记账：直接跟踪每个被附魔的音符对象（tap=Note / 长按=HoldNote）是否仍在场，集合为空且配额关闭才结算，避免「计数口径」与「场上实际音符数」错位导致提前放狗叫（Issue 1 修复）。
 /// - 多角色技能同时释放：NoteSpawner 用 FIFO（最旧请求优先）+ 不可二次附魔守卫，后放的技能自动排到后面的音符。
 /// - 附魔音符命中时：变大的大狗闪烁（PulseGlow），由 success 分支触发；被附魔音符命中不闪该 lane 角色（见 BattleVisualsController）。
 /// </summary>
@@ -41,12 +41,12 @@ public class ActiveSkillRuntime : MonoBehaviour
 
     /// <summary>供 SkillInputUI 判断：该技能是否需要"能量满"才能开始输入。无能量技能=false（随时可输入）。</summary>
     public bool NeedsEnergyGate => needsEnergy;
-    private int charmQuotaTotal;          // 本次释放可附魔的总单位数（= skill.charmedNoteCount）
-    private int charmUnitsOutstanding;    // 已分配给本技能、但尚未结算的附魔单位数（tap +-1, hold +-N）
-    private int completedCount;           // 成功数（非 MISS）
+    private int charmQuotaTotal;          // 本次释放可附魔的总单位数（= skill.charmedNoteCount，仅参考/调试）
+    private HashSet<Note> charmedNotes = new HashSet<Note>();          // 当前已被附魔、尚未结算消失的普通音符对象
+    private HashSet<HoldNote> charmedHolds = new HashSet<HoldNote>();  // 当前已被附魔、尚未整体结算消失的长按音符对象
+    private int completedCount;           // 成功数（非 MISS，用于削减对方连击的强度）
     private bool requestClosed;           // spawner 端配额是否已全部分配完
     private float cooldownLeft;
-    private float settleIdleTimer;        // 兜底：已无 outstanding 但配额未用完（歌结束），超过 0.6s 强制 Settle
 
     public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever, SkillSO skill, float cooldown, bool needsEnergy, SkillInputStep[] inputSequence)
     {
@@ -75,20 +75,14 @@ public class ActiveSkillRuntime : MonoBehaviour
             return;
         }
 
-        // 安全兜底（仅在舞台真的没有可附魔音符时触发，避免「歌里剩下的音符 < charmedNoteCount」导致永久卡死）：
-        // 已无 outstanding 附魔单位，但请求尚未关闭（配额没用完）-> 等待 0.6s 仍无新音符 -> 强制释放（按真实完成数结算）。
-        if ((phase == Phase.Grow || phase == Phase.Charming) && charmUnitsOutstanding == 0 && !requestClosed)
+        // 安全兜底：仅在「谱面已彻底结束（所有音符生成并消失，IsFinished）但仍有被附魔音符对象因异常未回调结算」时，
+        // 才强制结算放狗叫。绝不在音符仍在进行中时强制释放——避免「场上还有附魔音符就提前叫」（用户重点关切）。
+        // 正常流程由 TrySettleFromCharm 在「所有被附魔音符对象都已结算消失 + 配额关闭」时驱动 Settle。
+        if ((phase == Phase.Grow || phase == Phase.Charming)
+            && (charmedNotes.Count > 0 || charmedHolds.Count > 0)
+            && ownerSpawner != null && ownerSpawner.IsFinished)
         {
-            settleIdleTimer += Time.deltaTime;
-            if (settleIdleTimer > 0.6f)
-            {
-                settleIdleTimer = 0f;
-                if (phase != Phase.Releasing && phase != Phase.Cooldown) Settle();
-            }
-        }
-        else
-        {
-            settleIdleTimer = 0f;
+            if (phase != Phase.Releasing && phase != Phase.Cooldown) Settle();
         }
     }
 
@@ -102,9 +96,9 @@ public class ActiveSkillRuntime : MonoBehaviour
 
         phase = Phase.Grow;
         completedCount = 0;
-        charmUnitsOutstanding = 0;
+        charmedNotes.Clear();
+        charmedHolds.Clear();
         requestClosed = false;
-        settleIdleTimer = 0f;
 
         // 释放成功：需要能量的技能立刻清空能量（冒气停止）；无能量技能跳过充能/清空流程与表现
         if (owner != null)
@@ -127,8 +121,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     public void OnNoteCharmed(Note n)
     {
         if (n == null) return;
-        charmUnitsOutstanding++;
-        settleIdleTimer = 0f;
+        charmedNotes.Add(n);
     }
 
     /// <summary>spawner 端把本技能的 activeCharms 条目移除时回调（配额用完，或该请求被作废清理）。</summary>
@@ -142,14 +135,14 @@ public class ActiveSkillRuntime : MonoBehaviour
     public void OnHoldCharmed(HoldNote hn, int nodeCount)
     {
         if (hn == null || nodeCount <= 0) return;
-        charmUnitsOutstanding += nodeCount;
-        settleIdleTimer = 0f;
+        // 整条长按链作为一个对象跟踪；节点数只用于后续削减强度参考，不再参与结算时机计数。
+        charmedHolds.Add(hn);
     }
 
     /// <summary>被附魔的普通 tap 音符结算（命中/MISS/消失）时由 Note 调用。success=true 表示非 MISS。</summary>
     public void OnCharmedNoteResolved(Note n, bool success)
     {
-        charmUnitsOutstanding = Mathf.Max(0, charmUnitsOutstanding - 1);
+        charmedNotes.Remove(n);
         if (success) completedCount++;
         if (phase == Phase.Grow) phase = Phase.Charming;
         if (success && (phase == Phase.Grow || phase == Phase.Charming) && marker != null) marker.PulseGlow();
@@ -157,32 +150,33 @@ public class ActiveSkillRuntime : MonoBehaviour
     }
 
     /// <summary>被附魔的 Hold/Linked 某节点成功结算（CLEAR/头节点命中）时由 HoldNote 逐节点调用。</summary>
+    // 长按逐节点成功：只更新「成功数」与「附魔命中闪烁」；不触发结算（整条链结束由 OnCharmHoldResolved 统一结算）。
     public void OnCharmNodeSuccess()
     {
-        charmUnitsOutstanding = Mathf.Max(0, charmUnitsOutstanding - 1);
         completedCount++;
         if (phase == Phase.Grow) phase = Phase.Charming;
         if ((phase == Phase.Grow || phase == Phase.Charming) && marker != null) marker.PulseGlow();
-        TrySettleFromCharm();
     }
 
     /// <summary>被附魔的 Hold/Linked 某节点失败结算（断连/漏击）时由 HoldNote 逐节点调用。</summary>
     public void OnCharmNodeFail()
     {
-        charmUnitsOutstanding = Mathf.Max(0, charmUnitsOutstanding - 1);
         if (phase == Phase.Grow) phase = Phase.Charming;
+    }
+
+    /// <summary>整条被附魔的长按链真正结算完毕（命中/断连/漏击后销毁）时由 HoldNote 调用：从集合中移除并触发结算判定。</summary>
+    public void OnCharmHoldResolved(HoldNote hn)
+    {
+        charmedHolds.Remove(hn);
         TrySettleFromCharm();
     }
 
-    /// <summary>所有附魔单位都被消化 + spawner 配额全部用完 -> 立刻 Settle；否则重置 idle 计时等待剩下的。</summary>
+    /// <summary>所有附魔音符对象都已结算消失（集合空），且 spawner 配额已分配完 -> 立刻 Settle；否则等待剩下的。</summary>
     private void TrySettleFromCharm()
     {
         if (phase != Phase.Grow && phase != Phase.Charming) return;
-        if (charmUnitsOutstanding == 0)
-        {
-            if (requestClosed) Settle();
-            else settleIdleTimer = 0f;  // 等 0.6s（可能有后续音符被附魔）
-        }
+        if (requestClosed && charmedNotes.Count == 0 && charmedHolds.Count == 0)
+            Settle();
     }
 
     /// <summary>由 NoteSpawner.RequestCharm 调用，记录本技能可附魔的总名额（参考用）。</summary>

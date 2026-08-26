@@ -10,16 +10,22 @@ using System.Collections.Generic;
 ///   - 每按对一个键 → 对应角色 cube 亮闪一次（CharacterCubeMarker.Flash）；
 ///   - 完整序列按对 → 该角色立刻进入释放（ActiveSkillRuntime.BeginCast：变大发光 → 附魔 6 音符 → 音波削减对方连击）。
 /// 右侧三个触摸/点击按键 ← / ↓ / → 是释放输入口（功能需求表里 A/B/C 的语义映射为 ←/↓/→）；
-    /// 键盘也支持 ←/↓/→ 与 A/B/C（S/D）互通，共用同一组 SkillInputStep。
+/// 键盘也支持 ←/↓/→ 与 A/B/C（S/D）互通，共用同一组 SkillInputStep。
 ///
-/// 能量满是「必要不充分」条件：未充满时按对序列只会亮闪，不会释放。
+/// 输入规则（防 bug，Issue 2 修复）：
+///   - 全局输入缓冲 buffer：按下的步骤按顺序累积；只有「buffer 恰好等于某角色技能完整序列」才释放。
+///   - ① 时间间隔：相邻两次输入超过 inputInterval → 立刻清空缓冲，回到无任何输入状态。
+///   - ② 无匹配：把当前步追加后仍不是任何角色技能序列的有效前缀（即没有任何人物应闪烁）→ 立刻清空，回到无输入状态（并红色错误闪烁提示）。
+///   - ③ 成功释放：buffer 恰好等于某（能量已满的）角色技能完整序列 → 触发释放并立刻清空缓冲。
+/// 能量未满的技能不参与匹配（与「能量满才响应」一致）；只有「当前缓冲是该角色序列的有效前缀」时对应角色才闪烁，避免按错乱闪。
 ///
 /// 挂载：场景任意 GO；ScoreManager/FeverManager 启动后会自动补建。
 /// </summary>
 public class SkillInputUI : MonoBehaviour
 {
-    [Header("节流")]
-    public float inputWindow = 1.5f;        // 序列时间窗（秒）
+    [Header("输入缓冲")]
+    [Tooltip("序列最大时间间隔（秒）：相邻两次输入超过该间隔即视为超时，立刻重置为无输入状态")]
+    public float inputInterval = 1.2f;
 
     [Header("主题色（右侧按键反馈）")]
     public Color pressedColor = new Color(1f, 0.9f, 0.2f, 1f);
@@ -42,16 +48,11 @@ public class SkillInputUI : MonoBehaviour
     private readonly string[] skillLabels = { "←", "↓", "→" };
     // 触摸按钮：按下 idx 0/1/2 → 直接对应 Left/Down/Right（不需要再走 KeyToStep 二次映射）
     private readonly SkillInputStep[] touchSteps = { SkillInputStep.Left, SkillInputStep.Down, SkillInputStep.Right };
-    private Dictionary<string, int> progress = new Dictionary<string, int>();   // 运行时唯一键 -> 已按对步数
-    private Dictionary<string, float> lastInput = new Dictionary<string, float>();
-
-    /// <summary>每个 ActiveSkillRuntime 的唯一定位键（characterId + skillId + 实例），使同一角色多个主动技能互不干扰。</summary>
-    private string Key(ActiveSkillRuntime rt)
-    {
-        string sid = (rt.SkillRef != null) ? rt.SkillRef.skillId : "_";
-        return rt.owner.characterId + "_" + sid + "_" + rt.GetInstanceID();
-    }
     private Coroutine[] popCo = new Coroutine[3];
+
+    // 全局输入缓冲：按顺序累积玩家按下的技能步骤；匹配某角色完整序列才释放。
+    private List<SkillInputStep> buffer = new List<SkillInputStep>();
+    private float lastInputTime = -999f;
 
     void Start()
     {
@@ -121,19 +122,6 @@ public class SkillInputUI : MonoBehaviour
 
     void Update()
     {
-        // 序列时间窗超时 → 重置进度
-        var runtimes = FindObjectsByType<ActiveSkillRuntime>(FindObjectsSortMode.None);
-        foreach (var rt in runtimes)
-        {
-            if (rt.ownerSide != 0 || rt.owner == null) continue;
-            string key = Key(rt);
-            if (progress.ContainsKey(key) && progress[key] > 0)
-            {
-                float last = lastInput.ContainsKey(key) ? lastInput[key] : -99f;
-                if (Time.time - last > inputWindow) progress[key] = 0;
-            }
-        }
-
         // 键盘监听：←/↓/→ 直接对应，键盘 A/B/C/W/S/D 复用同一组（玩家既可键入箭头，也可沿用 A/S/D 的左下右肌肉记忆）
         foreach (KeyCode k in new[] {
                      KeyCode.LeftArrow, KeyCode.DownArrow, KeyCode.RightArrow,
@@ -147,44 +135,71 @@ public class SkillInputUI : MonoBehaviour
         }
     }
 
-    /// <summary>按下一个技能输入步：对每个「可释放」的己方角色运行时匹配其 inputSequence。
-    /// 能量技能需能量满才能释放（但序列可正常亮闪）；无能量技能（玩家主动）随时可输入。</summary>
+    /// <summary>按下一个技能输入步：维护全局有序缓冲，按「限时 + 有效前缀 + 完整匹配」规则处理，避免输入错误引发 bug。</summary>
     private void OnKeyPressed(SkillInputStep step)
     {
+        float now = Time.time;
+
+        // ① 超时：与上次输入间隔超过 inputInterval → 立刻重置为无输入状态（当前这步作为新起点）。
+        if (buffer.Count > 0 && (now - lastInputTime) > inputInterval)
+            buffer.Clear();
+
+        buffer.Add(step);
+        lastInputTime = now;
+
+        // 收集「当前缓冲是有效前缀」且可响应（Standby、能量门槛满足）的运行时
         var runtimes = FindObjectsByType<ActiveSkillRuntime>(FindObjectsSortMode.None);
+        List<ActiveSkillRuntime> matching = new List<ActiveSkillRuntime>();
         foreach (var rt in runtimes)
         {
             if (rt.ownerSide != 0 || rt.owner == null || !rt.owner.HasActiveSkill) continue;
-            if (rt.NeedsEnergyGate && !rt.owner.isFullyCharged) continue;   // 仅能量技能卡能量门槛；无能量技能随时可输入
+            if (rt.phase != ActiveSkillRuntime.Phase.Standby) continue;            // 进行中/冷却中不响应
+            if (rt.NeedsEnergyGate && !rt.owner.isFullyCharged) continue;         // 仅能量技能卡能量门槛
             var seq = rt.inputSequence;
             if (seq == null || seq.Length == 0) continue;
+            if (IsPrefix(seq, buffer)) matching.Add(rt);
+        }
 
-            string key = Key(rt);
-            int p = progress.ContainsKey(key) ? progress[key] : 0;
-            if (p < seq.Length && seq[p] == step)
+        if (matching.Count == 0)
+        {
+            // ② 没有任何角色符合当前输入（无人闪烁）→ 立刻重置为无输入状态（并红色错误闪烁提示）。
+            buffer.Clear();
+            lastInputTime = -999f;
+            FlashError();
+            return;
+        }
+
+        // 有效前缀：让匹配到的角色闪烁（只有当前缓冲是该角色序列前缀时才闪，避免按错乱闪）。
+        foreach (var rt in matching)
+            if (rt.marker != null) rt.marker.Flash();
+
+        // ③ 完整匹配某技能 → 触发释放并立刻重置为无输入状态。
+        foreach (var rt in matching)
+        {
+            if (buffer.Count == rt.inputSequence.Length)
             {
-                p++;
-                progress[key] = p;
-                lastInput[key] = Time.time;
-                if (rt.marker != null) rt.marker.Flash();   // 对应角色亮闪一次
-                if (p >= seq.Length)
-                {
-                    rt.BeginCast();
-                    progress[key] = 0;
-                }
-            }
-            else
-            {
-                progress[key] = 0;   // 按错：重置该运行时进度
+                rt.BeginCast();
+                buffer.Clear();
+                lastInputTime = -999f;
+                return;
             }
         }
+    }
+
+    /// <summary>buf 是否为 seq 的前缀（长度可小于 seq，但逐项必须相等）。</summary>
+    private bool IsPrefix(SkillInputStep[] seq, List<SkillInputStep> buf)
+    {
+        if (buf.Count > seq.Length) return false;
+        for (int i = 0; i < buf.Count; i++)
+            if (seq[i] != buf[i]) return false;
+        return true;
     }
 
     public void OnButtonPushed(int idx)
     {
         if (idx < 0 || idx > 2) return;
         OnKeyPressed(touchSteps[idx]);                 // 触摸/点击：直接对应 Left/Down/Right
-        Flash(touchSteps[idx]);                          // 同组按钮一起高亮
+        Flash(touchSteps[idx]);                         // 同组按钮一起高亮
     }
 
     private void FlashButtonByKey(KeyCode k)
@@ -210,6 +225,12 @@ public class SkillInputUI : MonoBehaviour
         Pop(idx);
         CancelInvoke(nameof(ClearFlash));
         Invoke(nameof(ClearFlash), flashDuration);
+    }
+
+    /// <summary>错误反馈：三个按键一起红色闪烁一下，提示「这一步不被接受、已重置」。</summary>
+    private void FlashError()
+    {
+        for (int i = 0; i < 3; i++) Flash(i, errorColor);
     }
 
     private void Pop(int idx)

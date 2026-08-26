@@ -404,6 +404,7 @@ public class ScoreManager : MonoBehaviour
             case "CLEAR": delta = clearScore; break;
             case "PASS": delta = passScore; break;
             case "MISS": delta = missScore; break;
+            case "BREAK": delta = 0; break;   // 连轨中途断连：不计分、不充能（与 MISS 同效，仅不清零连击）
         }
 
         // MISS：不加分、不充能（仅由 FeverManager 的 OnNoteMiss 断连）

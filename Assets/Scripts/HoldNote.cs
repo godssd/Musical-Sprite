@@ -109,6 +109,11 @@ public class HoldNote : MonoBehaviour
     private float hitPopDuration = 0.18f; // 命中放大持续（秒）[PLACEHOLDER 可微调]
     private float hitPopScale = 1.35f;    // 命中峰值放大倍数 [PLACEHOLDER 可微调]
 
+    // 命中后可见性缓冲：已命中（hasLit）或正在放大弹跳（nodePop>0）的元素，
+    // 越过判定线后保留 glowBufferDist 一小段才隐藏，让"发白+放大"命中反馈能被看到（2b 修复）。
+    private bool hasLit = false;          // 头节点命中后置 true，整条链命中期间保持
+    private float glowBufferDist = 0.6f;  // 判定线后方保留距离（单位）[PLACEHOLDER 可微调]
+
     // 已完成的段数（段 i 表示 node[i] -> node[i+1]）
     private int completedSegments = 0;
     private int nodeCount;
@@ -364,7 +369,10 @@ public class HoldNote : MonoBehaviour
                 if (nodeRends[i] != null)
                 {
                     bool revealed = IsBeyondLine(nodeTransforms[i].position.x, cx);
-                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, judgeLineX);
+                    // 已命中或正在放大弹跳的节点：过判定线后保留一小段可见，让发白反馈被看到（2b）
+                    bool litGlow = hasLit || nodePop[i] > 0f;
+                    float glowLineX = judgeLineX + (litGlow ? glowBufferDist : 0f);
+                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, glowLineX);
                     nodeRends[i].enabled = revealed && stillBeforeJudge;
                 }
             }
@@ -426,7 +434,9 @@ public class HoldNote : MonoBehaviour
                 if (nodeRends[i] != null)
                 {
                     bool revealed = IsBeyondLine(nodeTransforms[i].position.x, centerLine != null ? centerLine.currentX : 0f);
-                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, judgeX);
+                    bool litGlow = hasLit || nodePop[i] > 0f;
+                    float glowLineX = judgeX + (litGlow ? glowBufferDist : 0f);
+                    bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, glowLineX);
                     nodeRends[i].enabled = revealed && stillBeforeJudge;
                 }
             }
@@ -578,10 +588,14 @@ public class HoldNote : MonoBehaviour
             for (int k = 0; k < segs.Count; k++)
             {
                 if (rends[k] == null) continue;
+                // 已命中的整条链：段带过判定线后保留一小段可见，逐片发白反馈被看到（2b）。
+                // 整个 for 循环只声明一次，避免 CS0136 重名。
+                bool litGlow = hasLit;
+                float glowLineX = hideLineX + (litGlow ? glowBufferDist : 0f);
                 if (totalLen < 0.001f)
                 {
                     bool collapsedRevealed = IsBeyondLine(segs[k].position.x, revealLineX);
-                    bool collapsedBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, noteRadius, hideLineX);
+                    bool collapsedBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, noteRadius, glowLineX);
                     rends[k].enabled = collapsedRevealed && collapsedBeforeJudge;
                     continue;
                 }
@@ -597,7 +611,7 @@ public class HoldNote : MonoBehaviour
                     halfLenX = segs[k].localScale.y * 0.5f * Mathf.Abs(normDir.x);
                 }
                 bool revealed = IsBeyondLine(segs[k].position.x, revealLineX);
-                bool stillBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, halfLenX, hideLineX);
+                bool stillBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, halfLenX, glowLineX);
                 rends[k].enabled = revealed && stillBeforeJudge;
             }
         }
@@ -741,37 +755,28 @@ public class HoldNote : MonoBehaviour
         // 普通单轨 Hold：沿用浮点容差跟随（laneTolerance）
         if (laneSpan <= 1) return IsAnyHeldLaneClose(reqLaneF);
 
-        // 连轨 Hold：
+        // 连轨 Hold：以"合法轨道集合"判定——玩家按住集合中任一轨道即视为跟随成功。
+        // 集合 = 起点节点覆盖轨道 ∪ 终点节点覆盖轨道 ∪ 路径扫过的整数轨道。
+        // 与静止宽音符语义一致（按覆盖的任一条轨都合法），消除"必须按时序从 from 滑到 to"的反直觉约束。
         int seg = CurrentSegmentIndex(songTime);
         int fromLane = lanes[seg];
         int toLane = lanes[seg + 1];
+        int fromSpan = NodeSpan(seg);     // 节点 seg 宽度：1=单轨，2=连轨覆盖相邻两轨
+        int toSpan = NodeSpan(seg + 1);   // 节点 seg+1 宽度
 
-        // 静止宽音符（连轨但不滑动，两节点同轨）：覆盖的两条相邻轨任一即可（R4 宽一轨）
-        if (fromLane == toLane)
-        {
-            return spawner.heldLanes.Contains(fromLane) || spawner.heldLanes.Contains(fromLane + 1);
-        }
+        System.Collections.Generic.HashSet<int> validSet = new System.Collections.Generic.HashSet<int>();
+        // 起点节点覆盖：[fromLane, fromLane + fromSpan - 1]
+        for (int x = fromLane; x < fromLane + fromSpan; x++) validSet.Add(x);
+        // 终点节点覆盖：[toLane, toLane + toSpan - 1]
+        for (int x = toLane; x < toLane + toSpan; x++) validSet.Add(x);
+        // 路径上扫过的整数轨道（含两端 + 中间跨越）
+        int lo = Mathf.Min(fromLane, toLane);
+        int hi = Mathf.Max(fromLane, toLane);
+        for (int x = lo; x <= hi; x++) validSet.Add(x);
 
-        // 滑动段（如 第2轨→第3轨）：在节点时间中点"强制切换"应被按住的轨道，要求玩家跟随滑动。
-        // 前半段（songTime<midTime）主按 fromLane；后半段（songTime>=midTime）主按 toLane。
-        // 双向容错，各管中点一侧（不是单纯调宽严，而是补齐"过早"这一维）：
-        // - 过早：比中点提前 earlySlideGrace 之内就滑到 toLane（提前完成滑动），容忍；
-        // - 过晚（停滞）：比中点滞后 slideSettleWindow 之内仍停在 fromLane（或已到 toLane），容忍。
-        float midTime = (times[seg] + times[seg + 1]) * 0.5f;
-        int phaseLane = songTime < midTime ? fromLane : toLane;
-        if (spawner.heldLanes.Contains(phaseLane)) return true;
-
-        if (songTime < midTime)
-        {
-            // 过早滑动容错：提前完成滑动（已进入下一轨）且在中点前 earlySlideGrace 内
-            if ((midTime - songTime) <= earlySlideGrace && spawner.heldLanes.Contains(toLane)) return true;
-        }
-        else
-        {
-            // 过晚/停滞容错：与原有 slideSettleWindow 一致
-            if ((songTime - midTime) <= slideSettleWindow
-                && (spawner.heldLanes.Contains(fromLane) || spawner.heldLanes.Contains(toLane))) return true;
-        }
+        // 玩家按住的任一轨道在集合内即合法
+        foreach (int held in spawner.heldLanes)
+            if (validSet.Contains(held)) return true;
         return false;
     }
 
@@ -890,6 +895,7 @@ public class HoldNote : MonoBehaviour
         string rank = absDt <= perfectWindow ? "PERFECT" : "GOOD";
 
         // 命中反馈：head 变白 + 放大弹跳
+        hasLit = true;
         PlayHitPop(0);
 
         onJudge?.Invoke(side, lanes[0], rank, hitPositions[0]);
@@ -907,10 +913,11 @@ public class HoldNote : MonoBehaviour
         // 由 MoveAndFade 每帧调用 ApplyMissDisappear 处理，而不是整条统一缩小。
         missMode = true;
 
-        // 通知 charm owner：整条链漏击（所有节点均失败）
+        // 通知 charm owner：整条链漏击（所有节点均失败）；整条结算消失后从附魔集合移除。
         if (charmOwner != null)
         {
             for (int k = 0; k < nodeCount; k++) charmOwner.OnCharmNodeFail();
+            charmOwner.OnCharmHoldResolved(this);
             charmOwner = null;
         }
     }
@@ -922,15 +929,18 @@ public class HoldNote : MonoBehaviour
         fadeTimer = -1f;     // 走漏击"逐段滑过判定线缩小"路径（与 MissHead 一致）
         missMode = true;     // 同上：由 MoveAndFade 的 ApplyMissDisappear 处理滑走消失
         missReported = true; // 关键：阻止 MoveAndFade 的 missMode 分支重复上报 MISS（避免一次断连两个 MISS）
-        // 唯一一次评价：在最后成功节点处报 MISS
+        // 唯一一次评价：在最后成功节点处报 BREAK（非 MISS）。
+        // BREAK 与 MISS 的区别：MISS 会清零连击（普通漏击），BREAK 表示「已命中若干节点后中途断连」，
+        // 不应把前面已完成的节点的连击清零（Issue 3）。计分/过热判定均按「失败」处理（与 MISS 同效）。
         int lastNode = Mathf.Max(0, completedSegments);
-        onJudge?.Invoke(side, lanes[lastNode], "MISS", hitPositions[lastNode]);
+        onJudge?.Invoke(side, lanes[lastNode], "BREAK", hitPositions[lastNode]);
 
-        // 通知 charm owner：头节点 + completedSegments 段已成功，剩余节点失败
+        // 通知 charm owner：头节点 + completedSegments 段已成功，剩余节点失败；整条结算消失后从附魔集合移除。
         if (charmOwner != null)
         {
             int fails = nodeCount - 1 - completedSegments;
             for (int k = 0; k < fails; k++) charmOwner.OnCharmNodeFail();
+            charmOwner.OnCharmHoldResolved(this);
             charmOwner = null;
         }
     }
@@ -948,9 +958,10 @@ public class HoldNote : MonoBehaviour
         // 最后一段 CLEAR 已在 Judge 循环中于尾节点处上报，这里不再重复上报
 
         // 通知 charm owner：整条链完整成功。
-        // 头节点（StartHold）+ 每段 CLEAR 已逐节点上报成功，此处只需断开引用。
+        // 头节点（StartHold）+ 每段 CLEAR 已逐节点上报成功；此处整条结算消失后从附魔集合移除。
         if (charmOwner != null)
         {
+            charmOwner.OnCharmHoldResolved(this);
             charmOwner = null;
         }
     }

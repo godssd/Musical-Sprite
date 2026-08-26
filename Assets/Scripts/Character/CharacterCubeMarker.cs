@@ -112,7 +112,7 @@ public class CharacterCubeMarker : MonoBehaviour
         float t = 0f;
         float dur = 0.15f;
         Vector3 from = transform.localScale;
-        SetEmission(releaseGlow);
+        // 附魔期间「平时不亮」，只保持变大；命中闪烁由 PulseGlow 负责（Issue 1）。
         while (t < dur)
         {
             t += Time.deltaTime;
@@ -162,10 +162,10 @@ public class CharacterCubeMarker : MonoBehaviour
 
     private System.Collections.IEnumerator PulseCo()
     {
-        // 在 steady releaseGlow 基础上短暂提亮，再回落
+        // 命中闪烁：在黑色（平时不亮）基础上短暂提亮，再回落到黑色。
         SetEmission(releaseGlow * 2.6f);
         yield return new WaitForSeconds(0.09f);
-        SetEmission(releaseGlow);
+        SetEmission(Color.black);
         pulseCo = null;
     }
 }

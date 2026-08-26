@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// 轨道指示灯（角色前的竖直线）。
-/// 按键/触摸时短暂发光并放大。
+/// 按键/触摸时短暂发光并放大；按住期间持续亮（Hold），松开即灭。
+/// 提示灯渲染队列抬到连轨连线之上（renderQueue=3050），避免被连线遮挡。
 /// </summary>
 public class LaneIndicator : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class LaneIndicator : MonoBehaviour
 
     private float timer = 0f;
     private bool isFlashing = false;
+    private bool isHeld = false;            // 当前是否处于"按住保持亮"状态
     private Vector3 baseScale;
 
     void Start()
@@ -26,6 +28,11 @@ public class LaneIndicator : MonoBehaviour
 
     void Update()
     {
+        if (targetRenderer == null) return;
+        // 提示灯层级：每帧确保渲染在连轨连线之前（连线默认 Transparent=3000）。
+        // 用 material getter 拿到运行时实例再设，不污染材质资产文件。
+        targetRenderer.material.renderQueue = 3050;
+
         if (isFlashing)
         {
             timer -= Time.deltaTime;
@@ -38,11 +45,14 @@ public class LaneIndicator : MonoBehaviour
 
             if (timer <= 0f)
             {
-                SetIdle();
+                // flash 结束：仍按住则保持亮，否则回 idle
+                if (isHeld) SetHeldLit();
+                else SetIdle();
             }
         }
     }
 
+    /// <summary>点按瞬间闪烁（保留原行为）。</summary>
     public void Flash()
     {
         if (targetRenderer == null) return;
@@ -55,11 +65,44 @@ public class LaneIndicator : MonoBehaviour
         transform.localScale = flashScale;
     }
 
+    /// <summary>按住保持亮 / 松开灭。点按与长按都适用：按下亮、松开灭，长按期间持续亮。</summary>
+    public void Hold(bool on)
+    {
+        if (targetRenderer == null) return;
+
+        isHeld = on;
+        if (on)
+        {
+            // 按下立即进入"亮"状态（带一次弹跳反馈）
+            timer = flashDuration;
+            isFlashing = true;
+            targetRenderer.material = activeMaterial;
+            Vector3 flashScale = baseScale;
+            flashScale.y *= popScale;
+            transform.localScale = flashScale;
+        }
+        else
+        {
+            SetIdle();
+        }
+    }
+
+    /// <summary>flash 结束后仍被按住时保持常亮（不灭）。</summary>
+    private void SetHeldLit()
+    {
+        if (targetRenderer == null) return;
+        isFlashing = false;
+        transform.localScale = baseScale;
+        if (activeMaterial != null)
+            targetRenderer.material = activeMaterial;
+    }
+
     private void SetIdle()
     {
         if (targetRenderer == null) return;
 
         isFlashing = false;
+        isHeld = false;            // 防御：回 idle 时清掉按住状态
         transform.localScale = baseScale;
 
         if (idleMaterial != null)

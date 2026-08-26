@@ -47,7 +47,8 @@ public class FeverManager : MonoBehaviour
 
     private void HandleJudge(int side, int lane, string rank, Vector3 pos, UnityEngine.Object source)
     {
-        if (rank == "MISS")
+        // BREAK = 连轨音符中途断连（已命中若干节点）：视为失败，重置过热连击（与 MISS 同效）。
+        if (rank == "MISS" || rank == "BREAK")
             OnNoteMiss(side);
         else
             OnNoteHit(side);

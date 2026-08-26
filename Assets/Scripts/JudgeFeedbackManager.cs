@@ -49,6 +49,10 @@ public class JudgeFeedbackManager : MonoBehaviour
                 prefab = missPrefab;
                 color = missColor;
                 break;
+            case "BREAK":   // 连轨中途断连：飘字显示为 MISS（语义同失败，但不清零连击）
+                prefab = missPrefab;
+                color = missColor;
+                break;
         }
 
         bool isRuntimeTemplate = prefab == null;
@@ -86,6 +90,7 @@ public class JudgeFeedbackManager : MonoBehaviour
             case "CLEAR":   rankScale = 0.42f; break;
             case "PASS":    rankScale = 0.4f; break;
             case "MISS":    rankScale = 0.3f; break;
+            case "BREAK":   rankScale = 0.3f; break;
         }
         go.transform.localScale *= rankScale;
 
@@ -93,11 +98,11 @@ public class JudgeFeedbackManager : MonoBehaviour
         JudgeFeedbackItem item = go.GetComponent<JudgeFeedbackItem>();
         if (item == null) item = go.AddComponent<JudgeFeedbackItem>();
 
-        // 设置文字内容
+        // 设置文字内容（BREAK 断连在飘字上显示为 MISS）
         Text uiText = go.GetComponentInChildren<Text>();
         if (uiText != null)
         {
-            uiText.text = rank;
+            uiText.text = (rank == "BREAK") ? "MISS" : rank;
             uiText.color = color;
         }
     }
