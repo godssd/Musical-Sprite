@@ -852,20 +852,11 @@ namespace MusicalSprite.Editor
 
                 // 注：播放头命中检测已提升到上方（高优先级），这里不再重复
 
-            // 右键：优先命中"链接线"则断连；其次删除标记；再次收尾整条活动链；最后删除音符
+            // 右键：优先命中"链接线"则断连；其次收尾整条活动链；最后删除音符
+            // 注意：标记删除仅限标记条内的三角旗标（MouseDown 标记条分支），
+            //       轨道区白线整列不再拦截右键，避免误删标记。
             if (e.button == 1)
             {
-                // 右键标记：删除靠近光标的标记
-                int hitMarker = HitTestMarker(e.mousePosition, baseRect, timeX0);
-                if (hitMarker >= 0)
-                {
-                    markers.RemoveAt(hitMarker);
-                    if (selectedMarker == hitMarker) selectedMarker = -1;
-                    else if (selectedMarker > hitMarker) selectedMarker--;
-                    Repaint();
-                    e.Use();
-                    return;
-                }
                 // 右键落在"链接线"上 = 断连（在最近的一段断开，前后各自保留为独立音符）
                 int segNote, segIdx; bool isActive;
                 if (HitTestLinkSegment(e.mousePosition, baseRect, timeX0, out segNote, out segIdx, out isActive))
@@ -1173,21 +1164,24 @@ namespace MusicalSprite.Editor
             return -1;
         }
 
-        /// <summary>在播放头当前位置打一个标记：优先吸附到 ±0.25s 内最近的音符；否则吸附到最近的 0.25s 网格。</summary>
+        /// <summary>在播放头当前位置打一个标记：优先吸附到 ±0.25s 内最接近的音符；否则吸附到节拍网格（与音符对齐），保证标记与音符同网格。</summary>
         private void AddMarkerAtPlayTime()
         {
             float t = playTime;
             if (snapMarkers)
             {
-                float nearest = float.MaxValue;
+                // 找最接近播放头的音符（取距离最小者，而非第一个命中的）
+                float bestD = float.MaxValue;
+                float bestT = t;
                 foreach (var n in notes)
                 {
                     float d = Mathf.Abs(n.time - t);
-                    if (d < nearest) nearest = d;
-                    if (d <= 0.25f) { t = n.time; break; } // 吸附到最近音符（阈值 ±0.25s）
+                    if (d < bestD) { bestD = d; bestT = n.time; }
                 }
-                if (nearest > 0.25f)
-                    t = Mathf.Round(t / 0.25f) * 0.25f;     // 无邻近音符则吸附到 0.25s 网格
+                if (bestD <= 0.25f)
+                    t = bestT;                       // 落在最近音符上
+                else
+                    t = Snap(t);                     // 无邻近音符则吸附到节拍网格（与音符同网格，不再用 0.25s 网格）
             }
             // snapMarkers 关闭时：t 直接等于播放头当前时刻（不吸附）
             t = Mathf.Clamp(t, 0f, songLength);
@@ -1195,21 +1189,6 @@ namespace MusicalSprite.Editor
             selectedMarker = markers.Count - 1;
             Repaint();
             ShowNotification(new GUIContent($"已添加标记 @ {t:F2}s"));
-        }
-
-        /// <summary>命中测试：返回光标附近（水平 ±7px）的标记索引，否则 -1。</summary>
-        private int HitTestMarker(Vector2 mouse, Rect baseRect, float timeX0)
-        {
-            // 仅用于 ruler 下方轨道区：点中标记白线（水平 ±7px、纵向整段）即命中，右键删除用。
-            // 标记条（时间轴正上方 MarkerZoneHeight）的选中/删除由 HitTestMarkerTriangle + MouseDown 标记条分支处理。
-            for (int i = markers.Count - 1; i >= 0; i--)
-            {
-                float x = timeX0 + (markers[i] - viewStartTime) * pixelsPerSecond;
-                if (Mathf.Abs(mouse.x - x) <= 7f &&
-                    mouse.y >= baseRect.y + MarkerZoneHeight && mouse.y <= baseRect.y + baseRect.height)
-                    return i;
-            }
-            return -1;
         }
 
         /// <summary>命中测试：光标是否落在某条"链接线"（相邻两节点之间的连线）上。
