@@ -154,7 +154,7 @@ public class SkillInputUI : MonoBehaviour
         {
             if (rt.ownerSide != 0 || rt.owner == null || !rt.owner.HasActiveSkill) continue;
             if (rt.phase != ActiveSkillRuntime.Phase.Standby) continue;            // 进行中/冷却中不响应
-            if (rt.NeedsEnergyGate && !rt.owner.isFullyCharged) continue;         // 仅能量技能卡能量门槛
+            if (rt.NeedsEnergyGate && !rt.IsSlotFull()) continue;         // 仅能量技能卡对应槽能量门槛
             var seq = rt.inputSequence;
             if (seq == null || seq.Length == 0) continue;
             if (IsPrefix(seq, buffer)) matching.Add(rt);

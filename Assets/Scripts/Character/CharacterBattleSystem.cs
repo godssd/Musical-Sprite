@@ -48,7 +48,7 @@ public class CharacterBattleSystem : MonoBehaviour
         if (startWithFullSkillEnergy)
         {
             foreach (var character in CharacterRoster.AllTeamCharacters())
-                if (character.maxEnergy > 0f) character.AddEnergy(character.maxEnergy);
+                character.FillAllEnergySlots();
         }
     }
 
@@ -98,13 +98,14 @@ public class CharacterBattleSystem : MonoBehaviour
     private void AttachSkillRuntimes(CharacterClass inst, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever)
     {
         if (inst == null || marker == null || inst.activeSlots == null) return;
-        foreach (var slot in inst.activeSlots)
+        for (int si = 0; si < inst.activeSlots.Count; si++)
         {
+            var slot = inst.activeSlots[si];
             if (slot == null || !slot.Exists || slot.IsPassive) continue;
             var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
             SkillInputStep[] seq = SkillSO.ParseInputMethod(slot.inputMethod);
             if (seq.Length == 0 && slot.skill != null) seq = slot.skill.inputSequence;
-            rt.Setup(inst, marker, spawner, oppCombo, side, fever, slot.skill, slot.cooldown, slot.NeedsEnergy, seq);
+            rt.Setup(inst, marker, spawner, oppCombo, side, fever, slot.skill, slot.cooldown, slot.NeedsEnergy, seq, si);
         }
     }
 
@@ -193,8 +194,8 @@ public class CharacterBattleSystem : MonoBehaviour
                     int capturedSide = side;
                     int capturedLane = lane;
                     int capturedId = inst.characterId;
-                    inst.OnEnergyFull += (id) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} 能量已满");
-                    inst.OnEnergyDepleted += (id) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} 能量耗尽");
+                    inst.OnEnergyFull += (id, slot) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} slot={slot} 能量已满");
+                    inst.OnEnergyDepleted += (id, slot) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} slot={slot} 能量耗尽");
                 }
             }
             MaxHPBySide[side] = maxHP;

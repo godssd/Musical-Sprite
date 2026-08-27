@@ -14,6 +14,13 @@ public enum SkillInputStep
     Left, Down, Right, Up, A, B, C, Space
 }
 
+/// <summary>附魔目标侧：Self=附魔（作用于己方 incoming 音符）；Enemy=敌方附魔（作用于对方 incoming 音符）。</summary>
+public enum EnchantTarget
+{
+    Self,
+    Enemy
+}
+
 [CreateAssetMenu(fileName = "Skill", menuName = "Musical Sprite/Skill", order = 2)]
 public class SkillSO : ScriptableObject
 {
@@ -36,6 +43,8 @@ public class SkillSO : ScriptableObject
     [Header("附魔期（大狗叫等）")]
     [Tooltip("释放后把接下来出现的多少个音符附魔（只要有节点都算）。无时间兜底，全消费才结算")]
     public int charmedNoteCount = 6;
+    [Tooltip("附魔目标侧：Self=附魔（己方 incoming 音符）；Enemy=敌方附魔（对方 incoming 音符）")]
+    public EnchantTarget enchantTarget = EnchantTarget.Self;
     [Tooltip("true = 只要不是 MISS 就算完成；false = 命中/PASS 都算")]
     public bool onlyCountNonMiss = true;
 

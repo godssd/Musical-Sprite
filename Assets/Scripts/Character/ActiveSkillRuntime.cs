@@ -35,9 +35,13 @@ public class ActiveSkillRuntime : MonoBehaviour
 
     private SkillSO skill;
     public SkillSO SkillRef => skill;      // 供 SkillInputUI 等按运行时唯一定位
+    /// <summary>供 SkillInputUI 判断：本运行时对应主动槽的能量是否已充满。</summary>
+    public bool IsSlotFull() => owner != null && owner.IsSlotFull(slotIndex);
     private float slotCooldown;           // 本槽冷却（秒），来自角色文档「技能冷却」列
     private bool needsEnergy = true;      // 是否需要能量门槛（无能量技能=false：跳过充能/能量满/清空）
     public SkillInputStep[] inputSequence; // 本槽输入序列（供 SkillInputUI 匹配）
+    private int slotIndex = 0;             // 本运行时对应的主动槽索引（用于按槽清空/查询能量）
+    public Color charmColor = Color.yellow; // 本次附魔颜色（取释放方自身颜色）
 
     /// <summary>供 SkillInputUI 判断：该技能是否需要"能量满"才能开始输入。无能量技能=false（随时可输入）。</summary>
     public bool NeedsEnergyGate => needsEnergy;
@@ -51,7 +55,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     private ScoreManager _scoreMgr;                      // 懒加载缓存：用于造成对方 HP 伤害（大狗叫额外效果）
     private CharacterBattleSystem _battleSys;            // 懒加载缓存：用于读取释放方队伍战斗力总和
 
-    public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever, SkillSO skill, float cooldown, bool needsEnergy, SkillInputStep[] inputSequence)
+    public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever, SkillSO skill, float cooldown, bool needsEnergy, SkillInputStep[] inputSequence, int slotIndex)
     {
         this.owner = owner;
         this.marker = marker;
@@ -63,6 +67,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         this.slotCooldown = cooldown;
         this.needsEnergy = needsEnergy;
         this.inputSequence = inputSequence;
+        this.slotIndex = slotIndex;
     }
 
     void Update()
@@ -73,7 +78,7 @@ public class ActiveSkillRuntime : MonoBehaviour
             if (cooldownLeft <= 0f)
             {
                 phase = Phase.Standby;
-                if (owner != null) owner.SetSkillBusy(false);  // 技能彻底结束：若能量已再次充满则恢复冒烟
+                if (owner != null) owner.SetSlotBusy(slotIndex, false);  // 技能彻底结束：若能量已再次充满则恢复冒烟
             }
             return;
         }
@@ -94,7 +99,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     {
         if (phase != Phase.Standby) return;
         if (owner == null || !owner.HasActiveSkill) return;
-        if (needsEnergy && !owner.isFullyCharged) return;   // 仅需要能量的技能才卡能量门槛
+        if (needsEnergy && !owner.IsSlotFull(slotIndex)) return;   // 仅需要能量的技能才卡对应槽能量门槛
         if (skill == null) return;
 
         phase = Phase.Grow;
@@ -106,16 +111,21 @@ public class ActiveSkillRuntime : MonoBehaviour
         // 释放成功：需要能量的技能立刻清空能量（冒气停止）；无能量技能跳过充能/清空流程与表现
         if (owner != null)
         {
-            if (needsEnergy) owner.ConsumeEnergy(owner.maxEnergy);
-            owner.SetSkillBusy(true);   // 整个技能进行期（含过热连叫）抑制"能量充满冒烟"，回到 Standby 时才可能恢复
+            if (needsEnergy) owner.ConsumeSlot(slotIndex);
+            owner.SetSlotBusy(slotIndex, true);   // 整个技能进行期（含过热连叫）抑制"能量充满冒烟"，回到 Standby 时才可能恢复
         }
 
         // 技能释放瞬间（能量清空此刻）捕获过热档，整段连叫锁定；后续附魔期即便断连/掉出过热也不再重判（2026-08-27 要求）。
         releaseFever = (feverManager != null) ? feverManager.GetState(ownerSide) : FeverState.None;
 
         if (marker != null) marker.GrowGlow();
+        // 附魔颜色 = 释放方自身颜色（当前阶段仅做单纯改色）；目标侧由技能开关决定（己方=附魔 / 对方=敌方附魔）
+        charmColor = (owner != null) ? owner.blockColor : Color.yellow;
         if (ownerSpawner != null)
-            ownerSpawner.RequestCharm(this, Mathf.Max(1, skill.charmedNoteCount));
+        {
+            int targetSide = (skill != null && skill.enchantTarget == EnchantTarget.Enemy) ? (1 - ownerSide) : ownerSide;
+            ownerSpawner.RequestCharm(this, Mathf.Max(1, skill.charmedNoteCount), charmColor, targetSide);
+        }
 
         Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] BeginCast -> 等待 {3} 个附魔单位结算完毕即释放（能量已清空）",
             skill != null ? skill.displayName : "?",

@@ -14,4 +14,7 @@ public class BeatmapSO : ScriptableObject
 
     [Tooltip("谱面对应的音乐素材。编辑器预览、以及游戏运行时（调用该谱面后）会同步播放此音频")]
     public AudioClip audioClip;
+
+    [Tooltip("编辑器中打的时间标记（秒）。用于辅助校谱/分段，不影响游玩逻辑；F 键添加，右键删除")]
+    public float[] markers;
 }

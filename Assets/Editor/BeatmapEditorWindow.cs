@@ -51,6 +51,7 @@ namespace MusicalSprite.Editor
         {
             public float bpm;
             public NoteData[] notes;
+            public float[] markers;
         }
 
         [SerializeField] private string beatmapName = "NewBeatmap";
@@ -73,6 +74,15 @@ namespace MusicalSprite.Editor
         private const float RulerHeight = 24f;
         [SerializeField] private bool snapToBeat = true;
 
+        // ---------- 标记（快捷键 F，吸附 ±0.25s） ----------
+        [SerializeField] private List<float> markers = new List<float>();
+
+        // ---------- 播放倍速（1 / 0.5 / 0.25） ----------
+        [SerializeField] private float playbackSpeed = 1f;
+
+        // ---------- 拖拽播放头（红线） ----------
+        private bool dragPlayhead = false;
+
         // ---------- 选择 / 拖拽 ----------
         private int selectedIndex = -1;
         private int dragIndex = -1;
@@ -82,7 +92,8 @@ namespace MusicalSprite.Editor
         private int dragStartNoteLane;
 
         // ---------- 链接模式（多次点击成链，可任意多节点 Hold） ----------
-        [SerializeField] private bool linkingMode = false;
+        [SerializeField] private bool linkingMode = false;   // G：点按成链（多节点逐节点连）
+        [SerializeField] private bool pointLinkMode = false;  // H：点链模式（按下 A 拖到 B 生成 2 节点 Hold，纯滑动）
         private bool linkingActive = false;                 // 是否正在编辑一条链
         private List<float> linkTimes = new List<float>();  // 已落下的节点时刻
         private List<int> linkLanes = new List<int>();      // 已落下的节点轨道
@@ -99,6 +110,12 @@ namespace MusicalSprite.Editor
         private int linkDownLane;                           // 按下时所在轨道
         private float linkDownTime;                         // 按下时的 time（未吸附）
 
+        // ---------- 点链模式 (H)：连接两个已有音符 ----------
+        private int pointLinkSource = -1;                   // H：源音符索引（拖动起点，必须点在已有音符上）
+        private bool pointLinkDragging = false;             // H：正在从源音符拖向目标音符
+        private bool snapMarkers = true;                    // 标记吸附开关（F 打点是否吸附 ±0.25s）
+        private int selectedMarker = -1;                    // 当前选中的标记索引（左键点三角选中）
+
         // ---------- 点击音符与连轨音符创建 ----------
         [SerializeField] private bool placeSmallTapMode = false;
         [SerializeField] private bool placeChainTapMode = false;
@@ -114,7 +131,7 @@ namespace MusicalSprite.Editor
         private AudioSource previewSource;
         // 波形图：每个 clip 的混音单声道样本缓存（避免每帧重读 PCM）；高度固定 60px
         private Dictionary<AudioClip, float[]> _waveCache = new Dictionary<AudioClip, float[]>();
-        private static readonly float WaveformHeight = 60f;
+        private static readonly float WaveformHeight = 240f; // 波形图放大 4 倍（原 60f），便于校谱
 
         // ---------- 仓库 ----------
         private Vector2 libScroll;
@@ -138,15 +155,17 @@ namespace MusicalSprite.Editor
             GetWindow<BeatmapEditorWindow>("谱面编辑器");
         }
 
-        private void OnEnable()
-        {
-            EditorApplication.update += OnEditorUpdate;
-        }
+    private void OnEnable()
+    {
+        EditorApplication.update += OnEditorUpdate;
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+    }
 
-        private void OnDisable()
-        {
-            EditorApplication.update -= OnEditorUpdate;
-            StopPreview();
+    private void OnDisable()
+    {
+        EditorApplication.update -= OnEditorUpdate;
+        EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        StopPreview();
             if (previewSource != null)
             {
                 DestroyImmediate(previewSource.gameObject);
@@ -157,17 +176,68 @@ namespace MusicalSprite.Editor
         private void OnEditorUpdate()
         {
             if (!isPlaying) return;
-            playTime = (float)(EditorApplication.timeSinceStartup - playStartEditorTime) + playStartOffset;
+            // 倍速：以倍速系数推进播放时间（切换倍速时已在 SetPlaybackSpeed 重锚起点，不会跳变）
+            float elapsed = (float)(EditorApplication.timeSinceStartup - playStartEditorTime) * playbackSpeed;
+            playTime = elapsed + playStartOffset;
             if (playTime > songLength)
             {
                 StopPlayback();
             }
-            Repaint();
-        }
+        Repaint();
+    }
 
-        // ===================================================================
-        // GUI
-        // ===================================================================
+    // ===================================================================
+    // 谱面自愈：进入 PlayMode 前以 .json 文本备份重建被截断的 .asset
+    // ===================================================================
+    private void OnPlayModeStateChanged(PlayModeStateChange change)
+    {
+        // 进入 PlayMode 前（ExitingEditMode）：把所有「资产音符数明显少于文本备份」的谱面，
+        // 以同目录 .json 为准重建 .asset 并落盘。无论根因如何，运行时一定拿到健康谱面（用户 2026-08-27 要求）。
+        if (change != PlayModeStateChange.ExitingEditMode) return;
+        if (!AssetDatabase.IsValidFolder(BeatmapsDir)) return;
+        string[] guids = AssetDatabase.FindAssets("t:BeatmapSO", new[] { BeatmapsDir });
+        foreach (var g in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(g);
+            if (!path.ToLowerInvariant().EndsWith(".asset")) continue;
+            var bm = AssetDatabase.LoadAssetAtPath<BeatmapSO>(path);
+            if (bm == null) continue;
+            int assetSide0 = bm.notes != null ? bm.notes.Count(n => n.side == 0) : 0;
+            int jsonSide0 = CountSide0InJson(GetJsonPath(path));
+            if (jsonSide0 > assetSide0 + 1)
+            {
+                RebuildAssetFromJson(path);
+                Debug.Log($"[谱面编辑器] ExitingEditMode 自愈：{Path.GetFileNameWithoutExtension(path)}.asset 已从 .json 重建 ({assetSide0}→{jsonSide0} 音符)");
+            }
+        }
+    }
+
+    /// <summary>以同目录 .json 文本备份为准重建 .asset 的 notes 并落盘（不触动编辑器内 notes，避免覆盖用户正在编辑的谱面）。</summary>
+    private static void RebuildAssetFromJson(string assetPath)
+    {
+        string jsonPath = GetJsonPath(assetPath);
+        if (!File.Exists(jsonPath)) return;
+        try
+        {
+            string json = File.ReadAllText(jsonPath);
+            BeatmapTextDump dump = JsonUtility.FromJson<BeatmapTextDump>(json);
+            if (dump == null || dump.notes == null) return;
+            var bm = AssetDatabase.LoadAssetAtPath<BeatmapSO>(assetPath);
+            if (bm == null) return;
+            bm.notes = dump.notes;       // .json 含完整 side0/side1，直接以文本备份为准
+            bm.bpm = dump.bpm;
+            EditorUtility.SetDirty(bm);
+            AssetDatabase.SaveAssets();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[谱面编辑器] 自愈重建失败（{assetPath}）：{e.Message}");
+        }
+    }
+
+    // ===================================================================
+    // GUI
+    // ===================================================================
         private void OnGUI()
         {
             // Ctrl/Cmd + Z 撤销。
@@ -196,13 +266,31 @@ namespace MusicalSprite.Editor
 
             EditorGUILayout.BeginHorizontal();
             beatmapName = EditorGUILayout.TextField("谱面名称", beatmapName, GUILayout.Width(280));
-            bpm = EditorGUILayout.FloatField("BPM", bpm, GUILayout.Width(120));
-            songLength = EditorGUILayout.FloatField("歌曲长度(秒)", songLength, GUILayout.Width(140));
+            float bpmIn = EditorGUILayout.DelayedFloatField("BPM", bpm, GUILayout.Width(120));
+            if (!Mathf.Approximately(bpmIn, bpm))
+            {
+                float oldBpm = bpm;
+                bpm = Mathf.Max(1f, bpmIn);
+                // 改 BPM：把所有音符 + 标记按 旧BPM/新BPM 同比例缩放，使二者一起重对齐到新节拍网格（可逆）
+                RescaleChart(oldBpm / bpm);
+                AutoExtendSongLength();
+            }
+            float slIn = EditorGUILayout.DelayedFloatField("歌曲长度(秒)", songLength, GUILayout.Width(140));
+            if (!Mathf.Approximately(slIn, songLength))
+            {
+                songLength = Mathf.Max(0f, slIn);
+                AutoExtendSongLength();
+            }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             snapToBeat = EditorGUILayout.ToggleLeft("吸附到拍", snapToBeat, GUILayout.Width(90));
-            linkingMode = EditorGUILayout.ToggleLeft("链接模式(点按成链)", linkingMode, GUILayout.Width(140));
+            snapMarkers = EditorGUILayout.ToggleLeft("标记吸附", snapMarkers, GUILayout.Width(90));
+            // 链点模式(G) 与 点链模式(H) 互斥
+            bool newLink = EditorGUILayout.ToggleLeft("链点模式(G)", linkingMode, GUILayout.Width(110));
+            bool newPoint = EditorGUILayout.ToggleLeft("点链模式(H)", pointLinkMode, GUILayout.Width(110));
+            if (newLink != linkingMode) { linkingMode = newLink; if (linkingMode) { pointLinkMode = false; ResetLinkState(); } }
+            if (newPoint != pointLinkMode) { pointLinkMode = newPoint; if (pointLinkMode) { linkingMode = false; ResetLinkState(); } }
             placeSmallTapMode = EditorGUILayout.ToggleLeft("小圈点击", placeSmallTapMode, GUILayout.Width(100));
             placeChainTapMode = EditorGUILayout.ToggleLeft("连点音符", placeChainTapMode, GUILayout.Width(90));
             if (placeChainTapMode)
@@ -210,8 +298,16 @@ namespace MusicalSprite.Editor
                 int inputCount = EditorGUILayout.DelayedIntField("次数", Mathf.Clamp(chainTapCount, 3, 10), GUILayout.Width(110));
                 chainTapCount = Mathf.Clamp(inputCount, 3, 10);
             }
-            pixelsPerSecond = EditorGUILayout.Slider("缩放(像素/秒)", pixelsPerSecond, 10f, 240f, GUILayout.Width(240));
+            pixelsPerSecond = EditorGUILayout.Slider("缩放(像素/秒)", pixelsPerSecond, 10f, 480f, GUILayout.Width(240));
             beatmapAudioClip = (AudioClip)EditorGUILayout.ObjectField("音乐素材", beatmapAudioClip, typeof(AudioClip), false, GUILayout.Width(220));
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("播放倍速", GUILayout.Width(70));
+            if (GUILayout.Button("1x", GUILayout.Width(50))) SetPlaybackSpeed(1f);
+            if (GUILayout.Button("0.5x", GUILayout.Width(50))) SetPlaybackSpeed(0.5f);
+            if (GUILayout.Button("0.25x", GUILayout.Width(60))) SetPlaybackSpeed(0.25f);
+            EditorGUILayout.LabelField($"当前：{playbackSpeed:F2}x", GUILayout.Width(90));
             EditorGUILayout.EndHorizontal();
 
             if (selectedIndex >= 0 && selectedIndex < notes.Count && notes[selectedIndex].type == NoteData.NoteType.ChainTap)
@@ -256,7 +352,7 @@ namespace MusicalSprite.Editor
             }
             if (GUILayout.Button("停止", GUILayout.Width(60))) StopPlayback();
             if (GUILayout.Button("撤销", GUILayout.Width(60))) Undo();
-            EditorGUILayout.LabelField($"音符数：{notes.Count}    当前时间：{playTime:F2}s", GUILayout.Width(220));
+            EditorGUILayout.LabelField($"音符数：{notes.Count}    标记：{markers.Count}    当前时间：{playTime:F2}s", GUILayout.Width(320));
             EditorGUILayout.EndHorizontal();
 
             string activePath = EditorPrefs.GetString(ActiveBeatmapKey, "");
@@ -265,10 +361,14 @@ namespace MusicalSprite.Editor
             EditorGUILayout.HelpBox(
                 "音符的 time = 音符圆心抵达判定线的时刻（非发射时刻）；改难度只改移动速度，不影响该时刻。\n" +
                 "普通音符：轨道区单击=加音符；拖拽=移动；右键/Delete=删除；点击刻度尺=定位播放头。\n" +
-                "链接模式（按住点击音符）：勾选后左键落节点，右键结束；松开后仍自动链接鼠标，可继续落下一个节点（普通点击=单轨节点）。\n" +
-                "连轨音符（链接模式专属）：左键按下不放并上下拖动 >=1 轨 => 制作连轨音符（覆盖拖动的相邻两轨），松开后同样自动链接鼠标；此时右键 => 变成普通的连轨点击音符。连轨不区分大小圈。普通点击仍可用「小圈点击」区分大小。\n" +
+                "时间轴操作：滚轮=缩放（以光标为锚点）；在红色播放线附近按住拖动=拖动播放头（校听）；空格=播放/暂停；倍速按钮=1x/0.5x/0.25x（音频同步变速）。\n" +
+                "标记（校谱分段用，不影响游玩）：F 键在播放头处打标记（自动吸附 ±0.25s 内最近音符，否则吸附到 0.25s 网格）。标记为亮白色线 + 下方三角旗标，可右键点击删除；现在三角放在轨道区下方，左键点击三角也能选中删除。\n" +
+                "时间轴长度跟随：BPM 或歌曲长度提交后自动扩时轴（适配最后音符 + 4s + 音乐长度），无需手动按钮；改 BPM 时音符与标记会按新旧 BPM 比例一起缩放重对齐。\n" +
+                "链点模式：快捷键 G 开关；勾选后单击落节点、释放后再点下一个节点，依次累加成多节点链。右键点「链接线」= 在该段断开（前后各自保留为独立音符）；右键空白处=收尾整条链。\n" +
+                "点链模式：快捷键 H 开关（与 G 互斥）。在第一个已有音符上左键按下、拖到第二个已有音符松开 = 把这两个音符链接成一条按住音符（纯链接，各自节点属性/连轨宽度原样保留，按时间排序串成链）。没点中音符或松开在空白处 = 取消，不生成任何东西。\n" +
+                "连轨音符（链点模式专属）：在 G 模式下，左键按下并上下拖动 >=1 轨再松开 => 该节点为连轨（覆盖相邻两轨，width=2）。\n" +
                 "连点音符：勾选「连点音符」后单击生成普通大点击外形的连续点击音符；次数框手动输入 3-10 次，选中后可在上方修改。\n" +
-                "挂上「音乐素材」后点播放可听音校谱；保存并「调用」后，下一次「搭建完整场景」将同步播放本谱面与音乐。\n" + activeName,
+                "挂上「音乐素材」后点播放可听音校谱（波形图已放大 4 倍）；保存并「调用」后，下一次「搭建完整场景」将同步播放本谱面与音乐。\n" + activeName,
                 MessageType.Info);
         }
 
@@ -305,6 +405,38 @@ namespace MusicalSprite.Editor
                 if (major)
                 {
                     GUI.Label(new Rect(x + 3, baseRect.y + 3, 70, 16), $"{b}拍", EditorStyles.miniLabel);
+                }
+            }
+
+            // ---- 标记（F 键打点，右键删除；吸附 ±0.25s）----
+            // 线改为亮白色（高对比），三角朝下画在 ruler 下方（落在第一个 lane 内）
+            for (int mi = 0; mi < markers.Count; mi++)
+            {
+                float mx = timeX0 + (markers[mi] - viewStartTime) * pixelsPerSecond;
+                if (mx < timeX0 - 8 || mx > baseRect.x + baseRect.width + 8) continue;
+                // 贯穿时间轴的亮白色细线（2px，更醒目）
+                EditorGUI.DrawRect(new Rect(mx - 0.5f, baseRect.y, 2f, baseRect.height), new Color(1f, 1f, 1f, 0.85f));
+                // 三角朝下、贴在 ruler 下方第一个 lane 内（apex 紧贴 ruler 下沿）
+                // EditorWindow 中画 Handles 必须用 BeginGUI/EndGUI 包住，否则不渲染（这就是之前看不到三角的原因）
+                // 颜色用高对比琥珀色，保证在亮/暗背景上都清晰可见
+                if (Event.current.type == EventType.Repaint)
+                {
+                    Vector3[] tri = new Vector3[]
+                    {
+                        new Vector3(mx, baseRect.y + RulerHeight, 0f),                             // apex（紧贴 ruler 下沿）
+                        new Vector3(mx - 7f, baseRect.y + RulerHeight + 9f, 0f),                   // 左下
+                        new Vector3(mx + 7f, baseRect.y + RulerHeight + 9f, 0f)                    // 右下
+                    };
+                    Handles.BeginGUI();
+                    Handles.color = (mi == selectedMarker) ? new Color(1f, 0.9f, 0.2f, 1f) : new Color(1f, 0.6f, 0.05f, 1f);
+                    Handles.DrawAAConvexPolygon(tri);
+                    if (mi == selectedMarker)
+                    {
+                        // 选中态：在三角外再画一圈高亮
+                        Handles.color = new Color(1f, 0.9f, 0.2f, 1f);
+                        Handles.DrawWireDisc(new Vector2(mx, baseRect.y + RulerHeight + 4f), Vector3.forward, 11f);
+                    }
+                    Handles.EndGUI();
                 }
             }
 
@@ -454,6 +586,26 @@ namespace MusicalSprite.Editor
                 GUI.Label(new Rect(cur.x + 10, cur.y - 22, 140, 18), "链接中…右键完成", EditorStyles.miniLabel);
             }
 
+            // 点链模式 (H)：橡皮筋预览（源音符 -> 光标），明确表现"正在把两个音符链接起来"
+            if (pointLinkMode && pointLinkDragging && pointLinkSource >= 0 && pointLinkSource < notes.Count)
+            {
+                var src = notes[pointLinkSource];
+                float sx = timeX0 + (src.time - viewStartTime) * pixelsPerSecond;
+                float sy = GetNoteY(baseRect, src.lane, src.type == NoteData.NoteType.Linked);
+                Vector2 cur = Event.current.mousePosition;
+                Color previewColor = new Color(1f, 0.6f, 0.1f, 0.95f);
+                DrawThickLine(new Vector2(sx, sy), cur, 5f, previewColor);
+                if (Event.current.type == EventType.Repaint)
+                {
+                    Handles.BeginGUI();
+                    Handles.color = new Color(1f, 0.8f, 0.2f, 1f);
+                    Handles.DrawWireDisc(cur, Vector3.forward, 8f);
+                    Handles.DrawSolidDisc(new Vector2(sx, sy), Vector3.forward, 4f);
+                    Handles.EndGUI();
+                }
+                GUI.Label(new Rect(cur.x + 10, cur.y - 22, 170, 18), "链接音符…拖到目标音符松开", EditorStyles.miniLabel);
+            }
+
             // 链接模式：左键按住 + 上下拖动 => 连轨音符（覆盖相邻两轨）实时预览
             if (linkingMode && pendingLinkDown)
             {
@@ -525,10 +677,60 @@ namespace MusicalSprite.Editor
                 if (linkingMode && (linkingActive || pendingLinkDown)) { Repaint(); e.Use(); }
                 return;
             }
+            // 滚轮缩放（以光标为锚点）：在轨道时间轴上滚动即缩放，不影响其它区域
+            if (e.type == EventType.ScrollWheel && baseRect.Contains(e.mousePosition))
+            {
+                float timeAtCursor = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
+                float zoom = e.delta.y > 0f ? (1f / 1.15f) : 1.15f; // 上滚放大、下滚缩小
+                pixelsPerSecond = Mathf.Clamp(pixelsPerSecond * zoom, 10f, 480f);
+                float visibleSeconds = (baseRect.width - LaneLabelWidth) / pixelsPerSecond;
+                viewStartTime = timeAtCursor - (e.mousePosition.x - timeX0) / pixelsPerSecond;
+                viewStartTime = Mathf.Clamp(viewStartTime, 0f, Mathf.Max(0f, songLength - visibleSeconds));
+                Repaint();
+                e.Use();
+                return;
+            }
             if (e.type != EventType.MouseDown && e.type != EventType.MouseDrag &&
                 e.type != EventType.MouseUp && e.type != EventType.KeyDown) return;
             if (e.type == EventType.KeyDown)
             {
+                // 仅在真正编辑文本框（名称/BPM 等）时让位给文本输入；勾选框/按钮焦点不算，
+                // 否则点过「链接模式」勾选框后焦点残留，空格会被 Unity 默认行为拿去切换该勾选框、F 也被吞
+                if (EditorGUIUtility.editingTextField) return;
+                // G：切换链点模式（点按成链，多节点逐节点连）；与点链模式互斥
+                if (e.keyCode == KeyCode.G)
+                {
+                    linkingMode = !linkingMode;
+                    pointLinkMode = false;
+                    if (!linkingMode) ResetLinkState();
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                // H：切换点链模式（滑动 A→B 生成 2 节点 Hold，纯滑动）
+                if (e.keyCode == KeyCode.H)
+                {
+                    pointLinkMode = !pointLinkMode;
+                    linkingMode = false;
+                    if (!pointLinkMode) ResetLinkState();
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                // 空格：播放 / 暂停切换
+                if (e.keyCode == KeyCode.Space)
+                {
+                    if (isPlaying) Pause(); else Play();
+                    e.Use();
+                    return;
+                }
+                // F：在播放头处打标记（吸附 ±0.25s）
+                if (e.keyCode == KeyCode.F)
+                {
+                    AddMarkerAtPlayTime();
+                    e.Use();
+                    return;
+                }
                 if ((e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace) && selectedIndex >= 0)
                 {
                     PushUndo();
@@ -553,6 +755,24 @@ namespace MusicalSprite.Editor
 
             float localY = e.mousePosition.y - baseRect.y;
 
+            // ---- 播放头命中检测（高优先级）----
+            // 在红线附近按下左键即进入拖拽校听，覆盖 ruler / lane / waveform 整段 baseRect 的纵向区域
+            // 命中容差给到 ±8px，并要求水平上贴得近、纵向可在整段 baseRect 内（红线贯穿 ruler 与 lane）
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                float phx = timeX0 + (playTime - viewStartTime) * pixelsPerSecond;
+                if (Mathf.Abs(e.mousePosition.x - phx) <= 8f)
+                {
+                    dragPlayhead = true;
+                    float t = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
+                    playTime = Mathf.Clamp(t, 0f, songLength);
+                    if (isPlaying && previewSource != null) { try { previewSource.time = playTime; } catch { } }
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+            }
+
             // 点击刻度尺 => 定位播放头
             if (localY < RulerHeight)
             {
@@ -576,9 +796,33 @@ namespace MusicalSprite.Editor
             {
                 int hit = HitTestNote(e.mousePosition, baseRect, timeX0);
 
-            // 右键：链接编辑态中 = 断开链接（保留为普通/长按音符，不删除）；否则删除光标下音符
+                // 注：播放头命中检测已提升到上方（高优先级），这里不再重复
+
+            // 右键：优先命中"链接线"则断连；其次删除标记；再次收尾整条活动链；最后删除音符
             if (e.button == 1)
             {
+                // 右键标记：删除靠近光标的标记
+                int hitMarker = HitTestMarker(e.mousePosition, baseRect, timeX0);
+                if (hitMarker >= 0)
+                {
+                    markers.RemoveAt(hitMarker);
+                    if (selectedMarker == hitMarker) selectedMarker = -1;
+                    else if (selectedMarker > hitMarker) selectedMarker--;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                // 右键落在"链接线"上 = 断连（在最近的一段断开，前后各自保留为独立音符）
+                int segNote, segIdx; bool isActive;
+                if (HitTestLinkSegment(e.mousePosition, baseRect, timeX0, out segNote, out segIdx, out isActive))
+                {
+                    if (isActive) BreakActiveChainAt(segIdx);
+                    else SplitHoldNoteAt(segNote, segIdx);
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                // 活动链接态下右键空白处：收尾整条链（兼容旧习惯）
                 if (linkingMode && linkingActive)
                 {
                     FinishLinkingChain();
@@ -597,14 +841,41 @@ namespace MusicalSprite.Editor
                 return;
             }
 
-                    if (linkingMode)
+                    // 左键点中标记三角 => 选中该标记（高亮），不触发其它操作
+                    if (e.button == 0)
+                    {
+                        int mHit = HitTestMarkerTriangle(e.mousePosition, baseRect, timeX0);
+                        if (mHit >= 0)
+                        {
+                            selectedMarker = mHit;
+                            Repaint();
+                            e.Use();
+                            return;
+                        }
+                    }
+
+                    // 链点模式 (G) 或 点链模式 (H) 任一激活时，进入左键-延迟-提交逻辑
+                    if (linkingMode || pointLinkMode)
                     {
                         if (e.button == 0)
                         {
-                            // 记录一次左键按下，推迟到 MouseUp 决定落点类型：
-                            //  - 仅点击（无上下拖动）=> 单轨节点（保持原有链接逻辑）
-                            //  - 按住并上下拖动 >=1 轨 => 连轨音符（覆盖相邻两轨）
-                            // 窗口热重载或删除正在编辑的链后，旧索引可能失效；直接从新链重新开始。
+                            // 点链模式 (H)：必须在已有音符上按下，之后拖到另一个音符松开 => 合并成链接（纯链接，不改音符属性）
+                            if (pointLinkMode)
+                            {
+                                int hitNote = HitTestNote(e.mousePosition, baseRect, timeX0);
+                                if (hitNote >= 0)
+                                {
+                                    pointLinkSource = hitNote;
+                                    pointLinkDragging = true;
+                                    Repaint();
+                                    e.Use();
+                                    return;
+                                }
+                                // 没点中已有音符：不动作
+                                e.Use();
+                                return;
+                            }
+                            // 链点模式 (G)：窗口热重载或删除正在编辑的链后，旧索引可能失效，直接清空重建
                             if (linkingActive && (linkLastIndex < 0 || linkLastIndex >= notes.Count))
                             {
                                 linkingActive = false;
@@ -695,6 +966,21 @@ namespace MusicalSprite.Editor
             }
             else if (e.type == EventType.MouseDrag)
             {
+                if (dragPlayhead)
+                {
+                    float t = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
+                    playTime = Mathf.Clamp(t, 0f, songLength);
+                    if (isPlaying && previewSource != null) { try { previewSource.time = playTime; } catch { } }
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                if (pointLinkMode && pointLinkDragging)
+                {
+                    Repaint(); // 橡皮筋预览由 DrawTimeline 绘制（源音符 -> 光标）
+                    e.Use();
+                    return;
+                }
                 if (pendingLinkDown)
                 {
                     Repaint(); // 连轨音符预览由 DrawTimeline 绘制
@@ -752,6 +1038,24 @@ namespace MusicalSprite.Editor
             }
             else if (e.type == EventType.MouseUp)
             {
+                if (dragPlayhead)
+                {
+                    dragPlayhead = false;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                if (pointLinkMode && pointLinkDragging)
+                {
+                    int hitB = HitTestNote(e.mousePosition, baseRect, timeX0);
+                    if (hitB >= 0 && hitB != pointLinkSource)
+                        MergeNotesIntoChain(pointLinkSource, hitB);
+                    pointLinkSource = -1;
+                    pointLinkDragging = false;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
                 if (dragIndex >= 0)
                 {
                     dragIndex = -1;
@@ -798,6 +1102,161 @@ namespace MusicalSprite.Editor
                 }
             }
             return -1;
+        }
+
+        /// <summary>在播放头当前位置打一个标记：优先吸附到 ±0.25s 内最近的音符；否则吸附到最近的 0.25s 网格。</summary>
+        private void AddMarkerAtPlayTime()
+        {
+            float t = playTime;
+            if (snapMarkers)
+            {
+                float nearest = float.MaxValue;
+                foreach (var n in notes)
+                {
+                    float d = Mathf.Abs(n.time - t);
+                    if (d < nearest) nearest = d;
+                    if (d <= 0.25f) { t = n.time; break; } // 吸附到最近音符（阈值 ±0.25s）
+                }
+                if (nearest > 0.25f)
+                    t = Mathf.Round(t / 0.25f) * 0.25f;     // 无邻近音符则吸附到 0.25s 网格
+            }
+            // snapMarkers 关闭时：t 直接等于播放头当前时刻（不吸附）
+            t = Mathf.Clamp(t, 0f, songLength);
+            markers.Add(t);
+            selectedMarker = markers.Count - 1;
+            Repaint();
+            ShowNotification(new GUIContent($"已添加标记 @ {t:F2}s"));
+        }
+
+        /// <summary>命中测试：返回光标附近（水平 ±7px）的标记索引，否则 -1。</summary>
+        private int HitTestMarker(Vector2 mouse, Rect baseRect, float timeX0)
+        {
+            // 命中区域：
+            //  - 沿红线方向（垂直）：整段 baseRect 内都接受点击（左键可直接点红线选中标记，但目前只有右键删除）
+            //  - 三角区域（紧贴 ruler 下方）：水平 ±6px、垂直 RulerHeight + 0..+8 → 三角本身可点
+            for (int i = markers.Count - 1; i >= 0; i--)
+            {
+                float x = timeX0 + (markers[i] - viewStartTime) * pixelsPerSecond;
+                float triTop = baseRect.y + RulerHeight;          // apex y
+                float triBot = baseRect.y + RulerHeight + 8f;    // base y
+                bool inTri = mouse.y >= triTop && mouse.y <= triBot + 2f &&
+                             Mathf.Abs(mouse.x - x) <= 7f;
+                bool onLine = Mathf.Abs(mouse.x - x) <= 7f &&
+                              mouse.y >= baseRect.y && mouse.y <= baseRect.y + baseRect.height;
+                if (inTri || onLine) return i;
+            }
+            return -1;
+        }
+
+        /// <summary>命中测试：光标是否落在某条"链接线"（相邻两节点之间的连线）上。
+        /// 命中返回 true，并通过 out 给出：segNote=音符索引（活动链为 -1）、segIdx=段号（节点 segIdx 与 segIdx+1 之间）、isActive=是否当前正在编辑的活动链。</summary>
+        private bool HitTestLinkSegment(Vector2 mouse, Rect baseRect, float timeX0, out int segNote, out int segIdx, out bool isActive)
+        {
+            segNote = -1; segIdx = -1; isActive = false;
+            float tol = 9f;
+            // 1) 当前正在编辑的活动链
+            if (linkingActive && linkTimes.Count >= 2)
+            {
+                for (int i = 0; i < linkTimes.Count - 1; i++)
+                {
+                    float x1 = timeX0 + (linkTimes[i] - viewStartTime) * pixelsPerSecond;
+                    float y1 = GetNoteY(baseRect, linkLanes[i], linkLaneSpans != null && i < linkLaneSpans.Count && linkLaneSpans[i] > 1);
+                    float x2 = timeX0 + (linkTimes[i + 1] - viewStartTime) * pixelsPerSecond;
+                    float y2 = GetNoteY(baseRect, linkLanes[i + 1], linkLaneSpans != null && i + 1 < linkLaneSpans.Count && linkLaneSpans[i + 1] > 1);
+                    if (DistToSeg(mouse, new Vector2(x1, y1), new Vector2(x2, y2)) <= tol)
+                    { isActive = true; segIdx = i; return true; }
+                }
+            }
+            // 2) 已完成的复节点音符（Hold / Linked 多节点）
+            for (int n = 0; n < notes.Count; n++)
+            {
+                var note = notes[n];
+                if (note.holdTimes == null || note.holdTimes.Length < 2) continue;
+                bool linked = note.type == NoteData.NoteType.Linked;
+                for (int i = 0; i < note.holdTimes.Length - 1; i++)
+                {
+                    float x1 = timeX0 + (note.holdTimes[i] - viewStartTime) * pixelsPerSecond;
+                    float y1 = GetNoteY(baseRect, note.holdLanes[i], linked);
+                    float x2 = timeX0 + (note.holdTimes[i + 1] - viewStartTime) * pixelsPerSecond;
+                    float y2 = GetNoteY(baseRect, note.holdLanes[i + 1], linked);
+                    if (DistToSeg(mouse, new Vector2(x1, y1), new Vector2(x2, y2)) <= tol)
+                    { segNote = n; segIdx = i; return true; }
+                }
+            }
+            return false;
+        }
+
+        private static float DistToSeg(Vector2 p, Vector2 a, Vector2 b)
+        {
+            Vector2 ab = b - a;
+            float t = Mathf.Clamp(Vector2.Dot(p - a, ab) / (ab.sqrMagnitude + 1e-6f), 0f, 1f);
+            Vector2 proj = a + ab * t;
+            return Vector2.Distance(p, proj);
+        }
+
+        /// <summary>活动链在段 segIdx（节点 segIdx 与 segIdx+1 之间）断开：前后各自收尾成独立音符（均保留）。
+        /// 类型按节点数决定：单节点保持原属性（点击/连轨），>=2 节点才是按住音符。</summary>
+        private void BreakActiveChainAt(int segIdx)
+        {
+            if (!linkingActive || linkTimes.Count < 2) { FinishLinkingChain(); return; }
+            int total = linkTimes.Count;
+            if (segIdx < 0 || segIdx >= total - 1) { FinishLinkingChain(); return; }
+            PushUndo();
+            var firstTimes = linkTimes.GetRange(0, segIdx + 1);
+            var firstLanes = linkLanes.GetRange(0, segIdx + 1);
+            var firstSpans = linkLaneSpans.GetRange(0, segIdx + 1);
+            var secTimes = linkTimes.GetRange(segIdx + 1, total - (segIdx + 1));
+            var secLanes = linkLanes.GetRange(segIdx + 1, total - (segIdx + 1));
+            var secSpans = linkLaneSpans.GetRange(segIdx + 1, total - (segIdx + 1));
+
+            var first = MakeChainNote(firstTimes, firstLanes, firstSpans, NoteData.NoteType.Hold);
+            var sec = MakeChainNote(secTimes, secLanes, secSpans, NoteData.NoteType.Hold);
+            notes.Add(first);
+            notes.Add(sec);
+            selectedIndex = notes.Count - 2;
+            linkingActive = false;
+            linkLastIndex = -1;
+            linkTimes.Clear(); linkLanes.Clear(); linkLaneSpans.Clear();
+        }
+
+        /// <summary>把一条已完成的复节点音符在段 segIdx 处断开：拆成前后两条独立音符（均保留，仅移除中间那根链接线）。
+        /// 拆分后按"该段节点数"决定类型：单节点保持原属性（点击=Tap / 连轨=Linked，span 不变），>=2 节点才是按住音符(Hold/Linked)。</summary>
+        private void SplitHoldNoteAt(int noteIndex, int segIdx)
+        {
+            if (noteIndex < 0 || noteIndex >= notes.Count) return;
+            var note = notes[noteIndex];
+            if (note.holdTimes == null || note.holdTimes.Length < 2) return;
+            // 规整 holdLaneSpans（缺省按 1），保证拆分时连轨属性不丢失
+            if (note.holdLaneSpans == null || note.holdLaneSpans.Length != note.holdTimes.Length)
+            {
+                note.holdLaneSpans = new int[note.holdTimes.Length];
+                for (int i = 0; i < note.holdTimes.Length; i++) note.holdLaneSpans[i] = 1;
+            }
+            int len = note.holdTimes.Length;
+            if (segIdx < 0 || segIdx >= len - 1) return;
+            PushUndo();
+            var firstTimes = new List<float>(note.holdTimes).GetRange(0, segIdx + 1);
+            var firstLanes = new List<int>(note.holdLanes).GetRange(0, segIdx + 1);
+            var firstSpans = new List<int>(note.holdLaneSpans).GetRange(0, segIdx + 1);
+            var secTimes = new List<float>(note.holdTimes).GetRange(segIdx + 1, len - (segIdx + 1));
+            var secLanes = new List<int>(note.holdLanes).GetRange(segIdx + 1, len - (segIdx + 1));
+            var secSpans = new List<int>(note.holdLaneSpans).GetRange(segIdx + 1, len - (segIdx + 1));
+
+            // 前段写回原音符（复用引用，避免重复 Remove/Insert）
+            var first = MakeChainNote(firstTimes, firstLanes, firstSpans, note.type);
+            note.time = first.time;
+            note.lane = first.lane;
+            note.type = first.type;
+            note.holdTimes = first.holdTimes;
+            note.holdLanes = first.holdLanes;
+            note.holdLaneSpans = first.holdLaneSpans;
+            note.holdEndLane = first.holdEndLane;
+            note.holdDuration = first.holdDuration;
+
+            // 后段作为新音符插入
+            var sec = MakeChainNote(secTimes, secLanes, secSpans, note.type);
+            notes.Insert(noteIndex + 1, sec);
+            selectedIndex = noteIndex;
         }
 
         private static bool Near(Vector2 mouse, float x, float y, float yTolerance = 18f)
@@ -855,6 +1314,132 @@ namespace MusicalSprite.Editor
 
             Handles.color = color;
             Handles.DrawAAConvexPolygon(points);
+        }
+
+        /// <summary>清空链接/点链编辑状态（两模式切换互斥时调用）</summary>
+        private void ResetLinkState()
+        {
+            linkingActive = false;
+            linkLastIndex = -1;
+            linkTimes.Clear();
+            linkLanes.Clear();
+            linkLaneSpans.Clear();
+            pendingLinkDown = false;
+            pointLinkSource = -1;
+            pointLinkDragging = false;
+        }
+
+        // ---------- 合并 / 拆分 / 缩放 辅助 ----------
+        /// <summary>由节点列表构造一个音符；类型按节点数决定：单节点保持原属性（点击=Tap / 连轨=Linked，span 决定），多节点才是按住音符(originalType)。</summary>
+        private ChartNote MakeChainNote(List<float> times, List<int> lanes, List<int> spans, NoteData.NoteType originalType)
+        {
+            int count = times.Count;
+            var n = new ChartNote();
+            n.holdTimes = times.ToArray();
+            n.holdLanes = lanes.ToArray();
+            n.holdLaneSpans = spans.ToArray();
+            n.time = times[0];
+            n.lane = lanes[0];
+            n.holdEndLane = lanes[count - 1];
+            n.holdDuration = (count == 1) ? 0f : Mathf.Max(0.1f, times[count - 1] - times[0]);
+            n.type = (count == 1)
+                ? (spans[0] == 2 ? NoteData.NoteType.Linked : NoteData.NoteType.Tap)
+                : originalType;
+            return n;
+        }
+
+        /// <summary>把音符 A 与 B 合并为一条按住音符（纯链接：各自节点属性/连轨宽度原样保留，仅按时间排序串成链）。</summary>
+        private void MergeNotesIntoChain(int aIdx, int bIdx)
+        {
+            if (aIdx < 0 || bIdx < 0 || aIdx >= notes.Count || bIdx >= notes.Count) return;
+            if (aIdx == bIdx) return;
+            PushUndo();
+            var times = new List<float>();
+            var lanes = new List<int>();
+            var spans = new List<int>();
+            AppendNoteNodes(times, lanes, spans, notes[aIdx]);
+            AppendNoteNodes(times, lanes, spans, notes[bIdx]);
+            SortTriple(times, lanes, spans); // 按时间排序，A→B 或 B→A 都保持正确时序
+
+            var merged = MakeChainNote(times, lanes, spans, NoteData.NoteType.Hold);
+            int hi = Mathf.Max(aIdx, bIdx);
+            int lo = Mathf.Min(aIdx, bIdx);
+            notes.RemoveAt(hi);
+            notes.RemoveAt(lo);
+            notes.Insert(lo, merged);
+            selectedIndex = lo;
+            AutoExtendSongLength();
+            Repaint();
+        }
+
+        /// <summary>把一个音符的所有节点（含 span）展开进列表；单节点按类型推断 span（连轨=2 / 点击=1），不改变音符自身属性。</summary>
+        private void AppendNoteNodes(List<float> times, List<int> lanes, List<int> spans, ChartNote n)
+        {
+            if (n.holdTimes != null && n.holdTimes.Length >= 2)
+            {
+                int[] sp = n.holdLaneSpans;
+                if (sp == null || sp.Length != n.holdTimes.Length)
+                {
+                    sp = new int[n.holdTimes.Length];
+                    for (int i = 0; i < sp.Length; i++) sp[i] = 1;
+                }
+                for (int i = 0; i < n.holdTimes.Length; i++)
+                {
+                    times.Add(n.holdTimes[i]);
+                    lanes.Add(n.holdLanes[i]);
+                    spans.Add(sp[i]);
+                }
+            }
+            else
+            {
+                int span = 1;
+                if (n.holdLaneSpans != null && n.holdLaneSpans.Length > 0) span = n.holdLaneSpans[0];
+                else if (n.type == NoteData.NoteType.Linked) span = 2;
+                times.Add(n.time);
+                lanes.Add(n.lane);
+                spans.Add(span);
+            }
+        }
+
+        private static void SortTriple(List<float> times, List<int> lanes, List<int> spans)
+        {
+            var idx = new List<int>();
+            for (int i = 0; i < times.Count; i++) idx.Add(i);
+            idx.Sort((x, y) => times[x].CompareTo(times[y]));
+            var nt = new List<float>(); var nl = new List<int>(); var ns = new List<int>();
+            foreach (var i in idx) { nt.Add(times[i]); nl.Add(lanes[i]); ns.Add(spans[i]); }
+            times.Clear(); lanes.Clear(); spans.Clear();
+            times.AddRange(nt); lanes.AddRange(nl); spans.AddRange(ns);
+        }
+
+        /// <summary>改 BPM 时等比缩放：全部音符时间点 + 全部标记时间点按 factor 同比例缩放，保持彼此一致并重新对齐节拍网格。</summary>
+        private void RescaleChart(float factor)
+        {
+            if (Mathf.Approximately(factor, 1f)) return;
+            PushUndo();
+            for (int i = 0; i < notes.Count; i++)
+            {
+                var n = notes[i];
+                n.time *= factor;
+                if (n.holdTimes != null)
+                    for (int k = 0; k < n.holdTimes.Length; k++) n.holdTimes[k] *= factor;
+                if (n.holdDuration > 0f) n.holdDuration *= factor;
+            }
+            for (int i = 0; i < markers.Count; i++) markers[i] *= factor;
+            playTime = Mathf.Clamp(playTime * factor, 0f, float.MaxValue);
+        }
+
+        /// <summary>只命中标记三角区域（ruler 下方小三角），用于左键选中，避免与轨道区加音符冲突。</summary>
+        private int HitTestMarkerTriangle(Vector2 mouse, Rect baseRect, float timeX0)
+        {
+            for (int i = markers.Count - 1; i >= 0; i--)
+            {
+                float x = timeX0 + (markers[i] - viewStartTime) * pixelsPerSecond;
+                float triTop = baseRect.y + RulerHeight;
+                float triBot = baseRect.y + RulerHeight + 11f;
+                if (mouse.y >= triTop && mouse.y <= triBot && Mathf.Abs(mouse.x - x) <= 8f) return i;
+            }
+            return -1;
         }
 
         private static void DrawChainTapCount(Rect rect, int count)
@@ -1131,7 +1716,8 @@ namespace MusicalSprite.Editor
         /// </summary>
         private void CommitPendingLinkNode(Rect baseRect, float timeX0)
         {
-            if (!linkingMode) { pendingLinkDown = false; return; }
+            // 两模式均关闭：直接丢弃本次按下
+            if (!linkingMode && !pointLinkMode) { pendingLinkDown = false; return; }
 
             PushUndo(); // 落下一个链接节点前记录快照，撤销可回退该节点
 
@@ -1144,6 +1730,54 @@ namespace MusicalSprite.Editor
                 linkLanes.Clear();
                 linkLaneSpans.Clear();
             }
+
+            // 点链模式（H）：按下 A 并拖到 B 再松开 = 生成「A→B」2 节点 Hold
+            // - 必须有明显横向拖动（>8px）才生成；否则视为误触、无操作
+            Vector2 cur = Event.current.mousePosition;
+            float dragDist = Vector2.Distance(cur, linkDownMouse);
+            if (pointLinkMode && dragDist > 8f)
+            {
+                float tA = snapToBeat ? Snap(linkDownTime) : linkDownTime;
+                float tB = (cur.x - timeX0) / pixelsPerSecond + viewStartTime;
+                tB = snapToBeat ? Snap(tB) : tB;
+                tB = Mathf.Clamp(tB, 0f, songLength);
+                if (tB < tA + 0.1f) tB = tA + 0.1f; // 长按至少 0.1s，且不允许拖向过去
+                int laneA = linkDownLane;
+                int laneB = 3 - Mathf.Clamp(Mathf.FloorToInt((cur.y - baseRect.y - RulerHeight) / LaneHeight), 0, 3);
+                int dLane = Mathf.Clamp(laneB - laneA, -1, 1);
+                bool cross = dLane != 0;
+                int[] lanes = cross ? new int[] { laneA, laneB } : new int[] { laneA, laneA };
+                int[] spans = cross ? new int[] { 2, 2 } : new int[] { 1, 1 };
+                var hn = new ChartNote
+                {
+                    time = tA,
+                    lane = laneA,
+                    type = NoteData.NoteType.Hold,
+                    holdLanes = lanes,
+                    holdTimes = new float[] { tA, tB },
+                    holdLaneSpans = spans,
+                    holdEndLane = laneB,
+                    holdDuration = Mathf.Max(0.1f, tB - tA)
+                };
+                notes.Add(hn);
+                selectedIndex = notes.Count - 1;
+                AutoExtendSongLength();
+                pendingLinkDown = false;
+                linkingActive = false;
+                linkLastIndex = -1;
+                linkTimes.Clear(); linkLanes.Clear(); linkLaneSpans.Clear();
+                Repaint();
+                return;
+            }
+            // 点链模式无明显拖动：不动作（避免与单击误触混淆）
+            if (pointLinkMode)
+            {
+                pendingLinkDown = false;
+                Repaint();
+                return;
+            }
+
+            // 链点模式 (G)：单击 = 累加节点（多节点链）；保持当前"按住上下拖动生成连轨" 的语义
 
             // 当前指针所在轨道（用于判断拖动了几轨）
             float localY = Event.current.mousePosition.y - baseRect.y;
@@ -1215,11 +1849,23 @@ namespace MusicalSprite.Editor
             {
                 previewSource.clip = beatmapAudioClip;
                 previewSource.time = playTime;
+                previewSource.pitch = playbackSpeed; // 音频随倍速同步变速
                 previewSource.Play();
             }
             playStartEditorTime = EditorApplication.timeSinceStartup;
             playStartOffset = playTime;
             isPlaying = true;
+        }
+
+        /// <summary>切换播放倍速：重锚播放起点，使切换瞬间 playTime 不跳变；音频 pitch 同步。</summary>
+        private void SetPlaybackSpeed(float s)
+        {
+            if (Mathf.Approximately(s, playbackSpeed)) return;
+            playStartOffset = playTime;
+            playStartEditorTime = EditorApplication.timeSinceStartup;
+            playbackSpeed = s;
+            if (previewSource != null) previewSource.pitch = s;
+            Repaint();
         }
 
         private void Pause()
@@ -1368,6 +2014,7 @@ namespace MusicalSprite.Editor
             beatmapName = Path.GetFileNameWithoutExtension(path);
             bpm = bm.bpm;
             beatmapAudioClip = bm.audioClip;
+            markers = (bm.markers != null) ? new List<float>(bm.markers) : new List<float>();
             // 从资产音符数组重建单边谱面（含连轨宽度还原）
             LoadNotesFromNoteData(bm.notes);
             // 自检：若资产丢失连轨宽度而文本备份有，提示从文本恢复（纵深防御）
@@ -1416,7 +2063,7 @@ namespace MusicalSprite.Editor
                     notes.Add(cn);
                 }
             }
-            if (notes.Count > 0) songLength = Mathf.Max(songLength, notes.Max(cn => cn.time) + 4f);
+            if (notes.Count > 0) AutoExtendSongLength();
             playTime = 0f;
             Repaint();
         }
@@ -1442,6 +2089,34 @@ namespace MusicalSprite.Editor
             catch (System.Exception) { return 0; }
         }
 
+        /// <summary>根据当前 notes / 音乐素材自动扩展 songLength：
+        /// 1) 若已挂音乐素材，取 max(用户设置值, music.length)；
+        /// 2) 再与「最后音符结束时刻 + 4s」取 max，保证所有音符都能在时间轴上画出来。
+        /// 用于：BPM 提交后、songLength 字段提交后、加载谱面后，确保时间轴长度跟随内容变化。</summary>
+        private void AutoExtendSongLength()
+        {
+            float target = songLength;
+            if (beatmapAudioClip != null) target = Mathf.Max(target, beatmapAudioClip.length);
+            if (notes != null && notes.Count > 0)
+            {
+                float lastEnd = 0f;
+                for (int i = 0; i < notes.Count; i++)
+                {
+                    var cn = notes[i];
+                    if (cn.holdTimes != null && cn.holdTimes.Length > 0)
+                        lastEnd = Mathf.Max(lastEnd, cn.holdTimes[cn.holdTimes.Length - 1]);
+                    else
+                        lastEnd = Mathf.Max(lastEnd, cn.time);
+                }
+                target = Mathf.Max(target, lastEnd + 4f);
+            }
+            if (!Mathf.Approximately(target, songLength))
+            {
+                songLength = target;
+                Repaint();
+            }
+        }
+
         /// <summary>把已保存的 BeatmapSO 同步导出为同级 .json 文本镜像（纵深防御 / 可 git 提交）。</summary>
         private void ExportBeatmapText(BeatmapSO asset, string assetPath)
         {
@@ -1449,7 +2124,7 @@ namespace MusicalSprite.Editor
             try
             {
                 string jsonPath = GetJsonPath(assetPath);
-                var dump = new BeatmapTextDump { bpm = asset.bpm, notes = asset.notes };
+                var dump = new BeatmapTextDump { bpm = asset.bpm, notes = asset.notes, markers = asset.markers };
                 File.WriteAllText(jsonPath, JsonUtility.ToJson(dump, true));
             }
             catch (System.Exception e)
@@ -1477,6 +2152,7 @@ namespace MusicalSprite.Editor
             bpm = dump.bpm;
             currentEditingPath = assetPath;
             beatmapName = Path.GetFileNameWithoutExtension(assetPath);
+            markers = (dump.markers != null) ? new List<float>(dump.markers) : new List<float>();
             LoadNotesFromNoteData(dump.notes);
             SaveBeatmap(); // 立即把恢复出的连轨宽度固化进 .asset（与 .json 保持一致）
             ShowNotification(new GUIContent("已从文本恢复：" + Path.GetFileNameWithoutExtension(assetPath)));
@@ -1497,9 +2173,10 @@ namespace MusicalSprite.Editor
             foreach (var cn in notes)
             {
                 if (cn.holdLanes == null || cn.holdLanes.Length < 2) continue; // 仅检查多节点链
+                // 仅检查「长度完整性」：spans 数组存在且与节点数一致即视为正常。
+                // 普通多节点 Hold 的 spans 全为 1（无连轨节点）也是合法状态，不能误判为损坏（修复 2026-08-27 误报弹窗）。
                 bool spanOk = cn.holdLaneSpans != null
-                    && cn.holdLaneSpans.Length == cn.holdLanes.Length
-                    && System.Linq.Enumerable.Any(cn.holdLaneSpans, v => v > 1);
+                    && cn.holdLaneSpans.Length == cn.holdLanes.Length;
                 if (!spanOk) { spanLost = true; break; }
             }
 
@@ -1528,6 +2205,7 @@ namespace MusicalSprite.Editor
             beatmapName = "NewBeatmap";
             currentEditingPath = "";
             beatmapAudioClip = null;
+            markers = new List<float>();
             selectedIndex = -1;
             dragIndex = -1;
             dragNote = null;
@@ -1588,6 +2266,7 @@ namespace MusicalSprite.Editor
             asset.bpm = bpm;
             asset.audioClip = beatmapAudioClip;
             asset.notes = newNotes;
+            asset.markers = markers.Count > 0 ? markers.ToArray() : null;
 
             if (created) AssetDatabase.CreateAsset(asset, path);
             else AssetDatabase.SaveAssetIfDirty(asset);

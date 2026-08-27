@@ -35,8 +35,8 @@ public class EnergyVFXPlaceholder : MonoBehaviour
     private readonly HashSet<CharacterClass> activeCharacters = new HashSet<CharacterClass>();
     private readonly Dictionary<CharacterClass, float> spawnTimers = new Dictionary<CharacterClass, float>();
     private readonly Dictionary<CharacterClass, List<GameObject>> cubesByChar = new Dictionary<CharacterClass, List<GameObject>>();
-    private readonly Dictionary<CharacterClass, Action<int>> fullHandlers = new Dictionary<CharacterClass, Action<int>>();
-    private readonly Dictionary<CharacterClass, Action<int>> depletedHandlers = new Dictionary<CharacterClass, Action<int>>();
+    private readonly Dictionary<CharacterClass, Action<int, int>> fullHandlers = new Dictionary<CharacterClass, Action<int, int>>();
+    private readonly Dictionary<CharacterClass, Action<int, int>> depletedHandlers = new Dictionary<CharacterClass, Action<int, int>>();
 
     void Start()
     {
@@ -84,16 +84,20 @@ public class EnergyVFXPlaceholder : MonoBehaviour
         foreach (var c in CharacterRoster.AllTeamCharacters())
         {
             CharacterClass character = c;
-            Action<int> onFull = _ => OnFull(character);
-            Action<int> onDepleted = _ => OnDepleted(character);
+            Action<int, int> onFull = (_, __) => OnFull(character);
+            Action<int, int> onDepleted = (_, __) => OnDepleted(character);
             fullHandlers[character] = onFull;
             depletedHandlers[character] = onDepleted;
             character.OnEnergyFull += onFull;
             character.OnEnergyDepleted += onDepleted;
 
-            // 订阅发生在充满事件之后时也要补上表现，保证“只要当前充能满就冒烟”。
-            if (character.maxEnergy > 0f && character.currentEnergy >= character.maxEnergy && !character.skillBusy)
-                OnFull(character);
+            // 订阅发生在充满事件之后时也要补上表现，保证“只要当前充能满就冒烟”（多主动槽任一满即冒烟）。
+            bool anyFull = false;
+            if (character.maxEnergies != null)
+                for (int i = 0; i < character.maxEnergies.Length; i++)
+                    if (character.maxEnergies[i] > 0f && character.currentEnergies[i] >= character.maxEnergies[i] && !character.skillBusyArr[i])
+                    { anyFull = true; break; }
+            if (anyFull) OnFull(character);
         }
     }
 

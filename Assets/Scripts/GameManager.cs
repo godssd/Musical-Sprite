@@ -55,6 +55,25 @@ public class GameManager : MonoBehaviour
             opponentInput.beatmap = rightSpawner.beatmap;
         }
 
+        // 调用谱面后运行游戏自动同步播放 BGM（编辑器已把音乐存进 BeatmapSO.audioClip）。
+        // 必须在赋值 clip 后重新锚定音乐时钟并播放，否则若 Conductor.Start 先于本方法执行、彼时 clip 尚未赋值，
+        // 会出现「时钟在跑但音频没播放」的静音问题。
+        if (conductor != null)
+        {
+            if (conductor.musicSource == null)
+                conductor.musicSource = conductor.GetComponent<AudioSource>();
+            if (conductor.musicSource != null)
+            {
+                BeatmapSO bgm = (leftSpawner != null) ? leftSpawner.beatmap : null;
+                if (bgm == null && rightSpawner != null) bgm = rightSpawner.beatmap;
+                if (bgm != null && bgm.audioClip != null)
+                {
+                    conductor.musicSource.clip = bgm.audioClip;
+                    conductor.Play(); // 重新锚定 dspStartTime 并播放，使 BGM 与判定时钟从 0 对齐
+                }
+            }
+        }
+
         // 监听血量归零，直接判胜负
         if (scoreManager != null)
             scoreManager.OnPlayerDefeated += OnPlayerDefeated;

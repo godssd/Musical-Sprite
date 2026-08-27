@@ -761,11 +761,13 @@ public class HoldNote : MonoBehaviour
     /// <summary>把一个被附魔节点及通向它的连接段染成黄色发光。</summary>
     private void TintCharmedNode(int nodeIndex)
     {
-        Color yellow = new Color(1f, 0.85f, 0.1f);
+        // 附魔颜色取释放方自身颜色（charmOwnersByNode 已登记 owner）；无 owner 时回退黄
+        Color col = (charmOwnersByNode != null && nodeIndex >= 0 && nodeIndex < charmOwnersByNode.Length && charmOwnersByNode[nodeIndex] != null)
+            ? charmOwnersByNode[nodeIndex].charmColor : new Color(1f, 0.85f, 0.1f);
         if (nodeIndex >= 0 && nodeIndex < nodeMats.Count && nodeMats[nodeIndex] != null)
         {
             nodeMats[nodeIndex].EnableKeyword("_EMISSION");
-            nodeMats[nodeIndex].SetColor("_EmissionColor", yellow);
+            nodeMats[nodeIndex].SetColor("_EmissionColor", col);
         }
 
         int segmentIndex = nodeIndex - 1;
@@ -776,7 +778,7 @@ public class HoldNote : MonoBehaviour
                 var m = segmentMatGroups[segmentIndex][k];
                 if (m == null) continue;
                 m.EnableKeyword("_EMISSION");
-                m.SetColor("_EmissionColor", yellow);
+                m.SetColor("_EmissionColor", col);
             }
         }
     }

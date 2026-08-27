@@ -95,7 +95,8 @@ public class NoteSpawner : MonoBehaviour
     private List<HoldNote> activeHoldNotes = new List<HoldNote>();
 
     // 主动技能附魔请求：按判定时刻从近到远消费名额，包含施法时已经在场的音符。
-    public struct CharmRequest { public ActiveSkillRuntime owner; public int remaining; }
+    public struct CharmRequest { public ActiveSkillRuntime owner; public int remaining; public int targetSide; public Color color; }
+    private struct ReservedCharm { public ActiveSkillRuntime owner; public int nodeIndex; } // nodeIndex -1 = 整音符
     private struct CharmCandidate
     {
         public float hitTime;
@@ -106,6 +107,8 @@ public class NoteSpawner : MonoBehaviour
     }
     public List<CharmRequest> activeCharms = new List<CharmRequest>();
     public HashSet<int> heldLanes = new HashSet<int>(); // 当前被按住的轨道（本侧）
+    // 预定附魔：beatmap 音符索引 -> 待附魔节点（nodeIndex；-1 表示整音符）。用于"场上不足则预定尚未生成的音符凑数"。
+    private Dictionary<int, List<ReservedCharm>> reservedCharmsByNote = new Dictionary<int, List<ReservedCharm>>();
     private int spawnIndex = 0;
     private Vector3[] laneOffsets;
     private float approachSpeed; // 音符接近判定线的速度（单位/秒），用于把半径换算成时间窗口
@@ -158,17 +161,18 @@ public class NoteSpawner : MonoBehaviour
         // 1. 到时间就生成音符。Linked 单节点是双轨点击，多节点是双轨长按/跨轨。
         while (spawnIndex < beatmap.notes.Length)
         {
-            NoteData data = beatmap.notes[spawnIndex];
+            int spawnIdx = spawnIndex;
+            NoteData data = beatmap.notes[spawnIdx];
             if (songTime < data.time - leadTime) break;
 
             if (data.side == side)
             {
                 if (data.type == NoteData.NoteType.Hold)
-                    SpawnHoldNote(data, 1);
+                    SpawnHoldNote(data, 1, spawnIdx);
                 else if (data.IsLinkedHold())
-                    SpawnHoldNote(data, 2);
+                    SpawnHoldNote(data, 2, spawnIdx);
                 else
-                    SpawnNote(data);
+                    SpawnNote(data, spawnIdx);
             }
             spawnIndex++;
         }
@@ -259,7 +263,7 @@ public class NoteSpawner : MonoBehaviour
         OnLaneUp?.Invoke(side, lane);
     }
 
-    private void SpawnNote(NoteData data)
+    private void SpawnNote(NoteData data, int beatmapIndex)
     {
         if (spawnPoint == null || hitPoint == null) return;
 
@@ -293,13 +297,27 @@ public class NoteSpawner : MonoBehaviour
             chainTapHoldDuration);
 
         activeNotes.Add(note);
+
+        // 预定附魔：若该音符已被某技能预定，生成瞬间即附魔（凑数用）
+        if (reservedCharmsByNote.TryGetValue(beatmapIndex, out var resList))
+        {
+            foreach (var rc in resList)
+            {
+                if (rc.owner == null) continue;
+                note.charmOwner = rc.owner;
+                note.wasCharmed = true;
+                rc.owner.OnNoteCharmed(note);
+                TintCharmed(note, rc.owner.charmColor);
+            }
+            reservedCharmsByNote.Remove(beatmapIndex);
+        }
     }
 
     /// <summary>角色释放主动技能时调用：登记一个附魔请求（配额 = count）。</summary>
-    public void RequestCharm(ActiveSkillRuntime owner, int count)
+    public void RequestCharm(ActiveSkillRuntime owner, int count, Color color, int targetSide)
     {
         if (owner == null || count <= 0) return;
-        activeCharms.Add(new CharmRequest { owner = owner, remaining = count });
+        activeCharms.Add(new CharmRequest { owner = owner, remaining = count, color = color, targetSide = targetSide });
         owner.SetCharmQuota(count);
         if (conductor != null) AssignPendingCharms(conductor.songPosition);
     }
@@ -352,7 +370,7 @@ public class NoteSpawner : MonoBehaviour
                     continue;
                 }
 
-                if (req.owner.ownerSide != side) continue;
+                if (req.targetSide != side) continue;
                 bool assigned;
                 if (candidate.note != null)
                 {
@@ -360,7 +378,7 @@ public class NoteSpawner : MonoBehaviour
                     candidate.note.charmOwner = req.owner;
                     candidate.note.wasCharmed = true;
                     req.owner.OnNoteCharmed(candidate.note);
-                    TintCharmed(candidate.note);
+                    TintCharmed(candidate.note, req.color);
                     assigned = true;
                 }
                 else
@@ -380,6 +398,10 @@ public class NoteSpawner : MonoBehaviour
                 break;
             }
         }
+
+        // 场上名额未用完时，预定谱面中"尚未生成"的同侧音符（生成即附魔），凑够数量
+        ReserveUpcomingCharms(songTime);
+
     }
 
     private void CloseCharmRequestsIfFinished()
@@ -391,21 +413,70 @@ public class NoteSpawner : MonoBehaviour
             if (request.owner != null) request.owner.OnCharmRequestClosed();
     }
 
-    /// <summary>把被附魔音符染成黄色发光（占位视觉）。</summary>
-    private void TintCharmed(Note note)
+    /// <summary>把被附魔音符染成附魔颜色（取释放方自身颜色）。</summary>
+    private void TintCharmed(Note note, Color color)
     {
         var r = note.GetComponent<Renderer>();
         if (r == null) return;
         r.material = new Material(r.material);
         r.material.EnableKeyword("_EMISSION");
-        r.material.SetColor("_EmissionColor", new Color(1f, 0.85f, 0.1f));
+        r.material.SetColor("_EmissionColor", color);
+    }
+
+    /// <summary>场上名额未用完时，预定谱面中"尚未生成"(time 更晚)的同侧音符，生成即附魔，凑够数量。
+    /// 这样无论场上够不够，最终一定附注魔 N 个（除非整首该侧音符真少于 N）。</summary>
+    private void ReserveUpcomingCharms(float songTime)
+    {
+        if (beatmap == null || beatmap.notes == null) return;
+        for (int ri = 0; ri < activeCharms.Count; ri++)
+        {
+            var req = activeCharms[ri];
+            if (req.owner == null || req.remaining <= 0) continue;
+
+            for (int i = spawnIndex; i < beatmap.notes.Length && req.remaining > 0; i++)
+            {
+                if (reservedCharmsByNote.ContainsKey(i)) continue; // 已预定
+                var d = beatmap.notes[i];
+                if (d.side != req.targetSide) continue;
+                if (d.time <= songTime) continue; // 只预定尚未生成的
+
+                bool isHold = d.type == NoteData.NoteType.Hold ||
+                    (d.type == NoteData.NoteType.Linked && d.holdTimes != null && d.holdTimes.Length >= 2 && d.holdLanes != null && d.holdLanes.Length >= 2);
+                if (isHold)
+                {
+                    float[] ts = (d.holdTimes != null && d.holdTimes.Length >= 2)
+                        ? d.holdTimes : new float[] { d.time, d.time + Mathf.Max(0.1f, d.holdDuration) };
+                    int nodeCount = Mathf.Max(2, ts.Length);
+                    var list = new List<ReservedCharm>();
+                    for (int k = 0; k < nodeCount && req.remaining > 0; k++)
+                    {
+                        list.Add(new ReservedCharm { owner = req.owner, nodeIndex = k });
+                        req.remaining--;
+                    }
+                    if (list.Count > 0) reservedCharmsByNote[i] = list;
+                }
+                else
+                {
+                    reservedCharmsByNote[i] = new List<ReservedCharm> { new ReservedCharm { owner = req.owner, nodeIndex = -1 } };
+                    req.remaining--;
+                }
+            }
+
+            activeCharms[ri] = req;
+            if (req.remaining <= 0)
+            {
+                activeCharms.RemoveAt(ri);
+                ri--;
+                req.owner.OnCharmRequestClosed();
+            }
+        }
     }
 
     /// <summary>
     /// 生成长按音符（多节点：head → mid → ... → tail，相邻节点间一段连接 bar），
     /// 交由 HoldNote 组件驱动运动与判定。每段（节点 i → i+1）完成触发一次 CLEAR。
     /// </summary>
-    private void SpawnHoldNote(NoteData data, int laneSpan)
+    private void SpawnHoldNote(NoteData data, int laneSpan, int beatmapIndex)
     {
         if (spawnPoint == null || hitPoint == null) return;
 
@@ -481,6 +552,24 @@ public class NoteSpawner : MonoBehaviour
         hn.onJudge += (s, l, r, p) => OnJudge?.Invoke(s, l, r, p, hn);
 
         activeHoldNotes.Add(hn);
+
+        // 预定附魔：若该长按音符已被预定，生成瞬间附魔其对应节点（凑数用）
+        if (reservedCharmsByNote.TryGetValue(beatmapIndex, out var resList))
+        {
+            foreach (var rc in resList)
+            {
+                if (rc.owner == null) continue;
+                if (rc.nodeIndex < 0)
+                {
+                    for (int k = 0; k < hn.NodeCount; k++) hn.TryCharmNode(k, rc.owner);
+                }
+                else
+                {
+                    hn.TryCharmNode(rc.nodeIndex, rc.owner);
+                }
+            }
+            reservedCharmsByNote.Remove(beatmapIndex);
+        }
     }
 
     /// <summary>
