@@ -72,6 +72,7 @@ namespace MusicalSprite.Editor
         private const float LaneLabelWidth = 64f;
         private const float LaneHeight = 36f;
         private const float RulerHeight = 24f;
+        private const float MarkerZoneHeight = 22f;   // 标记条：时间轴正上方独立 22px 条带，三角旗标在此，左键选中/右键删除，不参与播放头拖动
         [SerializeField] private bool snapToBeat = true;
 
         // ---------- 标记（快捷键 F，吸附 ±0.25s） ----------
@@ -115,6 +116,7 @@ namespace MusicalSprite.Editor
         private bool pointLinkDragging = false;             // H：正在从源音符拖向目标音符
         private bool snapMarkers = true;                    // 标记吸附开关（F 打点是否吸附 ±0.25s）
         private int selectedMarker = -1;                    // 当前选中的标记索引（左键点三角选中）
+        private int draggingMarkerIndex = -1;               // 标记拖拽中：正在被左键拖动重定位的标记索引（-1 表示未拖拽）
 
         // ---------- 点击音符与连轨音符创建 ----------
         [SerializeField] private bool placeSmallTapMode = false;
@@ -360,9 +362,9 @@ namespace MusicalSprite.Editor
                 : "★ 调用中：" + Path.GetFileNameWithoutExtension(activePath);
             EditorGUILayout.HelpBox(
                 "音符的 time = 音符圆心抵达判定线的时刻（非发射时刻）；改难度只改移动速度，不影响该时刻。\n" +
-                "普通音符：轨道区单击=加音符；拖拽=移动；右键/Delete=删除；点击刻度尺=定位播放头。\n" +
-                "时间轴操作：滚轮=缩放（以光标为锚点）；在红色播放线附近按住拖动=拖动播放头（校听）；空格=播放/暂停；倍速按钮=1x/0.5x/0.25x（音频同步变速）。\n" +
-                "标记（校谱分段用，不影响游玩）：F 键在播放头处打标记（自动吸附 ±0.25s 内最近音符，否则吸附到 0.25s 网格）。标记为亮白色线 + 下方三角旗标，可右键点击删除；现在三角放在轨道区下方，左键点击三角也能选中删除。\n" +
+                "普通音符：轨道区单击=加音符；拖拽=移动；右键/Delete=删除；点击刻度尺=定位播放头。按 D=在当前红线位置（轨道2）加一条普通点击音符。\n" +
+                "时间轴操作：滚轮=缩放（以光标为锚点）；在标记条下方的红线（含刻度尺与音轨区）上按住拖动=拖动播放头（校听）；空格=播放/暂停；倍速按钮=1x/0.5x/0.25x（音频同步变速）。\n" +
+                "标记（校谱分段用，不影响游玩）：F 键在播放头处打标记（自动吸附 ±0.25s 内最近音符，否则吸附到 0.25s 网格）。标记为亮白色线 + 时间轴正上方「标记条」内的三角旗标（独立条带，整条高度可点）；左键点三角=选中并可拖拽重定位，右键点三角=删除，该条不参与播放头拖动。\n" +
                 "时间轴长度跟随：BPM 或歌曲长度提交后自动扩时轴（适配最后音符 + 4s + 音乐长度），无需手动按钮；改 BPM 时音符与标记会按新旧 BPM 比例一起缩放重对齐。\n" +
                 "链点模式：快捷键 G 开关；勾选后单击落节点、释放后再点下一个节点，依次累加成多节点链。右键点「链接线」= 在该段断开（前后各自保留为独立音符）；右键空白处=收尾整条链。\n" +
                 "点链模式：快捷键 H 开关（与 G 互斥）。在第一个已有音符上左键按下、拖到第二个已有音符松开 = 把这两个音符链接成一条按住音符（纯链接，各自节点属性/连轨宽度原样保留，按时间排序串成链）。没点中音符或松开在空白处 = 取消，不生成任何东西。\n" +
@@ -375,7 +377,7 @@ namespace MusicalSprite.Editor
         private void DrawTimeline()
         {
             Rect baseRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
-                GUILayout.ExpandWidth(true), GUILayout.Height(RulerHeight + 4 * LaneHeight));
+                GUILayout.ExpandWidth(true), GUILayout.Height(RulerHeight + 4 * LaneHeight + MarkerZoneHeight));
 
             // 背景
             EditorGUI.DrawRect(baseRect, new Color(0.08f, 0.08f, 0.10f));
@@ -389,8 +391,11 @@ namespace MusicalSprite.Editor
             float maxStart = Mathf.Max(0f, songLength - visibleSeconds);
             viewStartTime = Mathf.Clamp(viewStartTime, 0f, maxStart);
 
+            // ---- 标记条（独立条带，位于时间轴正上方）----
+            EditorGUI.DrawRect(new Rect(baseRect.x, baseRect.y, baseRect.width, MarkerZoneHeight), new Color(0.10f, 0.10f, 0.14f));
+
             // ---- 刻度尺 ----
-            EditorGUI.DrawRect(new Rect(baseRect.x, baseRect.y, baseRect.width, RulerHeight), new Color(0.16f, 0.16f, 0.2f));
+            EditorGUI.DrawRect(new Rect(baseRect.x, baseRect.y + MarkerZoneHeight, baseRect.width, RulerHeight), new Color(0.16f, 0.16f, 0.2f));
             float secPerBeat = 60f / Mathf.Max(0.001f, bpm);
             int firstBeat = Mathf.FloorToInt(viewStartTime / secPerBeat);
             int lastBeat = Mathf.CeilToInt((viewStartTime + visibleSeconds) / secPerBeat);
@@ -401,40 +406,40 @@ namespace MusicalSprite.Editor
                 if (x < timeX0 - 1 || x > baseRect.x + baseRect.width + 1) continue;
                 bool major = (b % 4 == 0);
                 Color tickCol = major ? new Color(1f, 1f, 1f, 0.85f) : new Color(1f, 1f, 1f, 0.3f);
-                EditorGUI.DrawRect(new Rect(x, baseRect.y + 4, 1, RulerHeight - 6), tickCol);
+                EditorGUI.DrawRect(new Rect(x, baseRect.y + MarkerZoneHeight + 4, 1, RulerHeight - 6), tickCol);
                 if (major)
                 {
-                    GUI.Label(new Rect(x + 3, baseRect.y + 3, 70, 16), $"{b}拍", EditorStyles.miniLabel);
+                    GUI.Label(new Rect(x + 3, baseRect.y + MarkerZoneHeight + 3, 70, 16), $"{b}拍", EditorStyles.miniLabel);
                 }
             }
 
             // ---- 标记（F 键打点，右键删除；吸附 ±0.25s）----
-            // 线改为亮白色（高对比），三角朝下画在 ruler 下方（落在第一个 lane 内）
+            // 线改为亮白色（高对比）；三角朝下画在顶部「标记条」内（独立于 ruler/lane，才能稳定被左键选中）
             for (int mi = 0; mi < markers.Count; mi++)
             {
                 float mx = timeX0 + (markers[mi] - viewStartTime) * pixelsPerSecond;
                 if (mx < timeX0 - 8 || mx > baseRect.x + baseRect.width + 8) continue;
                 // 贯穿时间轴的亮白色细线（2px，更醒目）
-                EditorGUI.DrawRect(new Rect(mx - 0.5f, baseRect.y, 2f, baseRect.height), new Color(1f, 1f, 1f, 0.85f));
-                // 三角朝下、贴在 ruler 下方第一个 lane 内（apex 紧贴 ruler 下沿）
+                EditorGUI.DrawRect(new Rect(mx - 0.5f, baseRect.y + MarkerZoneHeight, 2f, baseRect.height - MarkerZoneHeight), new Color(1f, 1f, 1f, 0.85f));
+                // 三角旗标画在 ruler 顶部 16px 标记命中带内（apex 朝下指向白线），脱离轨道点击区才能被选中
                 // EditorWindow 中画 Handles 必须用 BeginGUI/EndGUI 包住，否则不渲染（这就是之前看不到三角的原因）
                 // 颜色用高对比琥珀色，保证在亮/暗背景上都清晰可见
                 if (Event.current.type == EventType.Repaint)
                 {
                     Vector3[] tri = new Vector3[]
                     {
-                        new Vector3(mx, baseRect.y + RulerHeight, 0f),                             // apex（紧贴 ruler 下沿）
-                        new Vector3(mx - 7f, baseRect.y + RulerHeight + 9f, 0f),                   // 左下
-                        new Vector3(mx + 7f, baseRect.y + RulerHeight + 9f, 0f)                    // 右下
+                        new Vector3(mx - 8f, baseRect.y + 4f, 0f),                                 // 左上
+                        new Vector3(mx + 8f, baseRect.y + 4f, 0f),                                 // 右上
+                        new Vector3(mx, baseRect.y + 15f, 0f)                                      // 底部尖（朝下指向白线）
                     };
                     Handles.BeginGUI();
-                    Handles.color = (mi == selectedMarker) ? new Color(1f, 0.9f, 0.2f, 1f) : new Color(1f, 0.6f, 0.05f, 1f);
+                    Handles.color = (mi == selectedMarker) ? new Color(1f, 1f, 1f, 1f) : new Color(1f, 0.6f, 0.05f, 1f);
                     Handles.DrawAAConvexPolygon(tri);
                     if (mi == selectedMarker)
                     {
                         // 选中态：在三角外再画一圈高亮
-                        Handles.color = new Color(1f, 0.9f, 0.2f, 1f);
-                        Handles.DrawWireDisc(new Vector2(mx, baseRect.y + RulerHeight + 4f), Vector3.forward, 11f);
+                        Handles.color = new Color(1f, 1f, 1f, 1f);
+                        Handles.DrawWireDisc(new Vector2(mx, baseRect.y + 10f), Vector3.forward, 11f);
                     }
                     Handles.EndGUI();
                 }
@@ -443,7 +448,7 @@ namespace MusicalSprite.Editor
             // ---- 轨道 ----
             for (int lane = 0; lane < 4; lane++)
             {
-                float y = baseRect.y + RulerHeight + (3 - lane) * LaneHeight;
+                float y = baseRect.y + MarkerZoneHeight + RulerHeight + (3 - lane) * LaneHeight;
                 EditorGUI.DrawRect(new Rect(baseRect.x, y, baseRect.width, LaneHeight),
                     lane % 2 == 0 ? EvenLane : OddLane);
                 // 轨道分隔
@@ -611,7 +616,7 @@ namespace MusicalSprite.Editor
             {
                 Vector2 cur = Event.current.mousePosition;
                 float localY = cur.y - baseRect.y;
-                int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - RulerHeight) / LaneHeight), 0, 3);
+                int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - MarkerZoneHeight - RulerHeight) / LaneHeight), 0, 3);
                 int endLane = 3 - displayRow;
                 // 拖动方向（屏幕上"下"=lane 减小），钳制到相邻 1 轨
                 int step = Mathf.Clamp(endLane - linkDownLane, -1, 1);
@@ -623,14 +628,14 @@ namespace MusicalSprite.Editor
                 if (commitSpan > 1)
                 {
                     // 覆盖两轨的高亮带（commitLane 为上方轨，commitLane+1 为下方轨）
-                    float bandTop = baseRect.y + RulerHeight + (2 - commitLane) * LaneHeight;
+                    float bandTop = baseRect.y + MarkerZoneHeight + RulerHeight + (2 - commitLane) * LaneHeight;
                     EditorGUI.DrawRect(new Rect(baseRect.x, bandTop, baseRect.width, LaneHeight * 2f),
                         new Color(1f, 0.6f, 0.2f, 0.28f));
                 }
                 else
                 {
                     // 单轨节点：仅高亮对应的一条轨道，避免预览比实际结果更宽
-                    float bandTop = baseRect.y + RulerHeight + (3 - commitLane) * LaneHeight;
+                    float bandTop = baseRect.y + MarkerZoneHeight + RulerHeight + (3 - commitLane) * LaneHeight;
                     EditorGUI.DrawRect(new Rect(baseRect.x, bandTop, baseRect.width, LaneHeight),
                         new Color(1f, 0.6f, 0.2f, 0.18f));
                 }
@@ -652,7 +657,7 @@ namespace MusicalSprite.Editor
 
             // ---- 播放头 ----
             float phx = timeX0 + (playTime - viewStartTime) * pixelsPerSecond;
-            EditorGUI.DrawRect(new Rect(phx, baseRect.y, 2, baseRect.height), Color.red);
+            EditorGUI.DrawRect(new Rect(phx, baseRect.y + MarkerZoneHeight, 2, baseRect.height - MarkerZoneHeight), Color.red);
 
             // 滚动条
             viewStartTime = GUILayout.HorizontalScrollbar(viewStartTime, visibleSeconds, 0f, songLength + 1f);
@@ -717,6 +722,19 @@ namespace MusicalSprite.Editor
                     e.Use();
                     return;
                 }
+                // D：在当前播放头（红线）位置添加一条普通点击音符（轨道2 / lane 2）
+                if (e.keyCode == KeyCode.D)
+                {
+                    float snapped = snapToBeat ? Snap(playTime) : playTime;
+                    snapped = Mathf.Clamp(snapped, 0f, songLength);
+                    var dn = new ChartNote { time = snapped, lane = 2 };
+                    PushUndo();
+                    notes.Add(dn);
+                    selectedIndex = notes.Count - 1;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
                 // 空格：播放 / 暂停切换
                 if (e.keyCode == KeyCode.Space)
                 {
@@ -755,10 +773,46 @@ namespace MusicalSprite.Editor
 
             float localY = e.mousePosition.y - baseRect.y;
 
-            // ---- 播放头命中检测（高优先级）----
-            // 在红线附近按下左键即进入拖拽校听，覆盖 ruler / lane / waveform 整段 baseRect 的纵向区域
-            // 命中容差给到 ±8px，并要求水平上贴得近、纵向可在整段 baseRect 内（红线贯穿 ruler 与 lane）
-            if (e.type == EventType.MouseDown && e.button == 0)
+            // ---- 标记条（时间轴正上方独立条带 MarkerZoneHeight，优先于播放头拖动）----
+            // 左键点中三角旗标 => 选中并开始拖拽（之后 MouseDrag 中实时重定位）；右键 => 删除。
+            // 该带不参与播放头拖动 / 加音符，专给标记。拖拽进行中放行到下方 MouseDrag/MouseUp 处理。
+            if (localY < MarkerZoneHeight)
+            {
+                if (e.type == EventType.MouseDown)
+                {
+                    int mHit = HitTestMarkerTriangle(e.mousePosition, baseRect, timeX0);
+                    if (mHit >= 0)
+                    {
+                        if (e.button == 0)
+                        {
+                            selectedMarker = mHit;
+                            draggingMarkerIndex = mHit;   // 按下即进入拖拽预备，移动即重定位
+                            Repaint();
+                            e.Use();
+                            return;
+                        }
+                        if (e.button == 1)
+                        {
+                            markers.RemoveAt(mHit);
+                            if (selectedMarker == mHit) selectedMarker = -1;
+                            else if (selectedMarker > mHit) selectedMarker--;
+                            Repaint();
+                            e.Use();
+                            return;
+                        }
+                    }
+                    // 标记带内空白点击：不触发播放头/音符（该带专用于标记）
+                    e.Use();
+                    return;
+                }
+                // MouseDrag / MouseUp：正在拖拽标记时放行到下方专用分支；否则吞掉
+                if (draggingMarkerIndex < 0) { e.Use(); return; }
+            }
+
+            // ---- 播放头命中检测（高优先级，标记条下方整段：ruler + 音轨均可拖动）----
+            // 红线拖动范围从标记条下沿一直到时间轴底部；标记条自身不参与，避免与标记操作冲突。
+            if (e.type == EventType.MouseDown && e.button == 0 &&
+                localY >= MarkerZoneHeight)
             {
                 float phx = timeX0 + (playTime - viewStartTime) * pixelsPerSecond;
                 if (Mathf.Abs(e.mousePosition.x - phx) <= 8f)
@@ -773,8 +827,8 @@ namespace MusicalSprite.Editor
                 }
             }
 
-            // 点击刻度尺 => 定位播放头
-            if (localY < RulerHeight)
+            // 点击刻度尺 => 定位播放头（标记带下方的 ruler 区域，避开顶部标记带）
+            if (localY >= MarkerZoneHeight && localY < MarkerZoneHeight + RulerHeight)
             {
                 if (e.type == EventType.MouseDown && e.button == 0)
                 {
@@ -787,7 +841,7 @@ namespace MusicalSprite.Editor
             }
 
             // 编辑器屏幕从上到下显示 3、2、1、0，与游戏从下到上的轨道编号一致。
-            int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - RulerHeight) / LaneHeight), 0, 3);
+            int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - MarkerZoneHeight - RulerHeight) / LaneHeight), 0, 3);
             int lane = 3 - displayRow;
             float time = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
             time = Mathf.Clamp(time, 0f, songLength);
@@ -840,19 +894,6 @@ namespace MusicalSprite.Editor
                 }
                 return;
             }
-
-                    // 左键点中标记三角 => 选中该标记（高亮），不触发其它操作
-                    if (e.button == 0)
-                    {
-                        int mHit = HitTestMarkerTriangle(e.mousePosition, baseRect, timeX0);
-                        if (mHit >= 0)
-                        {
-                            selectedMarker = mHit;
-                            Repaint();
-                            e.Use();
-                            return;
-                        }
-                    }
 
                     // 链点模式 (G) 或 点链模式 (H) 任一激活时，进入左键-延迟-提交逻辑
                     if (linkingMode || pointLinkMode)
@@ -966,6 +1007,27 @@ namespace MusicalSprite.Editor
             }
             else if (e.type == EventType.MouseDrag)
             {
+                // 标记拖拽中：实时重定位（与 F 打点相同的吸附规则）
+                if (draggingMarkerIndex >= 0)
+                {
+                    float nt = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
+                    if (snapMarkers)
+                    {
+                        float nearest = float.MaxValue;
+                        foreach (var n in notes)
+                        {
+                            float d = Mathf.Abs(n.time - nt);
+                            if (d < nearest) nearest = d;
+                            if (d <= 0.25f) { nt = n.time; break; }
+                        }
+                        if (nearest > 0.25f) nt = Mathf.Round(nt / 0.25f) * 0.25f;
+                    }
+                    nt = Mathf.Clamp(nt, 0f, songLength);
+                    markers[draggingMarkerIndex] = nt;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
                 if (dragPlayhead)
                 {
                     float t = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
@@ -997,7 +1059,7 @@ namespace MusicalSprite.Editor
                 {
                     float nt = (e.mousePosition.x - timeX0) / pixelsPerSecond + viewStartTime;
                     nt = Mathf.Clamp(nt, 0f, songLength);
-                    int dragDisplayRow = Mathf.Clamp(Mathf.FloorToInt((e.mousePosition.y - baseRect.y - RulerHeight) / LaneHeight), 0, 3);
+                    int dragDisplayRow = Mathf.Clamp(Mathf.FloorToInt((e.mousePosition.y - baseRect.y - MarkerZoneHeight - RulerHeight) / LaneHeight), 0, 3);
                     int nlane = 3 - dragDisplayRow;
 
                     bool linkedHold = dragNote.type == NoteData.NoteType.Linked &&
@@ -1038,6 +1100,13 @@ namespace MusicalSprite.Editor
             }
             else if (e.type == EventType.MouseUp)
             {
+                if (draggingMarkerIndex >= 0)
+                {
+                    draggingMarkerIndex = -1;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
                 if (dragPlayhead)
                 {
                     dragPlayhead = false;
@@ -1131,19 +1200,14 @@ namespace MusicalSprite.Editor
         /// <summary>命中测试：返回光标附近（水平 ±7px）的标记索引，否则 -1。</summary>
         private int HitTestMarker(Vector2 mouse, Rect baseRect, float timeX0)
         {
-            // 命中区域：
-            //  - 沿红线方向（垂直）：整段 baseRect 内都接受点击（左键可直接点红线选中标记，但目前只有右键删除）
-            //  - 三角区域（紧贴 ruler 下方）：水平 ±6px、垂直 RulerHeight + 0..+8 → 三角本身可点
+            // 仅用于 ruler 下方轨道区：点中标记白线（水平 ±7px、纵向整段）即命中，右键删除用。
+            // 标记条（时间轴正上方 MarkerZoneHeight）的选中/删除由 HitTestMarkerTriangle + MouseDown 标记条分支处理。
             for (int i = markers.Count - 1; i >= 0; i--)
             {
                 float x = timeX0 + (markers[i] - viewStartTime) * pixelsPerSecond;
-                float triTop = baseRect.y + RulerHeight;          // apex y
-                float triBot = baseRect.y + RulerHeight + 8f;    // base y
-                bool inTri = mouse.y >= triTop && mouse.y <= triBot + 2f &&
-                             Mathf.Abs(mouse.x - x) <= 7f;
-                bool onLine = Mathf.Abs(mouse.x - x) <= 7f &&
-                              mouse.y >= baseRect.y && mouse.y <= baseRect.y + baseRect.height;
-                if (inTri || onLine) return i;
+                if (Mathf.Abs(mouse.x - x) <= 7f &&
+                    mouse.y >= baseRect.y + MarkerZoneHeight && mouse.y <= baseRect.y + baseRect.height)
+                    return i;
             }
             return -1;
         }
@@ -1270,7 +1334,7 @@ namespace MusicalSprite.Editor
             float displayRow = 3f - clampedLane;
             // Linked 的第一轨与下一轨之间，中心点位于两条轨道中心的正中间。
             float laneCenter = linked ? displayRow : displayRow + 0.5f;
-            return baseRect.y + RulerHeight + laneCenter * LaneHeight;
+            return baseRect.y + MarkerZoneHeight + RulerHeight + laneCenter * LaneHeight;
         }
 
         /// <summary>
@@ -1429,15 +1493,14 @@ namespace MusicalSprite.Editor
             playTime = Mathf.Clamp(playTime * factor, 0f, float.MaxValue);
         }
 
-        /// <summary>只命中标记三角区域（ruler 下方小三角），用于左键选中，避免与轨道区加音符冲突。</summary>
+        /// <summary>仅命时间轴正上方「标记条」（MarkerZoneHeight）内的三角旗标，用于左键选中 / 右键删除；X 方向 ±12px，整条带高度都可点，避免与轨道加音符冲突。</summary>
         private int HitTestMarkerTriangle(Vector2 mouse, Rect baseRect, float timeX0)
         {
             for (int i = markers.Count - 1; i >= 0; i--)
             {
                 float x = timeX0 + (markers[i] - viewStartTime) * pixelsPerSecond;
-                float triTop = baseRect.y + RulerHeight;
-                float triBot = baseRect.y + RulerHeight + 11f;
-                if (mouse.y >= triTop && mouse.y <= triBot && Mathf.Abs(mouse.x - x) <= 8f) return i;
+                if (mouse.y >= baseRect.y && mouse.y <= baseRect.y + MarkerZoneHeight &&
+                    Mathf.Abs(mouse.x - x) <= 12f) return i;
             }
             return -1;
         }
@@ -1743,7 +1806,7 @@ namespace MusicalSprite.Editor
                 tB = Mathf.Clamp(tB, 0f, songLength);
                 if (tB < tA + 0.1f) tB = tA + 0.1f; // 长按至少 0.1s，且不允许拖向过去
                 int laneA = linkDownLane;
-                int laneB = 3 - Mathf.Clamp(Mathf.FloorToInt((cur.y - baseRect.y - RulerHeight) / LaneHeight), 0, 3);
+                int laneB = 3 - Mathf.Clamp(Mathf.FloorToInt((cur.y - baseRect.y - MarkerZoneHeight - RulerHeight) / LaneHeight), 0, 3);
                 int dLane = Mathf.Clamp(laneB - laneA, -1, 1);
                 bool cross = dLane != 0;
                 int[] lanes = cross ? new int[] { laneA, laneB } : new int[] { laneA, laneA };
@@ -1781,7 +1844,7 @@ namespace MusicalSprite.Editor
 
             // 当前指针所在轨道（用于判断拖动了几轨）
             float localY = Event.current.mousePosition.y - baseRect.y;
-            int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - RulerHeight) / LaneHeight), 0, 3);
+            int displayRow = Mathf.Clamp(Mathf.FloorToInt((localY - MarkerZoneHeight - RulerHeight) / LaneHeight), 0, 3);
             int endLane = 3 - displayRow;
             // 拖动方向钳制到相邻 1 轨：下拖(step<0) / 上拖(step>0)
             int step = Mathf.Clamp(endLane - linkDownLane, -1, 1);
