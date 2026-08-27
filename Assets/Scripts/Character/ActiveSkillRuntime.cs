@@ -47,6 +47,9 @@ public class ActiveSkillRuntime : MonoBehaviour
     private int completedCount;           // 成功数（非 MISS，用于削减对方连击的强度）
     private bool requestClosed;           // spawner 端配额是否已全部分配完
     private float cooldownLeft;
+    private FeverState releaseFever = FeverState.None;  // 技能释放（能量清空）瞬间捕获的过热档；整段连叫锁定，后续不重判（2026-08-27）
+    private ScoreManager _scoreMgr;                      // 懒加载缓存：用于造成对方 HP 伤害（大狗叫额外效果）
+    private CharacterBattleSystem _battleSys;            // 懒加载缓存：用于读取释放方队伍战斗力总和
 
     public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever, SkillSO skill, float cooldown, bool needsEnergy, SkillInputStep[] inputSequence)
     {
@@ -106,6 +109,9 @@ public class ActiveSkillRuntime : MonoBehaviour
             if (needsEnergy) owner.ConsumeEnergy(owner.maxEnergy);
             owner.SetSkillBusy(true);   // 整个技能进行期（含过热连叫）抑制"能量充满冒烟"，回到 Standby 时才可能恢复
         }
+
+        // 技能释放瞬间（能量清空此刻）捕获过热档，整段连叫锁定；后续附魔期即便断连/掉出过热也不再重判（2026-08-27 要求）。
+        releaseFever = (feverManager != null) ? feverManager.GetState(ownerSide) : FeverState.None;
 
         if (marker != null) marker.GrowGlow();
         if (ownerSpawner != null)
@@ -192,15 +198,12 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (phase == Phase.Releasing || phase == Phase.Cooldown) return;
         phase = Phase.Releasing;
 
-        // 过热判定：发射瞬间查该侧 Fever 状态，决定发 1/2/3 次
+        // 过热判定：使用技能释放瞬间（能量清空时）已锁定的档位，整段连叫不再重判。
+        // 即便附魔期断连/掉出过热，也不会影响已确定的连叫次数（用户 2026-08-27 要求）。
         int shots = 1;
-        FeverState st = FeverState.None;
-        if (feverManager != null)
-        {
-            st = feverManager.GetState(ownerSide);
-            if (st == FeverState.SuperFever) shots = 3;
-            else if (st == FeverState.Fever) shots = 2;
-        }
+        FeverState st = releaseFever;
+        if (st == FeverState.SuperFever) shots = 3;
+        else if (st == FeverState.Fever) shots = 2;
 
         Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] Settle -> 命中 {3} 个附魔单位，过热={4} 发 {5} 次",
             skill != null ? skill.displayName : "?",
@@ -220,8 +223,10 @@ public class ActiveSkillRuntime : MonoBehaviour
         {
             if (i > 0)
             {
-                // 过热：等待 3s 后再次发光并射出音浪（效果与第一次相同）
-                yield return new WaitForSeconds(3f);
+                // 过热/超级过热：等待 feverExtraDelay 秒后再次发光并射出音浪（效果与第一次相同）。
+                // 间隔由技能「过热/超级过热时追加的狗叫时间」系数决定（2026-08-27 新增，可在技能库调参）。
+                float delay = (skill != null) ? skill.feverExtraDelay : 3f;
+                yield return new WaitForSeconds(delay);
                 if (marker != null) marker.PulseGlow();
                 yield return new WaitForSeconds(0.12f);
             }
@@ -238,7 +243,30 @@ public class ActiveSkillRuntime : MonoBehaviour
     private void FireOneShot()
     {
         int reduce = completedCount * (skill.reduceComboPerCharmedNote > 0 ? skill.reduceComboPerCharmedNote : 3);
+        int before = (opponentCombo != null) ? opponentCombo.CurrentCombo : 0;
         if (opponentCombo != null) opponentCombo.ReduceBy(reduce);
+        int actualReduced = (opponentCombo != null) ? (before - opponentCombo.CurrentCombo) : 0;
+
+        // 大狗叫额外效果（2026-08-27）：在削减连击的"同时"，按 "实际降低的连击数 × 队伍战斗力总和%" 造成对方 HP 伤害。
+        // - 实际降低连击数 = 削减前后差值（已封顶到 0，故对方连击过低时只算真正扣掉的部分）。
+        // - 队伍战斗力总和 = 释放方所在队伍（ownerSide）的 combatSum。
+        // - 系数 comboHpDamageRate 默认 0.01（= 战斗力总和的 1%，对应"战斗力总和%"），可在 Inspector / 技能库调参面板调整。
+        // 仅 effectType == "DogHowl" 生效，不影响玩家自身技能（宝宝）。
+        if (skill != null && skill.effectType == "DogHowl" && skill.comboHpDamageRate > 0f && actualReduced > 0)
+        {
+            if (_scoreMgr == null) _scoreMgr = FindFirstObjectByType<ScoreManager>();
+            if (_battleSys == null) _battleSys = FindFirstObjectByType<CharacterBattleSystem>();
+            if (_scoreMgr != null && _battleSys != null)
+            {
+                float combatSum = _battleSys.GetCombatSum(ownerSide);
+                int dmg = Mathf.RoundToInt(actualReduced * combatSum * skill.comboHpDamageRate);
+                _scoreMgr.TakeDamage(1 - ownerSide, dmg);
+                Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] 额外HP伤害 -> 实际降低连击 {3} × 队伍战斗力 {4} × {5} = 对方 -{6} HP",
+                    skill.displayName, ownerSide, owner != null ? owner.characterId : -1,
+                    actualReduced, combatSum, skill.comboHpDamageRate, dmg));
+            }
+        }
+
         SpawnShockwave();
 
         Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] 发射音浪 -> 削减对方 {3} 连击（命中 {4}/{5}）",

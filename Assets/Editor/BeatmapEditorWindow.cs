@@ -101,7 +101,6 @@ namespace MusicalSprite.Editor
 
         // ---------- 点击音符与连轨音符创建 ----------
         [SerializeField] private bool placeSmallTapMode = false;
-        [SerializeField] private bool placeLinkedMode = false;
         [SerializeField] private bool placeChainTapMode = false;
         [SerializeField] private int chainTapCount = 3;
 
@@ -113,6 +112,9 @@ namespace MusicalSprite.Editor
         // 谱面绑定的音乐素材（保存到 BeatmapSO.audioClip），编辑器预览与游戏运行时同步播放
         private AudioClip beatmapAudioClip;
         private AudioSource previewSource;
+        // 波形图：每个 clip 的混音单声道样本缓存（避免每帧重读 PCM）；高度固定 60px
+        private Dictionary<AudioClip, float[]> _waveCache = new Dictionary<AudioClip, float[]>();
+        private static readonly float WaveformHeight = 60f;
 
         // ---------- 仓库 ----------
         private Vector2 libScroll;
@@ -202,7 +204,6 @@ namespace MusicalSprite.Editor
             snapToBeat = EditorGUILayout.ToggleLeft("吸附到拍", snapToBeat, GUILayout.Width(90));
             linkingMode = EditorGUILayout.ToggleLeft("链接模式(点按成链)", linkingMode, GUILayout.Width(140));
             placeSmallTapMode = EditorGUILayout.ToggleLeft("小圈点击", placeSmallTapMode, GUILayout.Width(100));
-            placeLinkedMode = EditorGUILayout.ToggleLeft("连轨音符(占相邻2轨)", placeLinkedMode, GUILayout.Width(160));
             placeChainTapMode = EditorGUILayout.ToggleLeft("连点音符", placeChainTapMode, GUILayout.Width(90));
             if (placeChainTapMode)
             {
@@ -265,7 +266,7 @@ namespace MusicalSprite.Editor
                 "音符的 time = 音符圆心抵达判定线的时刻（非发射时刻）；改难度只改移动速度，不影响该时刻。\n" +
                 "普通音符：轨道区单击=加音符；拖拽=移动；右键/Delete=删除；点击刻度尺=定位播放头。\n" +
                 "链接模式（按住点击音符）：勾选后左键落节点，右键结束；松开后仍自动链接鼠标，可继续落下一个节点（普通点击=单轨节点）。\n" +
-                "连轨音符（链接模式专属）：左键按下不放并上下拖动 >=1 轨 => 制作连轨音符（覆盖拖动的相邻两轨），松开后同样自动链接鼠标；此时右键 => 变成普通的连轨点击音符。也可勾选「连轨音符」后单击生成覆盖相邻两轨的宽点击。连轨不区分大小圈。普通点击仍可用「小圈点击」区分大小。\n" +
+                "连轨音符（链接模式专属）：左键按下不放并上下拖动 >=1 轨 => 制作连轨音符（覆盖拖动的相邻两轨），松开后同样自动链接鼠标；此时右键 => 变成普通的连轨点击音符。连轨不区分大小圈。普通点击仍可用「小圈点击」区分大小。\n" +
                 "连点音符：勾选「连点音符」后单击生成普通大点击外形的连续点击音符；次数框手动输入 3-10 次，选中后可在上方修改。\n" +
                 "挂上「音乐素材」后点播放可听音校谱；保存并「调用」后，下一次「搭建完整场景」将同步播放本谱面与音乐。\n" + activeName,
                 MessageType.Info);
@@ -505,6 +506,14 @@ namespace MusicalSprite.Editor
             viewStartTime = GUILayout.HorizontalScrollbar(viewStartTime, visibleSeconds, 0f, songLength + 1f);
 
             HandleTimelineEvents(baseRect, timeX0);
+
+            // 音乐素材波形图：紧贴轨道时间轴正下方，与 time 轴对齐，方便校谱（无素材时不画、高度不变）
+            if (beatmapAudioClip != null)
+            {
+                Rect wfRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
+                    GUILayout.ExpandWidth(true), GUILayout.Height(WaveformHeight));
+                DrawWaveform(wfRect);
+            }
         }
 
         private void HandleTimelineEvents(Rect baseRect, float timeX0)
@@ -667,24 +676,6 @@ namespace MusicalSprite.Editor
                     dragStartNoteLane = nn.lane;
                     Repaint();
                     e.Use();
-                }
-                else if (placeLinkedMode) // 新增覆盖相邻两轨的宽点击音符
-                {
-                    float snapped = snapToBeat ? Snap(time) : time;
-                    var nn = new ChartNote
-                    {
-                        time = snapped,
-                        lane = Mathf.Clamp(lane, 0, 2),
-                        type = NoteData.NoteType.Linked
-                    };
-                    PushUndo();
-                    notes.Add(nn);
-                    selectedIndex = notes.Count - 1;
-                    dragIndex = selectedIndex;
-                    dragNote = nn;
-                    dragStartMouse = e.mousePosition;
-                    dragStartNoteTime = nn.time;
-                    dragStartNoteLane = nn.lane;
                 }
                 else // 新增普通音符
                 {
@@ -920,6 +911,75 @@ namespace MusicalSprite.Editor
                 float y = Mathf.Lerp(a.y, b.y, p);
                 EditorGUI.DrawRect(new Rect(x - segmentWidth * 0.5f, y - thickness * 0.5f,
                     segmentWidth, thickness), col);
+            }
+        }
+
+        /// <summary>在轨道时间轴正下方绘制音乐素材波形图，与 time 轴对齐、跟随滚动/播放头。仅当有音乐素材时由 DrawTimeline 调用。</summary>
+        private void DrawWaveform(Rect wfRect)
+        {
+            EditorGUI.DrawRect(wfRect, new Color(0.05f, 0.05f, 0.07f));
+            float[] samples = GetCachedSamples(beatmapAudioClip);
+            if (samples == null) return;
+
+            float timeX0 = wfRect.x + LaneLabelWidth;
+            float visibleWidth = wfRect.width - LaneLabelWidth;
+            if (visibleWidth < 1f) return;
+            float samplesPerSecond = samples.Length / Mathf.Max(0.001f, beatmapAudioClip.length);
+
+            int w = Mathf.FloorToInt(visibleWidth);
+            for (int px = 0; px < w; px++)
+            {
+                float t0 = viewStartTime + (px / pixelsPerSecond);
+                float t1 = viewStartTime + ((px + 1) / pixelsPerSecond);
+                int s0 = Mathf.Clamp(Mathf.FloorToInt(t0 * samplesPerSecond), 0, samples.Length - 1);
+                int s1 = Mathf.Clamp(Mathf.FloorToInt(t1 * samplesPerSecond), 0, samples.Length - 1);
+                float max = 0f;
+                int span = s1 - s0;
+                int step = Mathf.Max(1, span / 4); // 限幅：每像素最多扫 ~4 个样本，避免长音频每帧卡顿
+                for (int s = s0; s <= s1; s += step)
+                {
+                    float v = Mathf.Abs(samples[s]);
+                    if (v > max) max = v;
+                }
+                float x = timeX0 + px;
+                float barH = max * wfRect.height * 0.45f;
+                if (barH > 0.5f)
+                    EditorGUI.DrawRect(new Rect(x, wfRect.y + wfRect.height * 0.5f - barH, 1f, barH * 2f), new Color(0.4f, 0.8f, 1f, 0.9f));
+            }
+
+            // 播放头（与轨道区共用 viewStartTime / playTime，红色对齐）
+            float phx = timeX0 + (playTime - viewStartTime) * pixelsPerSecond;
+            EditorGUI.DrawRect(new Rect(phx, wfRect.y, 1f, wfRect.height), Color.red);
+        }
+
+        /// <summary>读取并缓存 AudioClip 的混音单声道样本；首次访问解 PCM，之后走缓存。失败返回 null。</summary>
+        private float[] GetCachedSamples(AudioClip clip)
+        {
+            if (clip == null) return null;
+            if (_waveCache.TryGetValue(clip, out var cached) && cached != null) return cached;
+            try
+            {
+                int frames = clip.samples;     // 每声道样本数
+                int ch = clip.channels;
+                if (frames <= 0 || ch <= 0) return null;
+                if (!clip.preloadAudioData && clip.loadState != AudioDataLoadState.Loaded)
+                    clip.LoadAudioData();
+                float[] raw = new float[frames * ch];
+                if (!clip.GetData(raw, 0)) return null;
+                float[] mono = new float[frames];
+                for (int f = 0; f < frames; f++)
+                {
+                    float s = 0f;
+                    for (int c = 0; c < ch; c++) s += raw[f * ch + c];
+                    mono[f] = s / ch;
+                }
+                _waveCache[clip] = mono;
+                return mono;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[谱面编辑器] 波形读取失败：{e.Message}");
+                return null;
             }
         }
 
@@ -1239,15 +1299,21 @@ namespace MusicalSprite.Editor
                 if (bm == null) continue;
 
                 int side0 = bm.notes != null ? bm.notes.Count(n => n.side == 0) : 0;
+                int jsonSide0 = CountSide0InJson(GetJsonPath(path));
+                bool damaged = jsonSide0 > side0 + 1; // 文本备份比资产多 => 资产被截断
                 bool active = (path == activePath);
                 string name = Path.GetFileNameWithoutExtension(path);
                 bool hasMusic = bm.audioClip != null;
 
+                Color prevColor = GUI.color;
+                if (damaged) GUI.color = Color.red;
                 EditorGUILayout.BeginHorizontal(active ? EditorStyles.helpBox : GUIStyle.none);
-                EditorGUILayout.LabelField($"{(active ? "★ " : "")}{name}  ({side0} 音符, BPM {bm.bpm:F0}){(hasMusic ? "  [音乐]" : "")}",
-                    GUILayout.Width(320));
+                EditorGUILayout.LabelField(
+                    $"{(active ? "★ " : "")}{name}  ({side0} 音符, BPM {bm.bpm:F0}){(hasMusic ? "  [音乐]" : "")}{(damaged ? "  ⚠已损坏" : "")}",
+                    GUILayout.Width(damaged ? 360 : 320));
                 if (GUILayout.Button("编辑", GUILayout.Width(50))) LoadBeatmap(path);
                 if (GUILayout.Button("调用", GUILayout.Width(50))) SetActiveBeatmap(path);
+                if (damaged && GUILayout.Button("从文本恢复", GUILayout.Width(80))) RestoreFromText(path);
                 if (GUILayout.Button("删除", GUILayout.Width(50)))
                 {
                     if (EditorUtility.DisplayDialog("确认删除", $"确定从仓库删除谱面「{name}」？此操作不可撤销。", "删除", "取消"))
@@ -1259,6 +1325,7 @@ namespace MusicalSprite.Editor
                     }
                 }
                 EditorGUILayout.EndHorizontal();
+                if (damaged) GUI.color = prevColor;
             }
             EditorGUILayout.EndScrollView();
         }
@@ -1271,8 +1338,25 @@ namespace MusicalSprite.Editor
         {
             if (string.IsNullOrEmpty(path)) return;
             EditorPrefs.SetString(ActiveBeatmapKey, path);
-            Debug.Log($"[谱面编辑器] 已调用谱面：{path}");
-            ShowNotification(new GUIContent("已调用：" + Path.GetFileNameWithoutExtension(path)));
+
+            // 直接切换场景中所有 NoteSpawner 的谱面引用并重置，使「调用」无需 Setup Demo Scene 即生效（不侵入 NoteSpawner.cs）。
+            var bm = AssetDatabase.LoadAssetAtPath<BeatmapSO>(path);
+            int switched = 0;
+            if (bm != null)
+            {
+                var spawners = Object.FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
+                foreach (var sp in spawners)
+                {
+                    if (sp == null) continue;
+                    sp.beatmap = bm;
+                    sp.ResetSpawner();
+                    switched++;
+                }
+            }
+            Debug.Log($"[谱面编辑器] 已调用谱面：{path}" +
+                (bm != null ? $"（已切换 {switched} 个场景 NoteSpawner）" : "（未找到谱面资产，仅更新调用标记）"));
+            ShowNotification(new GUIContent("已调用：" + Path.GetFileNameWithoutExtension(path) +
+                (switched > 0 ? $"（场景 {switched} 个生成器已切换）" : "")));
             Repaint();
         }
 
@@ -1343,6 +1427,21 @@ namespace MusicalSprite.Editor
             return Path.ChangeExtension(assetPath, ".json");
         }
 
+        /// <summary>读取同级 .json 文本备份中 side==0 的音符数（用于检测资产被截断）。解析失败返回 0。</summary>
+        private static int CountSide0InJson(string jsonPath)
+        {
+            try
+            {
+                if (!File.Exists(jsonPath)) return 0;
+                var dump = JsonUtility.FromJson<BeatmapTextDump>(File.ReadAllText(jsonPath));
+                if (dump == null || dump.notes == null) return 0;
+                int c = 0;
+                foreach (var n in dump.notes) if (n.side == 0) c++;
+                return c;
+            }
+            catch (System.Exception) { return 0; }
+        }
+
         /// <summary>把已保存的 BeatmapSO 同步导出为同级 .json 文本镜像（纵深防御 / 可 git 提交）。</summary>
         private void ExportBeatmapText(BeatmapSO asset, string assetPath)
         {
@@ -1391,18 +1490,27 @@ namespace MusicalSprite.Editor
         {
             string jsonPath = GetJsonPath(assetPath);
             if (!File.Exists(jsonPath)) return;
-            bool assetLost = false;
+            int jsonSide0 = CountSide0InJson(jsonPath);
+
+            // 1) 连轨宽度丢失自检（仅多节点链）
+            bool spanLost = false;
             foreach (var cn in notes)
             {
                 if (cn.holdLanes == null || cn.holdLanes.Length < 2) continue; // 仅检查多节点链
                 bool spanOk = cn.holdLaneSpans != null
                     && cn.holdLaneSpans.Length == cn.holdLanes.Length
                     && System.Linq.Enumerable.Any(cn.holdLaneSpans, v => v > 1);
-                if (!spanOk) { assetLost = true; break; }
+                if (!spanOk) { spanLost = true; break; }
             }
-            if (assetLost && EditorUtility.DisplayDialog("检测到连轨宽度可能丢失",
-                "当前资产中部分连轨音符的逐节点宽度不完整，但同目录存在 .json 文本备份。是否从文本恢复连轨信息？",
-                "从文本恢复", "忽略"))
+
+            // 2) 截断自检：资产音符数远少于文本备份（"运行后变 1 音符"的根因表现）。
+            // 注意：notes 在此只装 side==0（LoadNotesFromNoteData 已过滤），故 notes.Count 即资产 side0 数。
+            bool noteLost = jsonSide0 > notes.Count + 1;
+
+            if ((spanLost || noteLost) &&
+                EditorUtility.DisplayDialog("检测到谱面可能损坏",
+                    $"当前资产音符数（{notes.Count}）与文本备份（{jsonSide0}）不一致，部分音符可能丢失。是否从文本备份恢复？\n（恢复后重新保存即可固化）",
+                    "从文本恢复", "忽略"))
             {
                 RestoreFromText(assetPath);
             }
@@ -1459,9 +1567,27 @@ namespace MusicalSprite.Editor
                 asset = ScriptableObject.CreateInstance<BeatmapSO>();
                 created = true;
             }
+
+            // 截断保护（治本，2026-08-27）：若本次保存的音符数远低于谱面现有音符数，
+            // 判定为编辑器内部缓冲区残缺，拒绝覆盖健康资产——直接阻断"运行后谱面变 1 音符"的根因。
+            int existingSide0 = (!created && asset.notes != null) ? asset.notes.Count(n => n.side == 0) : 0;
+            NoteData[] newNotes = BuildBothSideNotes();
+            if (!created && existingSide0 > 0)
+            {
+                int newSide0 = newNotes.Count(n => n.side == 0);
+                if (newSide0 < existingSide0 * 0.5f)
+                {
+                    Debug.LogError($"[谱面编辑器] 截断保护触发：本次保存音符数（{newSide0}）远低于现有（{existingSide0}），疑似编辑器缓冲区残缺，已阻止覆盖，谱面未改动。");
+                    EditorUtility.DisplayDialog("保存被阻止",
+                        $"本次保存的音符数（{newSide0}）远低于谱面现有音符数（{existingSide0}），疑似编辑器内部缓冲区残缺导致截断。已阻止覆盖以保护谱面。\n\n建议：检查编辑器内音符是否完整；若确已损坏，可点「从文本恢复」或「编辑」该谱面后从文本恢复。",
+                        "确定");
+                    return;
+                }
+            }
+
             asset.bpm = bpm;
             asset.audioClip = beatmapAudioClip;
-            asset.notes = BuildBothSideNotes();
+            asset.notes = newNotes;
 
             if (created) AssetDatabase.CreateAsset(asset, path);
             else AssetDatabase.SaveAssetIfDirty(asset);

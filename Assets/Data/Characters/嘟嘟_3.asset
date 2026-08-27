@@ -30,7 +30,7 @@ MonoBehaviour:
   - skillId: dudu_heal
     skill: {fileID: 11400000, guid: d070d90405440234b8604e930c4cea87, type: 2}
     energyCost: 160
-    cooldown: 0
+    cooldown: 10
     inputMethod: "\u2192\u2193\u2192"
     description: "\uFF084\uFF09\uFF08\u5C06\u5373\u5C06\u51FA\u73B0\u7684\u97F3\u7B26\uFF086\u4E2A\uFF09\u9644\u9B54\uFF0C\u6BCF\u6210\u529F\u5B8C\u6210\u4E00\u4E2A\u97F3\u7B26\uFF0C\u5C31\u5BF9\u81EA\u5DF1\u8FDB\u884C\u4E00\u70B9\u751F\u547D\u6CBB\u6108\uFF083\u70B9\u751F\u547D\uFF09\uFF09\uFF08\u5FC5\u6740\uFF09"
     overheatDesc: "\u83B7\u5F97\u6CBB\u7597\u540E\u8FDB\u5165\u7F13\u6162\u56DE\u590D\uFF08\u5927\u62DB\u4E4B\u540E\u6BCF\u4E09\u79D2\u6839\u636E\u6536\u96C6\u97F3\u7B26\u6570\u91CFx\uFF081\uFF09\u56DE\u590D\u751F\u547D\uFF0C\u6301\u7EED\u4E00\u6BB5\u65F6\u95F4\uFF089s\uFF09\uFF09"
@@ -67,5 +67,5 @@ MonoBehaviour:
     description: 
     overheatDesc: 
     superOverheatDesc: 
-  skillCooldown: 0
+  skillCooldown: 10
   feverEligible: 1

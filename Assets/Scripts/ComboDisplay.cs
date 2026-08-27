@@ -34,6 +34,9 @@ public class ComboDisplay : MonoBehaviour
     public float heightOffset = 1.2f;
 
     private int currentCombo = 0;
+
+    /// <summary>当前连击数（只读）。供技能效果计算"实际降低的连击数" = 削减前 - 削减后（已封顶到 0）。</summary>
+    public int CurrentCombo => currentCombo;
     private Vector3 baseScale;
     private float popTimer = 0f;
     private Transform textTransform;

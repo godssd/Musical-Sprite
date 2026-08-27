@@ -42,6 +42,10 @@ public class SkillSO : ScriptableObject
     [Header("释放效果")]
     [Tooltip("结算时按 完成数 × 该值 降低对方连击数")]
     public int reduceComboPerCharmedNote = 3;
+    [Tooltip("大狗叫额外效果：在削减连击的\"同时\"，按 \"实际降低的连击数 × 队伍战斗力总和 × 本系数\" 对对方造成生命值伤害。0.01 = 队伍战斗力总和的 1%（对应\"战斗力总和%\"）。仅 effectType=DogHowl 生效。可在 Inspector / 技能库调参面板调整。")]
+    public float comboHpDamageRate = 0.01f;
+    [Tooltip("大狗叫（过热/超级过热连叫）时，相邻两次狗叫之间的间隔秒数。过热档=2连叫、超级过热档=3连叫，每次间隔都用本值。可在 Inspector / 技能库调参面板调整。仅 effectType=DogHowl 生效（其他技能为即时单次释放，不读此项）。")]
+    public float feverExtraDelay = 3f;
     [Tooltip("角色变大+持续发光时的发光颜色")]
     public Color releaseGlow = new Color(1f, 0.85f, 0.2f);
     [Tooltip("音波 VFX 预制体（可选，留空则用占位方块）")]

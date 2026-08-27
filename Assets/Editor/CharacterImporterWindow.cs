@@ -157,6 +157,7 @@ public class CharacterImporterWindow : EditorWindow
             // 跳过空白行（飞书表里占位的空行：编号有，但「角色」与「hp」都空 → 不是真实角色，避免生成垃圾资产）
             string rawName = (iName >= 0 && iName < row.Count) ? (row[iName] ?? "") : "";
             string rawHp = (iHp >= 0 && iHp < row.Count) ? (row[iHp] ?? "") : "";
+            string rawCombat = (iCombat >= 0 && iCombat < row.Count) ? (row[iCombat] ?? "") : "";
             if (string.IsNullOrWhiteSpace(rawName) && string.IsNullOrWhiteSpace(rawHp))
             {
                 Debug.Log($"[CharacterImporter] 行 {r + 1} 为空行（无角色名且无 hp），跳过");
@@ -167,6 +168,21 @@ public class CharacterImporterWindow : EditorWindow
             string profession = CellStr(row, iProfession, "");
             int hp = CellInt(row, iHp, 100);
             float combat = CellFloat(row, iCombat, 10f);
+
+            // 必填基项缺失告警（仅提示，不阻断导入；缺失项沿用兜底值，便于"确认必要数值是否录入"）
+            if (string.IsNullOrWhiteSpace(rawName))
+                Debug.LogWarning($"[CharacterImporter] 行 {r + 1}：角色名(角色列)缺失，已用兜底名 Char{id}");
+            if (string.IsNullOrWhiteSpace(rawHp))
+                Debug.LogWarning($"[CharacterImporter] 行 {r + 1}（{name}）：hp 缺失，已用兜底值 100");
+            if (string.IsNullOrWhiteSpace(rawCombat))
+                Debug.LogWarning($"[CharacterImporter] 行 {r + 1}（{name}）：战斗力 缺失，已用兜底值 10");
+            if (string.IsNullOrWhiteSpace(profession))
+                Debug.LogWarning($"[CharacterImporter] 行 {r + 1}（{name}）：职业 缺失（仅标注用，不影响战斗）");
+            // 角色类型：编号 1~5 可由 importer 推断；其余必须靠「角色类型」列，否则无法区分玩家/队伍
+            bool typeInferable = (id >= 1 && id <= 5);
+            bool typeFilled = (iType >= 0 && iType < row.Count) && !string.IsNullOrWhiteSpace(row[iType]);
+            if (!typeInferable && !typeFilled)
+                Debug.LogWarning($"[CharacterImporter] 行 {r + 1}（{name}）：角色类型 缺失且编号 {id} 不在 1~5 无法推断，将默认按队伍角色处理");
 
             // isPlayer / laneIndex 推断
             bool isPlayer; int lane;
