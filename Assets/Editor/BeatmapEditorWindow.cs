@@ -454,20 +454,7 @@ namespace MusicalSprite.Editor
                 }
             }
 
-            // ---- 普通模式右键框选矩形预览 ----
-            if (isBoxSelecting)
-            {
-                float bx = Mathf.Min(boxStart.x, boxEnd.x);
-                float by = Mathf.Min(boxStart.y, boxEnd.y);
-                float bw = Mathf.Abs(boxEnd.x - boxStart.x);
-                float bh = Mathf.Abs(boxEnd.y - boxStart.y);
-                EditorGUI.DrawRect(new Rect(bx, by, bw, bh), new Color(0.2f, 0.6f, 1f, 0.15f));
-                Color border = new Color(0.2f, 0.6f, 1f, 0.9f);
-                EditorGUI.DrawRect(new Rect(bx, by, bw, 1f), border);
-                EditorGUI.DrawRect(new Rect(bx, by + bh - 1f, bw, 1f), border);
-                EditorGUI.DrawRect(new Rect(bx, by, 1f, bh), border);
-                EditorGUI.DrawRect(new Rect(bx + bw - 1f, by, 1f, bh), border);
-            }
+            // （右键框选矩形预览已移至播放头之后绘制，避免被轨道不透明背景覆盖）
 
             // ---- 轨道 ----
             for (int lane = 0; lane < 4; lane++)
@@ -682,6 +669,21 @@ namespace MusicalSprite.Editor
             // ---- 播放头 ----
             float phx = timeX0 + (playTime - viewStartTime) * pixelsPerSecond;
             EditorGUI.DrawRect(new Rect(phx, baseRect.y + MarkerZoneHeight, 2, baseRect.height - MarkerZoneHeight), Color.red);
+
+            // ---- 普通模式右键框选矩形预览（放最后绘制，压在轨道/音符之上才看得见）----
+            if (isBoxSelecting)
+            {
+                float bx = Mathf.Min(boxStart.x, boxEnd.x);
+                float by = Mathf.Min(boxStart.y, boxEnd.y);
+                float bw = Mathf.Abs(boxEnd.x - boxStart.x);
+                float bh = Mathf.Abs(boxEnd.y - boxStart.y);
+                EditorGUI.DrawRect(new Rect(bx, by, bw, bh), new Color(0.2f, 0.6f, 1f, 0.15f));
+                Color border = new Color(0.2f, 0.6f, 1f, 0.9f);
+                EditorGUI.DrawRect(new Rect(bx, by, bw, 1f), border);
+                EditorGUI.DrawRect(new Rect(bx, by + bh - 1f, bw, 1f), border);
+                EditorGUI.DrawRect(new Rect(bx, by, 1f, bh), border);
+                EditorGUI.DrawRect(new Rect(bx + bw - 1f, by, 1f, bh), border);
+            }
 
             // 滚动条
             viewStartTime = GUILayout.HorizontalScrollbar(viewStartTime, visibleSeconds, 0f, songLength + 1f);
@@ -898,6 +900,8 @@ namespace MusicalSprite.Editor
                 rightDownPending = true;
                 boxStart = e.mousePosition;
                 boxEnd = e.mousePosition;
+                // 捕获右键拖动：Unity 默认仅左键自动派发 MouseDrag，需设 hotControl 才会持续触发 Drag/Up
+                GUIUtility.hotControl = GUIUtility.GetControlID(FocusType.Passive);
                 e.Use();
                 return;
             }
@@ -1113,6 +1117,7 @@ namespace MusicalSprite.Editor
                 if (e.button == 1 && rightDownPending)
                 {
                     rightDownPending = false;
+                    GUIUtility.hotControl = 0;   // 释放右键捕获
                     if (isBoxSelecting)
                     {
                         isBoxSelecting = false;
