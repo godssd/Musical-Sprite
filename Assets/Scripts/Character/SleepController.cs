@@ -1,8 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// 沉睡控制器。被清屏技能命中后敌方陷入沉睡：灰方块 + 黑灯、禁命中 / 技能 / 被动，
-/// 受击解除，控制免疫可抵抗。挂载：由 CharacterBattleSystem 自动补建；通过 Instance 访问。
+/// 沉睡控制器。被清屏技能命中后「释放者自身」陷入沉睡：灰方块 + 黑灯、禁命中 / 主动技能 / 被动技能，
+/// 持续期间除非被解除。三种解除方式：①驱散类效果（Dispel）②持续时间到自动解除（Update 计时）③队伍生命值被扣除（BreakSleepOnDamage）。
+/// 控制免疫可抵抗陷入沉睡。挂载：由 CharacterBattleSystem 自动补建；通过 Instance / EnsureInstance 访问。
 /// </summary>
 public class SleepController : MonoBehaviour
 {
@@ -54,6 +55,18 @@ public class SleepController : MonoBehaviour
     }
 
     public bool IsSideSleeping(int side) => side >= 0 && side <= 1 && sleeping[side];
+
+    /// <summary>驱散：清除某侧持续性控制效果（当前实现=解除沉睡）。由驱散类技能（附魔音符成功结算）调用。
+    /// 与 Wake 的区别：语义为"被外部效果解除"，日志不同；未来可在此扩展清除其它控制效果（如眩晕/束缚）。</summary>
+    public void Dispel(int side)
+    {
+        if (side < 0 || side > 1) return;
+        if (sleeping[side])
+        {
+            Debug.Log($"[Sleep] side{side} 被驱散，解除控制效果");
+            Wake(side);
+        }
+    }
 
     /// <summary>受击解除沉睡（ScoreManager.TakeDamage 调用）。</summary>
     public void BreakSleepOnDamage(int side)

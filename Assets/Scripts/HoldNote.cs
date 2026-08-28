@@ -137,6 +137,7 @@ public class HoldNote : MonoBehaviour
     private float fadeTimer = -1f;
     private bool missMode = false;        // 漏击后改为逐段越过判定线缩小消失（而非整条统一缩小）
     private bool missReported = false;    // MISS 反馈是否已上报（只报一次）
+    private bool skillCleared = false;    // 清屏整条清除后置位：连接线应在原地逐段变大变白消失（覆盖漏击黑消失）
     private float missShrinkSpan = 0.5f;  // 越过判定线后多少距离内完成缩小消失
 
     [Tooltip("节点越过各自判定线后「按时间」缩小消失的时长（秒）。替代硬切隐藏，让音符是「变小」而非瞬间不见。[PLACEHOLDER 可微调]")]
@@ -693,6 +694,17 @@ public class HoldNote : MonoBehaviour
             for (int k = 0; k < segs.Count; k++)
             {
                 if (rends[k] == null) continue;
+                // 清屏整条清除：连接线应在原地逐段变大变白消失（与玩家手动完成一致），
+                // 覆盖正常的"漏击黑消失"路径——技能清掉的长按节点还在带区内、未越判定线，否则会发黑消失。
+                if (skillCleared)
+                {
+                    rends[k].enabled = true;
+                    segs[k].localScale = segs[k].localScale * 1.6f;
+                    if (mats[k] != null) mats[k].color = Color.white;
+                    float fa = 1f - Mathf.Clamp01(fadeTimer / fadeDuration);
+                    SetMatAlpha(mats[k], fa);
+                    continue;
+                }
                 if (totalLen < 0.001f)
                 {
                     bool collapsedRevealed = IsBeyondLine(segs[k].position.x, revealLineX);
@@ -866,6 +878,7 @@ public class HoldNote : MonoBehaviour
 
         // 进入完成淡出：整条连接线在判定线处逐段变大变白消失（沿用 Complete 的完成表现）
         hasLit = true;
+        skillCleared = true;   // 标记：连接线应原地变白放大消失，而非漏击黑消失
         Complete();
     }
 

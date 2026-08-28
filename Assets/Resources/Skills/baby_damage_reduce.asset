@@ -16,16 +16,33 @@ MonoBehaviour:
   displayName: "\u5B9D\u5B9D\u5168\u4F53\u9632\u5FA1\u51CF\u4F24"
   description: "\u83B7\u5F97 5% \u7684\u4F24\u5BB3\u51CF\u5C11\uFF1B\u8D85\u7EA7\u8FC7\u70ED\uFF1A\u83B7\u5F97
     15% \u7684\u4F24\u5BB3\u51CF\u5C11"
-  cooldown: 0
   energyCost: 0
   inputSequence: 
   inputWindow: 1.5
   charmedNoteCount: 0
+  enchantTarget: 0
   onlyCountNonMiss: 1
   reduceComboPerCharmedNote: 0
+  comboHpDamageRate: 0.01
+  feverExtraDelay: 3
   releaseGlow: {r: 1, g: 0.85, b: 0.2, a: 1}
   shockwavePrefab: {fileID: 0}
   releaseSfxClip: {fileID: 0}
   screenShakeAmp: 0.3
   effectType: ReduceIncomingDamagePercent
   effectParamsJSON: '{"percent":0.05}'
+  charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
+  charmBonusFever: 0
+  charmBonusSuperFever: 0
+  bombDamageRate: 0.1
+  healHpRate: 0.005
+  healCombatRate: 0.015
+  regenPerTickHpRate: 0.002
+  buffSlot: 0
+  buffSubType: 0
+  buffCombatMult: 1.4
+  buffDamageReduce: 0.2
+  buffDuration: 10
+  clearBandRangeMult: 1
+  clearSleepSeconds: 3
+  clearBuffAsB: 0

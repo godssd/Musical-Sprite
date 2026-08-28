@@ -106,7 +106,7 @@ public class SkillSO : ScriptableObject
     [Header("清屏（effectType=ClearScreen）")]
     [Tooltip("清屏带范围倍率（普通1 / 过热1.2 / 超级过热1.5 在释放瞬间按过热档自动取，这里仅兜底基础值）")]
     public float clearBandRangeMult = 1f;
-    [Tooltip("清屏后敌方沉睡秒数（也可由 effectParamsJSON.sleepSeconds 覆盖）")]
+    [Tooltip("清屏后释放者自身沉睡秒数（即「沉睡技能系数」）；可在 Inspector / 技能库调参面板细调。睡眠效果见 SleepController。")]
     public float clearSleepSeconds = 3f;
     [Tooltip("清屏同时激活释放者自身 b 类 buff（小黑个人战力）")]
     public bool clearBuffAsB = true;

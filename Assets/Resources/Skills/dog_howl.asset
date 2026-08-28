@@ -15,16 +15,33 @@ MonoBehaviour:
   skillId: dog_howl
   displayName: "\u5927\u72D7\u53EB"
   description: "\uFF083\uFF09\u5927\u72D7\u53EB\uFF08\u5C06\u5373\u5C06\u51FA\u73B0\u7684\u97F3\u7B26\u9644\u9B54\uFF0C\u6BCF\u6210\u529F\u5B8C\u6210\u4E00\u4E2A\u97F3\u7B26\uFF0C\u589E\u52A0\u5206\u8D1D\uFF0C\u7ED3\u7B97\u5B8C\u540E\u53D1\u51FA\u72D7\u53EB\u6309\u7167\u5206\u8D1D\u60CA\u5413\u5BF9\u624B\u964D\u4F4E\u5BF9\u65B9\u8FDE\u51FB\u6570\uFF09\uFF08\u5FC5\u6740\uFF09"
-  cooldown: 60
   energyCost: 300
   inputSequence: 000000000000000000000000
   inputWindow: 1.5
   charmedNoteCount: 6
+  enchantTarget: 0
   onlyCountNonMiss: 1
   reduceComboPerCharmedNote: 3
+  comboHpDamageRate: 0.01
+  feverExtraDelay: 3
   releaseGlow: {r: 1, g: 0.85, b: 0.2, a: 1}
   shockwavePrefab: {fileID: 0}
   releaseSfxClip: {fileID: 0}
   screenShakeAmp: 0.3
   effectType: DogHowl
   effectParamsJSON: '{}'
+  charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
+  charmBonusFever: 0
+  charmBonusSuperFever: 0
+  bombDamageRate: 0.1
+  healHpRate: 0.005
+  healCombatRate: 0.015
+  regenPerTickHpRate: 0.002
+  buffSlot: 0
+  buffSubType: 0
+  buffCombatMult: 1.4
+  buffDamageReduce: 0.2
+  buffDuration: 10
+  clearBandRangeMult: 1
+  clearSleepSeconds: 3
+  clearBuffAsB: 0

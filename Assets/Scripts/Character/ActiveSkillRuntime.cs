@@ -337,10 +337,11 @@ public class ActiveSkillRuntime : MonoBehaviour
             ownerSpawner.SkillClearBand(xMin, xMax, this);
         }
 
-        // 敌方沉睡（控制免疫可抵抗）
+        // 释放者（小黑）自身沉睡：作为清屏的代价（控制免疫可抵抗）。
+        // 沉睡期间该侧禁命中/禁主动技能/被动失效；解除方式为：驱散 / 时长到 / 队伍扣血。
         float sleepSec = (skill != null && skill.clearSleepSeconds > 0f) ? skill.clearSleepSeconds : 3f;
         var sleepCtrl = SleepController.EnsureInstance();
-        if (sleepCtrl != null) sleepCtrl.Sleep(1 - ownerSide, sleepSec);
+        if (sleepCtrl != null) sleepCtrl.Sleep(ownerSide, sleepSec);
         else Debug.LogWarning("[ClearScreen] SleepController 未找到，沉睡未生效");
 
         // 激活自身 b 类 buff（小黑个人战力，与 a 类相乘叠加）
@@ -406,10 +407,12 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (note == null) return;
         note.MarkClearedBySkill();
         // 视为命中：走统一 OnJudge 管线 -> ScoreManager 加分（按 ownerSide）+ BattleVisualsController 加连击；
-        // 充能按音符自身音轨 note.lane 落到对应轨角色（HandleJudge 内 GetTeam(ownerSide, lane).AddEnergy）
-        if (spawner != null) spawner.ReportJudge(ownerSide, note.lane, "PERFECT", note.transform.position, note);
+        // 充能按音符自身音轨 note.lane 落到对应轨角色（HandleJudge 内 GetTeam(ownerSide, lane).AddEnergy）。
+        // 评价取该音符真实最高判定：普通/连轨点击=PERFECT，小型点击=PASS（与玩家手动完成完全一致）。
+        string noteRank = note.isSmallTap ? "PASS" : "PERFECT";
+        if (spawner != null) spawner.ReportJudge(ownerSide, note.lane, noteRank, note.transform.position, note);
         var jfm = FindFirstObjectByType<JudgeFeedbackManager>();
-        if (jfm != null) jfm.ShowFeedback(note.side, note.lane, "PERFECT", note.transform.position, note);
+        if (jfm != null) jfm.ShowFeedback(note.side, note.lane, noteRank, note.transform.position, note);
     }
 
     /// <summary>清屏清除一个长按节点：按节点音轨 lane 视为命中（计分/连击/充能）+ 弹 PERFECT 评价。</summary>
@@ -419,10 +422,11 @@ public class ActiveSkillRuntime : MonoBehaviour
         int lane = (hn.NodeCount > 0) ? hn.GetNodeLane(nodeIndex) : hn.side;
         Vector3 pos = (hn.hitPositions != null && nodeIndex < hn.hitPositions.Length)
             ? hn.hitPositions[nodeIndex] : hn.transform.position;
-        // 视为命中：按节点音轨 lane 走统一管线计分/连击/充能（对应轨角色）
-        if (hn.spawner != null) hn.spawner.ReportJudge(ownerSide, lane, "PERFECT", pos, hn);
+        // 视为命中：按节点音轨 lane 走统一管线计分/连击/充能（对应轨角色）。
+        // 评价统一为 CLEAR（与玩家手动完成长按每段一致）。
+        if (hn.spawner != null) hn.spawner.ReportJudge(ownerSide, lane, "CLEAR", pos, hn);
         var jfm = FindFirstObjectByType<JudgeFeedbackManager>();
-        if (jfm != null) jfm.ShowFeedback(hn.side, lane, "PERFECT", pos, hn);
+        if (jfm != null) jfm.ShowFeedback(hn.side, lane, "CLEAR", pos, hn);
     }
 
     /// <summary>每个被附魔音符「命中成功」时触发一次：按 effectType 分发投弹 / 回血。</summary>
@@ -433,7 +437,16 @@ public class ActiveSkillRuntime : MonoBehaviour
         {
             case "Bomb": ThrowBomb(); break;
             case "Heal": HealSelf(); break;
+            // 驱散：类附魔模块——每成功结算一个附魔音符，即清除本侧持续性控制效果（当前=沉睡）。
+            case "Dispel": DispelControl(); break;
         }
+    }
+
+    /// <summary>驱散（类附魔模块效果）：每成功结算一个附魔音符，清除本侧持续性控制效果（当前实现=解除沉睡）。</summary>
+    private void DispelControl()
+    {
+        var sc = SleepController.EnsureInstance();
+        if (sc != null) sc.Dispel(ownerSide);
     }
 
     /// <summary>炸弹雨：从施法角色位置投出一颗白色方块炸弹，飞向对方阵地范围内随机落点，落地即时结算伤害。</summary>

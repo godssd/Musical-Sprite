@@ -68,14 +68,35 @@ public static class SkillLibraryGenerator
             3, 3, "Bomb", "{\"bombDamage\":10}", dir);
 
         created += Make("xiaohei_clear", "小黑清屏",
-            "（6）将身前区域的所有音符全部电没（视为完成最佳击中自己获得所有大招充能）之后陷入 3 秒沉睡",
+            "（6）将身前区域的所有音符全部电没（视为完成最佳命中，按各音符最高判定计分/充能）之后释放者小黑自身陷入 N 秒沉睡；过热 / 超级过热释放时额外激活自身 b 类战力 buff（橙黄）",
             330f, new SkillInputStep[] { SkillInputStep.Down, SkillInputStep.Right, SkillInputStep.Left },   // BCA → ↓→←
-            0, 0, "ClearScreen", "{\"sleepSeconds\":3}", dir);
+            0, 0, "ClearScreen", "{}", dir,
+            buffSlot: BuffSlot.B, buffCombatMult: 1.5f, clearSleepSeconds: 3f, clearBuffAsB: true);
 
         created += Make("baby_damage_reduce", "宝宝全体防御减伤",
             "获得 5% 的伤害减少；超级过热：获得 15% 的伤害减少",
             0f, new SkillInputStep[0],
             0, 0, "ReduceIncomingDamagePercent", "{\"percent\":0.05}", dir);
+
+        // 宝宝双 buff（a 类，互斥顶替）：实际已在磁盘存在，此前漏在生成器外、与「唯一数据源」自述不符。补回使其可重生成。
+        created += Make("baby_defense_buff", "宝宝全体防御",
+            "（1）全体防御：减少 20% 受到的伤害，持续 10s（同属 a 类 buff 不可共存）",
+            0f, new SkillInputStep[0],
+            0, 0, "Buff", "{}", dir,
+            buffSlot: BuffSlot.A, buffSubType: BuffSubType.Defense, buffCombatMult: 1f, buffDamageReduce: 0.2f, buffDuration: 10f);
+
+        created += Make("baby_offense_buff", "宝宝全体进攻",
+            "（2）全体进攻：整个队伍战斗力上升 40%，持续 10s（同属 a 类 buff 不可共存）",
+            0f, new SkillInputStep[0],
+            0, 0, "Buff", "{}", dir,
+            buffSlot: BuffSlot.A, buffSubType: BuffSubType.Offense, buffCombatMult: 1.4f, buffDamageReduce: 0f, buffDuration: 10f);
+
+        // 驱散（类附魔模块）：附魔 N 个本侧 incoming 音符，每成功结算一个即清除本侧持续性控制效果（当前=沉睡）。
+        created += Make("xiaohei_dispel", "小黑驱散",
+            "（7）将接下来若干音符附魔，每成功命中一个即驱散本侧持续性控制效果（解除沉睡）；附魔式释放，消耗能量后按命中结算",
+            200f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Up, SkillInputStep.Right },   // LUR → ←↑→
+            4, 3, "Dispel", "{}", dir,
+            enchantTarget: EnchantTarget.Self);
 
         if (!silent)
             AssetDatabase.SaveAssets();
@@ -113,7 +134,11 @@ public static class SkillLibraryGenerator
     }
 
     static int Make(string skillId, string displayName, string desc, float energyCost,
-        SkillInputStep[] seq, int charmed, int reducePer, string effectType, string effectParams, string dir)
+        SkillInputStep[] seq, int charmed, int reducePer, string effectType, string effectParams, string dir,
+        BuffSlot buffSlot = BuffSlot.None, BuffSubType buffSubType = BuffSubType.Offense,
+        float buffCombatMult = 1.4f, float buffDamageReduce = 0.2f, float buffDuration = 10f,
+        float clearBandRangeMult = 1f, float clearSleepSeconds = 3f, bool clearBuffAsB = false,
+        EnchantTarget enchantTarget = EnchantTarget.Self)
     {
         string path = dir + "/" + skillId + ".asset";
         if (File.Exists(path))
@@ -142,6 +167,16 @@ public static class SkillLibraryGenerator
         so.releaseGlow = new Color(1f, 0.85f, 0.2f);
         so.effectType = effectType;
         so.effectParamsJSON = effectParams;
+        // 同步 buff / 清屏参数（此前生成器只设了基础字段，重生成会导致这些字段丢失）
+        so.enchantTarget = enchantTarget;
+        so.buffSlot = buffSlot;
+        so.buffSubType = buffSubType;
+        so.buffCombatMult = buffCombatMult;
+        so.buffDamageReduce = buffDamageReduce;
+        so.buffDuration = buffDuration;
+        so.clearBandRangeMult = clearBandRangeMult;
+        so.clearSleepSeconds = clearSleepSeconds;
+        so.clearBuffAsB = clearBuffAsB;
         AssetDatabase.CreateAsset(so, path);
         return 1;
     }
