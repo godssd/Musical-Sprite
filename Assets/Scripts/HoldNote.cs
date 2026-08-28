@@ -688,7 +688,7 @@ public class HoldNote : MonoBehaviour
 
             // 已命中的整条链：段带过判定线后保留一小段可见，逐片发白反馈被看到（2b）。
             float glowLineX = hideLineX + (hasLit ? glowBufferDist : 0f);
-            float disappearSpan = 0.6f;   // 越线后放大淡出的行程（本地坐标单位）
+            float disappearSpan = 1.2f;   // 越线后放大淡出的行程（本地坐标单位）[PLACEHOLDER 可微调]
 
             for (int k = 0; k < segs.Count; k++)
             {
@@ -721,10 +721,11 @@ public class HoldNote : MonoBehaviour
                 }
                 else
                 {
-                    // 已越过判定线：变白（颜色已由 UpdateSegmentColors 置白）+ 放大 ×1.6 + alpha 淡出，最后才禁用
+                    // 已越过判定线：放大 ×1.6 + 变白 + alpha 淡出，最后才禁用（完成态连接线"逐段变大变白消失"）
                     float past = side == 0 ? (glowLineX - segs[k].position.x) : (segs[k].position.x - glowLineX);
                     float f = Mathf.Clamp01(past / disappearSpan);
                     segs[k].localScale = segs[k].localScale * Mathf.Lerp(1f, 1.6f, f);
+                    if (!missMode && mats[k] != null) mats[k].color = Color.white;   // 完成态确保变白（放大淡出前先变白）
                     SetMatAlpha(mats[k], 1f - f);
                     rends[k].enabled = f < 0.98f;
                 }
@@ -833,21 +834,39 @@ public class HoldNote : MonoBehaviour
         return IsBeyondLine(nodeTransforms[index].position.x, cx);
     }
 
-    /// <summary>清屏技能：把带区内（xMin~xMax）已显现的节点全部视为命中清除（变白弹跳 + 回调充能 / 弹评价）。
+    /// <summary>清屏技能：把整条长按视为命中清除。
+    /// 带区内已显现的节点逐节点变白弹跳 + 调用 caster.OnSkillClearedNode（按节点音轨计分/连击/充能 + 弹 PERFECT）；
+    /// 随后进入完成淡出：连接线在判定线处逐段变大变白消失（复用既有"完成"表现）。
     /// 由 NoteSpawner.SkillClearBand 逐条 HoldNote 调用。</summary>
-    public void SkillClearNodesInBand(float xMin, float xMax, ActiveSkillRuntime caster)
+    public void SkillClearWhole(float xMin, float xMax, ActiveSkillRuntime caster)
     {
         if (caster == null || nodeTransforms == null) return;
+        if (state == HoldState.Done) return;   // 已完成/已漏击的长按不再重复计分（避免与正常完成重复记账）
+
+        // 是否至少有一个已显现且在带区内的节点
+        bool anyInBand = false;
         for (int i = 0; i < NodeCount; i++)
         {
             if (!IsNodeRevealed(i)) continue;
             float x = (hitPositions != null && i < hitPositions.Length) ? hitPositions[i].x : 0f;
-            if (x >= xMin && x <= xMax)
-            {
-                PlayHitPop(i);                 // 节点变白 + 放大弹跳（复用命中表现）
-                caster.OnSkillClearedNode(this, i);
-            }
+            if (x >= xMin && x <= xMax) { anyInBand = true; break; }
         }
+        if (!anyInBand) return;
+
+        // 逐节点：变白弹跳 + 按轨计分/连击/充能 + 结算附魔名额
+        for (int i = 0; i < NodeCount; i++)
+        {
+            if (!IsNodeRevealed(i)) continue;
+            float x = (hitPositions != null && i < hitPositions.Length) ? hitPositions[i].x : 0f;
+            if (x < xMin || x > xMax) continue;
+            PlayHitPop(i);                      // 节点变白 + 放大弹跳
+            caster.OnSkillClearedNode(this, i); // 按节点音轨 lane 统一管线计分/连击/充能 + 弹 PERFECT
+            ResolveCharmedNode(i, true);        // 若该节点被附魔，按成功结算（无附魔则为空操作）
+        }
+
+        // 进入完成淡出：整条连接线在判定线处逐段变大变白消失（沿用 Complete 的完成表现）
+        hasLit = true;
+        Complete();
     }
 
     /// <summary>判断一个带有 X 半宽的视觉元素是否已经完整越过指定判定线。</summary>

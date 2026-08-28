@@ -15,6 +15,13 @@ public class SleepController : MonoBehaviour
     void Awake() { if (Instance == null) Instance = this; }
     void OnDestroy() { if (Instance == this) Instance = null; }
 
+    /// <summary>取得唯一实例；若 Instance 尚未就绪（Awake 延迟）则尝试查找并赋值，确保沉睡可靠生效。</summary>
+    public static SleepController EnsureInstance()
+    {
+        if (Instance == null) Instance = FindFirstObjectByType<SleepController>();
+        return Instance;
+    }
+
     void Update()
     {
         for (int s = 0; s < 2; s++)

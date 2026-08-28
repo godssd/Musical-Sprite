@@ -104,6 +104,12 @@ public class ActiveSkillRuntime : MonoBehaviour
     {
         if (phase != Phase.Standby) return;
         if (owner == null || !owner.HasActiveSkill) return;
+        // 沉睡期间无法释放技能（控制免疫可抵抗）
+        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(ownerSide))
+        {
+            Debug.Log($"[Skill] side{ownerSide} 沉睡中，无法释放 {skill?.displayName}");
+            return;
+        }
         if (needsEnergy && !owner.IsSlotFull(slotIndex)) return;   // 仅需要能量的技能才卡对应槽能量门槛
         if (skill == null) return;
 
@@ -333,10 +339,14 @@ public class ActiveSkillRuntime : MonoBehaviour
 
         // 敌方沉睡（控制免疫可抵抗）
         float sleepSec = (skill != null && skill.clearSleepSeconds > 0f) ? skill.clearSleepSeconds : 3f;
-        if (SleepController.Instance != null) SleepController.Instance.Sleep(1 - ownerSide, sleepSec);
+        var sleepCtrl = SleepController.EnsureInstance();
+        if (sleepCtrl != null) sleepCtrl.Sleep(1 - ownerSide, sleepSec);
+        else Debug.LogWarning("[ClearScreen] SleepController 未找到，沉睡未生效");
 
         // 激活自身 b 类 buff（小黑个人战力，与 a 类相乘叠加）
-        if (skill != null && skill.clearBuffAsB && BuffController.Instance != null)
+        // 仅过热 / 超级过热释放才有（普通释放不放 b）。颜色由 TeamAuraVfx.SelfPowerAuraFx 决定（橙黄）。
+        bool feverActive = releaseFever == FeverState.Fever || releaseFever == FeverState.SuperFever;
+        if (skill != null && skill.clearBuffAsB && feverActive && BuffController.Instance != null)
         {
             BuffController.Instance.SetBBuff(ownerSide, skill.buffCombatMult > 0f ? skill.buffCombatMult : 1.5f);
             float dur = skill.buffDuration > 0f ? skill.buffDuration : 10f;
@@ -390,29 +400,29 @@ public class ActiveSkillRuntime : MonoBehaviour
         return null;
     }
 
-    /// <summary>清屏清除一个普通音符：播放大白消失 + 弹 PERFECT 评价 + 小黑充能（视为命中，自己获得大招充能）。</summary>
+    /// <summary>清屏清除一个普通音符：播放大白消失 + 视为命中（按音符自身音轨计分/连击/充能）+ 弹 PERFECT 评价。</summary>
     public void OnSkillClearedNote(Note note, NoteSpawner spawner)
     {
         if (note == null) return;
         note.MarkClearedBySkill();
+        // 视为命中：走统一 OnJudge 管线 -> ScoreManager 加分（按 ownerSide）+ BattleVisualsController 加连击；
+        // 充能按音符自身音轨 note.lane 落到对应轨角色（HandleJudge 内 GetTeam(ownerSide, lane).AddEnergy）
+        if (spawner != null) spawner.ReportJudge(ownerSide, note.lane, "PERFECT", note.transform.position, note);
         var jfm = FindFirstObjectByType<JudgeFeedbackManager>();
         if (jfm != null) jfm.ShowFeedback(note.side, note.lane, "PERFECT", note.transform.position, note);
-        if (owner != null) owner.AddEnergy(10f);
     }
 
-    /// <summary>清屏清除一个长按节点：弹 PERFECT 评价 + 小黑充能。</summary>
+    /// <summary>清屏清除一个长按节点：按节点音轨 lane 视为命中（计分/连击/充能）+ 弹 PERFECT 评价。</summary>
     public void OnSkillClearedNode(HoldNote hn, int nodeIndex)
     {
         if (hn == null) return;
+        int lane = (hn.NodeCount > 0) ? hn.GetNodeLane(nodeIndex) : hn.side;
+        Vector3 pos = (hn.hitPositions != null && nodeIndex < hn.hitPositions.Length)
+            ? hn.hitPositions[nodeIndex] : hn.transform.position;
+        // 视为命中：按节点音轨 lane 走统一管线计分/连击/充能（对应轨角色）
+        if (hn.spawner != null) hn.spawner.ReportJudge(ownerSide, lane, "PERFECT", pos, hn);
         var jfm = FindFirstObjectByType<JudgeFeedbackManager>();
-        if (jfm != null)
-        {
-            int lane = (hn.NodeCount > 0) ? hn.GetNodeLane(nodeIndex) : hn.side;
-            Vector3 pos = (hn.hitPositions != null && nodeIndex < hn.hitPositions.Length)
-                ? hn.hitPositions[nodeIndex] : hn.transform.position;
-            jfm.ShowFeedback(hn.side, lane, "PERFECT", pos, hn);
-        }
-        if (owner != null) owner.AddEnergy(10f);
+        if (jfm != null) jfm.ShowFeedback(hn.side, lane, "PERFECT", pos, hn);
     }
 
     /// <summary>每个被附魔音符「命中成功」时触发一次：按 effectType 分发投弹 / 回血。</summary>

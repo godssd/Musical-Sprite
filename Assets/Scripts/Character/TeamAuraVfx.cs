@@ -121,7 +121,7 @@ public class DefenseAuraFx : MonoBehaviour
             go.transform.SetParent(transform, false);
             var col = go.GetComponent<Collider>(); if (col != null) Destroy(col);
             var r = go.GetComponent<Renderer>();
-            r.material = AuraMat.Create(new Color(0.3f, 0.7f, 1f, 0.4f), new Color(0.2f, 0.55f, 1f) * 1.4f, 0.4f);
+            r.material = AuraMat.Create(new Color(0.1f, 0.4f, 1f, 0.55f), new Color(0.2f, 0.5f, 1f) * 1.6f, 0.55f);
             panels[i] = go.transform;
             rends[i] = r;
             mats[i] = r.material;
@@ -185,7 +185,7 @@ public class OffenseAuraFx : MonoBehaviour
             go.transform.SetParent(transform, false);
             var col = go.GetComponent<Collider>(); if (col != null) Destroy(col);
             var r = go.GetComponent<Renderer>();
-            r.material = AuraMat.Create(new Color(1f, 0.3f, 0.3f, 0.75f), new Color(1f, 0.25f, 0.25f) * 1.6f, 0.75f);
+            r.material = AuraMat.Create(new Color(0.85f, 0.05f, 0.05f, 0.85f), new Color(1f, 0.1f, 0.1f) * 2.0f, 0.85f);
             nodes[i] = go.transform;
             mats[i] = r.material;
             nodes[i].localScale = new Vector3(0.4f, 0.4f, 0.4f);
@@ -236,7 +236,7 @@ public class SelfPowerAuraFx : MonoBehaviour
         go.transform.SetParent(transform, false);
         var col = go.GetComponent<Collider>(); if (col != null) Destroy(col);
         var r = go.GetComponent<Renderer>();
-        r.material = AuraMat.Create(new Color(1f, 0.15f, 0.15f, 0.9f), new Color(1f, 0.1f, 0.1f) * 2.0f, 0.9f);
+        r.material = AuraMat.Create(new Color(1f, 0.7f, 0.1f, 0.9f), new Color(1f, 0.6f, 0.1f) * 2.0f, 0.9f);
         mat = r.material;
         cube = go.transform;
         cube.localScale = new Vector3(0.45f, 0.45f, 0.45f);

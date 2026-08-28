@@ -726,15 +726,24 @@ public class NoteSpawner : MonoBehaviour
     }
 
     /// <summary>
+    /// 统一判定上报入口（供清屏等"视为命中"的技能调用）：内部直接 Invoke OnJudge，
+    /// 从而走 ScoreManager.HandleJudge（按 side 加分 + 按 lane 给对应轨角色充能）与 BattleVisualsController（加连击）。
+    /// 清屏充能归属：用音符自身的 lane，落到该音轨对应角色（而非固定释放者）。
+    /// </summary>
+    public void ReportJudge(int side, int lane, string rank, Vector3 pos, UnityEngine.Object source)
+    {
+        OnJudge?.Invoke(side, lane, rank, pos, source);
+    }
+
+    /// <summary>
     /// 清屏技能：把 [xMin, xMax] 带内（覆盖全部 4 条音轨，不限定 lane）的生效音符全部视为最佳命中清除。
     /// 普通点击音符：移除并交给 caster 弹评价 / 充能 / 播放大白消失；
-    /// 长按音符：带区内已显现节点调用 SkillClearNodesInBand 逐节点清除。
+    /// 长按音符：整条视为命中清除（SkillClearWhole：逐节点按轨计分/连击/充能 + 完成淡出）。
     /// </summary>
     public void SkillClearBand(float xMin, float xMax, ActiveSkillRuntime caster)
     {
         if (caster == null) return;
         int cleared = 0;
-        int holdNodesCleared = 0;
         for (int i = activeNotes.Count - 1; i >= 0; i--)
         {
             var note = activeNotes[i];
@@ -751,8 +760,8 @@ public class NoteSpawner : MonoBehaviour
         {
             var hn = activeHoldNotes[i];
             if (hn == null) continue;
-            hn.SkillClearNodesInBand(xMin, xMax, caster);
-            // SkillClearNodesInBand 内部会回调 OnSkillClearedNode（包含充能），计数由 HoldNote 自行 +=
+            // 整条长按视为命中清除：带区内已显现节点逐节点按轨计分/连击/充能，随后整条进入完成淡出（连接线逐段变大变白消失）
+            hn.SkillClearWhole(xMin, xMax, caster);
         }
         Debug.Log($"[ClearScreen] band=[{xMin:F2},{xMax:F2}] cleared {cleared} tap note(s)");
     }
