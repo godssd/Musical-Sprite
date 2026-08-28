@@ -58,7 +58,10 @@ namespace MusicalSprite.Editor
         [SerializeField] private float bpm = 128f;
         [SerializeField] private float songLength = 60f;
         [SerializeField] private List<ChartNote> notes = new List<ChartNote>();
-        private string currentEditingPath = ""; // 正在编辑的资产路径；为空表示新谱面
+        [SerializeField] private string currentEditingPath = ""; // 正在编辑的资产路径；为空表示新谱面
+        [SerializeField] private string savedBeatmapName;
+        [SerializeField] private AudioClip savedAudioClip;
+        [SerializeField] private BeatmapTextDump savedState;
 
         // ---------- 撤销 ----------
         // 撤销栈：每一项是某一操作“之前”的 notes 完整快照（深拷贝）。
@@ -212,8 +215,9 @@ namespace MusicalSprite.Editor
             var bm = AssetDatabase.LoadAssetAtPath<BeatmapSO>(path);
             if (bm == null) continue;
             int assetSide0 = bm.notes != null ? bm.notes.Count(n => n.side == 0) : 0;
-            int jsonSide0 = CountSide0InJson(GetJsonPath(path));
-            if (jsonSide0 > assetSide0 + 1)
+            if (!TryReadBeatmapText(GetJsonPath(path), out var dump, out _)) continue;
+            int jsonSide0 = CountSide(dump.notes, 0);
+            if (jsonSide0 > assetSide0)
             {
                 RebuildAssetFromJson(path);
                 Debug.Log($"[谱面编辑器] ExitingEditMode 自愈：{Path.GetFileNameWithoutExtension(path)}.asset 已从 .json 重建 ({assetSide0}→{jsonSide0} 音符)");
@@ -225,16 +229,19 @@ namespace MusicalSprite.Editor
     private static void RebuildAssetFromJson(string assetPath)
     {
         string jsonPath = GetJsonPath(assetPath);
-        if (!File.Exists(jsonPath)) return;
+        if (!TryReadBeatmapText(jsonPath, out var dump, out var error))
+        {
+            if (!string.IsNullOrEmpty(error))
+                Debug.LogError($"[谱面编辑器] 自愈重建失败（{assetPath}）：{error}");
+            return;
+        }
         try
         {
-            string json = File.ReadAllText(jsonPath);
-            BeatmapTextDump dump = JsonUtility.FromJson<BeatmapTextDump>(json);
-            if (dump == null || dump.notes == null) return;
             var bm = AssetDatabase.LoadAssetAtPath<BeatmapSO>(assetPath);
             if (bm == null) return;
             bm.notes = dump.notes;       // .json 含完整 side0/side1，直接以文本备份为准
             bm.bpm = dump.bpm;
+            bm.markers = dump.markers;
             EditorUtility.SetDirty(bm);
             AssetDatabase.SaveAssets();
         }
@@ -2145,8 +2152,7 @@ namespace MusicalSprite.Editor
                 if (bm == null) continue;
 
                 int side0 = bm.notes != null ? bm.notes.Count(n => n.side == 0) : 0;
-                int jsonSide0 = CountSide0InJson(GetJsonPath(path));
-                bool damaged = jsonSide0 > side0 + 1; // 文本备份比资产多 => 资产被截断
+                bool damaged = TryGetBeatmapDamage(bm, path, out string damageReason);
                 bool active = (path == activePath);
                 string name = Path.GetFileNameWithoutExtension(path);
                 bool hasMusic = bm.audioClip != null;
@@ -2154,8 +2160,9 @@ namespace MusicalSprite.Editor
                 Color prevColor = GUI.color;
                 if (damaged) GUI.color = Color.red;
                 EditorGUILayout.BeginHorizontal(active ? EditorStyles.helpBox : GUIStyle.none);
-                EditorGUILayout.LabelField(
+                EditorGUILayout.LabelField(new GUIContent(
                     $"{(active ? "★ " : "")}{name}  ({side0} 音符, BPM {bm.bpm:F0}){(hasMusic ? "  [音乐]" : "")}{(damaged ? "  ⚠已损坏" : "")}",
+                    damaged ? damageReason : ""),
                     GUILayout.Width(damaged ? 360 : 320));
                 if (GUILayout.Button("编辑", GUILayout.Width(50))) LoadBeatmap(path);
                 if (GUILayout.Button("调用", GUILayout.Width(50))) SetActiveBeatmap(path);
@@ -2166,6 +2173,8 @@ namespace MusicalSprite.Editor
                     {
                         if (path == activePath) EditorPrefs.DeleteKey(ActiveBeatmapKey);
                         AssetDatabase.DeleteAsset(path);
+                        string jsonPath = GetJsonPath(path);
+                        if (File.Exists(jsonPath)) AssetDatabase.DeleteAsset(jsonPath);
                         AssetDatabase.Refresh();
                         ShowNotification(new GUIContent("已删除：" + name));
                     }
@@ -2217,6 +2226,7 @@ namespace MusicalSprite.Editor
             markers = (bm.markers != null) ? new List<float>(bm.markers) : new List<float>();
             // 从资产音符数组重建单边谱面（含连轨宽度还原）
             LoadNotesFromNoteData(bm.notes);
+            CaptureSavedState();
             // 自检：若资产丢失连轨宽度而文本备份有，提示从文本恢复（纵深防御）
             VerifyAndMaybeRecoverOnLoad(path);
         }
@@ -2274,19 +2284,144 @@ namespace MusicalSprite.Editor
             return Path.ChangeExtension(assetPath, ".json");
         }
 
-        /// <summary>读取同级 .json 文本备份中 side==0 的音符数（用于检测资产被截断）。解析失败返回 0。</summary>
-        private static int CountSide0InJson(string jsonPath)
+        private const float BeatmapFloatTolerance = 0.0001f;
+
+        private static int CountSide(NoteData[] source, int side)
         {
+            if (source == null) return 0;
+            int count = 0;
+            foreach (var note in source)
+                if (note != null && note.side == side) count++;
+            return count;
+        }
+
+        private static bool TryReadBeatmapText(string jsonPath, out BeatmapTextDump dump, out string error)
+        {
+            dump = null;
+            error = "";
+            if (!File.Exists(jsonPath)) return false;
             try
             {
-                if (!File.Exists(jsonPath)) return 0;
-                var dump = JsonUtility.FromJson<BeatmapTextDump>(File.ReadAllText(jsonPath));
-                if (dump == null || dump.notes == null) return 0;
-                int c = 0;
-                foreach (var n in dump.notes) if (n.side == 0) c++;
-                return c;
+                dump = JsonUtility.FromJson<BeatmapTextDump>(File.ReadAllText(jsonPath));
+                if (dump == null || dump.notes == null)
+                {
+                    error = "JSON 备份解析失败或缺少 notes";
+                    return false;
+                }
+                return true;
             }
-            catch (System.Exception) { return 0; }
+            catch (System.Exception e)
+            {
+                error = "JSON 备份无法解析：" + e.Message;
+                return false;
+            }
+        }
+
+        private static bool TryGetBeatmapDamage(BeatmapSO asset, string assetPath, out string reason)
+        {
+            reason = "";
+            string jsonPath = GetJsonPath(assetPath);
+            if (!File.Exists(jsonPath)) return false; // 没有备份不等于资产已损坏
+            if (!TryReadBeatmapText(jsonPath, out var dump, out reason)) return true;
+            return !BeatmapTextEquals(
+                new BeatmapTextDump { bpm = asset.bpm, notes = asset.notes, markers = asset.markers },
+                dump,
+                out reason);
+        }
+
+        /// <summary>测试入口：按 JSON 的完整谱面字段校验资产内容。</summary>
+        internal static bool IsBeatmapTextConsistent(BeatmapSO asset, string json, out string reason)
+        {
+            reason = "";
+            if (asset == null) { reason = "谱面资产为空"; return false; }
+            BeatmapTextDump dump;
+            try { dump = JsonUtility.FromJson<BeatmapTextDump>(json); }
+            catch (System.Exception e) { reason = "JSON 备份无法解析：" + e.Message; return false; }
+            if (dump == null || dump.notes == null) { reason = "JSON 备份解析失败或缺少 notes"; return false; }
+            return BeatmapTextEquals(
+                new BeatmapTextDump { bpm = asset.bpm, notes = asset.notes, markers = asset.markers },
+                dump,
+                out reason);
+        }
+
+        private static bool BeatmapTextEquals(BeatmapTextDump asset, BeatmapTextDump text, out string reason)
+        {
+            if (!FloatEqual(asset.bpm, text.bpm))
+            {
+                reason = $"BPM 不一致（asset={asset.bpm}, JSON={text.bpm}）";
+                return false;
+            }
+            if (!FloatArrayEqual(asset.markers, text.markers))
+            {
+                reason = "时间标记 markers 不一致";
+                return false;
+            }
+
+            int assetCount = asset.notes != null ? asset.notes.Length : 0;
+            int textCount = text.notes != null ? text.notes.Length : 0;
+            if (assetCount != textCount)
+            {
+                reason = $"音符总数不一致（asset={assetCount}, JSON={textCount}）";
+                return false;
+            }
+            for (int i = 0; i < assetCount; i++)
+            {
+                if (!NoteEqual(asset.notes[i], text.notes[i], out string field))
+                {
+                    reason = $"第 {i + 1} 个音符的 {field} 不一致";
+                    return false;
+                }
+            }
+            if (!string.Equals(JsonUtility.ToJson(asset), JsonUtility.ToJson(text), System.StringComparison.Ordinal))
+            {
+                reason = "JSON 完整内容不一致";
+                return false;
+            }
+
+            reason = "";
+            return true;
+        }
+
+        private static bool NoteEqual(NoteData a, NoteData b, out string field)
+        {
+            if (a == null || b == null) { field = "数据"; return a == b; }
+            if (!FloatEqual(a.time, b.time)) { field = "time"; return false; }
+            if (a.lane != b.lane) { field = "lane"; return false; }
+            if (a.side != b.side) { field = "side"; return false; }
+            if (a.type != b.type) { field = "type"; return false; }
+            if (a.chainTapCount != b.chainTapCount) { field = "chainTapCount"; return false; }
+            if (!FloatEqual(a.holdDuration, b.holdDuration)) { field = "holdDuration"; return false; }
+            if (a.holdEndLane != b.holdEndLane) { field = "holdEndLane"; return false; }
+            if (!IntArrayEqual(a.holdLanes, b.holdLanes)) { field = "holdLanes"; return false; }
+            if (!FloatArrayEqual(a.holdTimes, b.holdTimes)) { field = "holdTimes"; return false; }
+            if (!IntArrayEqual(a.holdLaneSpans, b.holdLaneSpans)) { field = "holdLaneSpans"; return false; }
+            field = "";
+            return true;
+        }
+
+        private static bool FloatEqual(float a, float b)
+        {
+            return Mathf.Abs(a - b) <= BeatmapFloatTolerance;
+        }
+
+        private static bool FloatArrayEqual(float[] a, float[] b)
+        {
+            int aLength = a != null ? a.Length : 0;
+            int bLength = b != null ? b.Length : 0;
+            if (aLength != bLength) return false;
+            for (int i = 0; i < aLength; i++)
+                if (!FloatEqual(a[i], b[i])) return false;
+            return true;
+        }
+
+        private static bool IntArrayEqual(int[] a, int[] b)
+        {
+            int aLength = a != null ? a.Length : 0;
+            int bLength = b != null ? b.Length : 0;
+            if (aLength != bLength) return false;
+            for (int i = 0; i < aLength; i++)
+                if (a[i] != b[i]) return false;
+            return true;
         }
 
         /// <summary>根据当前 notes / 音乐素材自动扩展 songLength：
@@ -2318,35 +2453,62 @@ namespace MusicalSprite.Editor
         }
 
         /// <summary>把已保存的 BeatmapSO 同步导出为同级 .json 文本镜像（纵深防御 / 可 git 提交）。</summary>
-        private void ExportBeatmapText(BeatmapSO asset, string assetPath)
+        internal static bool ExportBeatmapText(BeatmapSO asset, string assetPath)
         {
-            if (asset == null) return;
+            if (asset == null) return false;
             try
             {
                 string jsonPath = GetJsonPath(assetPath);
                 var dump = new BeatmapTextDump { bpm = asset.bpm, notes = asset.notes, markers = asset.markers };
                 File.WriteAllText(jsonPath, JsonUtility.ToJson(dump, true));
+                return true;
             }
             catch (System.Exception e)
             {
                 Debug.LogWarning($"[谱面编辑器] 导出文本备份失败：{e.Message}");
+                return false;
             }
+        }
+
+        private void CaptureSavedState()
+        {
+            savedBeatmapName = beatmapName;
+            savedAudioClip = beatmapAudioClip;
+            savedState = new BeatmapTextDump
+            {
+                bpm = bpm,
+                notes = BuildBothSideNotes(),
+                markers = markers != null && markers.Count > 0 ? markers.ToArray() : null
+            };
+        }
+
+        private bool HasUnsavedChanges()
+        {
+            if (savedState == null)
+            {
+                return notes.Count > 0 || markers.Count > 0 || beatmapAudioClip != null ||
+                    !string.Equals(beatmapName, "NewBeatmap", System.StringComparison.Ordinal) ||
+                    !FloatEqual(bpm, 128f);
+            }
+            if (!string.Equals(beatmapName, savedBeatmapName, System.StringComparison.Ordinal)) return true;
+            if (beatmapAudioClip != savedAudioClip) return true;
+            var current = new BeatmapTextDump
+            {
+                bpm = bpm,
+                notes = BuildBothSideNotes(),
+                markers = markers != null && markers.Count > 0 ? markers.ToArray() : null
+            };
+            return !BeatmapTextEquals(current, savedState, out _);
         }
 
         /// <summary>从同级 .json 文本备份恢复编辑器谱面（含连轨宽度），并立即写回 .asset 固化。</summary>
         private void RestoreFromText(string assetPath)
         {
             string jsonPath = GetJsonPath(assetPath);
-            if (!File.Exists(jsonPath))
+            if (!TryReadBeatmapText(jsonPath, out var dump, out string error))
             {
-                EditorUtility.DisplayDialog("从文本恢复", "未找到同名的 .json 文本备份文件。", "确定");
-                return;
-            }
-            string json = File.ReadAllText(jsonPath);
-            BeatmapTextDump dump = JsonUtility.FromJson<BeatmapTextDump>(json);
-            if (dump == null || dump.notes == null)
-            {
-                EditorUtility.DisplayDialog("从文本恢复", "文本备份解析失败或为空。", "确定");
+                string message = File.Exists(jsonPath) ? error : "未找到同名的 .json 文本备份文件。";
+                EditorUtility.DisplayDialog("从文本恢复", message, "确定");
                 return;
             }
             bpm = dump.bpm;
@@ -2366,7 +2528,6 @@ namespace MusicalSprite.Editor
         {
             string jsonPath = GetJsonPath(assetPath);
             if (!File.Exists(jsonPath)) return;
-            int jsonSide0 = CountSide0InJson(jsonPath);
 
             // 1) 连轨宽度丢失自检（仅多节点链）
             bool spanLost = false;
@@ -2380,13 +2541,15 @@ namespace MusicalSprite.Editor
                 if (!spanOk) { spanLost = true; break; }
             }
 
-            // 2) 截断自检：资产音符数远少于文本备份（"运行后变 1 音符"的根因表现）。
-            // 注意：notes 在此只装 side==0（LoadNotesFromNoteData 已过滤），故 notes.Count 即资产 side0 数。
-            bool noteLost = jsonSide0 > notes.Count + 1;
+            // 2) 完整镜像自检：BPM、标记以及每个音符的全部序列化字段均必须一致。
+            var asset = AssetDatabase.LoadAssetAtPath<BeatmapSO>(assetPath);
+            string damageReason = "";
+            bool contentMismatch = asset != null && TryGetBeatmapDamage(asset, assetPath, out damageReason);
+            if (spanLost && string.IsNullOrEmpty(damageReason)) damageReason = "多节点 Hold 的 holdLaneSpans 不完整";
 
-            if ((spanLost || noteLost) &&
+            if ((spanLost || contentMismatch) &&
                 EditorUtility.DisplayDialog("检测到谱面可能损坏",
-                    $"当前资产音符数（{notes.Count}）与文本备份（{jsonSide0}）不一致，部分音符可能丢失。是否从文本备份恢复？\n（恢复后重新保存即可固化）",
+                    $"资产与同名 JSON 备份不一致：{damageReason}。\n是否从文本备份恢复？",
                     "从文本恢复", "忽略"))
             {
                 RestoreFromText(assetPath);
@@ -2395,7 +2558,7 @@ namespace MusicalSprite.Editor
 
         private void NewChart()
         {
-            if (notes.Count > 0 &&
+            if (HasUnsavedChanges() &&
                 !EditorUtility.DisplayDialog("新建谱面", "当前谱面尚未保存，确定新建空白谱面？", "新建", "取消"))
             {
                 return;
@@ -2417,6 +2580,7 @@ namespace MusicalSprite.Editor
             linkLaneSpans.Clear();
             pendingLinkDown = false;
             playTime = 0f;
+            CaptureSavedState();
             Repaint();
         }
 
@@ -2469,7 +2633,11 @@ namespace MusicalSprite.Editor
             asset.markers = markers.Count > 0 ? markers.ToArray() : null;
 
             if (created) AssetDatabase.CreateAsset(asset, path);
-            else AssetDatabase.SaveAssetIfDirty(asset);
+            else
+            {
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssetIfDirty(asset);
+            }
             AssetDatabase.SaveAssets();
 
             // 同步写出同级 .json 文本备份（连轨宽度纵深防御，可 git 提交）
@@ -2478,6 +2646,7 @@ namespace MusicalSprite.Editor
             AssetDatabase.Refresh();
 
             currentEditingPath = path;
+            CaptureSavedState();
             ShowNotification(new GUIContent("已保存：" + Path.GetFileNameWithoutExtension(path)));
             Repaint();
         }

@@ -44,6 +44,7 @@ public class DemoBeatmapGenerator : MonoBehaviour
         AssetDatabase.DeleteAsset(path);
         AssetDatabase.CreateAsset(beatmap, path);
         AssetDatabase.SaveAssets();
+        MusicalSprite.Editor.BeatmapEditorWindow.ExportBeatmapText(beatmap, path);
         AssetDatabase.Refresh();
 
         EditorUtility.FocusProjectWindow();
