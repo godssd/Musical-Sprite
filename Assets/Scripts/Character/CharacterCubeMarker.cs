@@ -35,17 +35,44 @@ public class CharacterCubeMarker : MonoBehaviour
     [Header("释放表现（主动技能）")]
     [Tooltip("GrowGlow() 时放大的倍数")]
     public float growScale = 1.5f;
-    [Tooltip("GrowGlow() 持续发光颜色")]
+    [Tooltip("GrowGlow() 起手闪烁时的发光颜色")]
     public Color releaseGlow = new Color(1f, 0.85f, 0.2f);
 
+    [Header("命中跳跃（P3）")]
+    [Tooltip("Jump() 跳跃峰值高度（本地坐标单位）")]
+    public float jumpHeight = 0.6f;
+    [Tooltip("Jump() 跳跃总时长（秒）")]
+    public float jumpDuration = 0.3f;
+
     private Vector3 baseScale;
+    private Vector3 baseLocalPos;
     private Coroutine flashCo;
     private Coroutine glowCo;
     private Coroutine pulseCo;
+    private Coroutine jumpCo;
+    private Color sleepBaseColor = Color.white;
+    private bool sleepVisualOn = false;
+
+    /// <summary>按 (side, lane) 索引的全局角色标记表，供普通命中时按音轨查找对应角色跳跃。</summary>
+    private static System.Collections.Generic.Dictionary<int, CharacterCubeMarker> Registry = new System.Collections.Generic.Dictionary<int, CharacterCubeMarker>();
+    private static int RegKey(int side, int lane) => side * 4 + lane;
+    /// <summary>按 side/lane 取得对应音轨角色标记（无则返回 null）。</summary>
+    public static CharacterCubeMarker GetAt(int side, int lane)
+    {
+        Registry.TryGetValue(RegKey(side, lane), out var m);
+        return m;
+    }
 
     void Awake()
     {
         baseScale = transform.localScale;
+        baseLocalPos = transform.localPosition;
+        Registry[RegKey(side, laneIndex)] = this;
+    }
+
+    void OnDestroy()
+    {
+        Registry.Remove(RegKey(side, laneIndex));
     }
 
     /// <summary>
@@ -109,10 +136,21 @@ public class CharacterCubeMarker : MonoBehaviour
 
     private System.Collections.IEnumerator GrowCo()
     {
+        // 起手先快速闪烁（提亮）一下，对应「闪烁变大」的"闪烁"阶段；闪完即熄灭。
+        SetEmission(releaseGlow * 2.6f);
+        float blink = 0.15f;
+        float tb = 0f;
+        while (tb < blink)
+        {
+            tb += Time.deltaTime;
+            yield return null;
+        }
+        SetEmission(Color.black);  // 闪烁结束：进入"只变大、不持续发光"状态
+
+        // 附魔期间平时不发光，只保持变大；命中闪烁由 PulseGlow 负责。
         float t = 0f;
         float dur = 0.15f;
         Vector3 from = transform.localScale;
-        // 附魔期间「平时不亮」，只保持变大；命中闪烁由 PulseGlow 负责（Issue 1）。
         while (t < dur)
         {
             t += Time.deltaTime;
@@ -167,5 +205,51 @@ public class CharacterCubeMarker : MonoBehaviour
         yield return new WaitForSeconds(0.09f);
         SetEmission(Color.black);
         pulseCo = null;
+    }
+
+    /// <summary>
+    /// 普通音符命中时，对应音轨角色向上跳一下（仅本地位移 hop，不影响 scale）。
+    /// 释放主动技能期间由 BattleVisualsController 屏蔽调用。
+    /// </summary>
+    public void Jump()
+    {
+        if (!isActiveAndEnabled) return;
+        if (jumpCo != null) StopCoroutine(jumpCo);
+        jumpCo = StartCoroutine(JumpCo());
+    }
+
+    private System.Collections.IEnumerator JumpCo()
+    {
+        float t = 0f;
+        while (t < jumpDuration)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / jumpDuration);
+            float h = Mathf.Sin(k * Mathf.PI) * jumpHeight;   // 0 -> 峰 -> 0 的抛物线 hop
+            transform.localPosition = baseLocalPos + Vector3.up * h;
+            yield return null;
+        }
+        transform.localPosition = baseLocalPos;
+        jumpCo = null;
+    }
+
+    /// <summary>沉睡视觉：on=true 时方块变灰 + 熄灯；on=false 时恢复身份色（沉睡解除）。</summary>
+    public void ApplySleepVisual(bool on)
+    {
+        var rend = GetComponent<Renderer>();
+        if (rend == null || rend.material == null) return;
+        if (on)
+        {
+            sleepBaseColor = rend.material.color;
+            rend.material.color = Color.grey;
+            SetEmission(Color.black);   // 黑灯
+            sleepVisualOn = true;
+        }
+        else if (sleepVisualOn)
+        {
+            rend.material.color = sleepBaseColor;
+            SetEmission(Color.black);
+            sleepVisualOn = false;
+        }
     }
 }

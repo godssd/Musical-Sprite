@@ -669,6 +669,8 @@ public class HoldNote : MonoBehaviour
 
     private void UpdateSegmentVisibility(float revealLineX, float hideLineX)
     {
+        // 链接线小片的消失边界统一用"玩家判定线 hideLineX"（与 UpdateSegmentColors 的变白线一致），
+        // 不再用段中点 segJudgeX，从而链接线能保持到判定线位置才"变白 → 放大 → 淡出"消失。
         for (int s = 0; s < segmentGroups.Count; s++)
         {
             int spanA = NodeSpan(s);
@@ -677,23 +679,20 @@ public class HoldNote : MonoBehaviour
 
             var segs = segmentGroups[s];
             var rends = segmentRendGroups[s];
+            var mats = segmentMatGroups[s];
             Vector3 a = nodeTransforms[s].position;
             Vector3 b = nodeTransforms[s + 1].position;
             Vector3 dir = b - a;
             float totalLen = dir.magnitude;
             Vector3 normDir = totalLen < 0.001f ? Vector3.right : dir.normalized;
 
-            // 修复（2026-08-26 Issue 4）：每段用自己的中点判定线（两端节点判定线中点），
-            // 而非统一的 head 判定线，避免整条段带过早/过晚被裁切。
-            float segJudgeX = (hitPositions[s].x + hitPositions[s + 1].x) * 0.5f;
+            // 已命中的整条链：段带过判定线后保留一小段可见，逐片发白反馈被看到（2b）。
+            float glowLineX = hideLineX + (hasLit ? glowBufferDist : 0f);
+            float disappearSpan = 0.6f;   // 越线后放大淡出的行程（本地坐标单位）
 
             for (int k = 0; k < segs.Count; k++)
             {
                 if (rends[k] == null) continue;
-                // 已命中的整条链：段带过判定线后保留一小段可见，逐片发白反馈被看到（2b）。
-                // 整个 for 循环只声明一次，避免 CS0136 重名。
-                bool litGlow = hasLit;
-                float glowLineX = segJudgeX + (litGlow ? glowBufferDist : 0f);
                 if (totalLen < 0.001f)
                 {
                     bool collapsedRevealed = IsBeyondLine(segs[k].position.x, revealLineX);
@@ -713,8 +712,22 @@ public class HoldNote : MonoBehaviour
                     halfLenX = segs[k].localScale.y * 0.5f * Mathf.Abs(normDir.x);
                 }
                 bool revealed = IsBeyondLine(segs[k].position.x, revealLineX);
+                if (!revealed) { rends[k].enabled = false; continue; }
+
                 bool stillBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, halfLenX, glowLineX);
-                rends[k].enabled = revealed && stillBeforeJudge;
+                if (stillBeforeJudge)
+                {
+                    rends[k].enabled = true;   // 判定线之前：正常显示（颜色由 UpdateSegmentColors 控制）
+                }
+                else
+                {
+                    // 已越过判定线：变白（颜色已由 UpdateSegmentColors 置白）+ 放大 ×1.6 + alpha 淡出，最后才禁用
+                    float past = side == 0 ? (glowLineX - segs[k].position.x) : (segs[k].position.x - glowLineX);
+                    float f = Mathf.Clamp01(past / disappearSpan);
+                    segs[k].localScale = segs[k].localScale * Mathf.Lerp(1f, 1.6f, f);
+                    SetMatAlpha(mats[k], 1f - f);
+                    rends[k].enabled = f < 0.98f;
+                }
             }
         }
     }
@@ -818,6 +831,23 @@ public class HoldNote : MonoBehaviour
         if (index < 0 || index >= NodeCount || nodeTransforms == null || index >= nodeTransforms.Count || nodeTransforms[index] == null) return false;
         float cx = centerLine != null ? centerLine.currentX : 0f;
         return IsBeyondLine(nodeTransforms[index].position.x, cx);
+    }
+
+    /// <summary>清屏技能：把带区内（xMin~xMax）已显现的节点全部视为命中清除（变白弹跳 + 回调充能 / 弹评价）。
+    /// 由 NoteSpawner.SkillClearBand 逐条 HoldNote 调用。</summary>
+    public void SkillClearNodesInBand(float xMin, float xMax, ActiveSkillRuntime caster)
+    {
+        if (caster == null || nodeTransforms == null) return;
+        for (int i = 0; i < NodeCount; i++)
+        {
+            if (!IsNodeRevealed(i)) continue;
+            float x = (hitPositions != null && i < hitPositions.Length) ? hitPositions[i].x : 0f;
+            if (x >= xMin && x <= xMax)
+            {
+                PlayHitPop(i);                 // 节点变白 + 放大弹跳（复用命中表现）
+                caster.OnSkillClearedNode(this, i);
+            }
+        }
     }
 
     /// <summary>判断一个带有 X 半宽的视觉元素是否已经完整越过指定判定线。</summary>

@@ -140,6 +140,9 @@ public class SkillInputUI : MonoBehaviour
     {
         float now = Time.time;
 
+        // 沉睡期间无法输入技能（玩家 side 0）
+        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(0)) return;
+
         // ① 超时：与上次输入间隔超过 inputInterval → 立刻重置为无输入状态（当前这步作为新起点）。
         if (buffer.Count > 0 && (now - lastInputTime) > inputInterval)
             buffer.Clear();

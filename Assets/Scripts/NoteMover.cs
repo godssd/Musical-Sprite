@@ -484,6 +484,46 @@ public class NoteMover : MonoBehaviour
         missComplete = true;
     }
 
+    /// <summary>
+    /// 被主动技能清除时的表现：变大 → 发白 → 消失（与命中"变黑→白→放大"区分，直接视为最佳击中）。
+    /// 关键：若音符原本 isVisible=false（未过粉杠），rend.enabled 被 Init 置 false，这里必须重新打开，
+    /// 否则变大/发白/淡出全程在不可见状态下进行——用户看不到清除表现。
+    /// </summary>
+    public void PlaySkillClear()
+    {
+        if (animationPlaying) { StopAllCoroutines(); }
+        animationPlaying = true;
+        StartCoroutine(SkillClearCoroutine());
+    }
+
+    private IEnumerator SkillClearCoroutine()
+    {
+        const float duration = 0.3f;
+        float timer = 0f;
+        // 清屏前确保可见（音符原本可能尚未过粉杠，rend.enabled=false）
+        if (rend != null) rend.enabled = true;
+        Vector3 startScale = transform.localScale;
+        Vector3 endScale = startScale * 1.5f;   // 变大
+        Color startColor = (noteMaterial != null) ? noteMaterial.color : Color.white;
+
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            float t = Mathf.Clamp01(timer / duration);
+            if (noteMaterial != null)
+            {
+                // 发白并淡出
+                Color c = Color.Lerp(startColor, Color.white, t);
+                c.a = 1f - t;
+                noteMaterial.color = c;
+            }
+            transform.localScale = Vector3.Lerp(startScale, endScale, Mathf.Sin(t * Mathf.PI * 0.5f));
+            yield return null;
+        }
+
+        Destroy(gameObject);
+    }
+
     private void SetAlpha(float alpha)
     {
         if (noteMaterial == null) return;

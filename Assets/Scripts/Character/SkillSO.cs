@@ -65,11 +65,51 @@ public class SkillSO : ScriptableObject
     public float screenShakeAmp = 0.3f;
 
     [Header("效果（P3 实现）")]
-    [Tooltip("效果路由键，例如 Heal / Buff / Shield")]
+    [Tooltip("效果路由键，例如 Heal / Buff / Shield / Bomb / DogHowl")]
     public string effectType = "None";
     [TextArea(2, 6)]
     [Tooltip("自由 JSON 参数，P3 解析")]
     public string effectParamsJSON = "{}";
+
+    [Header("附魔外观 / 过热 / 各效果参数")]
+    [Tooltip("附魔时音符显示的颜色；默认黑色(Color.black)表示回退到释放方角色自身颜色")]
+    public Color charmColorOverride = Color.black;
+    [Tooltip("过热(2连)时额外附魔的音符数（叠加到 charmedNoteCount 上）")]
+    public int charmBonusFever = 0;
+    [Tooltip("超级过热(3连)时额外附魔的音符数（叠加到 charmedNoteCount 上）")]
+    public int charmBonusSuperFever = 0;
+
+    [Header("炸弹雨（effectType=Bomb）")]
+    [Tooltip("每个命中的附魔音符投弹造成的直接伤害 = ceil(释放方全队战斗力总和 × 本系数)。0.1 = 战斗力总和的 10%")]
+    public float bombDamageRate = 0.1f;
+
+    [Header("美味牛角包（effectType=Heal）")]
+    [Tooltip("每命中一个附魔音符即时回血 = ceil(生命值总和 × hpRate + 战斗力总和 × combatRate)，全局整数规则向上取整")]
+    public float healHpRate = 0.005f;       // 生命值总和 × 0.5%
+    [Tooltip("美味牛角包：战斗力部分系数（战斗力总和 × 1.5%）")]
+    public float healCombatRate = 0.015f;   // 战斗力总和 × 1.5%
+    [Tooltip("过热/超级过热缓慢恢复每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × 本系数)。0.002 = 生命值总和的 0.2%")]
+    public float regenPerTickHpRate = 0.002f; // 生命值总和 × 0.2%
+
+    [Header("a/b 双槽 Buff（2026-08-27）")]
+    [Tooltip("buff 槽位：None=无 / A=同类互斥（进攻或防御） / B=小黑个人战力（与 a 互不冲突、相乘）")]
+    public BuffSlot buffSlot = BuffSlot.None;
+    [Tooltip("a 类子类型：Offense=全队战力×buffCombatMult；Defense=受到伤害×buffDamageReduce（仅 a 类生效）")]
+    public BuffSubType buffSubType = BuffSubType.Offense;
+    [Tooltip("a 进攻 / b 类：战力乘子（1.4 = 全队战力 +40%；1.5 = 小黑个人战力 +50%）")]
+    public float buffCombatMult = 1.4f;
+    [Tooltip("a 防御：受到伤害减少比例（0.2 = 减伤 20%）。buffSlot=A 且 buffSubType=Defense 时生效")]
+    public float buffDamageReduce = 0.2f;
+    [Tooltip("buff 持续时间（秒）。>0 到期自动解除；<=0 持续到被同类顶替")]
+    public float buffDuration = 10f;
+
+    [Header("清屏（effectType=ClearScreen）")]
+    [Tooltip("清屏带范围倍率（普通1 / 过热1.2 / 超级过热1.5 在释放瞬间按过热档自动取，这里仅兜底基础值）")]
+    public float clearBandRangeMult = 1f;
+    [Tooltip("清屏后敌方沉睡秒数（也可由 effectParamsJSON.sleepSeconds 覆盖）")]
+    public float clearSleepSeconds = 3f;
+    [Tooltip("清屏同时激活释放者自身 b 类 buff（小黑个人战力）")]
+    public bool clearBuffAsB = true;
 
     // ---- 运行时索引：skillId -> SkillSO ----
     private static Dictionary<string, SkillSO> _byId;

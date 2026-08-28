@@ -292,6 +292,7 @@ namespace MusicalSprite.Editor
             }
             EditorGUILayout.EndHorizontal();
 
+            // 行2：编辑模式（吸附 / 标记 / 链点 / 点链 / 小圈 / 连点）
             EditorGUILayout.BeginHorizontal();
             snapToBeat = EditorGUILayout.ToggleLeft("吸附到拍", snapToBeat, GUILayout.Width(90));
             using (new EditorGUI.DisabledScope(!snapToBeat))
@@ -309,6 +310,10 @@ namespace MusicalSprite.Editor
                 int inputCount = EditorGUILayout.DelayedIntField("次数", Mathf.Clamp(chainTapCount, 3, 10), GUILayout.Width(110));
                 chainTapCount = Mathf.Clamp(inputCount, 3, 10);
             }
+            EditorGUILayout.EndHorizontal();
+
+            // 行3：视图 / 音频（从编辑模式行拆出，避免一行过宽导致控件重叠）
+            EditorGUILayout.BeginHorizontal();
             pixelsPerSecond = EditorGUILayout.Slider("缩放(像素/秒)", pixelsPerSecond, 10f, 480f, GUILayout.Width(240));
             beatmapAudioClip = (AudioClip)EditorGUILayout.ObjectField("音乐素材", beatmapAudioClip, typeof(AudioClip), false, GUILayout.Width(220));
             EditorGUILayout.EndHorizontal();
@@ -756,6 +761,40 @@ namespace MusicalSprite.Editor
                     var dn = new ChartNote { time = snapped, lane = 2 };
                     PushUndo();
                     notes.Add(dn);
+                    selectedIndex = notes.Count - 1;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                // W / C / M：在当前播放头（红线）处添加对应轨道的普通点击音符（lane 3 / 1 / 0）
+                if (e.keyCode == KeyCode.W)
+                {
+                    float snapped = snapToBeat ? Snap(playTime) : playTime;
+                    snapped = Mathf.Clamp(snapped, 0f, songLength);
+                    PushUndo();
+                    notes.Add(new ChartNote { time = snapped, lane = 3 });
+                    selectedIndex = notes.Count - 1;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                if (e.keyCode == KeyCode.C)
+                {
+                    float snapped = snapToBeat ? Snap(playTime) : playTime;
+                    snapped = Mathf.Clamp(snapped, 0f, songLength);
+                    PushUndo();
+                    notes.Add(new ChartNote { time = snapped, lane = 1 });
+                    selectedIndex = notes.Count - 1;
+                    Repaint();
+                    e.Use();
+                    return;
+                }
+                if (e.keyCode == KeyCode.M)
+                {
+                    float snapped = snapToBeat ? Snap(playTime) : playTime;
+                    snapped = Mathf.Clamp(snapped, 0f, songLength);
+                    PushUndo();
+                    notes.Add(new ChartNote { time = snapped, lane = 0 });
                     selectedIndex = notes.Count - 1;
                     Repaint();
                     e.Use();
@@ -2395,9 +2434,9 @@ namespace MusicalSprite.Editor
             EnsureFolder(BeatmapsDir);
 
             string safe = Sanitize(beatmapName);
-            string path = string.IsNullOrEmpty(currentEditingPath)
-                ? $"{BeatmapsDir}/{safe}.asset"
-                : currentEditingPath;
+            // 始终以当前谱面名称计算目标路径：
+            // 改名保存 = 另存为新文件（旧文件保留）；不改名保存 = 覆盖；首次保存 = 新建
+            string path = $"{BeatmapsDir}/{safe}.asset";
 
             BeatmapSO asset = AssetDatabase.LoadAssetAtPath<BeatmapSO>(path);
             bool created = false;

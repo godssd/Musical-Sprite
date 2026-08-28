@@ -247,6 +247,8 @@ public class NoteSpawner : MonoBehaviour
     public void TriggerLaneDown(int lane, bool fromAI = false)
     {
         if (conductor == null) return;
+        // 沉睡屏蔽输入（敌我共用入口）：沉睡期间无法按下轨道
+        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(side)) return;
 
         heldLanes.Add(lane);
         OnLanePress?.Invoke(side, lane);
@@ -259,6 +261,8 @@ public class NoteSpawner : MonoBehaviour
     /// </summary>
     public void TriggerLaneUp(int lane)
     {
+        // 沉睡屏蔽输入（敌我共用入口）
+        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(side)) return;
         heldLanes.Remove(lane);
         OnLaneUp?.Invoke(side, lane);
     }
@@ -332,7 +336,7 @@ public class NoteSpawner : MonoBehaviour
         foreach (var note in activeNotes)
         {
             if (note == null || note.isHit || note.charmOwner != null) continue;
-            if (!note.isVisible) continue;   // 只附魔已越过粉杠显现的音符（大狗叫规则）
+            if (note.isVisible) continue;   // 只附魔尚未越过粉杠、即将显现（离自己最近）的音符（大狗叫规则）
             if (note.hitTime + goodWindow < songTime || note.hitTime > visibleHorizon) continue;
             candidates.Add(new CharmCandidate { hitTime = note.hitTime, lane = note.lane, note = note, nodeIndex = -1 });
         }
@@ -342,7 +346,7 @@ public class NoteSpawner : MonoBehaviour
             for (int nodeIndex = 0; nodeIndex < hold.NodeCount; nodeIndex++)
             {
                 float hitTime = hold.GetNodeTime(nodeIndex);
-                if (hitTime > visibleHorizon || !hold.CanCharmNode(nodeIndex, songTime) || !hold.IsNodeRevealed(nodeIndex)) continue;
+                if (hitTime > visibleHorizon || !hold.CanCharmNode(nodeIndex, songTime) || hold.IsNodeRevealed(nodeIndex)) continue;
                 candidates.Add(new CharmCandidate
                 {
                     hitTime = hitTime,
@@ -719,5 +723,37 @@ public class NoteSpawner : MonoBehaviour
     {
         ClearActiveNotes();
         spawnIndex = 0;
+    }
+
+    /// <summary>
+    /// 清屏技能：把 [xMin, xMax] 带内（覆盖全部 4 条音轨，不限定 lane）的生效音符全部视为最佳命中清除。
+    /// 普通点击音符：移除并交给 caster 弹评价 / 充能 / 播放大白消失；
+    /// 长按音符：带区内已显现节点调用 SkillClearNodesInBand 逐节点清除。
+    /// </summary>
+    public void SkillClearBand(float xMin, float xMax, ActiveSkillRuntime caster)
+    {
+        if (caster == null) return;
+        int cleared = 0;
+        int holdNodesCleared = 0;
+        for (int i = activeNotes.Count - 1; i >= 0; i--)
+        {
+            var note = activeNotes[i];
+            if (note == null || note.isHit) continue;
+            float x = note.transform.position.x;
+            if (x >= xMin && x <= xMax)
+            {
+                activeNotes.RemoveAt(i);
+                caster.OnSkillClearedNote(note, this);
+                cleared++;
+            }
+        }
+        for (int i = activeHoldNotes.Count - 1; i >= 0; i--)
+        {
+            var hn = activeHoldNotes[i];
+            if (hn == null) continue;
+            hn.SkillClearNodesInBand(xMin, xMax, caster);
+            // SkillClearNodesInBand 内部会回调 OnSkillClearedNode（包含充能），计数由 HoldNote 自行 +=
+        }
+        Debug.Log($"[ClearScreen] band=[{xMin:F2},{xMax:F2}] cleared {cleared} tap note(s)");
     }
 }

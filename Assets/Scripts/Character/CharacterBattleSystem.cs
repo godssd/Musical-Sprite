@@ -42,6 +42,8 @@ public class CharacterBattleSystem : MonoBehaviour
         // P2：让 EnergyVFXPlaceholder 自动填充锚点
         var energyVfx = FindFirstObjectByType<EnergyVFXPlaceholder>();
         if (energyVfx != null) energyVfx.RebuildFromRosterAndMarkers();
+        // 补建战斗辅助控制器（Buff / 沉睡），供技能运行时与 ScoreManager 访问
+        EnsureControllers();
         // 主动技能运行时：为每个队伍角色挂载 ActiveSkillRuntime（大狗叫等）
         SetupSkillRuntimes();
 
@@ -75,7 +77,7 @@ public class CharacterBattleSystem : MonoBehaviour
             {
                 var pMarker = System.Array.Find(markers, m => m != null && m.IsPlayer && m.side == side);
                 AttachSkillRuntimes(playerInst, pMarker, spawner, oppCombo, side, fever);
-                AttachPassiveController(playerInst, pMarker);
+                AttachPassiveController(playerInst, pMarker, side);
             }
 
             // 队伍角色按实际 Marker 装配，不依赖对象名或固定成员数量。
@@ -86,7 +88,7 @@ public class CharacterBattleSystem : MonoBehaviour
                 var inst = CharacterRoster.GetTeam(side, marker.laneIndex);
                 if (inst == null) continue;
                 AttachSkillRuntimes(inst, marker, spawner, oppCombo, side, fever);
-                AttachPassiveController(inst, marker);
+                AttachPassiveController(inst, marker, side);
             }
         }
         skillRuntimesReady = true;
@@ -105,17 +107,20 @@ public class CharacterBattleSystem : MonoBehaviour
             var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
             SkillInputStep[] seq = SkillSO.ParseInputMethod(slot.inputMethod);
             if (seq.Length == 0 && slot.skill != null) seq = slot.skill.inputSequence;
-            rt.Setup(inst, marker, spawner, oppCombo, side, fever, slot.skill, slot.cooldown, slot.NeedsEnergy, seq, si);
+            // 优先用槽内 SkillSO；为空时按 skillId 反查（如宝宝双技能仅填了 skillId）
+            var so = slot.skill ?? ((!string.IsNullOrEmpty(slot.skillId)) ? SkillSO.FindById(slot.skillId) : null);
+            rt.Setup(inst, marker, spawner, oppCombo, side, fever, so, slot.cooldown, slot.NeedsEnergy, seq, si);
         }
     }
 
     /// <summary>给角色 marker 挂 PassiveSkillController，跟踪其所有被动槽（输入方式留空的能力）。</summary>
-    private void AttachPassiveController(CharacterClass inst, CharacterCubeMarker marker)
+    private void AttachPassiveController(CharacterClass inst, CharacterCubeMarker marker, int side)
     {
         if (inst == null || marker == null || inst.passiveSlots == null || inst.passiveSlots.Count == 0) return;
         var ctrl = marker.GetComponent<PassiveSkillController>();
         if (ctrl == null) ctrl = marker.gameObject.AddComponent<PassiveSkillController>();
         ctrl.owner = inst;
+        ctrl.ownerSide = side;
         ctrl.passiveSlots = inst.passiveSlots;
         ctrl.enabled = true;
     }
@@ -337,7 +342,30 @@ public class CharacterBattleSystem : MonoBehaviour
     }
 
     public int GetMaxHP(int side) => MaxHPBySide[Mathf.Clamp(side, 0, 1)];
-    public float GetCombatSum(int side) => CombatSumBySide[Mathf.Clamp(side, 0, 1)];
+
+    /// <summary>实时战力总和（含 a/b buff）。优先走 BuffController 实时汇总，缺失时回退到 Awake 一次性求和。</summary>
+    public float GetCombatSum(int side)
+    {
+        if (BuffController.Instance != null) return BuffController.Instance.GetCombatSum(side);
+        return CombatSumBySide[Mathf.Clamp(side, 0, 1)];
+    }
+
+    /// <summary>补建战斗辅助控制器（Buff / 沉睡），缺失则自动创建。</summary>
+    private void EnsureControllers()
+    {
+        if (FindFirstObjectByType<BuffController>() == null)
+        {
+            var go = new GameObject("BuffController");
+            go.AddComponent<BuffController>();
+            Debug.Log("[CharacterBattleSystem] 自动创建 BuffController");
+        }
+        if (FindFirstObjectByType<SleepController>() == null)
+        {
+            var go = new GameObject("SleepController");
+            go.AddComponent<SleepController>();
+            Debug.Log("[CharacterBattleSystem] 自动创建 SleepController");
+        }
+    }
 
     /// <summary>尝试施放指定 lane 的队伍角色主动技能（side 只支持 0 = 左侧玩家）。</summary>
     public bool TryCastActive(int side, int laneIndex)

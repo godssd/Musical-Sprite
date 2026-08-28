@@ -59,6 +59,26 @@ public class Note : MonoBehaviour
     }
 
     /// <summary>
+    /// 被主动技能（清屏）直接清除：视为最佳命中（PERFECT），播放大白消失表现。
+    /// 不注入常规 OnJudge 计分流程（由技能运行时单独弹评价 / 充能），仅做表现与清理。
+    /// </summary>
+    public void MarkClearedBySkill()
+    {
+        if (isHit) return;
+        isHit = true;
+        finalRank = "PERFECT";
+        // 若恰为某附魔技能对象，先结算（一般不会同时发生）
+        if (charmOwner != null)
+        {
+            charmOwner.OnCharmedNoteResolved(this, true);
+            charmOwner = null;
+        }
+        NoteMover mover = GetComponent<NoteMover>();
+        if (mover != null) mover.PlaySkillClear();
+        else Destroy(gameObject);
+    }
+
+    /// <summary>
     /// 触发 Miss（漏击）消失反馈：先快速缩小，缩完再由 NoteSpawner 出 MISS。
     /// </summary>
     public void Miss()

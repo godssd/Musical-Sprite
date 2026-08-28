@@ -30,3 +30,7 @@ MonoBehaviour:
   screenShakeAmp: 0.3
   effectType: Bomb
   effectParamsJSON: '{"bombDamage":10}'
+  charmColorOverride: {r: 1, g: 0.5, b: 0, a: 1}
+  charmBonusFever: 2
+  charmBonusSuperFever: 5
+  bombDamageRate: 0.1

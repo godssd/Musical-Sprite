@@ -21,12 +21,15 @@ public class PassiveSkillController : MonoBehaviour
 {
     [Header("运行时注入（由 CharacterBattleSystem 设置）")]
     public CharacterClass owner;
+    public int ownerSide = 0;
     public List<SkillSlot> passiveSlots = new List<SkillSlot>();
 
     private HashSet<string> active = new HashSet<string>();
 
     void Update()
     {
+        // 沉睡期间被动技能失效（不检定、不生效）
+        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(ownerSide)) return;
         if (owner == null || passiveSlots == null) return;
         foreach (var s in passiveSlots)
         {

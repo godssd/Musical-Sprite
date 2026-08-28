@@ -269,7 +269,7 @@ public class ScoreManager : MonoBehaviour
 
         float zoom = 1.32f;
         float labelHeight = 46f * canvasScale * zoom;
-        float labelWidth = 180f * canvasScale * zoom;
+        float labelWidth = 360f * canvasScale * zoom;  // 加宽以容纳 >10000 的高分（原 180 会裁切）
 
         int shiftX = 48; // 在 40 基础上放大 1.2 倍
         float leftEdgeRef = 462f + 10f + shiftX; // 左分数左缘 reference x = 520
@@ -369,9 +369,25 @@ public class ScoreManager : MonoBehaviour
 
     /// <summary>
     /// 对指定 side 造成伤害，血量 ≤ 0 时触发战败。
+    /// 先按 a 防御 buff 减伤，再施加以触发"受扣血解除沉睡"。
     /// </summary>
     public void TakeDamage(int side, int damage)
     {
+        // 减伤（a 防御 buff）：受到的伤害按比例减少
+        if (damage > 0)
+        {
+            var bc = BuffController.Instance ?? FindFirstObjectByType<BuffController>();
+            if (bc != null)
+            {
+                float reduce = bc.GetDamageReduction(side);
+                if (reduce > 0f) damage = Mathf.RoundToInt(damage * (1f - reduce));
+            }
+        }
+
+        // 受击解除沉睡（控制免疫由 SleepController 内部判断）
+        var sc = SleepController.Instance ?? FindFirstObjectByType<SleepController>();
+        if (sc != null) sc.BreakSleepOnDamage(side);
+
         if (side == 0)
             leftHP = Mathf.Max(0, leftHP - damage);
         else
@@ -383,6 +399,22 @@ public class ScoreManager : MonoBehaviour
             OnPlayerDefeated?.Invoke(0);
         else if (side == 1 && rightHP <= 0)
             OnPlayerDefeated?.Invoke(1);
+    }
+
+    /// <summary>
+    /// 对指定 side 进行治疗，不超过该侧血量上限（不触发战败）。
+    /// amount 应已向上取整为整数（全局整数规则：伤害/回血/生命上限一律 CeilToInt）。
+    /// </summary>
+    public void Heal(int side, int amount)
+    {
+        if (amount <= 0) return;
+        int max = GetMaxHP(side);
+        if (side == 0)
+            leftHP = Mathf.Min(max, leftHP + amount);
+        else
+            rightHP = Mathf.Min(max, rightHP + amount);
+
+        OnHPChanged?.Invoke(leftHP, rightHP);
     }
 
     void OnDestroy()

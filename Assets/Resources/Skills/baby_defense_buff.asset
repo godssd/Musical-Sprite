@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ab2f2b6730e92cd4ebdac8d61f6baea4, type: 3}
-  m_Name: xiaohei_clear
+  m_Name: baby_defense_buff
   m_EditorClassIdentifier: 
-  skillId: xiaohei_clear
-  displayName: "\u5C0F\u9ED1\u6E05\u5C4F"
-  description: "\uFF086\uFF09\u5C06\u8EAB\u524D\u533A\u57DF\u7684\u6240\u6709\u97F3\u7B26\u5168\u90E8\u7535\u6CA1\uFF08\u89C6\u4E3A\u5B8C\u6210\u6700\u4F73\u51FB\u4E2D\u81EA\u5DF1\u83B7\u5F97\u6240\u6709\u5927\u62DB\u5145\u80FD\uFF09\u4E4B\u540E\u9677\u5165
-    3 \u79D2\u6C89\u7761"
+  skillId: baby_defense_buff
+  displayName: "\u5B9D\u5B9D\u5168\u4F53\u9632\u5FA1"
+  description: "\uFF081\uFF09\u5168\u4F53\u9632\u5FA1\uFF1A\u51CF\u5C1120%\u53D7\u5230\u7684\u4F24\u5BB3\uFF0C\u6301\u7EED
+    10s\uFF08\u540C\u5C5Ea\u7C7Bbuff\u4E0D\u53EF\u4EE5\u5171\u5B58\uFF09"
   cooldown: 60
-  energyCost: 330
-  inputSequence: 010000000200000000000000
+  energyCost: 0
+  inputSequence: 
   inputWindow: 1.5
   charmedNoteCount: 0
   onlyCountNonMiss: 1
@@ -27,16 +27,16 @@ MonoBehaviour:
   shockwavePrefab: {fileID: 0}
   releaseSfxClip: {fileID: 0}
   screenShakeAmp: 0.3
-  effectType: ClearScreen
-  effectParamsJSON: '{"sleepSeconds":3}'
+  effectType: Buff
+  effectParamsJSON: '{}'
   charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
   charmBonusFever: 0
   charmBonusSuperFever: 0
-  buffSlot: 2
-  buffSubType: 0
-  buffCombatMult: 1.5
-  buffDamageReduce: 0
+  buffSlot: 1
+  buffSubType: 1
+  buffCombatMult: 1
+  buffDamageReduce: 0.2
   buffDuration: 10
   clearBandRangeMult: 1
   clearSleepSeconds: 3
-  clearBuffAsB: 1
+  clearBuffAsB: 0

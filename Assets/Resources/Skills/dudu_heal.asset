@@ -30,3 +30,9 @@ MonoBehaviour:
   screenShakeAmp: 0.3
   effectType: Heal
   effectParamsJSON: '{"healPerNote":3,"slowRegenSeconds":9}'
+  charmColorOverride: {r: 0.6, g: 0.4, b: 0.2, a: 1}
+  charmBonusFever: 0
+  charmBonusSuperFever: 4
+  healHpRate: 0.005
+  healCombatRate: 0.015
+  regenPerTickHpRate: 0.002

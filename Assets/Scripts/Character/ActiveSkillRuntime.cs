@@ -52,8 +52,13 @@ public class ActiveSkillRuntime : MonoBehaviour
     private bool requestClosed;           // spawner 端配额是否已全部分配完
     private float cooldownLeft;
     private FeverState releaseFever = FeverState.None;  // 技能释放（能量清空）瞬间捕获的过热档；整段连叫锁定，后续不重判（2026-08-27）
-    private ScoreManager _scoreMgr;                      // 懒加载缓存：用于造成对方 HP 伤害（大狗叫额外效果）
+    private ScoreManager _scoreMgr;                      // 懒加载缓存：用于造成对方 HP 伤害 / 治疗
     private CharacterBattleSystem _battleSys;            // 懒加载缓存：用于读取释放方队伍战斗力总和
+
+    /// <summary>当前正在释放主动技能（变大+附魔期）的 side 集合，供 BattleVisualsController 屏蔽普通命中跳跃。</summary>
+    private static HashSet<int> CastingSides = new HashSet<int>();
+    /// <summary>该 side 是否正处于主动技能释放期（屏蔽普通命中跳跃表现）。</summary>
+    public static bool IsSideCasting(int side) => CastingSides.Contains(side);
 
     public void Setup(CharacterClass owner, CharacterCubeMarker marker, NoteSpawner spawner, ComboDisplay oppCombo, int side, FeverManager fever, SkillSO skill, float cooldown, bool needsEnergy, SkillInputStep[] inputSequence, int slotIndex)
     {
@@ -107,6 +112,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         charmedNotes.Clear();
         charmedHoldNodes.Clear();
         requestClosed = false;
+        CastingSides.Add(ownerSide);   // 进入释放期：屏蔽普通命中跳跃，直到缩回（EndCastSequence / FireSequence 末尾移除）
 
         // 释放成功：需要能量的技能立刻清空能量（冒气停止）；无能量技能跳过充能/清空流程与表现
         if (owner != null)
@@ -119,12 +125,28 @@ public class ActiveSkillRuntime : MonoBehaviour
         releaseFever = (feverManager != null) ? feverManager.GetState(ownerSide) : FeverState.None;
 
         if (marker != null) marker.GrowGlow();
-        // 附魔颜色 = 释放方自身颜色（当前阶段仅做单纯改色）；目标侧由技能开关决定（己方=附魔 / 对方=敌方附魔）
-        charmColor = (owner != null) ? owner.blockColor : Color.yellow;
+        // 附魔颜色：优先用技能专属覆盖色（charmColorOverride），回退到释放方角色自身颜色。
+        charmColor = (skill != null && skill.charmColorOverride != Color.black)
+            ? skill.charmColorOverride
+            : (owner != null ? owner.blockColor : Color.yellow);
+
+        // a/b 双槽 buff 分流：
+        //   - 清屏（ClearScreen）：直接清除范围内音符 + 敌方沉睡 + 激活自身 b 类 buff（小黑个人战力）。
+        //   - 纯 buff（无附魔的 a/b 类技能，如宝宝双技能）：直接施加 buff 后收尾。
+        //   - 其余（Bomb / Heal / DogHowl 等带附魔）：走常规附魔路径。
+        bool isClear = skill != null && skill.effectType == "ClearScreen";
+        bool isPureBuff = skill != null && skill.buffSlot != BuffSlot.None && skill.charmedNoteCount <= 0 && !isClear;
+        if (isClear) { StartCoroutine(ClearScreenSequence()); return; }
+        if (isPureBuff) { StartCoroutine(PureBuffSequence()); return; }
+
         if (ownerSpawner != null)
         {
             int targetSide = (skill != null && skill.enchantTarget == EnchantTarget.Enemy) ? (1 - ownerSide) : ownerSide;
-            ownerSpawner.RequestCharm(this, Mathf.Max(1, skill.charmedNoteCount), charmColor, targetSide);
+            // 过热附魔加成：过热/超级过热在基础 charmedNoteCount 上额外附魔（字段由策划资产配置）
+            int count = (skill != null) ? skill.charmedNoteCount : 1;
+            if (releaseFever == FeverState.SuperFever && skill != null) count += skill.charmBonusSuperFever;
+            else if (releaseFever == FeverState.Fever && skill != null) count += skill.charmBonusFever;
+            ownerSpawner.RequestCharm(this, Mathf.Max(1, count), charmColor, targetSide);
         }
 
         Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] BeginCast -> 等待 {3} 个附魔单位结算完毕即释放（能量已清空）",
@@ -159,7 +181,11 @@ public class ActiveSkillRuntime : MonoBehaviour
     public void OnCharmedNoteResolved(Note n, bool success)
     {
         charmedNotes.Remove(n);
-        if (success) completedCount++;
+        if (success)
+        {
+            completedCount++;
+            OnPerCharmSuccess();   // 逐音符触发：投弹 / 回血（Bomb / Heal 技能）
+        }
         if (phase == Phase.Grow) phase = Phase.Charming;
         if (success && (phase == Phase.Grow || phase == Phase.Charming) && marker != null) marker.PulseGlow();
         TrySettleFromCharm();
@@ -170,6 +196,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     public void OnCharmNodeSuccess(HoldNote hn)
     {
         completedCount++;
+        OnPerCharmSuccess();   // 逐音符触发：投弹 / 回血（Bomb / Heal 技能）
         if (phase == Phase.Grow) phase = Phase.Charming;
         if ((phase == Phase.Grow || phase == Phase.Charming) && marker != null) marker.PulseGlow();
         ResolveCharmNode(hn);
@@ -215,15 +242,26 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (st == FeverState.SuperFever) shots = 3;
         else if (st == FeverState.Fever) shots = 2;
 
-        Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] Settle -> 命中 {3} 个附魔单位，过热={4} 发 {5} 次",
+        Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] Settle -> 命中 {3} 个附魔单位，过热={4} 发 {5} 次，effectType={6}",
             skill != null ? skill.displayName : "?",
             ownerSide, owner != null ? owner.characterId : -1,
             completedCount,
             st.ToString(),
-            shots));
+            shots,
+            skill != null ? skill.effectType : "?"));
 
-        if (marker != null) marker.PulseGlow();
-        StartCoroutine(FireSequence(shots));
+        // 大狗叫：等所有附魔音符结算完才连叫释放（削减连击 + 额外 HP 伤害）。
+        // 其他技能（Bomb 炸弹雨 / Heal 美味牛角包）：已在逐音符时投弹 / 回血，结算完仅缩回 + 冷却。
+        if (skill != null && skill.effectType == "DogHowl")
+        {
+            if (marker != null) marker.PulseGlow();
+            StartCoroutine(FireSequence(shots));
+        }
+        else
+        {
+            if (marker != null) marker.PulseGlow();
+            StartCoroutine(EndCastSequence());
+        }
     }
 
     /// <summary>按过热次数连发音浪；最后一次发射完后才缩小并进入冷却。</summary>
@@ -246,8 +284,264 @@ public class ActiveSkillRuntime : MonoBehaviour
         // 彻底结算完毕：大狗缩回正常状态 + 冷却
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
+        CastingSides.Remove(ownerSide);   // 释放期结束：恢复普通命中角色跳跃
         // 冷却取本槽在角色文档配置的「技能冷却」；0 / 未填 = 无冷却（立刻回到 Standby 可再次释放）。
         cooldownLeft = slotCooldown;
+    }
+
+    /// <summary>非大狗叫技能（炸弹雨/牛角包）结算完所有附魔音符后的收尾：缩回 + 冷却；牛角包过热启动缓慢恢复。</summary>
+    private System.Collections.IEnumerator EndCastSequence()
+    {
+        if (marker != null) marker.ShrinkUnglow();
+        phase = Phase.Cooldown;
+        CastingSides.Remove(ownerSide);   // 释放期结束：恢复普通命中跳跃
+
+        // 牛角包：过热 / 超级过热 -> 技能结束后启动 9 秒缓慢恢复（每 3 秒一跳，共 3 跳）
+        if (skill != null && skill.effectType == "Heal" && releaseFever != FeverState.None)
+        {
+            StartCoroutine(Regen());
+        }
+
+        // 冷却取本槽在角色文档配置的「技能冷却」；0 / 未填 = 无冷却（立刻回到 Standby 可再次释放）。
+        cooldownLeft = slotCooldown;
+        yield break;
+    }
+
+    /// <summary>清屏（小黑·断弦高压）：起手闪烁变大已完成，稍顿后射出电流，清除范围内全部音符（视为最佳命中），
+    /// 敌方陷入沉睡，并激活自身 b 类 buff（小黑个人战力）。无附魔流程。</summary>
+    private System.Collections.IEnumerator ClearScreenSequence()
+    {
+        yield return new WaitForSeconds(0.15f);   // 起手闪烁变大的停顿
+        if (marker != null) SpawnElectricity(marker.transform.position);
+
+        // 清屏带：自身判定线 → 自身判定线 + 0.25×rangeMult×(对方判定线-自身判定线)，覆盖全 4 轨
+        if (ownerSpawner != null && ownerSpawner.hitPoint != null)
+        {
+            float ownX = ownerSpawner.hitPoint.position.x;
+            var enemy = FindEnemySpawner(ownerSpawner.side);
+            float enemyX = (enemy != null && enemy.hitPoint != null)
+                ? enemy.hitPoint.position.x
+                : (ownX + (ownerSide == 0 ? 10f : -10f));
+            float rangeMult = 1f;
+            if (releaseFever == FeverState.SuperFever) rangeMult = 1.5f;
+            else if (releaseFever == FeverState.Fever) rangeMult = 1.2f;
+            float bandEndX = ownX + 0.25f * rangeMult * (enemyX - ownX);
+            float xMin = Mathf.Min(ownX, bandEndX);
+            float xMax = Mathf.Max(ownX, bandEndX);
+            ownerSpawner.SkillClearBand(xMin, xMax, this);
+        }
+
+        // 敌方沉睡（控制免疫可抵抗）
+        float sleepSec = (skill != null && skill.clearSleepSeconds > 0f) ? skill.clearSleepSeconds : 3f;
+        if (SleepController.Instance != null) SleepController.Instance.Sleep(1 - ownerSide, sleepSec);
+
+        // 激活自身 b 类 buff（小黑个人战力，与 a 类相乘叠加）
+        if (skill != null && skill.clearBuffAsB && BuffController.Instance != null)
+        {
+            BuffController.Instance.SetBBuff(ownerSide, skill.buffCombatMult > 0f ? skill.buffCombatMult : 1.5f);
+            float dur = skill.buffDuration > 0f ? skill.buffDuration : 10f;
+            BuffController.Instance.SetBuffDuration(ownerSide, BuffSlot.B, dur);
+        }
+
+        yield return new WaitForSeconds(0.1f);
+        if (marker != null) marker.ShrinkUnglow();
+        phase = Phase.Cooldown;
+        CastingSides.Remove(ownerSide);
+        cooldownLeft = slotCooldown;
+    }
+
+    /// <summary>纯 buff 技能（无附魔）：施加 a/b 类 buff（互斥顶替）后直接收尾。</summary>
+    private System.Collections.IEnumerator PureBuffSequence()
+    {
+        yield return new WaitForSeconds(0.15f);
+        if (skill != null && skill.buffSlot != BuffSlot.None && BuffController.Instance != null)
+        {
+            if (skill.buffSlot == BuffSlot.A)
+                BuffController.Instance.SetABuff(ownerSide, skill.buffSubType, skill.buffCombatMult, skill.buffDamageReduce);
+            else
+                BuffController.Instance.SetBBuff(ownerSide, skill.buffCombatMult);
+            float dur = skill.buffDuration > 0f ? skill.buffDuration : 0f;
+            BuffController.Instance.SetBuffDuration(ownerSide, skill.buffSlot, dur);
+            Debug.Log($"[Buff] side{ownerSide} 施加 {skill.buffSlot}（{(skill.buffSlot == BuffSlot.A ? skill.buffSubType.ToString() : "b战力")}），持续 {dur}s");
+        }
+        if (marker != null) marker.PulseGlow();
+        yield return new WaitForSeconds(0.1f);
+        if (marker != null) marker.ShrinkUnglow();
+        phase = Phase.Cooldown;
+        CastingSides.Remove(ownerSide);
+        cooldownLeft = slotCooldown;
+    }
+
+    /// <summary>清屏时射出电流：从释放者位置向范围内（覆盖 4 轨）发射数条电流光带。</summary>
+    private void SpawnElectricity(Vector3 from)
+    {
+        float dir = (ownerSide == 0) ? 1f : -1f;
+        for (int i = 0; i < 4; i++)
+        {
+            Vector3 to = from + new Vector3(dir * 4f, 0f, -1.5f + i * 1f);
+            ElectricityFx.Spawn(from, to);
+        }
+    }
+
+    private NoteSpawner FindEnemySpawner(int selfSide)
+    {
+        var all = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
+        foreach (var s in all) if (s.side != selfSide) return s;
+        return null;
+    }
+
+    /// <summary>清屏清除一个普通音符：播放大白消失 + 弹 PERFECT 评价 + 小黑充能（视为命中，自己获得大招充能）。</summary>
+    public void OnSkillClearedNote(Note note, NoteSpawner spawner)
+    {
+        if (note == null) return;
+        note.MarkClearedBySkill();
+        var jfm = FindFirstObjectByType<JudgeFeedbackManager>();
+        if (jfm != null) jfm.ShowFeedback(note.side, note.lane, "PERFECT", note.transform.position, note);
+        if (owner != null) owner.AddEnergy(10f);
+    }
+
+    /// <summary>清屏清除一个长按节点：弹 PERFECT 评价 + 小黑充能。</summary>
+    public void OnSkillClearedNode(HoldNote hn, int nodeIndex)
+    {
+        if (hn == null) return;
+        var jfm = FindFirstObjectByType<JudgeFeedbackManager>();
+        if (jfm != null)
+        {
+            int lane = (hn.NodeCount > 0) ? hn.GetNodeLane(nodeIndex) : hn.side;
+            Vector3 pos = (hn.hitPositions != null && nodeIndex < hn.hitPositions.Length)
+                ? hn.hitPositions[nodeIndex] : hn.transform.position;
+            jfm.ShowFeedback(hn.side, lane, "PERFECT", pos, hn);
+        }
+        if (owner != null) owner.AddEnergy(10f);
+    }
+
+    /// <summary>每个被附魔音符「命中成功」时触发一次：按 effectType 分发投弹 / 回血。</summary>
+    private void OnPerCharmSuccess()
+    {
+        if (skill == null) return;
+        switch (skill.effectType)
+        {
+            case "Bomb": ThrowBomb(); break;
+            case "Heal": HealSelf(); break;
+        }
+    }
+
+    /// <summary>炸弹雨：从施法角色位置投出一颗白色方块炸弹，飞向对方阵地范围内随机落点，落地即时结算伤害。</summary>
+    private void ThrowBomb()
+    {
+        if (marker == null) return;
+        Vector3 from = marker.transform.position;
+        Vector3 enemyCenter = from + new Vector3(ownerSide == 0 ? 8f : -8f, 0f, 0f);
+        Vector3 to = enemyCenter + new Vector3(Random.Range(-3f, 3f), 0.6f, Random.Range(-3f, 3f));
+
+        if (skill != null && skill.releaseSfxClip != null)
+            AudioSource.PlayClipAtPoint(skill.releaseSfxClip, from);
+
+        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = "BombProjectile";
+        var r = go.GetComponent<Renderer>();
+        if (r != null)
+        {
+            r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            r.material.EnableKeyword("_EMISSION");
+            r.material.SetColor("_EmissionColor", Color.white);
+            r.material.SetColor("_BaseColor", Color.white);
+        }
+        go.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+        var fx = go.AddComponent<BombFx>();
+        fx.from = from;
+        fx.to = to;
+        fx.duration = 0.5f;
+        fx.onImpact = () =>
+        {
+            if (_scoreMgr == null) _scoreMgr = FindFirstObjectByType<ScoreManager>();
+            if (_battleSys == null) _battleSys = FindFirstObjectByType<CharacterBattleSystem>();
+            if (_scoreMgr != null && _battleSys != null)
+            {
+                // 伤害 = ceil(释放方全队战斗力总和 × bombDamageRate)，全局整数规则向上取整
+                float combatSum = _battleSys.GetCombatSum(ownerSide);
+                int dmg = Mathf.CeilToInt(combatSum * (skill != null ? skill.bombDamageRate : 0.1f));
+                _scoreMgr.TakeDamage(1 - ownerSide, dmg);
+            }
+            SpawnImpactFlash(to, Color.white);
+        };
+    }
+
+    /// <summary>美味牛角包：每个命中的附魔音符即时回血 = ceil(生命值总和×hpRate + 战斗力总和×combatRate)，并散布淡绿治疗特效。</summary>
+    private void HealSelf()
+    {
+        if (_scoreMgr == null) _scoreMgr = FindFirstObjectByType<ScoreManager>();
+        if (_battleSys == null) _battleSys = FindFirstObjectByType<CharacterBattleSystem>();
+        if (_scoreMgr == null || _battleSys == null) return;
+
+        int hpSum = _battleSys.GetMaxHP(ownerSide);
+        float combatSum = _battleSys.GetCombatSum(ownerSide);
+        float hpRate = (skill != null) ? skill.healHpRate : 0.005f;
+        float combatRate = (skill != null) ? skill.healCombatRate : 0.015f;
+        int heal = Mathf.CeilToInt(hpSum * hpRate + combatSum * combatRate);
+        _scoreMgr.Heal(ownerSide, heal);
+        if (marker != null) SpawnHealVfx(marker.transform.position);
+    }
+
+    /// <summary>牛角包过热/超级过热：技能结束后 9 秒缓慢恢复，每 3 秒一跳共 3 跳，每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × regenPerTickHpRate)。</summary>
+    private System.Collections.IEnumerator Regen()
+    {
+        float interval = 3f;
+        int ticks = 0;
+        while (ticks < 3)
+        {
+            yield return new WaitForSeconds(interval);
+            ticks++;
+            if (_scoreMgr == null) _scoreMgr = FindFirstObjectByType<ScoreManager>();
+            if (_battleSys == null) _battleSys = FindFirstObjectByType<CharacterBattleSystem>();
+            if (_scoreMgr != null && _battleSys != null)
+            {
+                int hpSum = _battleSys.GetMaxHP(ownerSide);
+                float rate = (skill != null) ? skill.regenPerTickHpRate : 0.002f;
+                int heal = Mathf.CeilToInt(completedCount * hpSum * rate);
+                _scoreMgr.Heal(ownerSide, heal);
+                if (marker != null) SpawnHealVfx(marker.transform.position);
+            }
+        }
+    }
+
+    /// <summary>白色方块炸弹落地爆炸闪效（占位）。</summary>
+    private void SpawnImpactFlash(Vector3 at, Color c)
+    {
+        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = "BombImpact";
+        var r = go.GetComponent<Renderer>();
+        if (r != null)
+        {
+            r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            r.material.EnableKeyword("_EMISSION");
+            r.material.SetColor("_EmissionColor", c);
+            r.material.SetColor("_BaseColor", c);
+        }
+        go.transform.position = at;
+        go.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+        var fx = go.AddComponent<ImpactFx>();
+        fx.duration = 0.35f;
+    }
+
+    /// <summary>淡绿色治疗特效（占位，低透明度）：在角色位置升起并放大淡出。</summary>
+    private void SpawnHealVfx(Vector3 at)
+    {
+        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = "HealFx";
+        var r = go.GetComponent<Renderer>();
+        if (r != null)
+        {
+            r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            r.material.EnableKeyword("_EMISSION");
+            Color g = new Color(0.4f, 1f, 0.4f);
+            r.material.SetColor("_EmissionColor", g);
+            r.material.SetColor("_BaseColor", g);
+        }
+        go.transform.position = at + Vector3.up * 0.5f;
+        go.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+        var fx = go.AddComponent<HealFx>();
+        fx.duration = 0.8f;
     }
 
     private void FireOneShot()
@@ -269,7 +563,7 @@ public class ActiveSkillRuntime : MonoBehaviour
             if (_scoreMgr != null && _battleSys != null)
             {
                 float combatSum = _battleSys.GetCombatSum(ownerSide);
-                int dmg = Mathf.RoundToInt(actualReduced * combatSum * skill.comboHpDamageRate);
+                int dmg = Mathf.CeilToInt(actualReduced * combatSum * skill.comboHpDamageRate);
                 _scoreMgr.TakeDamage(1 - ownerSide, dmg);
                 Debug.Log(string.Format("[ActiveSkill {0}(side{1}, id={2})] 额外HP伤害 -> 实际降低连击 {3} × 队伍战斗力 {4} × {5} = 对方 -{6} HP",
                     skill.displayName, ownerSide, owner != null ? owner.characterId : -1,
@@ -335,6 +629,76 @@ public class ShockwaveFx : MonoBehaviour
         transform.position = Vector3.Lerp(from, to, k);
         float s = Mathf.Lerp(0.3f, 1.2f, k);
         transform.localScale = new Vector3(s, s, s * 2f);
+        if (k >= 1f) Destroy(gameObject);
+    }
+}
+
+/// <summary>炸弹投射体 VFX：从 from 飞到 to，落地触发 onImpact 后销毁。</summary>
+public class BombFx : MonoBehaviour
+{
+    public Vector3 from;
+    public Vector3 to;
+    public float duration = 0.5f;
+    public System.Action onImpact;
+    private float t;
+
+    void Update()
+    {
+        t += Time.deltaTime;
+        float k = Mathf.Clamp01(t / duration);
+        transform.position = Vector3.Lerp(from, to, k);
+        float s = Mathf.Lerp(0.4f, 0.9f, k);
+        transform.localScale = new Vector3(s, s, s);
+        if (k >= 1f)
+        {
+            onImpact?.Invoke();
+            Destroy(gameObject);
+        }
+    }
+}
+
+/// <summary>爆炸闪效 VFX：快速放大并淡出后销毁（占位）。</summary>
+public class ImpactFx : MonoBehaviour
+{
+    public float duration = 0.35f;
+    private float t;
+
+    void Update()
+    {
+        t += Time.deltaTime;
+        float k = Mathf.Clamp01(t / duration);
+        float s = Mathf.Lerp(0.6f, 2.2f, k);
+        transform.localScale = new Vector3(s, s, s);
+        var r = GetComponent<Renderer>();
+        if (r != null && r.material != null)
+        {
+            Color c = r.material.color;
+            c.a = 1f - k;
+            r.material.color = c;
+        }
+        if (k >= 1f) Destroy(gameObject);
+    }
+}
+
+/// <summary>治疗特效 VFX：淡绿方块升起放大淡出后销毁（占位）。</summary>
+public class HealFx : MonoBehaviour
+{
+    public float duration = 0.8f;
+    private float t;
+
+    void Update()
+    {
+        t += Time.deltaTime;
+        float k = Mathf.Clamp01(t / duration);
+        float s = Mathf.Lerp(0.6f, 1.8f, k);
+        transform.localScale = new Vector3(s, s, s);
+        var r = GetComponent<Renderer>();
+        if (r != null && r.material != null)
+        {
+            Color c = r.material.color;
+            c.a = (1f - k) * 0.5f;
+            r.material.color = c;
+        }
         if (k >= 1f) Destroy(gameObject);
     }
 }
