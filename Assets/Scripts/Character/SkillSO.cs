@@ -90,6 +90,8 @@ public class SkillSO : ScriptableObject
     public float healCombatRate = 0.015f;   // 战斗力总和 × 1.5%
     [Tooltip("过热/超级过热缓慢恢复每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × 本系数)。0.002 = 生命值总和的 0.2%")]
     public float regenPerTickHpRate = 0.002f; // 生命值总和 × 0.2%
+    [Tooltip("过热/超级过热缓慢恢复间隔（秒）；替换原硬编码 3s。可在 Inspector / 技能库调参面板调整。")]
+    public float regenInterval = 3f;
 
     [Header("a/b 双槽 Buff（2026-08-27）")]
     [Tooltip("buff 槽位：None=无 / A=同类互斥（进攻或防御） / B=小黑个人战力（与 a 互不冲突、相乘）")]
@@ -110,6 +112,20 @@ public class SkillSO : ScriptableObject
     public float clearSleepSeconds = 3f;
     [Tooltip("清屏同时激活释放者自身 b 类 buff（小黑个人战力）")]
     public bool clearBuffAsB = true;
+
+    [Header("断弦高压 · 过热/超级过热档（effectType=ClearScreen）")]
+    [Tooltip("过热档清屏范围倍率（普通1 / 过热1.2 / 超级过热1.5）")]
+    public float clearOverheatRangeMult = 1.2f;
+    [Tooltip("过热档：释放后自身 b 类战力乘子（1.3 = 全队战力 +30%）")]
+    public float clearOverheatCombatMult = 1.3f;
+    [Tooltip("过热档：战力提升持续时间（秒）")]
+    public float clearOverheatBuffDuration = 30f;
+    [Tooltip("超级过热档清屏范围倍率")]
+    public float clearSuperRangeMult = 1.5f;
+    [Tooltip("超级过热档：释放后自身 b 类战力乘子（1.8 = 全队战力 +80%）")]
+    public float clearSuperCombatMult = 1.8f;
+    [Tooltip("超级过热档：战力提升持续时间（秒）")]
+    public float clearSuperBuffDuration = 30f;
 
     // ---- 运行时索引：skillId -> SkillSO ----
     private static Dictionary<string, SkillSO> _byId;

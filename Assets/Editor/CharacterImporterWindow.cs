@@ -266,6 +266,8 @@ public class CharacterImporterWindow : EditorWindow
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[CharacterImporter] 完成：新建 {created}，更新 {updated}（已写入技能槽 skills[5]）");
+        // 同步刷新技能库显示（若窗口已开）：文档引用/冷却/能量/输入/技能介绍 即时反映
+        try { SkillMakerWindow.Rescan(); } catch (System.Exception ex) { Debug.LogWarning("[CharacterImporter] 技能库刷新跳过：" + ex.Message); }
         EditorUtility.DisplayDialog("导入完成", $"新建 {created} 个，更新 {updated} 个角色。\n已按 能力1~能力5 写入 skills[5] 多技能槽。", "确定");
     }
 

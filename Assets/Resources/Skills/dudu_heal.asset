@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: dudu_heal
   m_EditorClassIdentifier: 
   skillId: dudu_heal
-  displayName: "\u561F\u561F\u6CBB\u7597"
+  displayName: "\u7F8E\u5473\u725B\u89D2\u5305"
   description: "\uFF084\uFF09\u5C06\u5373\u5C06\u51FA\u73B0\u7684\u97F3\u7B26\uFF086
     \u4E2A\uFF09\u9644\u9B54\uFF0C\u6BCF\u6210\u529F\u5B8C\u6210\u4E00\u4E2A\u97F3\u7B26\uFF0C\u5C31\u5BF9\u81EA\u5DF1\u8FDB\u884C\u4E00\u70B9\u751F\u547D\u6CBB\u6108\uFF083
     \u70B9\u751F\u547D\uFF09\uFF08\u5FC5\u6740\uFF09"
@@ -39,6 +39,7 @@ MonoBehaviour:
   healHpRate: 0.005
   healCombatRate: 0.015
   regenPerTickHpRate: 0.002
+  regenInterval: 3
   buffSlot: 0
   buffSubType: 0
   buffCombatMult: 1.4
@@ -47,3 +48,9 @@ MonoBehaviour:
   clearBandRangeMult: 1
   clearSleepSeconds: 3
   clearBuffAsB: 0
+  clearOverheatRangeMult: 1.2
+  clearOverheatCombatMult: 1.3
+  clearOverheatBuffDuration: 30
+  clearSuperRangeMult: 1.5
+  clearSuperCombatMult: 1.8
+  clearSuperBuffDuration: 30

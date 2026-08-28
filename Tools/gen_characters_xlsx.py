@@ -81,15 +81,21 @@ def make_row(char_id, name, role_type, profession, hp, combat, abilities):
 EMPTY5 = [ability() for _ in range(5)]
 
 rows = [
-    # 1) 宝宝 — 玩家自身，演奏者（被动减伤，无能量、无输入）
+    # 1) 宝宝 — 玩家自身，演奏者（两个无能量主动：全体防御 / 全体进攻）
     make_row(1, "宝宝（玩家自己角色）", "玩家自己角色", "演奏者", 100, 25.0, [
         ability(
-            name="（1）全体防御（获取分数能力下降（80%）来抵御一切负面效果）持续 4s",
-            skill_id="baby_damage_reduce", energy="无",
-            overheat="获得 5% 的伤害减少", super_oh="获得 15% 的伤害减少",
-            input_="",
+            name="（1）全体防御（减少 20% 受到的伤害，持续 10s）",
+            skill_id="baby_defense_buff", energy="无",
+            overheat="", super_oh="",
+            input_="↓↓←",
         ),
-        *EMPTY5[1:],
+        ability(
+            name="（2）全体进攻（整个队伍战斗力上升 40%，持续 10s）",
+            skill_id="baby_offense_buff", energy="无",
+            overheat="", super_oh="",
+            input_="AAB",
+        ),
+        *EMPTY5[2:],
     ]),
 
     # 2) 大狗 — 队伍 lane0，必杀：大狗叫（已实装）
@@ -106,7 +112,7 @@ rows = [
     # 3) 嘟嘟 — 队伍 lane1，必杀治疗型
     make_row(3, "嘟嘟", "队伍角色", "", 88, 3.0, [
         ability(
-            name="（4）将即将出现的音符（6 个）附魔，每成功完成一个音符，就对自己进行一点生命治愈（3 点生命）（必杀）",
+            name="（4）美味牛角包：将即将出现的音符（6 个）附魔，每成功完成一个音符，就对自己进行一点生命治愈（3 点生命）（必杀）",
             skill_id="dudu_heal", energy="200",
             overheat="获得治疗后进入缓慢回复（大招之后每三秒根据收集音符数量 ×1 回复生命，持续 9s）",
             super_oh="出现更多附魔（+4）并进入缓慢回复",
@@ -129,7 +135,7 @@ rows = [
     # 5) 小黑 — 队伍 lane3，必杀清屏
     make_row(5, "小黑", "队伍角色", "", 68, 15.0, [
         ability(
-            name="（6）将身前区域的所有音符全部电没（视为完成最佳击中自己获得所有大招充能）之后陷入 3 秒沉睡",
+            name="（6）断弦高压：将身前区域的所有音符全部电没（视为完成最佳命中，按各音符最高判定计分/充能）之后释放者小黑自身陷入 3 秒沉睡",
             skill_id="xiaohei_clear", energy="330",
             overheat="范围加大，此后一段时间（30s）全队战斗力提升 30%",
             super_oh="范围加大，此后一段时间（30s）全队战斗力提升 80%",

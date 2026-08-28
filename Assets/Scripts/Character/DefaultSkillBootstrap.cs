@@ -9,7 +9,7 @@ using UnityEngine;
 /// - 对侧用同样的 5 个数据，但 lane=-1/0..3（同样的 characterId 跨 side 各注册一次，互不冲突）
 ///
 /// 技能 skillId 与功能需求表 / 技能库（Skill Maker）保持一致：
-///   大狗=dog_howl / 嘟嘟=dudu_heal / 爱格=aige_bomb / 小黑=xiaohei_clear / 宝宝被动=baby_damage_reduce。
+///   大狗=dog_howl / 嘟嘟=dudu_heal（美味牛角包）/ 爱格=aige_bomb（炸弹雨）/ 小黑=xiaohei_clear（断弦高压）/ 宝宝被动=内联减伤（不进技能库）。
 /// 输入方式按功能需求表（A/B/C 三键）：大狗 AAA / 嘟嘟 CBC / 爱格 ABA / 小黑 BCA。
 ///
 /// 用途：未在 Editor 里手动配置 / 未跑 Character Importer 时，让游戏仍可启动并跑出符合
@@ -156,7 +156,8 @@ public static class DefaultSkillBootstrap
         c.activeEnergyCost = row.activeCost;
         c.passiveSkillDescription = row.passiveDesc;
         c.activeSkill = null; // 玩家走 PlayerCommand 类走另一条路（暂未实现）
-        c.passiveSkill = MakeDefaultPassiveSkill("damage_reduce_5", "过热时获得 5% 伤害减少", "ReduceIncomingDamagePercent", "{\"percent\":0.05}", "baby_damage_reduce");
+        // 玩家减伤被动：保留 ReduceIncomingDamagePercent 效果，但不挂技能库条目（baby_damage_reduce 已从库移除）。skillId 留空 → 纯被动，不进技能库聚合。
+        c.passiveSkill = MakeDefaultPassiveSkill("damage_reduce_5", "过热时获得 5% 伤害减少", "ReduceIncomingDamagePercent", "{\"percent\":0.05}", "");
         // 多技能槽：玩家（宝宝）有两个无能量主动（能力1=↓↓← 全体防御；能力2=AAB 全体进攻），无被动。
         c.skills = new SkillSlot[5];
         c.skills[0] = MakeSlot("", 0, 0f, "↓↓←", row.activeDesc, row.passiveDesc, "", null);

@@ -328,9 +328,9 @@ public class ActiveSkillRuntime : MonoBehaviour
             float enemyX = (enemy != null && enemy.hitPoint != null)
                 ? enemy.hitPoint.position.x
                 : (ownX + (ownerSide == 0 ? 10f : -10f));
-            float rangeMult = 1f;
-            if (releaseFever == FeverState.SuperFever) rangeMult = 1.5f;
-            else if (releaseFever == FeverState.Fever) rangeMult = 1.2f;
+            float rangeMult = (skill != null) ? skill.clearBandRangeMult : 1f;
+            if (releaseFever == FeverState.SuperFever && skill != null) rangeMult = skill.clearSuperRangeMult;
+            else if (releaseFever == FeverState.Fever && skill != null) rangeMult = skill.clearOverheatRangeMult;
             float bandEndX = ownX + 0.25f * rangeMult * (enemyX - ownX);
             float xMin = Mathf.Min(ownX, bandEndX);
             float xMax = Mathf.Max(ownX, bandEndX);
@@ -349,9 +349,13 @@ public class ActiveSkillRuntime : MonoBehaviour
         bool feverActive = releaseFever == FeverState.Fever || releaseFever == FeverState.SuperFever;
         if (skill != null && skill.clearBuffAsB && feverActive && BuffController.Instance != null)
         {
-            BuffController.Instance.SetBBuff(ownerSide, skill.buffCombatMult > 0f ? skill.buffCombatMult : 1.5f);
-            float dur = skill.buffDuration > 0f ? skill.buffDuration : 10f;
-            BuffController.Instance.SetBuffDuration(ownerSide, BuffSlot.B, dur);
+            // 按过热档选对应字段：普通释放不放 b；过热/超级过热各自独立的 攻击提升·持续时间
+            float mult = skill.buffCombatMult;
+            float dur = skill.buffDuration;
+            if (releaseFever == FeverState.SuperFever) { mult = skill.clearSuperCombatMult; dur = skill.clearSuperBuffDuration; }
+            else if (releaseFever == FeverState.Fever) { mult = skill.clearOverheatCombatMult; dur = skill.clearOverheatBuffDuration; }
+            BuffController.Instance.SetBBuff(ownerSide, mult > 0f ? mult : 1.5f);
+            BuffController.Instance.SetBuffDuration(ownerSide, BuffSlot.B, dur > 0f ? dur : 10f);
         }
 
         yield return new WaitForSeconds(0.1f);
@@ -509,7 +513,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     /// <summary>牛角包过热/超级过热：技能结束后 9 秒缓慢恢复，每 3 秒一跳共 3 跳，每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × regenPerTickHpRate)。</summary>
     private System.Collections.IEnumerator Regen()
     {
-        float interval = 3f;
+        float interval = (skill != null) ? skill.regenInterval : 3f;
         int ticks = 0;
         while (ticks < 3)
         {
