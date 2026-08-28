@@ -812,6 +812,14 @@ public class HoldNote : MonoBehaviour
         return side == 0 ? x < lineX : x > lineX;
     }
 
+    /// <summary>该长按节点是否已越过中间粉杠（显现）。供附魔候选判定：只有已显现的节点才可被附魔。</summary>
+    public bool IsNodeRevealed(int index)
+    {
+        if (index < 0 || index >= NodeCount || nodeTransforms == null || index >= nodeTransforms.Count || nodeTransforms[index] == null) return false;
+        float cx = centerLine != null ? centerLine.currentX : 0f;
+        return IsBeyondLine(nodeTransforms[index].position.x, cx);
+    }
+
     /// <summary>判断一个带有 X 半宽的视觉元素是否已经完整越过指定判定线。</summary>
     private bool IsFullyBeyondLine(float x, float halfExtent, float lineX)
     {

@@ -332,6 +332,7 @@ public class NoteSpawner : MonoBehaviour
         foreach (var note in activeNotes)
         {
             if (note == null || note.isHit || note.charmOwner != null) continue;
+            if (!note.isVisible) continue;   // 只附魔已越过粉杠显现的音符（大狗叫规则）
             if (note.hitTime + goodWindow < songTime || note.hitTime > visibleHorizon) continue;
             candidates.Add(new CharmCandidate { hitTime = note.hitTime, lane = note.lane, note = note, nodeIndex = -1 });
         }
@@ -341,7 +342,7 @@ public class NoteSpawner : MonoBehaviour
             for (int nodeIndex = 0; nodeIndex < hold.NodeCount; nodeIndex++)
             {
                 float hitTime = hold.GetNodeTime(nodeIndex);
-                if (hitTime > visibleHorizon || !hold.CanCharmNode(nodeIndex, songTime)) continue;
+                if (hitTime > visibleHorizon || !hold.CanCharmNode(nodeIndex, songTime) || !hold.IsNodeRevealed(nodeIndex)) continue;
                 candidates.Add(new CharmCandidate
                 {
                     hitTime = hitTime,
