@@ -10,7 +10,7 @@ using System.Collections.Generic;
 ///   - 每按对一个键 → 对应角色 cube 亮闪一次（CharacterCubeMarker.Flash）；
 ///   - 完整序列按对 → 该角色立刻进入释放（ActiveSkillRuntime.BeginCast：变大发光 → 附魔 6 音符 → 音波削减对方连击）。
 /// 右侧三个触摸/点击按键 ← / ↓ / → 是释放输入口（功能需求表里 A/B/C 的语义映射为 ←/↓/→）；
-/// 键盘也支持 ←/↓/→ 与 A/B/C（S/D）互通，共用同一组 SkillInputStep。
+/// 键盘只支持 ←/↓/→。
 ///
 /// 输入规则（防 bug，Issue 2 修复）：
 ///   - 全局输入缓冲 buffer：按下的步骤按顺序累积；只有「buffer 恰好等于某角色技能完整序列」才释放。
@@ -43,7 +43,7 @@ public class SkillInputUI : MonoBehaviour
     private Image[] btnImages = new Image[3];
     private RectTransform[] btnRects = new RectTransform[3];
     private Text[] btnLabels = new Text[3];
-    // 右侧三个触摸/点击按键对应技能释放输入 ←/↓/→（键盘 A/B/C 也会映射到同一组，作为肌肉记忆备用）。
+    // 右侧三个触摸/点击按键与键盘方向键共用 ←/↓/→ 输入。
     private readonly KeyCode[] skillKeys = { KeyCode.LeftArrow, KeyCode.DownArrow, KeyCode.RightArrow };
     private readonly string[] skillLabels = { "←", "↓", "→" };
     // 触摸按钮：按下 idx 0/1/2 → 直接对应 Left/Down/Right（不需要再走 KeyToStep 二次映射）
@@ -122,15 +122,12 @@ public class SkillInputUI : MonoBehaviour
 
     void Update()
     {
-        // 键盘监听：←/↓/→ 直接对应，键盘 A/B/C/W/S/D 复用同一组（玩家既可键入箭头，也可沿用 A/S/D 的左下右肌肉记忆）
-        foreach (KeyCode k in new[] {
-                     KeyCode.LeftArrow, KeyCode.DownArrow, KeyCode.RightArrow,
-                     KeyCode.A, KeyCode.B, KeyCode.C })
+        for (int i = 0; i < skillKeys.Length; i++)
         {
-            if (Input.GetKeyDown(k))
+            if (Input.GetKeyDown(skillKeys[i]))
             {
-                FlashButtonByKey(k);
-                OnKeyPressed(SkillSO.KeyToStep(k));
+                Flash(i, pressedColor);
+                OnKeyPressed(touchSteps[i]);
             }
         }
     }
@@ -205,13 +202,6 @@ public class SkillInputUI : MonoBehaviour
         if (idx < 0 || idx > 2) return;
         Flash(touchSteps[idx]);                         // 同组按钮一起高亮
         OnKeyPressed(touchSteps[idx]);                 // 错误反馈最后执行，保证三个按钮都保持红闪
-    }
-
-    private void FlashButtonByKey(KeyCode k)
-    {
-        int idx = System.Array.IndexOf(skillKeys, k);
-        if (idx < 0) return;
-        Flash(idx, pressedColor);
     }
 
     private void Flash(SkillInputStep step)

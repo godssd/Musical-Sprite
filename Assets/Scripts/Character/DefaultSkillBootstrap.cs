@@ -115,8 +115,7 @@ public static class DefaultSkillBootstrap
     }
 
     /// <summary>把功能需求表的输入方式字符串（如 "AAA" / "CBC"）解析为 SkillInputStep 序列。
-    /// 约定：A/B/C 三键分别映射为 ←/↓/→，与 SkillInputUI 触屏按钮标签一致；
-    /// 键盘 A/B/C 也通过 SkillSO.KeyToStep 映射到左/下/右（向后兼容玩家肌肉记忆）。</summary>
+    /// 约定：表内 A/B/C 分别表示 ←/↓/→，与 SkillInputUI 的方向键标签一致。</summary>
     public static SkillInputStep[] ParseInputMethod(string s)
     {
         var list = new System.Collections.Generic.List<SkillInputStep>();

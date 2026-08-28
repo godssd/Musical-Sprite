@@ -133,32 +133,6 @@ public class SkillSO : ScriptableObject
         return s;
     }
 
-    /// <summary>把输入按键映射成技能输入步骤（供 SkillInputUI 比较）。
-    /// 设计：A/B/C 与 ←/↓/→ 互通，都映射到 Left/Down/Right（Player Skill 输入的"一个手指"语义）。</summary>
-    public static SkillInputStep KeyToStep(KeyCode k)
-    {
-        switch (k)
-        {
-            case KeyCode.LeftArrow:
-            case KeyCode.A:
-                return SkillInputStep.Left;
-            case KeyCode.DownArrow:
-            case KeyCode.S:
-            case KeyCode.B:
-                return SkillInputStep.Down;
-            case KeyCode.RightArrow:
-            case KeyCode.D:
-            case KeyCode.C:
-                return SkillInputStep.Right;
-            case KeyCode.UpArrow:
-            case KeyCode.W:
-                return SkillInputStep.Up;
-            case KeyCode.Space:
-                return SkillInputStep.Space;
-            default: return SkillInputStep.Left;
-        }
-    }
-
     /// <summary>把角色文档「输入方式」字符串解析为输入序列。同时支持箭头脑格（←↓→↑）与字母（A/B/C/L/D/R/U/S/空格）：
     ///   ←/L/A → Left，↓/D/B → Down，→/R/C → Right，↑/U/W → Up，空格/S → Space。
     /// 空串返回空数组（被动技能无输入方式）。</summary>
