@@ -20,6 +20,13 @@ namespace MusicalSprite.Editor
     /// - 每个谱面存成一个 BeatmapSO 资产（含音符与音乐素材），放在 Assets/Beatmaps/ 下，可纳入 git 仓库。
     /// - 仓库列表支持：编辑（载入本编辑器）、调用（设为游戏启动谱面）、删除（从仓库移除）。
     /// </summary>
+
+    /// <summary>
+    /// 谱面密度：稀疏 ≈35% / 中等 ≈60% / 密集 ≈90%。
+    /// 作为命名空间顶级枚举，供 Debug 工具与谱面编辑器共享。
+    /// </summary>
+    public enum BeatmapDensity { Sparse, Medium, Dense }
+
     public class BeatmapEditorWindow : EditorWindow
     {
         // ---------- 谱面数据（编辑器内部，单边 4 轨） ----------
@@ -2719,6 +2726,181 @@ namespace MusicalSprite.Editor
                 if (!AssetDatabase.IsValidFolder(parent)) EnsureFolder(parent);
                 AssetDatabase.CreateFolder(parent, child);
             }
+        }
+
+
+        // ===================================================================
+        // 随机测试谱面生成（原 DemoBeatmapGenerator 已删除，功能整合并入本编辑器）
+        // 供编辑器「生成随机测试谱面（并调用）」按钮调用。
+        // 节奏约束：BPM 固定 128，音符时刻吸附到整拍；密度三档决定填充比例；
+        // 左右玩家谱面完全相同（同一份 time/lane 同时写入 side=0 与 side=1）。
+        // ===================================================================
+        // 注：BeatmapDensity 是 MusicalSprite.Editor 命名空间顶级枚举（本文件顶部已声明），
+        // 此处不再嵌套定义，避免外部工具（如 MusicalSpriteDebugWindow）引用时找不到类型。
+
+        private const float DemoBpm = 128f;
+        private const float DemoLeadIn = 2f;     // 前奏留白（秒），用于把首个音符推到整拍之后
+        private const float DemoTail = 2f;       // 结尾留白（秒）
+
+        /// <summary>
+        /// 一键生成随机测试谱面（左右谱面完全相同）。
+        /// totalBeats 决定谱面总拍数（时间窗口长度），density 决定密度档位。
+        /// </summary>
+        public static BeatmapSO CreateDemoBeatmapWithBeats(int totalBeats, BeatmapDensity density = BeatmapDensity.Medium)
+        {
+            BeatmapSO beatmap = ScriptableObject.CreateInstance<BeatmapSO>();
+            beatmap.bpm = DemoBpm;
+            beatmap.notes = GenerateDemoBeatmap(totalBeats, density);
+
+            string path = "Assets/Beatmaps/DemoBeatmap.asset";
+            if (!AssetDatabase.IsValidFolder("Assets/Beatmaps"))
+            {
+                AssetDatabase.CreateFolder("Assets", "Beatmaps");
+            }
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(beatmap, path);
+            AssetDatabase.SaveAssets();
+            ExportBeatmapText(beatmap, path);
+            AssetDatabase.Refresh();
+
+            EditorUtility.FocusProjectWindow();
+            Selection.activeObject = beatmap;
+
+            float beatDur = 60f / DemoBpm;
+            float window = DemoLeadIn + totalBeats * beatDur + DemoTail;
+            Debug.Log($"随机测试谱面已生成：{path}，共 {beatmap.notes.Length / 2} 个音符（左右各一份），BPM {DemoBpm}，密度={density}，时间窗口≈{window:F1}s");
+            return beatmap;
+        }
+
+        private static NoteData[] GenerateDemoBeatmap(int totalBeats, BeatmapDensity density)
+        {
+            float beatDur = 60f / DemoBpm;
+            float endTime = DemoLeadIn + totalBeats * beatDur;
+
+            List<float> grid = new List<float>();
+            int firstBeat = Mathf.CeilToInt(DemoLeadIn / beatDur);
+            int lastBeat = Mathf.FloorToInt(endTime / beatDur);
+            for (int beat = firstBeat; beat <= lastBeat; beat++)
+                grid.Add(beat * beatDur);
+            if (grid.Count == 0) grid.Add(Mathf.Ceil(DemoLeadIn / beatDur) * beatDur);
+
+            float keepRatio = density == BeatmapDensity.Sparse ? 0.35f : density == BeatmapDensity.Medium ? 0.6f : 0.9f;
+            List<float> usedTimes = new List<float>();
+            foreach (float t in grid)
+            {
+                if (Random.value <= keepRatio) usedTimes.Add(t);
+            }
+            usedTimes.Sort();
+
+            List<NoteData> notes = new List<NoteData>();
+            float linkedBlockedUntil = -1f;
+            foreach (float t in usedTimes)
+            {
+                if (t <= linkedBlockedUntil + 1e-4f) continue;
+
+                int lane = Random.Range(0, 4);
+                float roll = Random.value;
+                if (roll < 0.10f)
+                {
+                    notes.Add(MakeDemoSmallTap(t, lane, 0));
+                    notes.Add(MakeDemoSmallTap(t, lane, 1));
+                }
+                else if (roll < 0.22f)
+                {
+                    int nodeCount = Random.value < 0.4f ? Random.Range(3, 5) : 2;
+                    int[] lanes;
+                    float[] times;
+                    if (nodeCount <= 2)
+                    {
+                        int endLane = Random.Range(0, 4);
+                        int holdBeats = Random.Range(1, 5);
+                        float dur = holdBeats * beatDur;
+                        lanes = new int[] { lane, endLane };
+                        times = new float[] { t, t + dur };
+                    }
+                    else
+                    {
+                        lanes = new int[nodeCount];
+                        times = new float[nodeCount];
+                        lanes[0] = lane;
+                        times[0] = t;
+                        int curLane = lane;
+                        float curTime = t;
+                        for (int i = 1; i < nodeCount; i++)
+                        {
+                            curLane = Random.Range(0, 4);
+                            int segBeats = Random.Range(1, 4);
+                            curTime += segBeats * beatDur;
+                            lanes[i] = curLane;
+                            times[i] = curTime;
+                        }
+                    }
+                    notes.Add(MakeDemoHold(t, lane, 0, lanes, times));
+                    notes.Add(MakeDemoHold(t, lane, 1, lanes, times));
+                }
+                else if (roll < 0.40f)
+                {
+                    int pairLane = Random.Range(0, 3);
+                    if (Random.value < 0.45f)
+                    {
+                        notes.Add(MakeDemoLinked(t, pairLane, 0, null, null));
+                        notes.Add(MakeDemoLinked(t, pairLane, 1, null, null));
+                    }
+                    else
+                    {
+                        int nodeCount = Random.value < 0.55f ? 2 : 3;
+                        int[] pairLanes = new int[nodeCount];
+                        float[] times = new float[nodeCount];
+                        pairLanes[0] = pairLane;
+                        times[0] = t;
+                        for (int i = 1; i < nodeCount; i++)
+                        {
+                            pairLanes[i] = Random.Range(0, 3);
+                            times[i] = times[i - 1] + Random.Range(1, 4) * beatDur;
+                        }
+                        notes.Add(MakeDemoLinked(t, pairLane, 0, pairLanes, times));
+                        notes.Add(MakeDemoLinked(t, pairLane, 1, pairLanes, times));
+                        linkedBlockedUntil = times[times.Length - 1];
+                    }
+                }
+                else
+                {
+                    notes.Add(MakeDemoNote(t, lane, 0));
+                    notes.Add(MakeDemoNote(t, lane, 1));
+                }
+            }
+
+            notes.Sort((a, b) => a.time.CompareTo(b.time));
+            return notes.ToArray();
+        }
+
+        private static NoteData MakeDemoNote(float time, int lane, int side)
+        {
+            return new NoteData { time = time, lane = lane, side = side, type = NoteData.NoteType.Tap };
+        }
+
+        private static NoteData MakeDemoHold(float time, int lane, int side, int[] lanes, float[] times)
+        {
+            return new NoteData
+            {
+                time = time, lane = lane, side = side, type = NoteData.NoteType.Hold,
+                holdLanes = (int[])lanes.Clone(), holdTimes = (float[])times.Clone()
+            };
+        }
+
+        private static NoteData MakeDemoSmallTap(float time, int lane, int side)
+        {
+            return new NoteData { time = time, lane = lane, side = side, type = NoteData.NoteType.SmallTap };
+        }
+
+        private static NoteData MakeDemoLinked(float time, int pairLane, int side, int[] lanes, float[] times)
+        {
+            return new NoteData
+            {
+                time = time, lane = pairLane, side = side, type = NoteData.NoteType.Linked,
+                holdLanes = lanes != null ? (int[])lanes.Clone() : null,
+                holdTimes = times != null ? (float[])times.Clone() : null
+            };
         }
     }
 }

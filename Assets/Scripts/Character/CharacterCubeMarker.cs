@@ -50,10 +50,16 @@ public class CharacterCubeMarker : MonoBehaviour
     private Coroutine glowCo;
     private Coroutine pulseCo;
     private Coroutine jumpCo;
-    private Color sleepBaseColor = Color.white;
+    private Color[] sleepBaseColors;
     private bool sleepVisualOn = false;
     [Tooltip("沉睡时方块缩放（相对 baseScale）；睡眠异常(表现)时角色方块变小")]
     public float sleepShrinkScale = 0.6f;
+
+    [Header("外观（美术接入）")]
+    [Tooltip("角色外观预制体；非空时实例化并隐藏默认占位 cube。通常由 CharacterDataSO.modelPrefab 经 CharacterBattleSystem 注入")]
+    public GameObject modelPrefab;
+
+    private GameObject spawnedModel;
 
     /// <summary>按 (side, lane) 索引的全局角色标记表，供普通命中时按音轨查找对应角色跳跃。</summary>
     private static System.Collections.Generic.Dictionary<int, CharacterCubeMarker> Registry = new System.Collections.Generic.Dictionary<int, CharacterCubeMarker>();
@@ -70,6 +76,7 @@ public class CharacterCubeMarker : MonoBehaviour
         baseScale = transform.localScale;
         baseLocalPos = transform.localPosition;
         Registry[RegKey(side, laneIndex)] = this;
+        if (modelPrefab != null) SetModelPrefab(modelPrefab);
     }
 
     void OnDestroy()
@@ -92,16 +99,24 @@ public class CharacterCubeMarker : MonoBehaviour
     {
         float t = 0f;
         float half = flashDuration * 0.5f;
-        var rend = GetComponent<Renderer>();
-        Color baseColor = (rend != null && rend.material != null) ? rend.material.color : Color.white;
-        Color boostColor = baseColor + baseColor * colorBoost;
+        var rends = GetComponentsInChildren<Renderer>();
+        if (rends.Length == 0) { flashCo = null; yield break; }
+        // 缓存每个渲染器的基准色（多网格角色每个子网格各自基准）
+        Color[] baseColors = new Color[rends.Length];
+        Color[] boostColors = new Color[rends.Length];
+        for (int i = 0; i < rends.Length; i++)
+        {
+            baseColors[i] = (rends[i].material != null) ? rends[i].material.color : Color.white;
+            boostColors[i] = baseColors[i] + baseColors[i] * colorBoost;
+        }
 
         while (t < half)
         {
             t += Time.deltaTime;
             float k = Mathf.Clamp01(t / half);
             transform.localScale = baseScale * Mathf.Lerp(1f, popScale, k);
-            if (rend != null && rend.material != null) rend.material.color = Color.Lerp(baseColor, boostColor, k);
+            for (int i = 0; i < rends.Length; i++)
+                if (rends[i].material != null) SetMarkerColor(rends[i].material, Color.Lerp(baseColors[i], boostColors[i], k));
             yield return null;
         }
         t = 0f;
@@ -110,12 +125,14 @@ public class CharacterCubeMarker : MonoBehaviour
             t += Time.deltaTime;
             float k = Mathf.Clamp01(t / half);
             transform.localScale = baseScale * Mathf.Lerp(popScale, 1f, k);
-            if (rend != null && rend.material != null) rend.material.color = Color.Lerp(boostColor, baseColor, k);
+            for (int i = 0; i < rends.Length; i++)
+                if (rends[i].material != null) SetMarkerColor(rends[i].material, Color.Lerp(boostColors[i], baseColors[i], k));
             yield return null;
         }
 
         transform.localScale = baseScale;
-        if (rend != null && rend.material != null) rend.material.color = baseColor;
+        for (int i = 0; i < rends.Length; i++)
+            if (rends[i].material != null) SetMarkerColor(rends[i].material, baseColors[i]);
         flashCo = null;
     }
 
@@ -183,10 +200,42 @@ public class CharacterCubeMarker : MonoBehaviour
 
     private void SetEmission(Color c)
     {
-        var rend = GetComponent<Renderer>();
-        if (rend == null || rend.material == null) return;
-        rend.material.EnableKeyword("_EMISSION");
-        rend.material.SetColor("_EmissionColor", c);
+        // 多网格角色：遍历所有子渲染器统一发光（单网格时等价于原行为）
+        var rends = GetComponentsInChildren<Renderer>();
+        foreach (var r in rends)
+        {
+            if (r == null || r.material == null) continue;
+            r.material.EnableKeyword("_EMISSION");
+            r.material.SetColor("_EmissionColor", c);
+        }
+    }
+
+    /// <summary>统一着色：同时写 URP/Lit 的 _BaseColor 与旧 cube 的 .color，兼容两种材质管线。</summary>
+    private void SetMarkerColor(Material m, Color c)
+    {
+        if (m == null) return;
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+        m.color = c;
+    }
+
+    /// <summary>给该 marker 下所有（含子物体模型）渲染器统一上色（身份色 / 过热 tint）。</summary>
+    public void ColorAll(Color col)
+    {
+        var rends = GetComponentsInChildren<Renderer>();
+        foreach (var r in rends)
+            if (r.material != null) SetMarkerColor(r.material, col);
+    }
+
+    /// <summary>由 CharacterBattleSystem 在装配 marker 时调用：注入角色外观预制体（数据驱动，非破坏式）。
+    /// 非空时实例化到自身子节点并隐藏默认占位 cube 渲染器；重复调用只实例化一次。</summary>
+    public void SetModelPrefab(GameObject prefab)
+    {
+        if (prefab == null || spawnedModel != null) return;
+        spawnedModel = Instantiate(prefab, transform);
+        spawnedModel.transform.localPosition = Vector3.zero;
+        spawnedModel.transform.localRotation = Quaternion.identity;
+        var selfRend = GetComponent<Renderer>();
+        if (selfRend != null) selfRend.enabled = false;
     }
 
     /// <summary>
@@ -238,21 +287,28 @@ public class CharacterCubeMarker : MonoBehaviour
     /// <summary>沉睡视觉：on=true 时方块变灰 + 熄灯；on=false 时恢复身份色（沉睡解除）。</summary>
     public void ApplySleepVisual(bool on)
     {
-        var rend = GetComponent<Renderer>();
-        if (rend == null || rend.material == null) return;
+        var rends = GetComponentsInChildren<Renderer>();
+        if (rends.Length == 0) return;
         if (on)
         {
             if (glowCo != null) StopCoroutine(glowCo);
-            sleepBaseColor = rend.material.color;
-            rend.material.color = new Color(0.35f, 0.35f, 0.35f); // 灰：沉睡
-            SetEmission(Color.black);                              // 黑灯
+            sleepBaseColors = new Color[rends.Length];
+            for (int i = 0; i < rends.Length; i++)
+            {
+                if (rends[i].material == null) { sleepBaseColors[i] = Color.white; continue; }
+                sleepBaseColors[i] = rends[i].material.color;
+                SetMarkerColor(rends[i].material, new Color(0.35f, 0.35f, 0.35f)); // 灰：沉睡
+                SetEmission(Color.black);                                       // 黑灯
+            }
             transform.localScale = baseScale * sleepShrinkScale;   // 变小
             sleepVisualOn = true;
         }
         else if (sleepVisualOn)
         {
             if (glowCo != null) StopCoroutine(glowCo);
-            rend.material.color = sleepBaseColor;
+            if (sleepBaseColors != null)
+                for (int i = 0; i < rends.Length && i < sleepBaseColors.Length; i++)
+                    if (rends[i].material != null) SetMarkerColor(rends[i].material, sleepBaseColors[i]);
             SetEmission(Color.black);
             transform.localScale = baseScale;                      // 恢复
             sleepVisualOn = false;

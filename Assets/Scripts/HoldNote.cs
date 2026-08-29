@@ -794,7 +794,6 @@ public class HoldNote : MonoBehaviour
         }
     }
 
-    /// <summary>设置单个材质实例的透明度（不影响颜色，供漏击逐片淡出用）。</summary>
     /// <summary>把一个被附魔节点及通向它的连接段染成黄色发光。</summary>
     private void TintCharmedNode(int nodeIndex)
     {

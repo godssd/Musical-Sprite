@@ -9,9 +9,9 @@ using System.IO;
     /// 编辑器加载时也会自动跑一次（create-if-missing）。
     ///
     /// 在 Assets/Resources/Skills/ 生成 SkillSO 资源：
-    ///   dog_howl（大狗叫）/ dudu_heal（美味牛角包）/ aige_bomb（炸弹雨）
-    ///   / xiaohei_clear（断弦高压）/ baby_defense_buff（全体防御）/ baby_offense_buff（全体进攻）。
-    ///   （baby_damage_reduce 已移除：它本是玩家减伤被动，不进技能库。）
+    ///   dog_howl（大狗叫）/ dudu_heal（美味牛角包）/ bumu_bomb（炸弹雨）
+    ///   / xiaohei_clear（断弦高压）/ xiaoxiong_defense_buff（全体防御）/ xiaoxiong_offense_buff（全体进攻）。
+    ///   （xiaoxiong_damage_reduce 已移除：它本是玩家减伤被动，不进技能库。）
     ///   （xiaohei_dispel 已移除：目前没有技能引用驱散效果，故不建库条目；仅保留 Dispel 效果代码——
     ///    SleepController.Dispel + ActiveSkillRuntime.DispelControl / effectType "Dispel" 作为预留词汇，
     ///    待有技能接入时再建对应库条目即可。）
@@ -89,7 +89,7 @@ public static class SkillLibraryGenerator
             200f, new SkillInputStep[] { SkillInputStep.Right, SkillInputStep.Down, SkillInputStep.Right }, // CBC → →↓→
             6, 3, "Heal", "{\"healPerNote\":3,\"slowRegenSeconds\":9}", dir);
 
-        created += Make("aige_bomb", "炸弹雨",
+        created += Make("bumu_bomb", "炸弹雨",
             "（5）炸弹雨（将即将出现的音符（3 个）附魔，每完成一个音符就朝对手随机投射一颗小型炸弹（10 点伤害），造成直接生命伤害直到结算完毕）（必杀）",
             280f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Down, SkillInputStep.Left },    // ABA → ←↓←
             3, 3, "Bomb", "{\"bombDamage\":10}", dir);
@@ -102,14 +102,14 @@ public static class SkillLibraryGenerator
             clearOverheatRangeMult: 1.2f, clearOverheatCombatMult: 1.3f, clearOverheatBuffDuration: 30f,
             clearSuperRangeMult: 1.5f, clearSuperCombatMult: 1.8f, clearSuperBuffDuration: 30f);
 
-        // 宝宝双 buff（a 类，互斥顶替）
-        created += Make("baby_defense_buff", "全体防御",
+        // 小熊双 buff（a 类，互斥顶替）
+        created += Make("xiaoxiong_defense_buff", "全体防御",
             "（1）全体防御：减少 20% 受到的伤害，持续 10s（同属 a 类 buff 不可共存）",
             0f, new SkillInputStep[0],
             0, 0, "Buff", "{}", dir,
             buffSlot: BuffSlot.A, buffSubType: BuffSubType.Defense, buffCombatMult: 1f, buffDamageReduce: 0.2f, buffDuration: 10f);
 
-        created += Make("baby_offense_buff", "全体进攻",
+        created += Make("xiaoxiong_offense_buff", "全体进攻",
             "（2）全体进攻：整个队伍战斗力上升 40%，持续 10s（同属 a 类 buff 不可共存）",
             0f, new SkillInputStep[0],
             0, 0, "Buff", "{}", dir,

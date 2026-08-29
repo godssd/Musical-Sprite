@@ -138,7 +138,7 @@ public class ActiveSkillRuntime : MonoBehaviour
 
         // a/b 双槽 buff 分流：
         //   - 清屏（ClearScreen）：直接清除范围内音符 + 敌方沉睡 + 激活自身 b 类 buff（小黑个人战力）。
-        //   - 纯 buff（无附魔的 a/b 类技能，如宝宝双技能）：直接施加 buff 后收尾。
+        //   - 纯 buff（无附魔的 a/b 类技能，如小熊双技能）：直接施加 buff 后收尾。
         //   - 其余（Bomb / Heal / DogHowl 等带附魔）：走常规附魔路径。
         bool isClear = skill != null && skill.effectType == "ClearScreen";
         bool isPureBuff = skill != null && skill.buffSlot != BuffSlot.None && skill.charmedNoteCount <= 0 && !isClear;
@@ -467,14 +467,7 @@ public class ActiveSkillRuntime : MonoBehaviour
 
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = "BombProjectile";
-        var r = go.GetComponent<Renderer>();
-        if (r != null)
-        {
-            r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            r.material.EnableKeyword("_EMISSION");
-            r.material.SetColor("_EmissionColor", Color.white);
-            r.material.SetColor("_BaseColor", Color.white);
-        }
+        SetMatAll(go, Color.white, Color.white);
         go.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
         var fx = go.AddComponent<BombFx>();
         fx.from = from;
@@ -538,14 +531,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     {
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = "BombImpact";
-        var r = go.GetComponent<Renderer>();
-        if (r != null)
-        {
-            r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            r.material.EnableKeyword("_EMISSION");
-            r.material.SetColor("_EmissionColor", c);
-            r.material.SetColor("_BaseColor", c);
-        }
+        SetMatAll(go, c, c);
         go.transform.position = at;
         go.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
         var fx = go.AddComponent<ImpactFx>();
@@ -557,15 +543,8 @@ public class ActiveSkillRuntime : MonoBehaviour
     {
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = "HealFx";
-        var r = go.GetComponent<Renderer>();
-        if (r != null)
-        {
-            r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            r.material.EnableKeyword("_EMISSION");
-            Color g = new Color(0.4f, 1f, 0.4f);
-            r.material.SetColor("_EmissionColor", g);
-            r.material.SetColor("_BaseColor", g);
-        }
+        Color g = new Color(0.4f, 1f, 0.4f);
+        SetMatAll(go, g, g);
         go.transform.position = at + Vector3.up * 0.5f;
         go.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
         var fx = go.AddComponent<HealFx>();
@@ -583,7 +562,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         // - 实际降低连击数 = 削减前后差值（已封顶到 0，故对方连击过低时只算真正扣掉的部分）。
         // - 队伍战斗力总和 = 释放方所在队伍（ownerSide）的 combatSum。
         // - 系数 comboHpDamageRate 默认 0.01（= 战斗力总和的 1%，对应"战斗力总和%"），可在 Inspector / 技能库调参面板调整。
-        // 仅 effectType == "DogHowl" 生效，不影响玩家自身技能（宝宝）。
+        // 仅 effectType == "DogHowl" 生效，不影响玩家自身技能（小熊）。
         if (skill != null && skill.effectType == "DogHowl" && skill.comboHpDamageRate > 0f && actualReduced > 0)
         {
             if (_scoreMgr == null) _scoreMgr = FindFirstObjectByType<ScoreManager>();
@@ -607,6 +586,23 @@ public class ActiveSkillRuntime : MonoBehaviour
             reduce, completedCount, charmQuotaTotal));
     }
 
+    /// <summary>给 GameObject 下所有子渲染器设置 URP/Lit 基色与发光（多网格 VFX 预制体兼容；单网格占位方块亦适用）。</summary>
+    private static void SetMatAll(GameObject go, Color baseCol, Color emitCol)
+    {
+        if (go == null) return;
+        var rs = go.GetComponentsInChildren<Renderer>();
+        foreach (var r in rs)
+        {
+            if (r == null) continue;
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+            mat.EnableKeyword("_EMISSION");
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", baseCol);
+            mat.color = baseCol;
+            mat.SetColor("_EmissionColor", emitCol);
+            r.material = mat;
+        }
+    }
+
     private void SpawnShockwave()
     {
         if (marker == null) return;
@@ -620,19 +616,15 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (skill != null && skill.shockwavePrefab != null)
         {
             go = Instantiate(skill.shockwavePrefab, from, Quaternion.identity);
+            Color sw = skill != null ? skill.releaseGlow : Color.yellow;
+            SetMatAll(go, sw, sw);   // 多网格 shockwave 预制体也能统一染色发光
         }
         else
         {
             go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = "DogShockwave";
-            var r = go.GetComponent<Renderer>();
-            if (r != null)
-            {
-                r.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                r.material.EnableKeyword("_EMISSION");
-                r.material.SetColor("_EmissionColor", skill != null ? skill.releaseGlow : Color.yellow);
-                r.material.SetColor("_BaseColor", skill != null ? skill.releaseGlow : Color.yellow);
-            }
+            Color sw = skill != null ? skill.releaseGlow : Color.yellow;
+            SetMatAll(go, sw, sw);
             go.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         }
         var fx = go.AddComponent<ShockwaveFx>();

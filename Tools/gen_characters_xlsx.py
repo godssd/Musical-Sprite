@@ -81,17 +81,17 @@ def make_row(char_id, name, role_type, profession, hp, combat, abilities):
 EMPTY5 = [ability() for _ in range(5)]
 
 rows = [
-    # 1) 宝宝 — 玩家自身，演奏者（两个无能量主动：全体防御 / 全体进攻）
-    make_row(1, "宝宝（玩家自己角色）", "玩家自己角色", "演奏者", 100, 25.0, [
+    # 1) 小熊 — 玩家自身，演奏者（两个无能量主动：全体防御 / 全体进攻）
+    make_row(1, "小熊（玩家自己角色）", "玩家自己角色", "演奏者", 100, 25.0, [
         ability(
             name="（1）全体防御（减少 20% 受到的伤害，持续 10s）",
-            skill_id="baby_defense_buff", energy="无",
+            skill_id="xiaoxiong_defense_buff", energy="无",
             overheat="", super_oh="",
             input_="↓↓←",
         ),
         ability(
             name="（2）全体进攻（整个队伍战斗力上升 40%，持续 10s）",
-            skill_id="baby_offense_buff", energy="无",
+            skill_id="xiaoxiong_offense_buff", energy="无",
             overheat="", super_oh="",
             input_="AAB",
         ),
@@ -121,11 +121,11 @@ rows = [
         *EMPTY5[1:],
     ]),
 
-    # 4) 爱格 — 队伍 lane2，必杀炸弹型
-    make_row(4, "爱格", "队伍角色", "", 45, 20.0, [
+    # 4) 布姆 — 队伍 lane2，必杀炸弹型
+    make_row(4, "布姆", "队伍角色", "", 45, 20.0, [
         ability(
             name="（5）炸弹雨（将即将出现的音符（3 个）附魔，每完成一个音符就朝对手随机投射一颗小型炸弹（10 点伤害），造成直接生命伤害直到结算完毕）（必杀）",
-            skill_id="aige_bomb", energy="280",
+            skill_id="bumu_bomb", energy="280",
             overheat="生成更多音符 (+2)", super_oh="进一步生成更多（+4）附魔音符",
             input_="←↓←",
         ),

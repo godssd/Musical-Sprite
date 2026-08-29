@@ -168,7 +168,7 @@ public class EnergyVFXPlaceholder : MonoBehaviour
         cube.transform.position = origin + Vector3.up * 0.5f;
         cube.transform.localScale = Vector3.one * cubeSize;
         var rend = cube.GetComponent<Renderer>();
-        rend.material = new Material(Shader.Find("Standard"));
+        rend.material = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
         rend.material.color = cubeColor;
         if (!cubesByChar.ContainsKey(character)) cubesByChar[character] = new List<GameObject>();
         cubesByChar[character].Add(cube);

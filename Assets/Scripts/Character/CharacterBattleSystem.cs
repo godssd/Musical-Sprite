@@ -107,7 +107,7 @@ public class CharacterBattleSystem : MonoBehaviour
             var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
             SkillInputStep[] seq = SkillSO.ParseInputMethod(slot.inputMethod);
             if (seq.Length == 0 && slot.skill != null) seq = slot.skill.inputSequence;
-            // 优先用槽内 SkillSO；为空时按 skillId 反查（如宝宝双技能仅填了 skillId）
+            // 优先用槽内 SkillSO；为空时按 skillId 反查（如小熊双技能仅填了 skillId）
             var so = slot.skill ?? ((!string.IsNullOrEmpty(slot.skillId)) ? SkillSO.FindById(slot.skillId) : null);
             rt.Setup(inst, marker, spawner, oppCombo, side, fever, so, slot.cooldown, slot.NeedsEnergy, seq, si);
         }
@@ -144,7 +144,7 @@ public class CharacterBattleSystem : MonoBehaviour
             else
 #endif
             {
-                // 临时默认数据（飞书 1:1：宝宝 + 大狗 + 嘟嘟 + 爱格 + 小黑），让系统可启动
+                // 临时默认数据（飞书 1:1：小熊 + 大狗 + 嘟嘟 + 布姆 + 小黑），让系统可启动
                 allCharacters = BuildDefaultCharacterArray();
                 usedDefault = true;
             }
@@ -207,7 +207,7 @@ public class CharacterBattleSystem : MonoBehaviour
             CombatSumBySide[side] = combat;
         }
 
-        Debug.Log($"[CharacterBattleSystem] 已装载角色：leftMaxHP={MaxHPBySide[0]} L_combat={CombatSumBySide[0]} | rightMaxHP={MaxHPBySide[1]} R_combat={CombatSumBySide[1]} | default={usedDefault} | 双方阵容均为 characterId 1..5（玩家=宝宝，队伍=大狗/嘟嘟/爱格/小黑，镜像布置）");
+        Debug.Log($"[CharacterBattleSystem] 已装载角色：leftMaxHP={MaxHPBySide[0]} L_combat={CombatSumBySide[0]} | rightMaxHP={MaxHPBySide[1]} R_combat={CombatSumBySide[1]} | default={usedDefault} | 双方阵容均为 characterId 1..5（玩家=小熊，队伍=大狗/嘟嘟/布姆/小黑，镜像布置）");
         // 注：AutoFillMarkers 放到 Start 执行，避免 Awake 太早拿不到 NoteSpawner。
     }
 
@@ -293,8 +293,9 @@ public class CharacterBattleSystem : MonoBehaviour
 
         CharacterClass c = m.IsPlayer ? CharacterRoster.GetPlayer(m.side) : CharacterRoster.GetTeam(m.side, m.laneIndex);
         Color col = (c != null) ? c.blockColor : Color.yellow;
-        var rend = m.GetComponent<Renderer>();
-        if (rend != null) rend.material.color = col;
+        // 美术接入：注入角色外观预制体（空=维持原 cube）。多网格模型由 CharacterCubeMarker 统一上色。
+        if (c != null && c.modelPrefab != null) m.SetModelPrefab(c.modelPrefab);
+        m.ColorAll(col);
     }
 
     /// <summary>给场景内所有 CharacterCubeMarker 重新上色（MS Debug 一键可用）。</summary>
@@ -303,7 +304,7 @@ public class CharacterBattleSystem : MonoBehaviour
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
         int n = 0;
         foreach (var m in markers) { ColorMarker(m); n++; }
-        Debug.Log($"[CharacterBattleSystem] 已按角色身份色上色 x {n} 个方块（宝宝灰 / 大狗橙 / 嘟嘟绿 / 爱格白 / 小黑黑）");
+        Debug.Log($"[CharacterBattleSystem] 已按角色身份色上色 x {n} 个方块（小熊灰 / 大狗橙 / 嘟嘟绿 / 布姆白 / 小黑黑）");
     }
 
 #if UNITY_EDITOR
