@@ -20,6 +20,7 @@ public class LaneIndicator : MonoBehaviour
     private bool isFlashing = false;
     private bool isHeld = false;            // 当前是否处于"按住保持亮"状态
     private Vector3 baseScale;
+    private bool sleeping = false;   // 沉睡中：变黑且无法发光（由 SleepController 调用 SetSleep）
 
     void Start()
     {
@@ -55,7 +56,7 @@ public class LaneIndicator : MonoBehaviour
     /// <summary>点按瞬间闪烁（保留原行为）。</summary>
     public void Flash()
     {
-        if (targetRenderer == null) return;
+        if (targetRenderer == null || sleeping) return;
 
         timer = flashDuration;
         isFlashing = true;
@@ -68,7 +69,7 @@ public class LaneIndicator : MonoBehaviour
     /// <summary>按住保持亮 / 松开灭。点按与长按都适用：按下亮、松开灭，长按期间持续亮。</summary>
     public void Hold(bool on)
     {
-        if (targetRenderer == null) return;
+        if (targetRenderer == null || sleeping) return;
 
         isHeld = on;
         if (on)
@@ -107,5 +108,24 @@ public class LaneIndicator : MonoBehaviour
 
         if (idleMaterial != null)
             targetRenderer.material = idleMaterial;
+    }
+
+    /// <summary>沉睡：提示灯变黑且无法发光（按下/长按均无效）。由 SleepController 在沉睡时调用。</summary>
+    public void SetSleep(bool on)
+    {
+        if (targetRenderer == null) return;
+        sleeping = on;
+        if (on)
+        {
+            isFlashing = false;
+            isHeld = false;
+            transform.localScale = baseScale;
+            if (idleMaterial != null) targetRenderer.material = idleMaterial;
+            targetRenderer.material.color = Color.black;   // 变黑色，且因 sleeping 守卫无法再发光
+        }
+        else
+        {
+            if (idleMaterial != null) targetRenderer.material = idleMaterial;
+        }
     }
 }

@@ -52,6 +52,8 @@ public class CharacterCubeMarker : MonoBehaviour
     private Coroutine jumpCo;
     private Color sleepBaseColor = Color.white;
     private bool sleepVisualOn = false;
+    [Tooltip("沉睡时方块缩放（相对 baseScale）；睡眠异常(表现)时角色方块变小")]
+    public float sleepShrinkScale = 0.6f;
 
     /// <summary>按 (side, lane) 索引的全局角色标记表，供普通命中时按音轨查找对应角色跳跃。</summary>
     private static System.Collections.Generic.Dictionary<int, CharacterCubeMarker> Registry = new System.Collections.Generic.Dictionary<int, CharacterCubeMarker>();
@@ -174,7 +176,7 @@ public class CharacterCubeMarker : MonoBehaviour
             transform.localScale = Vector3.Lerp(from, baseScale, k);
             yield return null;
         }
-        transform.localScale = baseScale;
+        transform.localScale = sleepVisualOn ? baseScale * sleepShrinkScale : baseScale;
         SetEmission(Color.black);
         glowCo = null;
     }
@@ -240,15 +242,19 @@ public class CharacterCubeMarker : MonoBehaviour
         if (rend == null || rend.material == null) return;
         if (on)
         {
+            if (glowCo != null) StopCoroutine(glowCo);
             sleepBaseColor = rend.material.color;
-            rend.material.color = Color.grey;
-            SetEmission(Color.black);   // 黑灯
+            rend.material.color = new Color(0.35f, 0.35f, 0.35f); // 灰：沉睡
+            SetEmission(Color.black);                              // 黑灯
+            transform.localScale = baseScale * sleepShrinkScale;   // 变小
             sleepVisualOn = true;
         }
         else if (sleepVisualOn)
         {
+            if (glowCo != null) StopCoroutine(glowCo);
             rend.material.color = sleepBaseColor;
             SetEmission(Color.black);
+            transform.localScale = baseScale;                      // 恢复
             sleepVisualOn = false;
         }
     }

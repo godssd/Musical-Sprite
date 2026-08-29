@@ -96,12 +96,22 @@ public class SkillMakerWindow : EditorWindow
                     lst = new List<RefInfo>();
                     _refCache[slot.skillId] = lst;
                 }
+                // 类型判定严格按角色文档规则（CharacterDataSO.IsPassive）：
+                //   技能冷却 / 能量需求 / 输入方式 三者全空 → 被动；否则为主动。
+                //   主动且能量需求=无/0 → 无能量主动技能（如全体防御/全体进攻：有输入+有冷却，无能量流程）。
+                // 注意：不能把"无能量"当成"被动"——这正是此前标记错的根因。
+                string type = slot.IsPassive ? "被动技能"
+                    : (slot.energyCost <= 0 ? "主动技能（无能量）" : "主动技能（能量门槛 " + slot.energyCost + "）");
                 lst.Add(new RefInfo
                 {
                     holder = cso.displayName + (cso.isPlayer ? "（玩家）" : "（队伍 L" + cso.laneIndex + "）"),
-                    energy = slot.energyCost <= 0 ? "无（被动/玩家）" : slot.energyCost.ToString(),
-                    cooldown = slot.cooldown > 0f ? slot.cooldown + " s" : "无冷却",
-                    input = string.IsNullOrWhiteSpace(slot.inputMethod) ? "（无 / 被动）" : slot.inputMethod,
+                    type = type,
+                    energy = slot.IsPassive ? "无（被动）"
+                        : (slot.energyCost <= 0 ? "无（主动·无能量）" : slot.energyCost + " 能量"),
+                    cooldown = slot.cooldown > 0f ? slot.cooldown + " s"
+                        : (slot.IsPassive ? "无冷却（被动）" : "无冷却"),
+                    input = slot.IsPassive ? "（无 / 被动）"
+                        : (string.IsNullOrWhiteSpace(slot.inputMethod) ? "（无输入）" : slot.inputMethod),
                     intro = slot.description,
                     overheat = slot.overheatDesc,
                     super = slot.superOverheatDesc,
@@ -115,6 +125,7 @@ public class SkillMakerWindow : EditorWindow
     private class RefInfo
     {
         public string holder;
+        public string type;
         public string energy;
         public string cooldown;
         public string input;
@@ -211,6 +222,7 @@ public class SkillMakerWindow : EditorWindow
             {
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUILayout.LabelField("  持有人", r.holder);
+                EditorGUILayout.LabelField("    技能类型", r.type);
                 EditorGUILayout.LabelField("    能量需求", r.energy);
                 EditorGUILayout.LabelField("    技能冷却", r.cooldown);
                 EditorGUILayout.LabelField("    输入方式", r.input);

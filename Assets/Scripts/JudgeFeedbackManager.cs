@@ -38,11 +38,11 @@ public class JudgeFeedbackManager : MonoBehaviour
                 color = goodColor;
                 break;
             case "CLEAR":
-                prefab = null;
+                prefab = perfectPrefab;   // 复用可见预制体（CLEAR/PASS 此前走运行时模板，根缩放 0.01 导致几乎不可见）
                 color = clearColor;
                 break;
             case "PASS":
-                prefab = null;
+                prefab = perfectPrefab;   // 复用可见预制体（文字/颜色在下方按 rank 覆盖）
                 color = passColor;
                 break;
             case "MISS":

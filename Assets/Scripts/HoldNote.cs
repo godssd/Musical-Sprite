@@ -85,6 +85,16 @@ public class HoldNote : MonoBehaviour
     public float GetNodeTime(int index) => times[index];
     public int GetNodeLane(int index) => lanes[index];
 
+    /// <summary>取节点 index 当前的实时世界坐标（随音符移动）。
+    /// 用于清屏反馈在"每个节点自身所在位置"弹出评价，而非统一堆在判定线（头部区域）。
+    /// 兜底：节点变换尚未就绪时回退到判定线处 hitPositions。</summary>
+    public Vector3 GetNodePosition(int index)
+    {
+        if (nodeTransforms != null && index >= 0 && index < nodeTransforms.Count && nodeTransforms[index] != null)
+            return nodeTransforms[index].position;
+        return (hitPositions != null && index >= 0 && index < hitPositions.Length) ? hitPositions[index] : Vector3.zero;
+    }
+
     public bool CanCharmNode(int index, float songTime)
     {
         if (index < 0 || index >= NodeCount || state == HoldState.Done) return false;
@@ -511,8 +521,9 @@ public class HoldNote : MonoBehaviour
         }
         else
         {
-            // 收尾：音符继续按原速度移动，用判定线 judgeLineX 作为固定的消失边界
-            if (fadeTimer <= 0f)
+            // 收尾：音符继续按原速度移动，用判定线 judgeLineX 作为固定的消失边界。
+            // 清屏消灭（skillCleared）走命中反馈（白 + 放大 + 淡出），不要再重置成黑色。
+            if (fadeTimer <= 0f && !skillCleared)
             {
                 ResetAllToBlack();
             }
@@ -865,20 +876,31 @@ public class HoldNote : MonoBehaviour
         }
         if (!anyInBand) return;
 
-        // 逐节点：变白弹跳 + 按轨计分/连击/充能 + 结算附魔名额
-        for (int i = 0; i < NodeCount; i++)
+        // 整条长按被清屏消灭：必须按"整条音符的全部段"计分/连击/充能（与玩家手动完成一致），
+        // 而非仅带区内已显现的节点——否则整条被消灭却只拿到部分分数/能量/连击。
+        // 头节点视为最佳命中 PERFECT（仅当尚未被手动起手命中）；其后各段 CLEAR；
+        // 已手动完成的段（completedSegments 之前）不再重复记账。
+        if (completedSegments == 0)
         {
-            if (!IsNodeRevealed(i)) continue;
-            float x = (hitPositions != null && i < hitPositions.Length) ? hitPositions[i].x : 0f;
-            if (x < xMin || x > xMax) continue;
-            PlayHitPop(i);                      // 节点变白 + 放大弹跳
-            caster.OnSkillClearedNode(this, i); // 按节点音轨 lane 统一管线计分/连击/充能 + 弹 PERFECT
-            ResolveCharmedNode(i, true);        // 若该节点被附魔，按成功结算（无附魔则为空操作）
+            bool headVis = IsNodeRevealed(0) && (hitPositions == null || (hitPositions[0].x >= xMin && hitPositions[0].x <= xMax));
+            if (headVis) PlayHitPop(0);
+            caster.OnSkillClearedNode(this, 0, "PERFECT");
+            ResolveCharmedNode(0, true);
+        }
+        for (int i = completedSegments + 1; i < NodeCount; i++)
+        {
+            bool vis = IsNodeRevealed(i) && (hitPositions == null || (hitPositions[i].x >= xMin && hitPositions[i].x <= xMax));
+            if (vis) PlayHitPop(i);
+            caster.OnSkillClearedNode(this, i, "CLEAR");
+            ResolveCharmedNode(i, true);
         }
 
-        // 进入完成淡出：整条连接线在判定线处逐段变大变白消失（沿用 Complete 的完成表现）
+        // 进入完成淡出：整条连接线 + 全部节点原地变白放大消失（命中反馈，与玩家手动完成一致）。
+        // 整条所有节点都做命中弹跳（变白 + 放大），完成态段全白。
+        for (int i = 0; i < nodeCount; i++) PlayHitPop(i);
+        completedSegments = NodeCount - 1;
         hasLit = true;
-        skillCleared = true;   // 标记：连接线应原地变白放大消失，而非漏击黑消失
+        skillCleared = true;   // 标记：连接线/节点应原地变白放大消失，而非漏击黑消失
         Complete();
     }
 

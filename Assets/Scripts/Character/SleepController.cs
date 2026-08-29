@@ -86,10 +86,22 @@ public class SleepController : MonoBehaviour
 
     private void ApplySleepVisual(int side, bool on)
     {
+        // 角色方块：同一侧所有角色（含玩家自身 cube）变灰 + 缩小 + 黑灯
         for (int lane = -1; lane < 4; lane++)
         {
             var m = (lane < 0) ? CharacterCubeMarker.GetAt(side, -1) : CharacterCubeMarker.GetAt(side, lane);
             if (m != null) m.ApplySleepVisual(on);
+        }
+        // 提示灯：该侧全部 4 条音轨指示灯变黑且无法发光（睡眠异常(表现)时）
+        var bvc = FindFirstObjectByType<BattleVisualsController>();
+        if (bvc != null && bvc.indicators != null)
+        {
+            for (int lane = 0; lane < 4; lane++)
+            {
+                int idx = side * 4 + lane;
+                if (idx >= 0 && idx < bvc.indicators.Length && bvc.indicators[idx] != null)
+                    bvc.indicators[idx].SetSleep(on);
+            }
         }
     }
 }

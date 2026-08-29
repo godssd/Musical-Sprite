@@ -10,9 +10,11 @@ using System.IO;
     ///
     /// 在 Assets/Resources/Skills/ 生成 SkillSO 资源：
     ///   dog_howl（大狗叫）/ dudu_heal（美味牛角包）/ aige_bomb（炸弹雨）
-    ///   / xiaohei_clear（断弦高压）/ baby_defense_buff（全体防御）/ baby_offense_buff（全体进攻）
-    ///   / xiaohei_dispel（小黑驱散）。
+    ///   / xiaohei_clear（断弦高压）/ baby_defense_buff（全体防御）/ baby_offense_buff（全体进攻）。
     ///   （baby_damage_reduce 已移除：它本是玩家减伤被动，不进技能库。）
+    ///   （xiaohei_dispel 已移除：目前没有技能引用驱散效果，故不建库条目；仅保留 Dispel 效果代码——
+    ///    SleepController.Dispel + ActiveSkillRuntime.DispelControl / effectType "Dispel" 作为预留词汇，
+    ///    待有技能接入时再建对应库条目即可。）
     ///
     /// 必须放在 Assets/Resources/ 下，是因为运行时 SkillSO.RebuildIndex() 走
     /// Resources.LoadAll<SkillSO>("Skills")，否则游戏打包后 SkillSO.FindById() 会查不到。
@@ -112,13 +114,6 @@ public static class SkillLibraryGenerator
             0f, new SkillInputStep[0],
             0, 0, "Buff", "{}", dir,
             buffSlot: BuffSlot.A, buffSubType: BuffSubType.Offense, buffCombatMult: 1.4f, buffDamageReduce: 0f, buffDuration: 10f);
-
-        // 驱散（类附魔模块）：附魔 N 个本侧 incoming 音符，每成功结算一个即清除本侧持续性控制效果（当前=沉睡）。
-        created += Make("xiaohei_dispel", "小黑驱散",
-            "（7）将接下来若干音符附魔，每成功命中一个即驱散本侧持续性控制效果（解除沉睡）；附魔式释放，消耗能量后按命中结算",
-            200f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Up, SkillInputStep.Right },   // LUR → ←↑→
-            4, 3, "Dispel", "{}", dir,
-            enchantTarget: EnchantTarget.Self);
 
         if (!silent)
             AssetDatabase.SaveAssets();

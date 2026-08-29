@@ -163,7 +163,7 @@ public class DefenseAuraFx : MonoBehaviour
 }
 
 /// <summary>
-/// 进攻 buff 的视觉：队伍周围 8 个淡红色气流方块绕中心旋转（公转）+ 自身小幅翻转。
+/// 进攻 buff 的视觉：队伍周围 8 个橙黄色气流方块绕中心旋转（公转）+ 自身小幅翻转。
 /// 由 BuffController 在施放 a 进攻时 spawn。
 /// </summary>
 public class OffenseAuraFx : MonoBehaviour
@@ -185,7 +185,7 @@ public class OffenseAuraFx : MonoBehaviour
             go.transform.SetParent(transform, false);
             var col = go.GetComponent<Collider>(); if (col != null) Destroy(col);
             var r = go.GetComponent<Renderer>();
-            r.material = AuraMat.Create(new Color(0.85f, 0.05f, 0.05f, 0.85f), new Color(1f, 0.1f, 0.1f) * 2.0f, 0.85f);
+            r.material = AuraMat.Create(new Color(1f, 0.6f, 0.08f, 0.9f), new Color(1f, 0.55f, 0.08f) * 2.0f, 0.9f);
             nodes[i] = go.transform;
             mats[i] = r.material;
             nodes[i].localScale = new Vector3(0.4f, 0.4f, 0.4f);

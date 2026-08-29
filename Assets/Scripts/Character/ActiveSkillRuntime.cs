@@ -419,18 +419,19 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (jfm != null) jfm.ShowFeedback(note.side, note.lane, noteRank, note.transform.position, note);
     }
 
-    /// <summary>清屏清除一个长按节点：按节点音轨 lane 视为命中（计分/连击/充能）+ 弹 PERFECT 评价。</summary>
-    public void OnSkillClearedNode(HoldNote hn, int nodeIndex)
+    /// <summary>清屏清除一个长按节点：按节点音轨 lane 视为命中（计分/连击/充能）。
+    /// 评价由调用方传入：头节点 PERFECT（最佳命中）、其余段 CLEAR（与玩家手动完成长按每段一致）。</summary>
+    public void OnSkillClearedNode(HoldNote hn, int nodeIndex, string rank = "CLEAR")
     {
         if (hn == null) return;
         int lane = (hn.NodeCount > 0) ? hn.GetNodeLane(nodeIndex) : hn.side;
-        Vector3 pos = (hn.hitPositions != null && nodeIndex < hn.hitPositions.Length)
-            ? hn.hitPositions[nodeIndex] : hn.transform.position;
+        // 用节点实时世界坐标作为反馈/结算位置：每个节点弹在各自所在位置（清屏时节点散布在轨道上，
+        // 不再统一堆到判定线头部）。ReportJudge 与 ShowFeedback 共用此 pos。
+        Vector3 pos = hn.GetNodePosition(nodeIndex);
         // 视为命中：按节点音轨 lane 走统一管线计分/连击/充能（对应轨角色）。
-        // 评价统一为 CLEAR（与玩家手动完成长按每段一致）。
-        if (hn.spawner != null) hn.spawner.ReportJudge(ownerSide, lane, "CLEAR", pos, hn);
+        if (hn.spawner != null) hn.spawner.ReportJudge(ownerSide, lane, rank, pos, hn);
         var jfm = FindFirstObjectByType<JudgeFeedbackManager>();
-        if (jfm != null) jfm.ShowFeedback(hn.side, lane, "CLEAR", pos, hn);
+        if (jfm != null) jfm.ShowFeedback(hn.side, lane, rank, pos, hn);
     }
 
     /// <summary>每个被附魔音符「命中成功」时触发一次：按 effectType 分发投弹 / 回血。</summary>
