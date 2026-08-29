@@ -15,6 +15,7 @@ public class CharacterClass
     public int laneIndex;
     public float combatPower;
     public Color blockColor = Color.yellow;
+    public GameObject modelPrefab;   // 美术接入：角色外观预制体（由 CharacterDataSO.modelPrefab 注入；空=占位 cube）
 
     public int maxHP;
     public int currentHP;
@@ -61,6 +62,7 @@ public class CharacterClass
             laneIndex = data.laneIndex,
             combatPower = data.combatPower,
             blockColor = data.blockColor,
+            modelPrefab = data.modelPrefab,
             maxHP = data.maxHP,
             currentHP = data.maxHP,
         };

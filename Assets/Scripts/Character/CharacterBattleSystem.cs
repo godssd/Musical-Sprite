@@ -293,8 +293,9 @@ public class CharacterBattleSystem : MonoBehaviour
 
         CharacterClass c = m.IsPlayer ? CharacterRoster.GetPlayer(m.side) : CharacterRoster.GetTeam(m.side, m.laneIndex);
         Color col = (c != null) ? c.blockColor : Color.yellow;
-        var rend = m.GetComponent<Renderer>();
-        if (rend != null) rend.material.color = col;
+        // 美术接入：注入角色外观预制体（空=维持原 cube）。多网格模型由 CharacterCubeMarker 统一上色。
+        if (c != null && c.modelPrefab != null) m.SetModelPrefab(c.modelPrefab);
+        m.ColorAll(col);
     }
 
     /// <summary>给场景内所有 CharacterCubeMarker 重新上色（MS Debug 一键可用）。</summary>

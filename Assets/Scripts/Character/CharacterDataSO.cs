@@ -72,6 +72,10 @@ public class CharacterDataSO : ScriptableObject
     [Tooltip("代表该角色的方块颜色（身份色：小熊灰 / 大狗橙 / 嘟嘟绿 / 布姆白 / 小黑黑）。场景方块按此色上色；由引导/导入器按 characterId 自动写入")]
     public Color blockColor = new Color(0.62f, 0.62f, 0.62f);
 
+    [Header("外观（美术接入）")]
+    [Tooltip("角色外观预制体（接入美术后填）。非空时 CharacterCubeMarker 会实例化它作为子物体并隐藏默认占位 cube。空 = 维持原 cube 占位（向后兼容，不破坏现有 Demo）")]
+    public GameObject modelPrefab;
+
     [Header("战斗属性（飞书 hp / 战斗力 列）")]
     [Tooltip("仅 isPlayer=false 时有效：0~3 对应四条音轨")]
     public int laneIndex = 0;
