@@ -17,7 +17,7 @@ public class DemoBeatmapGenerator : MonoBehaviour
 {
     public enum Density { Sparse, Medium, Dense }
 
-    private const float Bpm = 128f;
+    internal const float Bpm = 128f;
     private const float LeadIn = 2f;          // 前奏留白（秒），也用于把首个音符推到整拍之后
     private const float Tail = 2f;            // 结尾留白（秒）
 
@@ -56,7 +56,7 @@ public class DemoBeatmapGenerator : MonoBehaviour
         return beatmap;
     }
 
-    private static NoteData[] GenerateBeatmap(int totalBeats, Density density)
+    internal static NoteData[] GenerateBeatmap(int totalBeats, Density density)
     {
         float beatDur = 60f / Bpm;
         float endTime = LeadIn + totalBeats * beatDur;

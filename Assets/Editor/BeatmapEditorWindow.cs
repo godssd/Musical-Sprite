@@ -149,6 +149,7 @@ namespace MusicalSprite.Editor
         private Vector2 libScroll;
         private const string BeatmapsDir = "Assets/Beatmaps";
         private const string ActiveBeatmapKey = "MusicalSprite/ActiveBeatmap";
+        private const string BeatmapNameControl = "BeatmapNameField";
 
         // ---------- 颜色 ----------
         private static readonly Color[] LaneColors = new Color[]
@@ -281,8 +282,16 @@ namespace MusicalSprite.Editor
             EditorGUILayout.LabelField("谱面编辑器（4 音轨 Timeline）", EditorStyles.boldLabel);
 
             EditorGUILayout.BeginHorizontal();
+            GUI.SetNextControlName(BeatmapNameControl);
             beatmapName = EditorGUILayout.TextField("谱面名称", beatmapName, GUILayout.Width(280));
-            float bpmIn = EditorGUILayout.DelayedFloatField("BPM", bpm, GUILayout.Width(120));
+            Rect beatmapNameRect = GUILayoutUtility.GetLastRect();
+            if (Event.current.type == EventType.MouseDown &&
+                !beatmapNameRect.Contains(Event.current.mousePosition) &&
+                GUI.GetNameOfFocusedControl() == BeatmapNameControl)
+                ReleaseBeatmapNameFocus();
+
+            EditorGUILayout.LabelField("BPM", GUILayout.Width(32));
+            float bpmIn = EditorGUILayout.DelayedFloatField(bpm, GUILayout.Width(72));
             if (!Mathf.Approximately(bpmIn, bpm))
             {
                 float oldBpm = bpm;
@@ -291,7 +300,9 @@ namespace MusicalSprite.Editor
                 RescaleChart(oldBpm / bpm);
                 AutoExtendSongLength();
             }
-            float slIn = EditorGUILayout.DelayedFloatField("歌曲长度(秒)", songLength, GUILayout.Width(140));
+            GUILayout.Space(12);
+            EditorGUILayout.LabelField("歌曲长度(秒)", GUILayout.Width(88));
+            float slIn = EditorGUILayout.DelayedFloatField(songLength, GUILayout.Width(80));
             if (!Mathf.Approximately(slIn, songLength))
             {
                 songLength = Mathf.Max(0f, slIn);
@@ -312,10 +323,26 @@ namespace MusicalSprite.Editor
             if (newPoint != pointLinkMode) { pointLinkMode = newPoint; if (pointLinkMode) { linkingMode = false; ResetLinkState(); } }
             placeSmallTapMode = EditorGUILayout.ToggleLeft("小圈点击", placeSmallTapMode, GUILayout.Width(100));
             placeChainTapMode = EditorGUILayout.ToggleLeft("连点音符", placeChainTapMode, GUILayout.Width(90));
-            if (placeChainTapMode)
+            bool selectedChain = selectedIndex >= 0 && selectedIndex < notes.Count &&
+                notes[selectedIndex].type == NoteData.NoteType.ChainTap;
+            int displayedChainCount = selectedChain
+                ? Mathf.Clamp(notes[selectedIndex].chainTapCount, 3, 10)
+                : Mathf.Clamp(chainTapCount, 3, 10);
+            using (new EditorGUI.DisabledScope(!placeChainTapMode && !selectedChain))
             {
-                int inputCount = EditorGUILayout.DelayedIntField("次数", Mathf.Clamp(chainTapCount, 3, 10), GUILayout.Width(110));
-                chainTapCount = Mathf.Clamp(inputCount, 3, 10);
+                EditorGUILayout.LabelField(selectedChain ? "选中次数" : "次数", GUILayout.Width(65));
+                int inputCount = EditorGUILayout.DelayedIntField(displayedChainCount, GUILayout.Width(60));
+                inputCount = Mathf.Clamp(inputCount, 3, 10);
+                if (inputCount != displayedChainCount)
+                {
+                    if (selectedChain)
+                    {
+                        PushUndo();
+                        notes[selectedIndex].chainTapCount = inputCount;
+                    }
+                    chainTapCount = inputCount;
+                    Repaint();
+                }
             }
             EditorGUILayout.EndHorizontal();
 
@@ -332,22 +359,6 @@ namespace MusicalSprite.Editor
             if (GUILayout.Button("0.25x", GUILayout.Width(60))) SetPlaybackSpeed(0.25f);
             EditorGUILayout.LabelField($"当前：{playbackSpeed:F2}x", GUILayout.Width(90));
             EditorGUILayout.EndHorizontal();
-
-            if (selectedIndex >= 0 && selectedIndex < notes.Count && notes[selectedIndex].type == NoteData.NoteType.ChainTap)
-            {
-                EditorGUILayout.BeginHorizontal();
-                int currentCount = Mathf.Clamp(notes[selectedIndex].chainTapCount, 3, 10);
-                int selectedCount = EditorGUILayout.DelayedIntField("选中连点次数", currentCount, GUILayout.Width(220));
-                selectedCount = Mathf.Clamp(selectedCount, 3, 10);
-                if (selectedCount != notes[selectedIndex].chainTapCount)
-                {
-                    PushUndo();
-                    notes[selectedIndex].chainTapCount = selectedCount;
-                    chainTapCount = selectedCount;
-                    Repaint();
-                }
-                EditorGUILayout.EndHorizontal();
-            }
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("新建", GUILayout.Width(60))) NewChart();
@@ -393,6 +404,13 @@ namespace MusicalSprite.Editor
                 "连点音符：勾选「连点音符」后单击生成普通大点击外形的连续点击音符；次数框手动输入 3-10 次，选中后可在上方修改。\n" +
                 "挂上「音乐素材」后点播放可听音校谱（波形图已放大 4 倍）；保存并「调用」后，下一次「搭建完整场景」将同步播放本谱面与音乐。\n" + activeName,
                 MessageType.Info);
+        }
+
+        private static void ReleaseBeatmapNameFocus()
+        {
+            GUI.FocusControl(null);
+            GUIUtility.keyboardControl = 0;
+            EditorGUIUtility.editingTextField = false;
         }
 
         private void DrawTimeline()
@@ -1347,11 +1365,13 @@ namespace MusicalSprite.Editor
             if (noteIndex < 0 || noteIndex >= notes.Count) return;
             var note = notes[noteIndex];
             if (note.holdTimes == null || note.holdTimes.Length < 2) return;
-            // 规整 holdLaneSpans（缺省按 1），保证拆分时连轨属性不丢失
+            // 规整 holdLaneSpans：已记录的节点照旧，缺位按整条音符类型推断。
             if (note.holdLaneSpans == null || note.holdLaneSpans.Length != note.holdTimes.Length)
             {
-                note.holdLaneSpans = new int[note.holdTimes.Length];
-                for (int i = 0; i < note.holdTimes.Length; i++) note.holdLaneSpans[i] = 1;
+                int[] normalizedSpans = new int[note.holdTimes.Length];
+                for (int i = 0; i < normalizedSpans.Length; i++)
+                    normalizedSpans[i] = ResolveLaneSpan(note.type, note.holdLaneSpans, i);
+                note.holdLaneSpans = normalizedSpans;
             }
             int len = note.holdTimes.Length;
             if (segIdx < 0 || segIdx >= len - 1) return;
@@ -1398,11 +1418,16 @@ namespace MusicalSprite.Editor
         /// 节点 k 是否为连轨（2 轨宽）。优先用逐节点 holdLaneSpans；
         /// 未记录时按整条 type 推断（Linked => 全 2 轨），以兼容旧谱面。
         /// </summary>
+        internal static int ResolveLaneSpan(NoteData.NoteType type, int[] spans, int index)
+        {
+            if (spans != null && index >= 0 && index < spans.Length)
+                return spans[index] > 1 ? 2 : 1;
+            return type == NoteData.NoteType.Linked ? 2 : 1;
+        }
+
         private static bool NodeIsLinked(ChartNote n, int k)
         {
-            if (n.holdLaneSpans != null && k >= 0 && k < n.holdLaneSpans.Length)
-                return n.holdLaneSpans[k] > 1;
-            return n.type == NoteData.NoteType.Linked;
+            return ResolveLaneSpan(n.type, n.holdLaneSpans, k) > 1;
         }
 
         private static void DrawRoundedRect(Rect rect, float radius, Color color)
@@ -1498,17 +1523,11 @@ namespace MusicalSprite.Editor
         {
             if (n.holdTimes != null && n.holdTimes.Length >= 2)
             {
-                int[] sp = n.holdLaneSpans;
-                if (sp == null || sp.Length != n.holdTimes.Length)
-                {
-                    sp = new int[n.holdTimes.Length];
-                    for (int i = 0; i < sp.Length; i++) sp[i] = 1;
-                }
                 for (int i = 0; i < n.holdTimes.Length; i++)
                 {
                     times.Add(n.holdTimes[i]);
                     lanes.Add(n.holdLanes[i]);
-                    spans.Add(sp[i]);
+                    spans.Add(ResolveLaneSpan(n.type, n.holdLaneSpans, i));
                 }
             }
             else
@@ -2115,12 +2134,16 @@ namespace MusicalSprite.Editor
         {
             EditorGUILayout.LabelField("谱面仓库", EditorStyles.boldLabel);
 
-            // 快捷：一键生成随机测试谱面并设为当前，方便随时切回随机谱面
-            if (GUILayout.Button("生成随机测试谱面（并调用）", GUILayout.Height(24)))
+            // 只替换当前编辑器内容：不写资产、不覆盖 DemoBeatmap、不改变当前调用谱面。
+            if (GUILayout.Button("生成随机测试谱面（替换当前编辑内容）", GUILayout.Height(24)))
             {
-                DemoBeatmapGenerator.CreateDemoBeatmapWithBeats(120, DemoBeatmapGenerator.Density.Medium);
-                SetActiveBeatmap($"{BeatmapsDir}/DemoBeatmap.asset");
-                ShowNotification(new GUIContent("已生成随机测试谱面并设为当前谱面"));
+                ReleaseBeatmapNameFocus();
+                StopPlayback();
+                bpm = DemoBeatmapGenerator.Bpm;
+                markers = new List<float>();
+                selectedMarker = -1;
+                LoadNotesFromNoteData(DemoBeatmapGenerator.GenerateBeatmap(120, DemoBeatmapGenerator.Density.Medium));
+                ShowNotification(new GUIContent("已替换当前编辑内容（尚未保存、未调用）"));
             }
 
             // 取消调用：清空标记，下次搭建场景回退到 Demo 谱面
@@ -2217,6 +2240,7 @@ namespace MusicalSprite.Editor
 
         private void LoadBeatmap(string path)
         {
+            ReleaseBeatmapNameFocus();
             var bm = AssetDatabase.LoadAssetAtPath<BeatmapSO>(path);
             if (bm == null) return;
             currentEditingPath = path;
@@ -2520,35 +2544,13 @@ namespace MusicalSprite.Editor
             ShowNotification(new GUIContent("已从文本恢复：" + Path.GetFileNameWithoutExtension(assetPath)));
         }
 
-        /// <summary>
-        /// 载入资产后自检：若资产中多节点 Hold 的逐节点宽度不完整，但同目录 .json 备份完整，
-        /// 则提示用户从文本恢复（绝不静默丢数据）。
-        /// </summary>
+        /// <summary>载入资产后对比同名 JSON 镜像；只有两边实际内容不一致才提示恢复。</summary>
         private void VerifyAndMaybeRecoverOnLoad(string assetPath)
         {
-            string jsonPath = GetJsonPath(assetPath);
-            if (!File.Exists(jsonPath)) return;
-
-            // 1) 连轨宽度丢失自检（仅多节点链）
-            bool spanLost = false;
-            foreach (var cn in notes)
-            {
-                if (cn.holdLanes == null || cn.holdLanes.Length < 2) continue; // 仅检查多节点链
-                // 仅检查「长度完整性」：spans 数组存在且与节点数一致即视为正常。
-                // 普通多节点 Hold 的 spans 全为 1（无连轨节点）也是合法状态，不能误判为损坏（修复 2026-08-27 误报弹窗）。
-                bool spanOk = cn.holdLaneSpans != null
-                    && cn.holdLaneSpans.Length == cn.holdLanes.Length;
-                if (!spanOk) { spanLost = true; break; }
-            }
-
-            // 2) 完整镜像自检：BPM、标记以及每个音符的全部序列化字段均必须一致。
             var asset = AssetDatabase.LoadAssetAtPath<BeatmapSO>(assetPath);
-            string damageReason = "";
-            bool contentMismatch = asset != null && TryGetBeatmapDamage(asset, assetPath, out damageReason);
-            if (spanLost && string.IsNullOrEmpty(damageReason)) damageReason = "多节点 Hold 的 holdLaneSpans 不完整";
+            if (asset == null || !TryGetBeatmapDamage(asset, assetPath, out string damageReason)) return;
 
-            if ((spanLost || contentMismatch) &&
-                EditorUtility.DisplayDialog("检测到谱面可能损坏",
+            if (EditorUtility.DisplayDialog("检测到谱面可能损坏",
                     $"资产与同名 JSON 备份不一致：{damageReason}。\n是否从文本备份恢复？",
                     "从文本恢复", "忽略"))
             {
@@ -2558,6 +2560,7 @@ namespace MusicalSprite.Editor
 
         private void NewChart()
         {
+            ReleaseBeatmapNameFocus();
             if (HasUnsavedChanges() &&
                 !EditorUtility.DisplayDialog("新建谱面", "当前谱面尚未保存，确定新建空白谱面？", "新建", "取消"))
             {
@@ -2619,11 +2622,11 @@ namespace MusicalSprite.Editor
                 int newSide0 = newNotes.Count(n => n.side == 0);
                 if (newSide0 < existingSide0 * 0.5f)
                 {
-                    Debug.LogError($"[谱面编辑器] 截断保护触发：本次保存音符数（{newSide0}）远低于现有（{existingSide0}），疑似编辑器缓冲区残缺，已阻止覆盖，谱面未改动。");
-                    EditorUtility.DisplayDialog("保存被阻止",
-                        $"本次保存的音符数（{newSide0}）远低于谱面现有音符数（{existingSide0}），疑似编辑器内部缓冲区残缺导致截断。已阻止覆盖以保护谱面。\n\n建议：检查编辑器内音符是否完整；若确已损坏，可点「从文本恢复」或「编辑」该谱面后从文本恢复。",
-                        "确定");
-                    return;
+                    if (!EditorUtility.DisplayDialog("确认大幅减少音符",
+                        $"本次保存的音符数（{newSide0}）少于现有谱面（{existingSide0}）的一半。\n\n如果这是随机替换或主动删除的结果，可继续覆盖；否则请取消并检查谱面。",
+                        "仍然保存", "取消"))
+                        return;
+                    Debug.LogWarning($"[谱面编辑器] 用户确认大幅减少音符后覆盖：{existingSide0}→{newSide0}");
                 }
             }
 
@@ -2676,19 +2679,10 @@ namespace MusicalSprite.Editor
                         nd1.holdLanes = (int[])lanes.Clone();
                         nd0.holdTimes = (float[])n.holdTimes.Clone();
                         nd1.holdTimes = (float[])n.holdTimes.Clone();
-                        // 逐节点宽度（1=普通，2=连轨），与节点一一对应。
-                        // 修复：绝不再因"长度不符"静默丢弃连轨信息——无条件写出归一化宽度
-                        // （缺位补 1、超出截断；值 >1 即视为连轨宽节点）。
+                        // 逐节点宽度（1=普通，2=连轨）：显式值优先，缺位按 Linked/Hold 类型推断。
                         int[] spans = new int[lanes.Length];
-                        if (n.holdLaneSpans != null)
-                        {
-                            for (int i = 0; i < lanes.Length; i++)
-                                spans[i] = (i < n.holdLaneSpans.Length && n.holdLaneSpans[i] > 1) ? 2 : 1;
-                        }
-                        else
-                        {
-                            for (int i = 0; i < lanes.Length; i++) spans[i] = 1;
-                        }
+                        for (int i = 0; i < lanes.Length; i++)
+                            spans[i] = ResolveLaneSpan(type, n.holdLaneSpans, i);
                         nd0.holdLaneSpans = (int[])spans.Clone();
                         nd1.holdLaneSpans = (int[])spans.Clone();
                     }

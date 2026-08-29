@@ -477,7 +477,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
     {
         // 仅把 MS Debug 参数推到运行实例（ApplyValues 已实时写入 ScoreManager / NoteSpawner / HoldNote / FeverManager.config 等），
         // 不碰谱面、不重启战斗。用户正在调用的谱面与场上音符流保持不变（2026-08-26 Issue 3 修复）。
-        // 需要换谱面请用谱面编辑器的「生成随机测试谱面（并调用）」按钮。
+        // 需要随机内容请用谱面编辑器的「生成随机测试谱面（替换当前编辑内容）」按钮。
         ApplyValues(true);
 
         EditorUtility.DisplayDialog("完成", "调试参数已应用，活跃谱面保持不变。", "确定");
