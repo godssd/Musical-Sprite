@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using MusicalSprite.Editor;
 
 /// <summary>
 /// Musical Sprite 运行时调试工具。
@@ -28,7 +29,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private float leadTime = 2f;
     private float noteRadius = 0.45f;
     private int totalBeats = 120;
-    private DemoBeatmapGenerator.Density density = DemoBeatmapGenerator.Density.Medium;
+    private BeatmapDensity density = BeatmapDensity.Medium;
 
     // 连轨长按判定（滑动手感）
     private float holdSlideSettleWindow = 0.15f;
@@ -95,7 +96,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         leadTime = EditorPrefs.GetFloat(PREFS + "leadTime", leadTime);
         noteRadius = EditorPrefs.GetFloat(PREFS + "noteRadius", noteRadius);
         totalBeats = EditorPrefs.GetInt(PREFS + "totalBeats", totalBeats);
-        density = (DemoBeatmapGenerator.Density)EditorPrefs.GetInt(PREFS + "density", (int)density);
+        density = (BeatmapDensity)EditorPrefs.GetInt(PREFS + "density", (int)density);
         holdSlideSettleWindow = EditorPrefs.GetFloat(PREFS + "holdSlideSettleWindow", holdSlideSettleWindow);
         holdBreakThreshold = EditorPrefs.GetFloat(PREFS + "holdBreakThreshold", holdBreakThreshold);
         holdEarlySlideGrace = EditorPrefs.GetFloat(PREFS + "holdEarlySlideGrace", holdEarlySlideGrace);
@@ -290,7 +291,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         totalBeats = EditorGUILayout.IntField("谱面总拍数", totalBeats);
         EditorGUILayout.HelpBox("谱面时间窗口长度（决定音乐/谱面总时长）。", MessageType.None);
 
-        density = (DemoBeatmapGenerator.Density)EditorGUILayout.EnumPopup("谱面密度", density);
+        density = (BeatmapDensity)EditorGUILayout.EnumPopup("谱面密度", density);
         EditorGUILayout.HelpBox("稀疏=约 35% 拍点有音符，中等=约 60%，密集=约 90%。生成时还会随机混合整拍/半拍/四分音符网格。", MessageType.None);
 
         EditorGUILayout.EndVertical();

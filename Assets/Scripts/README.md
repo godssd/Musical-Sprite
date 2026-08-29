@@ -21,23 +21,19 @@
 | `BattleVisualsController.cs` | 乐队/指示灯/连击总控 | `GameManager` |
 | `ScoreManager.cs` | 计分板管理 | `ScoreManager` |
 | `ScoreDisplay.cs` | 单个玩家分数显示 | `ScoreLeft` / `ScoreRight` |
-| `SceneSetupWindow.cs` | 一键搭建场景（编辑器工具） | — |
-| `DemoBeatmapGenerator.cs` | 生成测试谱面（编辑器工具） | — |
+| `DemoBeatmapGenerator.cs` / `SceneSetupWindow.cs` | 已删除（随机谱面功能已并入谱面编辑器；场景改用预置 SampleScene） | — |
 
 ## 二、场景搭建步骤
 
-### 推荐：使用一键搭建工具
+### 场景已预置（无需一键搭建）
+
+`SampleScene.unity` 已包含完整战斗场景（场地、中线、判定线、发射器、音符预制体、AI 对手、乐队阵容、轨道指示灯、连击数、计分板），直接打开即玩，无需再用搭建工具（原 `Setup Demo Scene` 工具已移除）。
 
 1. 打开 Unity，等待脚本编译完成。
-2. 顶部菜单：`Tools > Musical Sprite > Setup Demo Scene`。
-3. 按顺序点击：
-   - **创建材质与文件夹**
-   - **生成测试谱面**
-   - **搭建完整场景**
-4. 工具会自动创建：红蓝场地（面积随中线移动）、中线、判定线、发射器、音符预制体、AI 对手、乐队阵容、轨道指示灯（竖直线）、连击数显示、顶部计分板（左绿右黄），并连好所有引用。
-   - 红方（左）仅用键盘输入（W/D/C/空格），蓝方（右）为联网对手、不创建本地触控区/触摸输入。
-5. 选中 `GameManager`，在 `AudioSource` 里拖入一首 `AudioClip`（可选，没有也能跑）。
-6. 按 Play 测试。
+2. 打开 `SampleScene.unity`（Assets/Scenes）。
+3. 如需重新生成随机测试谱面：菜单 `Tools > Musical Sprite > Beatmap Editor` → 仓库区点「生成随机测试谱面（并调用）」（该功能已从 `DemoBeatmapGenerator` 并入谱面编辑器）。
+4. 选中 `GameManager`，在 `AudioSource` 里拖入一首 `AudioClip`（可选，没有也能跑）。
+5. 按 Play 测试。
 
 ### 手动搭建（可选）
 
