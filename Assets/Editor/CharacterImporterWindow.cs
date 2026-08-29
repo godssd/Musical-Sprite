@@ -257,7 +257,7 @@ public class CharacterImporterWindow : EditorWindow
             so.activeSkill = activeSO;
             so.passiveSkill = (firstPassive != null) ? firstPassive.skill : null;
             so.skills = skills;   // 新多技能槽（能力1~能力5）
-            so.blockColor = CharacterPalette.GetColor(id); // 按 characterId 自动上身份色（宝宝灰/大狗橙/嘟嘟绿/爱格白/小黑黑）
+            so.blockColor = CharacterPalette.GetColor(id); // 按 characterId 自动上身份色（小熊灰/大狗橙/嘟嘟绿/布姆白/小黑黑）
 
             if (isNew) { AssetDatabase.CreateAsset(so, path); created++; }
             else { EditorUtility.SetDirty(so); updated++; }

@@ -362,7 +362,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             if (b != null) b.AutoFillMarkers();
             else Debug.LogWarning("[MS Debug] 未找到 CharacterBattleSystem；先进入 Play 模式或重启 GameManager。");
         }
-        if (GUILayout.Button("按角色身份色重新上色所有方块（宝宝灰/大狗橙/嘟嘟绿/爱格白/小黑黑）"))
+        if (GUILayout.Button("按角色身份色重新上色所有方块（小熊灰/大狗橙/嘟嘟绿/布姆白/小黑黑）"))
         {
             var b = FindFirstObjectByType<CharacterBattleSystem>();
             if (b != null) b.ColorAllMarkers();

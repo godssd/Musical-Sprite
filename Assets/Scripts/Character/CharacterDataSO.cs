@@ -69,7 +69,7 @@ public class CharacterDataSO : ScriptableObject
     public string profession;
 
     [Header("视觉")]
-    [Tooltip("代表该角色的方块颜色（身份色：宝宝灰 / 大狗橙 / 嘟嘟绿 / 爱格白 / 小黑黑）。场景方块按此色上色；由引导/导入器按 characterId 自动写入")]
+    [Tooltip("代表该角色的方块颜色（身份色：小熊灰 / 大狗橙 / 嘟嘟绿 / 布姆白 / 小黑黑）。场景方块按此色上色；由引导/导入器按 characterId 自动写入")]
     public Color blockColor = new Color(0.62f, 0.62f, 0.62f);
 
     [Header("战斗属性（飞书 hp / 战斗力 列）")]

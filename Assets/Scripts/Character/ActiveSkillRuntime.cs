@@ -138,7 +138,7 @@ public class ActiveSkillRuntime : MonoBehaviour
 
         // a/b 双槽 buff 分流：
         //   - 清屏（ClearScreen）：直接清除范围内音符 + 敌方沉睡 + 激活自身 b 类 buff（小黑个人战力）。
-        //   - 纯 buff（无附魔的 a/b 类技能，如宝宝双技能）：直接施加 buff 后收尾。
+        //   - 纯 buff（无附魔的 a/b 类技能，如小熊双技能）：直接施加 buff 后收尾。
         //   - 其余（Bomb / Heal / DogHowl 等带附魔）：走常规附魔路径。
         bool isClear = skill != null && skill.effectType == "ClearScreen";
         bool isPureBuff = skill != null && skill.buffSlot != BuffSlot.None && skill.charmedNoteCount <= 0 && !isClear;
@@ -583,7 +583,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         // - 实际降低连击数 = 削减前后差值（已封顶到 0，故对方连击过低时只算真正扣掉的部分）。
         // - 队伍战斗力总和 = 释放方所在队伍（ownerSide）的 combatSum。
         // - 系数 comboHpDamageRate 默认 0.01（= 战斗力总和的 1%，对应"战斗力总和%"），可在 Inspector / 技能库调参面板调整。
-        // 仅 effectType == "DogHowl" 生效，不影响玩家自身技能（宝宝）。
+        // 仅 effectType == "DogHowl" 生效，不影响玩家自身技能（小熊）。
         if (skill != null && skill.effectType == "DogHowl" && skill.comboHpDamageRate > 0f && actualReduced > 0)
         {
             if (_scoreMgr == null) _scoreMgr = FindFirstObjectByType<ScoreManager>();
