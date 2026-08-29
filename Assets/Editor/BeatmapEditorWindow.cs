@@ -20,6 +20,13 @@ namespace MusicalSprite.Editor
     /// - 每个谱面存成一个 BeatmapSO 资产（含音符与音乐素材），放在 Assets/Beatmaps/ 下，可纳入 git 仓库。
     /// - 仓库列表支持：编辑（载入本编辑器）、调用（设为游戏启动谱面）、删除（从仓库移除）。
     /// </summary>
+
+    /// <summary>
+    /// 谱面密度：稀疏 ≈35% / 中等 ≈60% / 密集 ≈90%。
+    /// 作为命名空间顶级枚举，供 Debug 工具与谱面编辑器共享。
+    /// </summary>
+    public enum BeatmapDensity { Sparse, Medium, Dense }
+
     public class BeatmapEditorWindow : EditorWindow
     {
         // ---------- 谱面数据（编辑器内部，单边 4 轨） ----------
@@ -2734,7 +2741,8 @@ namespace MusicalSprite.Editor
         // 节奏约束：BPM 固定 128，音符时刻吸附到整拍；密度三档决定填充比例；
         // 左右玩家谱面完全相同（同一份 time/lane 同时写入 side=0 与 side=1）。
         // ===================================================================
-        public enum BeatmapDensity { Sparse, Medium, Dense }
+        // 注：BeatmapDensity 是 MusicalSprite.Editor 命名空间顶级枚举（本文件顶部已声明），
+        // 此处不再嵌套定义，避免外部工具（如 MusicalSpriteDebugWindow）引用时找不到类型。
 
         private const float DemoBpm = 128f;
         private const float DemoLeadIn = 2f;     // 前奏留白（秒），用于把首个音符推到整拍之后
