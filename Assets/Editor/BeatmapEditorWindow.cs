@@ -2146,10 +2146,10 @@ namespace MusicalSprite.Editor
             {
                 ReleaseBeatmapNameFocus();
                 StopPlayback();
-                bpm = DemoBeatmapGenerator.Bpm;
+                bpm = DemoBpm;
                 markers = new List<float>();
                 selectedMarker = -1;
-                LoadNotesFromNoteData(DemoBeatmapGenerator.GenerateBeatmap(120, DemoBeatmapGenerator.Density.Medium));
+                LoadNotesFromNoteData(GenerateDemoBeatmap(120, BeatmapDensity.Medium));
                 ShowNotification(new GUIContent("已替换当前编辑内容（尚未保存、未调用）"));
             }
 
