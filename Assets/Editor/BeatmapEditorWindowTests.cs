@@ -61,6 +61,23 @@ namespace MusicalSprite.Editor
             AssertMismatch(json, dump => dump.notes = new[] { dump.notes[0], dump.notes[0] });
         }
 
+        [Test]
+        public void MatchingLegacyNullLaneSpansAreValid()
+        {
+            asset.notes[0].holdLaneSpans = null;
+            string json = JsonUtility.ToJson(new Dump { bpm = asset.bpm, notes = asset.notes, markers = asset.markers });
+            Assert.That(BeatmapEditorWindow.IsBeatmapTextConsistent(asset, json, out _), Is.True);
+        }
+
+        [Test]
+        public void MissingLinkedLaneSpansStayTwoLaneDuringEditorConversions()
+        {
+            Assert.That(BeatmapEditorWindow.ResolveLaneSpan(NoteData.NoteType.Linked, null, 0), Is.EqualTo(2));
+            Assert.That(BeatmapEditorWindow.ResolveLaneSpan(NoteData.NoteType.Linked, new[] { 1 }, 1), Is.EqualTo(2));
+            Assert.That(BeatmapEditorWindow.ResolveLaneSpan(NoteData.NoteType.Hold, null, 0), Is.EqualTo(1));
+            Assert.That(BeatmapEditorWindow.ResolveLaneSpan(NoteData.NoteType.Linked, new[] { 1 }, 0), Is.EqualTo(1));
+        }
+
         private void AssertMismatch(string sourceJson, System.Action<Dump> mutate)
         {
             var dump = JsonUtility.FromJson<Dump>(sourceJson);
