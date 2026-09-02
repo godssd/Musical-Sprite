@@ -91,6 +91,75 @@ public static class HPBarLiquidSetup
         EditorSceneManager.SaveOpenScenes();
 
         Debug.Log($"[HPBarLiquidSetup] 完成，共处理 {count} 条血条。");
+        RunSelfCheck();
+    }
+
+    /// <summary>
+    /// 自检清单（回归保护）：把"是否生效"变成可查的 PASS/FAIL，不靠肉眼对比旧图。
+    /// 也可通过菜单 Tools → Musical-Sprite → Check HP Bars 单独运行。
+    /// </summary>
+    [MenuItem("Tools/Musical-Sprite/Check HP Bars")]
+    public static void RunSelfCheck()
+    {
+        HPBarLiquid[] liquids = Object.FindObjectsByType<HPBarLiquid>(FindObjectsSortMode.None);
+        if (liquids.Length == 0)
+        {
+            Debug.LogWarning("[HPBarLiquidSetup][自检] 场景里没有 HPBarLiquid，跳过。");
+            return;
+        }
+
+        Debug.Log("════════ HP Bar 自检报告 ════════");
+        bool allPass = true;
+
+        foreach (HPBarLiquid bar in liquids)
+        {
+            Transform root = bar.transform;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append($"[{bar.name}]  ");
+
+            bool pass = true;
+
+            // 1. 旧 Border 残留（方形黑底来源）
+            bool hasBorder = root.Find("Border") != null;
+            pass &= !hasBorder;
+            sb.Append(hasBorder ? "❌Border残留 " : "✅无Border ");
+
+            // 2. 必需节点齐全
+            bool hasGhost = root.Find("Ghost") != null;
+            bool hasFlash = root.Find("FlashOverlay") != null;
+            bool hasFill = root.Find("Fill") != null;
+            bool hasFrame = root.Find("Frame") != null;
+            bool hasBg = root.Find("Background") != null;
+            pass &= hasGhost && hasFlash && hasFill && hasFrame && hasBg;
+            sb.Append(hasGhost ? "✅Ghost " : "❌Ghost缺 ");
+            sb.Append(hasFlash ? "✅Flash " : "❌Flash缺 ");
+            sb.Append(hasFill ? "✅Fill " : "❌Fill缺 ");
+            sb.Append(hasFrame ? "✅Frame " : "❌Frame缺 ");
+
+            // 3. 素材已转 Sprite（Fill 有 sprite 且不是 Default 类型）
+            Image fillImg = bar.fillImage != null ? bar.fillImage : root.Find("Fill")?.GetComponent<Image>();
+            bool fillSpriteOK = fillImg != null && fillImg.sprite != null && fillImg.sprite.texture != null;
+            pass &= fillSpriteOK;
+            sb.Append(fillSpriteOK ? "✅Fill贴图 " : "❌Fill贴图缺 ");
+
+            // 4. 数字组件在（图片或 Text 至少一个）
+            bool hasNumber = bar.GetComponentInChildren<HPNumberSprite>() != null ||
+                             bar.GetComponentInChildren<Text>() != null;
+            pass &= hasNumber;
+            sb.Append(hasNumber ? "✅数字 " : "❌数字缺 ");
+
+            // 5. Ghost / Flash 引用已接好
+            bool refsOK = bar.ghostImage != null && bar.flashImage != null;
+            pass &= refsOK;
+            sb.Append(refsOK ? "✅引用 " : "❌引用缺 ");
+
+            allPass &= pass;
+            Debug.Log(sb.ToString() + (pass ? "→ PASS" : "→ FAIL"));
+        }
+
+        Debug.Log(allPass
+            ? "════════ 自检全部 PASS ✅ ════════"
+            : "════════ 自检存在 FAIL ❌，请根据上述明细修复 ════════");
     }
 
     /// <summary>把旧组件换成新组件。</summary>
@@ -119,6 +188,8 @@ public static class HPBarLiquidSetup
         liquid.scoreManager = scoreManager;
         liquid.fillImage = fillImg;
         liquid.hpText = hpText;
+        liquid.ghostImage = root.transform.Find("Ghost")?.GetComponent<Image>();
+        liquid.flashImage = root.transform.Find("FlashOverlay")?.GetComponent<Image>();
 
         ApplySideColors(liquid);
         liquid.hpNumberSprite = TrySetupHPNumberSprite(root.transform);
@@ -143,6 +214,8 @@ public static class HPBarLiquidSetup
         liquid.fillImage = fillImg;
         if (liquid.hpText == null)
             liquid.hpText = resolvedText;
+        liquid.ghostImage = root.transform.Find("Ghost")?.GetComponent<Image>();
+        liquid.flashImage = root.transform.Find("FlashOverlay")?.GetComponent<Image>();
 
         ApplySideColors(liquid);
         liquid.hpNumberSprite = TrySetupHPNumberSprite(root.transform);
@@ -216,6 +289,7 @@ public static class HPBarLiquidSetup
             mat.SetFloat("_SloshSpeed", 7f);
             mat.SetFloat("_WaveFreq", liquid.waveFreq);
             mat.SetFloat("_WaveSpeed", liquid.waveSpeed);
+            mat.SetFloat("_RippleScale", liquid.rippleScale);
             mat.SetFloat("_AmbientWave", liquid.ambientWave);
             mat.SetFloat("_EdgeSoftness", liquid.edgeSoftness);
             mat.SetFloat("_CrestWidth", liquid.crestWidth);
@@ -231,6 +305,53 @@ public static class HPBarLiquidSetup
             mat.SetFloat("_BlobSoftness", 0.22f);
             EditorUtility.SetDirty(mat);
         }
+
+        // 同步 Ghost（黄色残影）材质：镜像方向与阵营一致，并关掉一切会破坏"平涂"的参数
+        string gpath = $"{MaterialDir}/M_HPBarLiquid_{liquid.gameObject.name}_Ghost.mat";
+        Material gmat = AssetDatabase.LoadAssetAtPath<Material>(gpath);
+        if (gmat != null)
+        {
+            gmat.SetFloat("_Flip", liquid.side == 0 ? 0f : 1f);
+            gmat.SetFloat("_AmbientWave", 0f);
+            gmat.SetFloat("_RippleScale", 0f);
+            gmat.SetFloat("_CrestIntensity", 0f);
+            gmat.SetFloat("_SurfaceGlow", 0f);
+            gmat.SetFloat("_TopGlossIntensity", 0f);
+            gmat.SetFloat("_BlobIntensity", 0f);
+            gmat.SetFloat("_SurfaceDarkenRange", 0f);
+            EditorUtility.SetDirty(gmat);
+        }
+    }
+
+    /// <summary>
+    /// 创建/获取某条血条的 Ghost（黄色残影）材质，并固定为平涂黄（无波纹、无渐变、无高光）。
+    /// </summary>
+    private static Material EnsureGhostMaterial(string rootName, Shader shader, Color ghostColor)
+    {
+        string path = $"{MaterialDir}/M_HPBarLiquid_{rootName}_Ghost.mat";
+        Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null)
+        {
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, path);
+        }
+        else if (mat.shader != shader)
+        {
+            mat.shader = shader;
+        }
+        mat.SetColor("_TopColor", ghostColor);
+        mat.SetColor("_BottomColor", ghostColor);
+        mat.SetColor("_SurfaceDarken", ghostColor);
+        mat.SetFloat("_SurfaceDarkenRange", 0f);
+        mat.SetFloat("_CrestIntensity", 0f);
+        mat.SetFloat("_SurfaceGlow", 0f);
+        mat.SetFloat("_TopGlossIntensity", 0f);
+        mat.SetFloat("_BlobIntensity", 0f);
+        mat.SetFloat("_AmbientWave", 0f);
+        mat.SetFloat("_RippleScale", 0f);
+        mat.SetFloat("_Fill", 0f);
+        EditorUtility.SetDirty(mat);
+        return mat;
     }
 
     /// <summary>
@@ -338,6 +459,11 @@ public static class HPBarLiquidSetup
         // --- Background：空槽黑底（参考图空槽是纯黑） ---
         Image bgImg = EnsureChildImage(rootT, "Background", containerSprite, Color.black);
 
+        // --- Ghost：黄色残影层（受击时显示被扣除的部分），位于 Background 之上、Fill 之下 ---
+        Image ghostImg = EnsureChildImage(rootT, "Ghost", containerSprite, Color.white);
+        Material ghostMat = EnsureGhostMaterial(rootT.name, shader, new Color(0.937f, 0.624f, 0.153f));
+        ghostImg.material = ghostMat;
+
         // --- Fill：液体层（Shader 控制液面） ---
         Image fillImg = existingFill;
         if (fillImg == null)
@@ -368,16 +494,25 @@ public static class HPBarLiquidSetup
         fillImg.material = mat;
         EditorUtility.SetDirty(mat);
 
+        // --- FlashOverlay：闪白层，位于 Fill 之上、Frame 之下（默认透明） ---
+        // 用纯色矩形（sprite 传 null），靠 alpha 控制透明度。
+        // 不能用黑底容器图：白 tint × 黑底 = 黑，会表现成"闪黑"而非"闪白"。
+        Image flashImg = EnsureChildImage(rootT, "FlashOverlay", null, Color.white);
+        var fc = flashImg.color; fc.a = 0f; flashImg.color = fc;
+
         // --- Frame：手绘白色描边 ---
         Image frameImg = EnsureChildImage(rootT, "Frame", frameSprite, Color.white);
 
-        // 强制层级顺序（从底到顶）：Decoration < Background < Fill < Frame
+        // 强制层级顺序（从底到顶）：
+        // Decoration < Background < Ghost < Fill < FlashOverlay < Frame
         int baseIndex = decoImg != null ? 1 : 0;
         if (decoImg != null)
             decoImg.transform.SetSiblingIndex(0);
-        bgImg.transform.SetSiblingIndex(baseIndex);
-        fillImg.transform.SetSiblingIndex(baseIndex + 1);
-        frameImg.transform.SetSiblingIndex(baseIndex + 2);
+        bgImg.transform.SetSiblingIndex(baseIndex + 0);
+        ghostImg.transform.SetSiblingIndex(baseIndex + 1);
+        fillImg.transform.SetSiblingIndex(baseIndex + 2);
+        flashImg.transform.SetSiblingIndex(baseIndex + 3);
+        frameImg.transform.SetSiblingIndex(baseIndex + 4);
 
         // --- HP 文本（放在最上层） ---
         Transform t = rootT.Find("Text");

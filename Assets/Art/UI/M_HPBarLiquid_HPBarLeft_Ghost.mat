@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarRight
+  m_Name: M_HPBarLiquid_HPBarLeft_Ghost
   m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -29,18 +29,18 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AmbientWave: 0.008
+    - _AmbientWave: 0
     - _BlobFreq: 5.5
     - _BlobIntensity: 0
     - _BlobSoftness: 0.22
     - _BlobThreshold: 0.42
     - _ColorMask: 15
-    - _CrestIntensity: 1
+    - _CrestIntensity: 0
     - _CrestWidth: 0.08
     - _EdgeSoftness: 0.004
-    - _Fill: 1
+    - _Fill: 0
     - _Flip: 0
-    - _RippleScale: 0.15
+    - _RippleScale: 0
     - _SloshFreq: 2.2
     - _SloshSpeed: 7
     - _Stencil: 0
@@ -49,18 +49,18 @@ Material:
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
     - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0.4
+    - _SurfaceGlow: 0
     - _TopGlossIntensity: 0
     - _TopGlossRange: 0.22
     - _UseUIAlphaClip: 0
     - _WaveAmp: 0
-    - _WaveFreq: 12
+    - _WaveFreq: 14
     - _WaveSpeed: 5
     m_Colors:
-    - _BottomColor: {r: 0.05, g: 0.28, b: 1, a: 1}
-    - _CrestColor: {r: 0.45, g: 0.75, b: 1, a: 1}
-    - _SurfaceDarken: {r: 0.05, g: 0.28, b: 1, a: 1}
-    - _TopColor: {r: 0.05, g: 0.28, b: 1, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
+    - _BottomColor: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
+    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopColor: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

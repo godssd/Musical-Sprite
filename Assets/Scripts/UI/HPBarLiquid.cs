@@ -4,23 +4,25 @@ using UnityEngine.UI;
 /// <summary>
 /// 液体血条控制器（配合 Shader "MusicalSprite/UI/HPBarLiquid" 使用）。
 ///
-/// 与旧版 HPBarDisplay 的区别：
-/// 旧版用 RectTransform 锚点缩放来控制宽度，那样会把波纹一起压扁，做不出液体感。
-/// 本脚本让 Fill 保持满尺寸，改由 Shader 的 _Fill 参数决定液面位置，
-/// 波纹才能正常起伏。
-///
-/// 扣血动画：
-///   - 血量下降使用先快后慢的 ease-out 曲线，总时长固定。
-///   - 伤害越大，单位时间内需要移动的距离越大，因此起始速度自然更快。
-///   - 同时触发液面摇晃，摇晃幅度与伤害量挂钩，并先快后慢地衰减至平静。
-///
-/// 层级要求：
+/// 层级要求（从底到顶）：
 ///   HPBarRoot（挂本脚本）
-///     ├── Background  (Image, Sprite = HPBar_Container.png, Color = #000000)
-///     ├── Fill        (Image, Sprite = HPBar_Container.png, Material = M_HPBarLiquid)
-///     └── Frame       (Image, Sprite = HPBar_Frame.png, 放在最上层)
+///     ├── Decoration   (Image, HPBar_decoration.png，深红底边，可选)
+///     ├── Background   (Image, HPBar_Container.png，黑底)
+///     ├── Ghost        (Image, HPBar_Container.png，黄色材质，受击残影)
+///     ├── Fill         (Image, HPBar_Container.png，液体 Shader)
+///     ├── FlashOverlay (Image, HPBar_Container.png，白色，受击闪白)
+///     ├── Frame        (Image, HPBar_Frame.png，白描边)
+///     └── HPNumber/Text
 ///
-/// side：0 = 左玩家（红，液体靠左、右侧是液面）；1 = 右玩家（蓝，镜像，左侧是液面）
+/// 扣血特效（受击瞬间）：
+///   1. 整条血条【闪白 + 放大后快速回弹】（强度随伤害量变化）。
+///   2. 红色 Fill 按先快后慢曲线跌到新 HP。
+///   3. 黄色 Ghost（平涂）先显示"将要扣除的那一段"，保持片刻后快速锐减消失。
+///
+/// 编辑态预览：用 HPBarFxPreviewWindow（Tools → Musical-Sprite → HP Bar FX Preview）
+/// 选中本组件，设起始/目标血量，点"播放扣血"即可在 Scene 视图看到完整序列，无需进 Play。
+///
+/// side：0 = 左玩家（红，液体靠左）；1 = 右玩家（蓝，镜像）。
 /// </summary>
 public class HPBarLiquid : MonoBehaviour
 {
@@ -31,6 +33,10 @@ public class HPBarLiquid : MonoBehaviour
     [Header("引用")]
     public ScoreManager scoreManager;
     public Image fillImage;
+    [Tooltip("黄色残影层（受击时显示被扣除的部分），由 Setup 自动创建")]
+    public Image ghostImage;
+    [Tooltip("闪白层，由 Setup 自动创建")]
+    public Image flashImage;
     public Text hpText;
     [Tooltip("可选：用图片拼出手绘风 HP 数字。留空则继续用上面的 Text 显示。")]
     public HPNumberSprite hpNumberSprite;
@@ -49,18 +55,18 @@ public class HPBarLiquid : MonoBehaviour
     [Tooltip("缓动指数，越大开头越快、结尾越慢（建议 2~4）")]
     public float fillEasePower = 3f;
 
-    [Header("摇晃（扣血时触发）")]
+    [Header("摇晃（酒杯式上下晃，可保留或归零）")]
     [Tooltip("扣血基础摇晃幅度")]
-    public float impactWave = 0.03f;
-    [Tooltip("伤害比例转摇晃幅度的系数（例如 0.2 伤害 => 0.2 * 0.3 = 0.06 幅度）")]
-    public float damageToShake = 0.35f;
+    public float impactWave = 0.02f;
+    [Tooltip("伤害比例转摇晃幅度的系数")]
+    public float damageToShake = 0.25f;
     [Tooltip("最小摇晃幅度，避免小伤害没反应")]
-    public float minShake = 0.025f;
+    public float minShake = 0.02f;
     [Tooltip("摇晃幅度上限")]
-    public float waveMax = 0.14f;
+    public float waveMax = 0.10f;
     [Tooltip("摇晃总时长（秒）")]
-    public float shakeDuration = 0.55f;
-    [Tooltip("摇晃衰减指数，越大开头衰减越快、后段越慢（建议 2~3）")]
+    public float shakeDuration = 0.5f;
+    [Tooltip("摇晃衰减指数，越大开头衰减越快（建议 2~3）")]
     public float shakeEasePower = 2.2f;
     [Tooltip("波纹频率（纵向密度）")]
     public float waveFreq = 14f;
@@ -68,6 +74,8 @@ public class HPBarLiquid : MonoBehaviour
     public float waveSpeed = 5f;
     [Tooltip("环境微波动幅度（无扣血时的轻微液面起伏）")]
     [Range(0f, 0.03f)] public float ambientWave = 0.010f;
+    [Tooltip("高频细纹强度（旧版'扭曲波纹'的来源，调小更自然，0=完全关掉）")]
+    [Range(0f, 1f)] public float rippleScale = 0.15f;
 
     [Header("液面形状")]
     [Range(0.001f, 0.05f)] public float edgeSoftness = 0.004f;
@@ -79,11 +87,39 @@ public class HPBarLiquid : MonoBehaviour
     [Tooltip("纯色模式下建议 0")]
     [Range(0f, 0.5f)] public float surfaceDarkenRange = 0.0f;
 
+    [Header("扣血特效（闪白 + 放大 + 黄色残影）")]
+    [Tooltip("总开关。关掉则只播红色 Fill 下落，没有闪白/放大/黄色残影。")]
+    public bool enableDamageFx = true;
+    [Tooltip("黄色残影颜色（平涂）")]
+    public Color ghostColor = new Color(0.937f, 0.624f, 0.153f); // #EF9F27
+    [Tooltip("闪白总时长（秒），极短")]
+    public float flashDuration = 0.09f;
+    [Tooltip("闪白峰值透明度下限（小伤害）")]
+    public float flashIntensityMin = 0.55f;
+    [Tooltip("闪白峰值透明度上限（大伤害）")]
+    public float flashIntensityMax = 1.0f;
+    [Tooltip("整体放大峰值下限（小伤害）")]
+    public float punchScaleMin = 1.10f;
+    [Tooltip("整体放大峰值上限（大伤害）")]
+    public float punchScaleMax = 1.30f;
+    [Tooltip("放大回弹总时长（秒）")]
+    public float punchDuration = 0.14f;
+    [Tooltip("黄色残影保持时长（秒），之后再锐减")]
+    public float ghostHold = 0.10f;
+    [Tooltip("黄色残影锐减时长（秒）")]
+    public float ghostDrainDuration = 0.20f;
+    [Tooltip("达到满强度所需的伤害比例（占最大HP）。例如0.2表示掉20%血即满强度闪白/放大。")]
+    public float refDamageRatio = 0.2f;
+
     [Header("调试")]
     [Tooltip("开启后会在 Console 打印血量变化，方便排查“不掉血”问题。确认正常后可关掉。")]
     public bool logHP = true;
 
     private Material _mat;
+    private Material _ghostMat;
+    private RectTransform _rootRect;
+    private int _maxHP = 1;
+
     private float _currentFill = 1f;
     private float _targetFill = 1f;
 
@@ -98,28 +134,53 @@ public class HPBarLiquid : MonoBehaviour
     private float _shakeAmount;
     private float _shakeElapsed;
 
-    private static readonly int FillID           = Shader.PropertyToID("_Fill");
-    private static readonly int FlipID           = Shader.PropertyToID("_Flip");
-    private static readonly int WaveAmpID        = Shader.PropertyToID("_WaveAmp");
-    private static readonly int WaveFreqID       = Shader.PropertyToID("_WaveFreq");
-    private static readonly int WaveSpeedID      = Shader.PropertyToID("_WaveSpeed");
-    private static readonly int AmbientWaveID    = Shader.PropertyToID("_AmbientWave");
-    private static readonly int TopColorID       = Shader.PropertyToID("_TopColor");
-    private static readonly int BottomColorID    = Shader.PropertyToID("_BottomColor");
-    private static readonly int CrestColorID     = Shader.PropertyToID("_CrestColor");
-    private static readonly int EdgeSoftnessID   = Shader.PropertyToID("_EdgeSoftness");
-    private static readonly int CrestWidthID     = Shader.PropertyToID("_CrestWidth");
-    private static readonly int CrestIntensityID    = Shader.PropertyToID("_CrestIntensity");
-    private static readonly int SurfaceGlowID       = Shader.PropertyToID("_SurfaceGlow");
-    private static readonly int SurfaceDarkenID     = Shader.PropertyToID("_SurfaceDarken");
+    // 扣血特效状态
+    private float _fxFlashElapsed, _fxFlashDur, _fxFlashPeak;
+    private float _fxPunchElapsed, _fxPunchDur, _fxPunchPeak;
+    private bool _fxGhostActive;
+    private float _fxGhostStart, _fxGhostEnd, _fxGhostElapsed, _fxGhostHold, _fxGhostDrain;
+
+    private static readonly int FillID               = Shader.PropertyToID("_Fill");
+    private static readonly int FlipID               = Shader.PropertyToID("_Flip");
+    private static readonly int WaveAmpID            = Shader.PropertyToID("_WaveAmp");
+    private static readonly int WaveFreqID           = Shader.PropertyToID("_WaveFreq");
+    private static readonly int WaveSpeedID          = Shader.PropertyToID("_WaveSpeed");
+    private static readonly int RippleScaleID        = Shader.PropertyToID("_RippleScale");
+    private static readonly int AmbientWaveID        = Shader.PropertyToID("_AmbientWave");
+    private static readonly int TopColorID           = Shader.PropertyToID("_TopColor");
+    private static readonly int BottomColorID        = Shader.PropertyToID("_BottomColor");
+    private static readonly int CrestColorID         = Shader.PropertyToID("_CrestColor");
+    private static readonly int EdgeSoftnessID       = Shader.PropertyToID("_EdgeSoftness");
+    private static readonly int CrestWidthID         = Shader.PropertyToID("_CrestWidth");
+    private static readonly int CrestIntensityID     = Shader.PropertyToID("_CrestIntensity");
+    private static readonly int SurfaceGlowID        = Shader.PropertyToID("_SurfaceGlow");
+    private static readonly int SurfaceDarkenID      = Shader.PropertyToID("_SurfaceDarken");
     private static readonly int SurfaceDarkenRangeID = Shader.PropertyToID("_SurfaceDarkenRange");
+    private static readonly int TopGlossIntensityID  = Shader.PropertyToID("_TopGlossIntensity");
+    private static readonly int BlobIntensityID      = Shader.PropertyToID("_BlobIntensity");
 
     void Start()
     {
         if (scoreManager == null)
             scoreManager = FindFirstObjectByType<ScoreManager>();
 
+        _rootRect = GetComponent<RectTransform>();
         ResolveFillImage();
+        if (ghostImage == null)
+        {
+            Transform g = transform.Find("Ghost");
+            if (g != null) ghostImage = g.GetComponent<Image>();
+        }
+        if (flashImage == null)
+        {
+            Transform f = transform.Find("FlashOverlay");
+            if (f != null) flashImage = f.GetComponent<Image>();
+        }
+        if (flashImage != null) SetImageAlpha(flashImage, 0f);
+
+        if (scoreManager != null)
+            _maxHP = Mathf.Max(1, scoreManager.GetMaxHP(side));
+
         SetupMaterial();
 
         if (hpNumberSprite == null)
@@ -136,6 +197,7 @@ public class HPBarLiquid : MonoBehaviour
             {
                 Debug.Log($"[HPBarLiquid] '{name}' side={side} 已订阅 OnHPChanged，初始 HP={hp}/{max}，"
                           + $"fill={_currentFill:F3}，fillImage={(fillImage != null ? fillImage.name : "缺失")}，"
+                          + $"ghost={(ghostImage != null ? "有" : "无")}，flash={(flashImage != null ? "有" : "无")}，"
                           + $"数字={(hpNumberSprite != null ? "图片" : (hpText != null ? "Text" : "无"))}");
             }
         }
@@ -147,18 +209,7 @@ public class HPBarLiquid : MonoBehaviour
 
     void Update()
     {
-        if (_mat == null)
-        {
-            SetupMaterial();
-            if (_mat == null) return;
-        }
-
-        UpdateFillAnimation();
-        UpdateShake();
-
-        _mat.SetFloat(FillID, _currentFill);
-        _mat.SetFloat(WaveAmpID, _shakeAmount);
-        _mat.SetFloat(AmbientWaveID, ambientWave);
+        TickFX(Time.deltaTime);
     }
 
     void OnDestroy()
@@ -166,10 +217,105 @@ public class HPBarLiquid : MonoBehaviour
         if (scoreManager != null)
             scoreManager.OnHPChanged -= OnHPChanged;
 
-        if (_mat != null)
+        if (_mat != null) { Destroy(_mat); _mat = null; }
+        if (_ghostMat != null) { Destroy(_ghostMat); _ghostMat = null; }
+    }
+
+    /// <summary>
+    /// 每帧推进所有动画（填充 / 摇晃 / 闪白 / 放大 / 黄色残影）。
+    /// 同时被运行时 Update 与编辑态预览窗口调用，因此逻辑集中在这里。
+    /// </summary>
+    public void TickFX(float dt)
+    {
+        EnsureMaterials();
+        if (_mat == null) return;
+
+        UpdateFillAnimation();
+        UpdateShake();
+
+        _mat.SetFloat(FillID, _currentFill);
+        _mat.SetFloat(WaveAmpID, _shakeAmount);
+        _mat.SetFloat(AmbientWaveID, ambientWave);
+        _mat.SetFloat(RippleScaleID, rippleScale);
+
+        // 每帧同步颜色，方便在 Inspector / 预览里实时调色
+        _mat.SetColor(TopColorID, topColor);
+        _mat.SetColor(BottomColorID, bottomColor);
+        _mat.SetColor(CrestColorID, crestColor);
+        _mat.SetColor(SurfaceDarkenID, surfaceDarken);
+        if (_ghostMat != null)
         {
-            Destroy(_mat);
-            _mat = null;
+            _ghostMat.SetColor(TopColorID, ghostColor);
+            _ghostMat.SetColor(BottomColorID, ghostColor);
+        }
+
+        // 闪白：瞬间到峰值后快速衰减
+        if (_fxFlashElapsed < _fxFlashDur)
+        {
+            _fxFlashElapsed += dt;
+            float t = Mathf.Clamp01(_fxFlashElapsed / Mathf.Max(0.001f, _fxFlashDur));
+            float a = _fxFlashPeak * Mathf.Pow(1f - t, 1.5f);
+            SetImageAlpha(flashImage, a);
+        }
+        else if (flashImage != null && flashImage.color.a > 0.001f)
+        {
+            SetImageAlpha(flashImage, 0f);
+        }
+
+        // 放大：瞬间到峰值后快速回弹（平方衰减）
+        if (_fxPunchElapsed < _fxPunchDur)
+        {
+            _fxPunchElapsed += dt;
+            float p = Mathf.Clamp01(_fxPunchElapsed / Mathf.Max(0.001f, _fxPunchDur));
+            float k = 1f - p;
+            float s = 1f + (_fxPunchPeak - 1f) * k * k;
+            if (_rootRect != null) _rootRect.localScale = Vector3.one * s;
+        }
+        else if (_rootRect != null && _rootRect.localScale != Vector3.one)
+        {
+            _rootRect.localScale = Vector3.one;
+        }
+
+        // 黄色残影：保持片刻后快速锐减
+        if (_fxGhostActive)
+        {
+            _fxGhostElapsed += dt;
+            float fill;
+            if (_fxGhostElapsed <= _fxGhostHold)
+            {
+                fill = _fxGhostStart;
+            }
+            else
+            {
+                float t2 = Mathf.Clamp01((_fxGhostElapsed - _fxGhostHold) / Mathf.Max(0.001f, _fxGhostDrain));
+                float e = 1f - Mathf.Pow(1f - t2, 2f); // 先快后慢地锐减
+                fill = Mathf.Lerp(_fxGhostStart, _fxGhostEnd, e);
+                if (t2 >= 1f) { _fxGhostActive = false; fill = 0f; }
+            }
+            if (_ghostMat != null) _ghostMat.SetFloat(FillID, fill);
+        }
+    }
+
+    private void EnsureMaterials()
+    {
+        if (_rootRect == null) _rootRect = GetComponent<RectTransform>();
+        if (fillImage == null) ResolveFillImage();
+        if (_mat == null) SetupMaterial();
+
+        if (_ghostMat == null && ghostImage != null && ghostImage.material != null)
+        {
+            _ghostMat = new Material(ghostImage.material);
+            _ghostMat.SetColor(TopColorID, ghostColor);
+            _ghostMat.SetColor(BottomColorID, ghostColor);
+            _ghostMat.SetFloat(FlipID, side == 0 ? 0f : 1f);
+            _ghostMat.SetFloat(CrestIntensityID, 0f);
+            _ghostMat.SetFloat(SurfaceGlowID, 0f);
+            _ghostMat.SetFloat(TopGlossIntensityID, 0f);
+            _ghostMat.SetFloat(BlobIntensityID, 0f);
+            _ghostMat.SetFloat(SurfaceDarkenRangeID, 0f);
+            _ghostMat.SetFloat(AmbientWaveID, 0f);
+            _ghostMat.SetFloat(FillID, 0f);
+            ghostImage.material = _ghostMat;
         }
     }
 
@@ -186,7 +332,6 @@ public class HPBarLiquid : MonoBehaviour
         }
         else
         {
-            // 确保 Fill 渲染在 Background 之上
             Transform bg = transform.Find("Background");
             if (bg != null && fillImage.transform.GetSiblingIndex() <= bg.GetSiblingIndex())
             {
@@ -206,16 +351,21 @@ public class HPBarLiquid : MonoBehaviour
             return;
         }
 
-        // 运行时实例化，避免左右两条血条共用材质互相干扰
+        // 运行时实例化：优先克隆 Setup 已配好的资产（保留红/蓝配色），避免左右共用材质互相干扰
         if (_mat == null)
         {
-            _mat = new Material(sh);
+            if (fillImage.material != null && fillImage.material.shader != null &&
+                fillImage.material.shader.name == "MusicalSprite/UI/HPBarLiquid")
+                _mat = new Material(fillImage.material);
+            else
+                _mat = new Material(sh);
             fillImage.material = _mat;
         }
 
         _mat.SetFloat(FlipID, side == 0 ? 0f : 1f);
         _mat.SetFloat(WaveFreqID, waveFreq);
         _mat.SetFloat(WaveSpeedID, waveSpeed);
+        _mat.SetFloat(RippleScaleID, rippleScale);
         _mat.SetFloat(AmbientWaveID, ambientWave);
         _mat.SetColor(TopColorID, topColor);
         _mat.SetColor(BottomColorID, bottomColor);
@@ -229,25 +379,27 @@ public class HPBarLiquid : MonoBehaviour
     }
 
     /// <summary>
-    /// 外部直接设置血量比例（0~1）。比例下降会自动触发波动。
+    /// 外部直接设置血量比例（0~1）。比例下降会自动触发扣血特效。
     /// </summary>
     public void SetFill(float ratio)
     {
         ratio = Mathf.Clamp01(ratio);
-        float delta = Mathf.Abs(ratio - _targetFill);
+        float oldTarget = _targetFill;
+        float delta = Mathf.Abs(ratio - oldTarget);
 
         if (delta > 1e-5f)
         {
-            // 启动填充动画：从当前视觉血量开始，总时长固定
-            _fillAnimStart = _currentFill;
+            // 起点取"当前显示值"与"旧目标"的较大者，保证黄色残影覆盖完整
+            _fillAnimStart = Mathf.Max(_currentFill, oldTarget);
             _fillAnimEnd = ratio;
             _fillAnimElapsed = 0f;
             _fillAnimating = true;
 
-            // 只有扣血才摇晃；回血只播填充动画
-            if (ratio < _targetFill - 1e-5f)
+            // 只有扣血才触发摇晃与扣血特效；回血只播填充动画
+            if (ratio < oldTarget - 1e-5f)
             {
-                TriggerShake(_targetFill - ratio);
+                TriggerShake(oldTarget - ratio);
+                if (enableDamageFx) StartDamageFx(oldTarget, ratio);
             }
         }
 
@@ -255,7 +407,7 @@ public class HPBarLiquid : MonoBehaviour
     }
 
     /// <summary>
-    /// 无动画地直接设置血量（用于初始化）。
+    /// 无动画地直接设置血量（用于初始化 / 预览基线）。
     /// </summary>
     private void SetHPInstant(int hp, int max)
     {
@@ -264,10 +416,12 @@ public class HPBarLiquid : MonoBehaviour
         _fillAnimating = false;
         _shakeAmount = 0f;
         _shakeElapsed = shakeDuration;
-
+        _fxGhostActive = false;
+        if (_ghostMat != null) _ghostMat.SetFloat(FillID, 0f);
         if (_mat != null) _mat.SetFloat(FillID, _currentFill);
+        if (flashImage != null) SetImageAlpha(flashImage, 0f);
+        if (_rootRect != null) _rootRect.localScale = Vector3.one;
 
-        // 有图片数字时用它，隐藏 Text 避免重影
         if (hpNumberSprite != null)
         {
             hpNumberSprite.SetHP(hp);
@@ -313,7 +467,6 @@ public class HPBarLiquid : MonoBehaviour
         _fillAnimElapsed += Time.deltaTime;
         float t = Mathf.Clamp01(_fillAnimElapsed / Mathf.Max(0.001f, fillDuration));
 
-        // ease-out：先快后慢；伤害越大，相同时长内需移动距离越大，起始速度越快
         float eased = 1f - Mathf.Pow(1f - t, fillEasePower);
         _currentFill = Mathf.Lerp(_fillAnimStart, _fillAnimEnd, eased);
 
@@ -326,7 +479,6 @@ public class HPBarLiquid : MonoBehaviour
 
     private void TriggerShake(float damageRatio)
     {
-        // 摇晃幅度与伤害量挂钩，但有下限和上限
         float amount = impactWave + damageRatio * damageToShake;
         _shakeInitial = Mathf.Clamp(amount, minShake, waveMax);
         _shakeAmount = _shakeInitial;
@@ -344,7 +496,6 @@ public class HPBarLiquid : MonoBehaviour
         _shakeElapsed += Time.deltaTime;
         float t = Mathf.Clamp01(_shakeElapsed / Mathf.Max(0.001f, shakeDuration));
 
-        // 先快后慢的衰减包络：t=0 时 1，t=0.5 时已大幅衰减，之后缓慢归零
         float envelope = Mathf.Pow(1f - t, shakeEasePower);
         _shakeAmount = _shakeInitial * envelope;
 
@@ -353,5 +504,98 @@ public class HPBarLiquid : MonoBehaviour
             _shakeAmount = 0f;
             _shakeElapsed = shakeDuration;
         }
+    }
+
+    /// <summary>
+    /// 触发一次完整扣血特效（闪白 + 放大 + 黄色残影）。
+    /// fromFill/toFill 为受击前后的血量比例（0~1）。
+    /// </summary>
+    private void StartDamageFx(float fromFill, float toFill)
+    {
+        float dmg = Mathf.Clamp01((fromFill - toFill) / Mathf.Max(1e-4f, refDamageRatio));
+
+        _fxFlashPeak = Mathf.Lerp(flashIntensityMin, flashIntensityMax, dmg);
+        _fxFlashDur = flashDuration;
+        _fxFlashElapsed = 0f;
+
+        _fxPunchPeak = Mathf.Lerp(punchScaleMin, punchScaleMax, dmg);
+        _fxPunchDur = punchDuration;
+        _fxPunchElapsed = 0f;
+
+        _fxGhostActive = true;
+        _fxGhostStart = fromFill;   // 黄色残影顶部 = 受击前血量
+        _fxGhostEnd = toFill;       // 底部 = 受击后血量
+        _fxGhostElapsed = 0f;
+        _fxGhostHold = ghostHold;
+        _fxGhostDrain = ghostDrainDuration;
+    }
+
+    private void SetImageAlpha(Image img, float a)
+    {
+        if (img == null) return;
+        Color c = img.color;
+        c.a = a;
+        img.color = c;
+    }
+
+    // ===================== 编辑态预览 API =====================
+
+    /// <summary>把血条瞬间设到某个血量比例（不播动画），作为预览基线。</summary>
+    public void PreviewSetFill(float ratio)
+    {
+        ratio = Mathf.Clamp01(ratio);
+        EnsureMaterials();
+        if (scoreManager != null) _maxHP = Mathf.Max(1, scoreManager.GetMaxHP(side));
+
+        _targetFill = ratio;
+        _currentFill = ratio;
+        _fillAnimating = false;
+        _shakeAmount = 0f;
+        _shakeElapsed = shakeDuration;
+        _fxGhostActive = false;
+        if (_ghostMat != null) _ghostMat.SetFloat(FillID, 0f);
+        if (_mat != null) _mat.SetFloat(FillID, ratio);
+        if (flashImage != null) SetImageAlpha(flashImage, 0f);
+        if (_rootRect != null) _rootRect.localScale = Vector3.one;
+
+        int hp = Mathf.RoundToInt(ratio * _maxHP);
+        if (hpNumberSprite != null)
+        {
+            hpNumberSprite.SetHP(hp);
+            if (hpText != null) hpText.gameObject.SetActive(false);
+        }
+        else if (hpText != null)
+        {
+            hpText.text = $"HP {hp}";
+        }
+    }
+
+    /// <summary>编辑态预览：从 fromRatio 扣血到 toRatio，并播放完整特效序列。</summary>
+    public void PreviewDamage(float fromRatio, float toRatio)
+    {
+        fromRatio = Mathf.Clamp01(fromRatio);
+        toRatio = Mathf.Clamp01(toRatio);
+        if (scoreManager == null)
+            scoreManager = FindFirstObjectByType<ScoreManager>();
+        PreviewSetFill(fromRatio);
+
+        _targetFill = toRatio;
+        _fillAnimStart = fromRatio;
+        _fillAnimEnd = toRatio;
+        _fillAnimElapsed = 0f;
+        _fillAnimating = true;
+
+        if (toRatio < fromRatio - 1e-5f)
+        {
+            TriggerShake(fromRatio - toRatio);
+            if (enableDamageFx) StartDamageFx(fromRatio, toRatio);
+        }
+    }
+
+    /// <summary>特效序列是否已全部结束（用于预览窗口停止驱动）。</summary>
+    public bool IsSettled()
+    {
+        return !_fillAnimating && _fxFlashElapsed >= _fxFlashDur &&
+               _fxPunchElapsed >= _fxPunchDur && !_fxGhostActive;
     }
 }

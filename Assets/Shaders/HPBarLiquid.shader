@@ -10,6 +10,7 @@ Shader "MusicalSprite/UI/HPBarLiquid"
         _SloshSpeed ("Slosh Speed", Float) = 7
         _WaveFreq ("Ripple Frequency", Float) = 14
         _WaveSpeed ("Ripple Speed", Float) = 5
+        _RippleScale ("Ripple Scale (high-freq twist)", Range(0, 1)) = 0.15
         _AmbientWave ("Ambient Wave", Range(0, 0.03)) = 0.008
         _TopColor ("Top Color", Color) = (1.00, 0.15, 0.00, 1)
         _BottomColor ("Bottom Color", Color) = (1.00, 0.15, 0.00, 1)
@@ -107,6 +108,7 @@ Shader "MusicalSprite/UI/HPBarLiquid"
             float  _SloshSpeed;
             float  _WaveFreq;
             float  _WaveSpeed;
+            float  _RippleScale;
             float  _AmbientWave;
             float4 _TopColor;
             float4 _BottomColor;
@@ -149,18 +151,25 @@ Shader "MusicalSprite/UI/HPBarLiquid"
                 // 上下两端略微收窄，让液体看起来"贴着容器壁"
                 float taper = 0.65 + 0.35 * sin(uv.y * 3.14159265);
 
-                // 主摇晃：低频、大幅度的"上下来回"晃动（像酒杯里的液体被摇晃）
-                // _WaveAmp 由 C# 根据扣血量激发，再指数衰减至平静
-                float slosh = sin(uv.y * _SloshFreq + t * _SloshSpeed) * _WaveAmp * taper;
+                // 横置液体晃动模型：液体沿填充方向(x)左右涨落为主，
+                // 表面(y)起伏 + 倾斜为辅，模拟酒杯横过来荡漾。
+                // _WaveAmp 由 C# 根据扣血量激发，再指数衰减至平静。
 
-                // 叠加一层高频细纹，让液面更丝滑、不那么塑料
-                float ripple = sin(uv.y * _WaveFreq + t * _WaveSpeed) * _WaveAmp * 0.25;
+                // ① 主晃：整体沿填充方向(x)进退（左红右液面，整条液面一起左右荡），速度由 _SloshSpeed
+                float s = sin(t * _SloshSpeed) * _WaveAmp * taper;
+                // ② 倾斜：液面线在 y 上带斜率（上半进/下半退），模拟横置重力荡漾，速度由 _SloshFreq
+                float tilt = cos(t * _SloshFreq) * _WaveAmp * 0.5 * (uv.y - 0.5);
+                // ③ 表面起伏：沿 y 的轻微波纹（替代旧的高频扭曲细纹，幅度远小于主晃）
+                float surf = sin(uv.y * _WaveFreq * 0.7 + t * _WaveSpeed * 0.8) * _WaveAmp * 0.10;
 
-                float boundary = _Fill + slosh + ripple;
+                float boundary = _Fill + s + tilt + surf;
 
                 // 环境微波动：无扣血时液面也保持轻微不规则
                 float ambient = sin(uv.y * _WaveFreq * 0.65 + t * _WaveSpeed * 0.35) * _AmbientWave;
                 boundary += ambient;
+
+                // 防止液体越出黑槽（满血不过量、空血不反向）
+                boundary = clamp(boundary, 0.0, 1.0);
 
                 // d > 0 表示处于液体一侧
                 float d = boundary - u;
@@ -169,8 +178,8 @@ Shader "MusicalSprite/UI/HPBarLiquid"
                 float alpha = smoothstep(-_EdgeSoftness, _EdgeSoftness, d);
                 if (alpha <= 0.002) discard;
 
-                // 上深下浅的渐变
-                float4 liquid = lerp(_BottomColor, _TopColor, uv.y);
+                // 沿填充方向(u)的渐变：满端(右侧/液面端=1)用 TopColor，空端用 BottomColor
+                float4 liquid = lerp(_BottomColor, _TopColor, u);
 
                 // 靠近液面/空槽的一侧加深，做出参考图中右侧深红/暗部效果
                 float darkenRange = max(_SurfaceDarkenRange, 0.001);

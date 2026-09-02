@@ -40,6 +40,7 @@ Material:
     - _EdgeSoftness: 0.004
     - _Fill: 1
     - _Flip: 0
+    - _RippleScale: 0.15
     - _SloshFreq: 2.2
     - _SloshSpeed: 7
     - _Stencil: 0
