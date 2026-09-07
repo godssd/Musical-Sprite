@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_GrassFringe
+  m_Shader: {fileID: 4800000, guid: 93c48e19d6d1cb441a25b5c2125a4b81, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BlueMap:
+        m_Texture: {fileID: 2800000, guid: 06d17a5ce2ca53d45956fd1e4739bc7a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EdgeTex:
+        m_Texture: {fileID: 2800000, guid: 1e994d153e35d354290b382b3f40487a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RedMap:
+        m_Texture: {fileID: 2800000, guid: e58fc9c9a70b6c84fab460f83fadad1d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Brightness: 1.2
+    - _CenterBlend: 0.15
+    - _CenterLineX: -1.416761
+    - _ColorVariation: 0.55
+    - _Cutoff: 0.25
+    - _DebugAmount: 0
+    - _GroundColorAmount: 0.35
+    - _Height: 0.6
+    - _Lift: 0.02
+    - _Outward: 0.35
+    - _RandomScale: 0.35
+    - _RootGroundness: 0.7
+    - _TintAmount: 0.65
+    m_Colors:
+    - _BrownTint: {r: 0.62, g: 0.48, b: 0.22, a: 1}
+    - _DebugColor: {r: 0.2, g: 1, b: 0.2, a: 1}
+    - _GreenTint: {r: 0.45, g: 0.78, b: 0.18, a: 1}
+    - _GroundRenderMax: {r: 8, g: 3.75, b: 0, a: 0}
+    - _GroundRenderMin: {r: -8, g: -3.75, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

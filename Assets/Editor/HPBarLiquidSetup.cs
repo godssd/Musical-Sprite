@@ -24,8 +24,10 @@ public static class HPBarLiquidSetup
 {
     private const string ContainerPath  = "Assets/Art/UI/HPBar_Container.png";
     private const string FramePath      = "Assets/Art/UI/HPBar_Frame.png";
-    private const string DecorationPath = "Assets/Art/UI/HPBar_decoration.png";
+    private const string DecorationPath = "Assets/Art/UI/HPBar_decoration_bottom.png";
+    private const string FlashMaskPath  = "Assets/Art/UI/HPBar_FlashMask.png";
     private const string ShaderName     = "MusicalSprite/UI/HPBarLiquid";
+    private const string FlashShaderName = "MusicalSprite/UI/HPBarFlash";
     private const string MaterialDir    = "Assets/Art/UI";
     private const string NumbersDir     = "Assets/Art/UI/Numbers";
 
@@ -39,11 +41,18 @@ public static class HPBarLiquidSetup
         Sprite containerSprite  = EnsureSpriteImported(ContainerPath);
         Sprite frameSprite      = EnsureSpriteImported(FramePath);
         Sprite decorationSprite = EnsureSpriteImported(DecorationPath);
+        Sprite flashMaskSprite  = EnsureSpriteImported(FlashMaskPath);
 
         if (containerSprite == null || frameSprite == null)
         {
             Debug.LogError($"[HPBarLiquidSetup] 找不到素材，请确认文件存在：\n{ContainerPath}\n{FramePath}");
             return;
+        }
+
+        if (flashMaskSprite == null)
+        {
+            Debug.LogWarning($"[HPBarLiquidSetup] 找不到闪白遮罩 {FlashMaskPath}，闪白层将退而使用容器图。" +
+                             "若闪白仍不跟随轮廓，请从 HPBar_Frame.png 生成一张内部填充的白色遮罩。");
         }
 
         if (decorationSprite == null)
@@ -65,7 +74,7 @@ public static class HPBarLiquidSetup
         HPBarDisplay[] displays = Object.FindObjectsByType<HPBarDisplay>(FindObjectsSortMode.None);
         foreach (HPBarDisplay display in displays)
         {
-            if (UpgradeBar(display, containerSprite, frameSprite, decorationSprite, shader))
+            if (UpgradeBar(display, containerSprite, frameSprite, decorationSprite, flashMaskSprite, shader))
                 count++;
         }
 
@@ -75,7 +84,7 @@ public static class HPBarLiquidSetup
             HPBarLiquid[] liquids = Object.FindObjectsByType<HPBarLiquid>(FindObjectsSortMode.None);
             foreach (HPBarLiquid liquid in liquids)
             {
-                if (RefreshBar(liquid, containerSprite, frameSprite, decorationSprite, shader))
+                if (RefreshBar(liquid, containerSprite, frameSprite, decorationSprite, flashMaskSprite, shader))
                     count++;
             }
 
@@ -162,9 +171,64 @@ public static class HPBarLiquidSetup
             : "════════ 自检存在 FAIL ❌，请根据上述明细修复 ════════");
     }
 
+    /// <summary>
+    /// 把右侧蓝色血条（side=1）的所有可调参数同步成左侧红色血条（side=0）的样子，
+    /// 但保留阵营身份：side、液体颜色（topColor/bottomColor/crestColor/surfaceDarken）、
+    /// 以及各血条自身的引用（fillImage/ghostImage/flashImage/decorationImage/hpText/hpNumberSprite/scoreManager）。
+    /// 这样左右两侧“手感/形状/特效”一致，而蓝色依然是蓝色。
+    ///
+    /// 用法：Unity 菜单 → Tools → Musical-Sprite → Sync Blue ← Red Params
+    /// </summary>
+    [MenuItem("Tools/Musical-Sprite/Sync Blue ← Red Params")]
+    public static void SyncBlueToRed()
+    {
+        HPBarLiquid[] liquids = Object.FindObjectsByType<HPBarLiquid>(FindObjectsSortMode.None);
+        HPBarLiquid red = null, blue = null;
+        foreach (HPBarLiquid l in liquids)
+        {
+            if (l.side == 0 && red == null) red = l;
+            else if (l.side == 1 && blue == null) blue = l;
+        }
+
+        if (red == null || blue == null)
+        {
+            Debug.LogWarning("[HPBarLiquidSetup][Sync] 需要场景中同时存在 side=0（红）和 side=1（蓝）两条血条才能同步。当前：" +
+                             $"red={(red != null ? red.name : "缺失")}，blue={(blue != null ? blue.name : "缺失")}");
+            return;
+        }
+
+        // 这些字段不同步：阵营身份 + 各血条自身引用（避免把红的引用指到蓝的物体上）
+        string[] skip =
+        {
+            "m_Script",
+            "side",
+            "scoreManager", "fillImage", "ghostImage", "flashImage", "decorationImage", "hpText", "hpNumberSprite",
+            "topColor", "bottomColor", "crestColor", "surfaceDarken"
+        };
+
+        SerializedObject soRed = new SerializedObject(red);
+        SerializedObject soBlue = new SerializedObject(blue);
+
+        int copied = 0;
+        SerializedProperty prop = soRed.GetIterator();
+        while (prop.NextVisible(true))
+        {
+            if (System.Array.Exists(skip, x => x == prop.name)) continue;
+            soBlue.CopyFromSerializedProperty(prop);
+            copied++;
+        }
+
+        soBlue.ApplyModifiedProperties();   // 触发蓝条 OnValidate → 把参数推到材质
+        EditorUtility.SetDirty(blue);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+
+        Debug.Log($"[HPBarLiquidSetup][Sync] 已把蓝色血条 '{blue.name}' 的参数同步为红色血条 '{red.name}' 的样子（共 {copied} 项）。" +
+                  "液体颜色 / side / 引用保持不变（蓝色依然是蓝色）。如想让蓝色也变成红色，请手动改 topColor / bottomColor。");
+    }
+
     /// <summary>把旧组件换成新组件。</summary>
     private static bool UpgradeBar(HPBarDisplay display, Sprite containerSprite, Sprite frameSprite,
-                                   Sprite decorationSprite, Shader shader)
+                                   Sprite decorationSprite, Sprite flashMaskSprite, Shader shader)
     {
         GameObject root = display.gameObject;
 
@@ -173,7 +237,7 @@ public static class HPBarLiquidSetup
         Text hpText = display.hpText;
 
         Image fillImg = BuildHierarchy(root.transform, containerSprite, frameSprite, decorationSprite,
-                                       shader, display.fillImage, out Text resolvedText);
+                                       flashMaskSprite, shader, side, display.fillImage, out Text resolvedText);
 
         if (hpText == null)
             hpText = resolvedText;
@@ -204,20 +268,22 @@ public static class HPBarLiquidSetup
 
     /// <summary>已经升级过时，只刷新素材与材质。</summary>
     private static bool RefreshBar(HPBarLiquid liquid, Sprite containerSprite, Sprite frameSprite,
-                                   Sprite decorationSprite, Shader shader)
+                                   Sprite decorationSprite, Sprite flashMaskSprite, Shader shader)
     {
         GameObject root = liquid.gameObject;
 
         Image fillImg = BuildHierarchy(root.transform, containerSprite, frameSprite, decorationSprite,
-                                       shader, liquid.fillImage, out Text resolvedText);
+                                       flashMaskSprite, shader, liquid.side, liquid.fillImage, out Text resolvedText);
 
         liquid.fillImage = fillImg;
         if (liquid.hpText == null)
             liquid.hpText = resolvedText;
         liquid.ghostImage = root.transform.Find("Ghost")?.GetComponent<Image>();
         liquid.flashImage = root.transform.Find("FlashOverlay")?.GetComponent<Image>();
+        liquid.decorationImage = root.transform.Find("Decoration")?.GetComponent<Image>();
 
-        ApplySideColors(liquid);
+        // 刷新时不再 ApplySideColors：避免覆盖用户在 Inspector 手动改过的颜色/形状参数。
+        // 只有从旧版 HPBarDisplay 首次升级时才强制应用默认阵营色。
         liquid.hpNumberSprite = TrySetupHPNumberSprite(root.transform);
         SnapToMaterialAspect(root, containerSprite);
 
@@ -430,11 +496,12 @@ public static class HPBarLiquidSetup
     }
 
     /// <summary>
-    /// 补齐并配置 Decoration / Background / Fill / Frame / Text 子节点。
-    /// 层级（从底到顶）：Decoration（深红底边） < Background（空槽黑底） < Fill（液体） < Frame（白描边） < Text/HPNumber。
+    /// 补齐并配置 Decoration / Background / Ghost / Fill / Frame / FlashOverlay / Text 子节点。
+    /// 层级（从底到顶）：Background < Decoration(宽度跟随Fill) < Ghost < Fill < Frame < FlashOverlay < HPNumber/Text。
     /// </summary>
     private static Image BuildHierarchy(Transform rootT, Sprite containerSprite, Sprite frameSprite,
-                                        Sprite decorationSprite, Shader shader, Image existingFill, out Text outText)
+                                        Sprite decorationSprite, Sprite flashMaskSprite, Shader shader,
+                                        int side, Image existingFill, out Text outText)
     {
         outText = null;
 
@@ -449,11 +516,14 @@ public static class HPBarLiquidSetup
         // 比例自检：素材比例和血条 RectTransform 差太多时，图形会被拉伸变形
         CheckAspect(containerSprite, rootT as RectTransform, rootT.name);
 
-        // --- Decoration：深红色底边装饰（放在最底层） ---
+        // --- Decoration：深红/深蓝底边，宽度跟随液体 ---
+        // 只显示在液体下方，空槽区保持黑色。红方左对齐向右伸，蓝方右对齐向左伸。
         Image decoImg = null;
         if (decorationSprite != null)
         {
-            decoImg = EnsureChildImage(rootT, "Decoration", decorationSprite, Color.white);
+            Color decoCol = side == 1 ? new Color(0.06f, 0.20f, 0.55f) : new Color(0.55f, 0.08f, 0.06f);
+            decoImg = EnsureChildImage(rootT, "Decoration", decorationSprite, decoCol);
+            SetDecorationRect(decoImg.rectTransform, side);
         }
 
         // --- Background：空槽黑底（参考图空槽是纯黑） ---
@@ -494,25 +564,30 @@ public static class HPBarLiquidSetup
         fillImg.material = mat;
         EditorUtility.SetDirty(mat);
 
-        // --- FlashOverlay：闪白层，位于 Fill 之上、Frame 之下（默认透明） ---
-        // 用纯色矩形（sprite 传 null），靠 alpha 控制透明度。
-        // 不能用黑底容器图：白 tint × 黑底 = 黑，会表现成"闪黑"而非"闪白"。
-        Image flashImg = EnsureChildImage(rootT, "FlashOverlay", null, Color.white);
+        // --- FlashOverlay：闪白层，位于最顶层（Frame 之上、HPNumber 之下），覆盖整条血条 ---
+        // 使用从 HPBar_Frame.png 生成的内部填充遮罩 HPBar_FlashMask.png 作为 sprite，
+        // 形状 100% 跟随手绘轮廓（包括圆角/不规则边缘），避免矩形闪白。
+        // 配专用 HPBarFlash 材质：只取贴图 alpha 作形状、颜色强制白色，避免"黑底×白=黑"的闪黑。
+        // 放在 Frame 之上，受击时整条血条（含白描边/装饰）一起闪白。
+        Material flashMat = EnsureFlashMaterial(rootT.name);
+        Sprite flashSprite = flashMaskSprite != null ? flashMaskSprite : containerSprite;
+        Image flashImg = EnsureChildImage(rootT, "FlashOverlay", flashSprite, Color.white);
+        flashImg.material = flashMat;
         var fc = flashImg.color; fc.a = 0f; flashImg.color = fc;
 
-        // --- Frame：手绘白色描边 ---
+        // --- Frame：白色胶囊描边（参考风，颜色不变） ---
         Image frameImg = EnsureChildImage(rootT, "Frame", frameSprite, Color.white);
 
         // 强制层级顺序（从底到顶）：
-        // Decoration < Background < Ghost < Fill < FlashOverlay < Frame
-        int baseIndex = decoImg != null ? 1 : 0;
+        // Background < Decoration(宽度跟随Fill) < Ghost < Fill < Frame < FlashOverlay < (HPNumber 置顶)
+        int order = 0;
+        bgImg.transform.SetSiblingIndex(order++);
         if (decoImg != null)
-            decoImg.transform.SetSiblingIndex(0);
-        bgImg.transform.SetSiblingIndex(baseIndex + 0);
-        ghostImg.transform.SetSiblingIndex(baseIndex + 1);
-        fillImg.transform.SetSiblingIndex(baseIndex + 2);
-        flashImg.transform.SetSiblingIndex(baseIndex + 3);
-        frameImg.transform.SetSiblingIndex(baseIndex + 4);
+            decoImg.transform.SetSiblingIndex(order++);
+        ghostImg.transform.SetSiblingIndex(order++);
+        fillImg.transform.SetSiblingIndex(order++);
+        frameImg.transform.SetSiblingIndex(order++);
+        flashImg.transform.SetSiblingIndex(order++);
 
         // --- HP 文本（放在最上层） ---
         Transform t = rootT.Find("Text");
@@ -532,6 +607,14 @@ public static class HPBarLiquidSetup
         {
             StyleHPText(outText);
             outText.transform.SetAsLastSibling();
+        }
+
+        // 把 Decoration 引用同步给脚本，方便运行时控制宽度
+        HPBarLiquid liquid = rootT.GetComponent<HPBarLiquid>();
+        if (liquid != null)
+        {
+            liquid.decorationImage = decoImg;
+            EditorUtility.SetDirty(liquid);
         }
 
         return fillImg;
@@ -593,6 +676,34 @@ public static class HPBarLiquidSetup
         return img;
     }
 
+    /// <summary>
+    /// 生成/复用一张闪白层材质，使用专用 HPBarFlash 着色器：
+    /// 直接用容器图作为 sprite，形状 100% 跟随血条轮廓，颜色强制白色、只透出 alpha。
+    /// 不依赖任何额外遮罩图，彻底避免"闪黑"与"矩形闪白"两个问题。
+    /// </summary>
+    private static Material EnsureFlashMaterial(string rootName)
+    {
+        string path = MaterialDir + "/M_HPBarFlash_" + rootName + ".mat";
+        Shader shader = Shader.Find(FlashShaderName);
+        Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null)
+        {
+            if (shader == null)
+            {
+                Debug.LogError("[HPBarLiquidSetup] 找不到 Shader '" + FlashShaderName + "', 请确认 Assets/Shaders/HPBarFlash.shader 存在。");
+                return null;
+            }
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, path);
+        }
+        else if (shader != null && mat.shader != shader)
+        {
+            mat.shader = shader;
+        }
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
     private static void StretchRect(RectTransform rt)
     {
         if (rt == null) return;
@@ -602,6 +713,30 @@ public static class HPBarLiquidSetup
         rt.offsetMax = Vector2.zero;
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.localScale = Vector3.one;
+    }
+
+    /// <summary>
+    /// 把 Decoration 的 RectTransform 设成横向可伸缩：
+    /// 红方从左侧向右伸，蓝方从右侧向左伸。运行时由 HPBarLiquid.SyncDecorationWidth 控制宽度。
+    /// </summary>
+    private static void SetDecorationRect(RectTransform rt, int side)
+    {
+        if (rt == null) return;
+        rt.localScale = Vector3.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+        if (side == 0)
+        {
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 0.5f);
+        }
+        else
+        {
+            rt.anchorMin = new Vector2(1f, 0f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(1f, 0.5f);
+        }
     }
 
     private static Text CreateHPText(Transform root)

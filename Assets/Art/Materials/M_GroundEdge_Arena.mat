@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_GroundEdge_Arena
+  m_Shader: {fileID: 4800000, guid: c39c7ae946b23aa40bc6c806b0e70154, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BlueMap:
+        m_Texture: {fileID: 2800000, guid: 06d17a5ce2ca53d45956fd1e4739bc7a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EdgeTex:
+        m_Texture: {fileID: 2800000, guid: 1e994d153e35d354290b382b3f40487a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RedMap:
+        m_Texture: {fileID: 2800000, guid: e58fc9c9a70b6c84fab460f83fadad1d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _CenterBlend: 0
+    - _CenterLineX: 0
+    - _CornerRadius: 2
+    - _DebugMode: 0
+    - _EdgeBrightness: 1.05
+    - _EdgeCutoff: 0.05
+    - _EdgeOutset: 0.4
+    - _EdgeOverhang: 0.08
+    - _EdgeTexTiling: 17.84
+    - _EdgeVerticalScale: 0.98
+    - _GroundThickness: 0.8
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BottomColor: {r: 0.3, g: 0.2, b: 0.15, a: 1}
+    - _GroundMax: {r: 8, g: 3.75, b: 0, a: 0}
+    - _GroundMin: {r: -8, g: -3.75, b: 0, a: 0}
+    - _SideColor: {r: 0.45, g: 0.32, b: 0.22, a: 1}
+    - _SideLightDir: {r: 0.5, g: 0.3, b: 0.8, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

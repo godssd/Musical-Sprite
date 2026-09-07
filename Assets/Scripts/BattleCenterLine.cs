@@ -26,11 +26,28 @@ public class BattleCenterLine : MonoBehaviour
     public ScoreManager scoreManager;
 
     [Header("地面引用")]
-    [Tooltip("左侧红色地面")]
+    [Tooltip("左侧红色地面（保留引用，但地面为静态，不再被缩放/移动）")]
     public Transform leftGround;
 
-    [Tooltip("右侧蓝色地面")]
+    [Tooltip("右侧蓝色地面（保留引用，但地面为静态，不再被缩放/移动）")]
     public Transform rightGround;
+
+    [Header("地面材质(可选,用于优势显现)")]
+    [Tooltip("红方 GroundEdge 材质；赋值后会根据优势设置 _Reveal，使红方地面显现更多")]
+    public Material leftGroundMat;
+
+    [Tooltip("蓝方 GroundEdge 材质；赋值后会根据优势设置 _Reveal，使蓝方地面显现更多")]
+    public Material rightGroundMat;
+
+    [Header("新地面：单块 ArenaGround")]
+    [Tooltip("单场地面材质（M_GroundEdge_Arena），含红蓝两张贴图。优先使用此字段设置中缝 _CenterLineX。")]
+    public Material groundMaterial;
+
+    [Tooltip("草丛流苏材质（M_GrassFringe）。赋值后会跟随 groundMaterial 一起设置 _CenterLineX，使草丛颜色随粉杠变化。")]
+    public Material grassMaterial;
+
+    [Tooltip("单场地面对象 Transform（ArenaGround）")]
+    public Transform ground;
 
     [Tooltip("场地总宽度（从 -X 到 +X）")]
     public float arenaTotalWidth = 16f;
@@ -77,40 +94,32 @@ public class BattleCenterLine : MonoBehaviour
     }
 
     /// <summary>
-    /// 根据中线当前 X 更新红蓝地面的面积。
-    /// 中线左侧始终为红色，右侧始终为蓝色。
+    /// 更新红蓝地面的"优势显现"。
+    /// 新方案：单块地面 ArenaGround，材质含红蓝两张贴图。
+    /// 粉杠 X 坐标直接驱动材质 _CenterLineX：
+    ///   - 粉杠右移（左/红方优势）-> 红线覆盖更多区域
+    ///   - 粉杠左移（右/蓝方优势）-> 蓝线覆盖更多区域
+    /// 兼容旧方案：如果只有 leftGroundMat/rightGroundMat，仍用 _Reveal 控制。
     /// </summary>
     private void UpdateGroundArea()
     {
-        if (leftGround == null || rightGround == null) return;
+        // 新方案：直接把粉杠 X 传给单块地面材质 + 草丛流苏材质
+        if (groundMaterial != null)
+        {
+            groundMaterial.SetFloat("_CenterLineX", _currentX);
+            if (grassMaterial != null)
+                grassMaterial.SetFloat("_CenterLineX", _currentX);
+            return;
+        }
 
+        // 旧方案兼容：各自材质的 _Reveal
         float halfWidth = arenaTotalWidth * 0.5f;
-        // 地面缩放用 clamped 的 X，避免粉杠溢出后场时地面宽度变负/翻转
-        float groundX = Mathf.Clamp(_currentX, -halfWidth + 0.01f, halfWidth - 0.01f);
+        float a = Mathf.Clamp(_currentX / halfWidth, -1f, 1f);
 
-        float leftCenter = (-halfWidth + groundX) * 0.5f;
-        float leftWidth = groundX - (-halfWidth);
-
-        float rightCenter = (groundX + halfWidth) * 0.5f;
-        float rightWidth = halfWidth - groundX;
-
-        // 更新左侧红色地面
-        Vector3 lp = leftGround.position;
-        lp.x = leftCenter;
-        leftGround.position = lp;
-
-        Vector3 ls = leftGround.localScale;
-        ls.x = leftWidth;
-        leftGround.localScale = ls;
-
-        // 更新右侧蓝色地面
-        Vector3 rp = rightGround.position;
-        rp.x = rightCenter;
-        rightGround.position = rp;
-
-        Vector3 rs = rightGround.localScale;
-        rs.x = rightWidth;
-        rightGround.localScale = rs;
+        if (leftGroundMat != null)
+            leftGroundMat.SetFloat("_Reveal", 0.5f + 0.5f * a);
+        if (rightGroundMat != null)
+            rightGroundMat.SetFloat("_Reveal", 0.5f - 0.5f * a);
     }
 
     /// <summary>

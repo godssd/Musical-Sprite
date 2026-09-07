@@ -5,13 +5,13 @@ using UnityEngine.UI;
 /// 液体血条控制器（配合 Shader "MusicalSprite/UI/HPBarLiquid" 使用）。
 ///
 /// 层级要求（从底到顶）：
-///   HPBarRoot（挂本脚本）
-///     ├── Decoration   (Image, HPBar_decoration.png，深红底边，可选)
-///     ├── Background   (Image, HPBar_Container.png，黑底)
+///   HPBarRoot（挂本脚本，[ExecuteInEditMode] 让 Edit 模式下 Inspector 调色/晃动也实时生效）
+///     ├── Background   (Image, HPBar_Container.png，黑底空槽，颜色不变)
+///     ├── Decoration   (Image, HPBar_decoration_bottom.png，深红/深蓝底边，宽度跟随液体)
 ///     ├── Ghost        (Image, HPBar_Container.png，黄色材质，受击残影)
 ///     ├── Fill         (Image, HPBar_Container.png，液体 Shader)
-///     ├── FlashOverlay (Image, HPBar_Container.png，白色，受击闪白)
-///     ├── Frame        (Image, HPBar_Frame.png，白描边)
+///     ├── Frame        (Image, HPBar_Frame.png，白色胶囊描边，参考风，颜色不变)
+///     ├── FlashOverlay (Image, HPBar_FlashMask.png 轮廓遮罩，最顶层，受击时整条血条闪白)
 ///     └── HPNumber/Text
 ///
 /// 扣血特效（受击瞬间）：
@@ -24,6 +24,7 @@ using UnityEngine.UI;
 ///
 /// side：0 = 左玩家（红，液体靠左）；1 = 右玩家（蓝，镜像）。
 /// </summary>
+[ExecuteInEditMode]
 public class HPBarLiquid : MonoBehaviour
 {
     [Header("归属")]
@@ -37,6 +38,8 @@ public class HPBarLiquid : MonoBehaviour
     public Image ghostImage;
     [Tooltip("闪白层，由 Setup 自动创建")]
     public Image flashImage;
+    [Tooltip("深红/深蓝底边层（液体下方的暗底），由 Setup 自动创建")]
+    public Image decorationImage;
     public Text hpText;
     [Tooltip("可选：用图片拼出手绘风 HP 数字。留空则继续用上面的 Text 显示。")]
     public HPNumberSprite hpNumberSprite;
@@ -176,12 +179,18 @@ public class HPBarLiquid : MonoBehaviour
             Transform f = transform.Find("FlashOverlay");
             if (f != null) flashImage = f.GetComponent<Image>();
         }
+        if (decorationImage == null)
+        {
+            Transform d = transform.Find("Decoration");
+            if (d != null) decorationImage = d.GetComponent<Image>();
+        }
         if (flashImage != null) SetImageAlpha(flashImage, 0f);
 
         if (scoreManager != null)
             _maxHP = Mathf.Max(1, scoreManager.GetMaxHP(side));
 
         SetupMaterial();
+        SyncDecorationWidth(_currentFill);
 
         if (hpNumberSprite == null)
             hpNumberSprite = GetComponentInChildren<HPNumberSprite>();
@@ -207,6 +216,17 @@ public class HPBarLiquid : MonoBehaviour
         }
     }
 
+    void OnValidate()
+    {
+        // Edit 模式下 Inspector 改参后即时生效（颜色 / 形状 / 液体宽度）
+        if (!enabled) return;
+        EnsureMaterials();
+        PushStaticParams();
+        SyncDecorationWidth(_currentFill);
+        if (_mat != null) _mat.SetFloat(FillID, _currentFill);
+        if (_ghostMat != null) _ghostMat.SetFloat(FillID, _fxGhostActive ? _fxGhostStart : 0f);
+    }
+
     void Update()
     {
         TickFX(Time.deltaTime);
@@ -230,24 +250,13 @@ public class HPBarLiquid : MonoBehaviour
         EnsureMaterials();
         if (_mat == null) return;
 
-        UpdateFillAnimation();
-        UpdateShake();
+        UpdateFillAnimation(dt);
+        UpdateShake(dt);
+        SyncDecorationWidth(_currentFill);
 
         _mat.SetFloat(FillID, _currentFill);
         _mat.SetFloat(WaveAmpID, _shakeAmount);
-        _mat.SetFloat(AmbientWaveID, ambientWave);
-        _mat.SetFloat(RippleScaleID, rippleScale);
-
-        // 每帧同步颜色，方便在 Inspector / 预览里实时调色
-        _mat.SetColor(TopColorID, topColor);
-        _mat.SetColor(BottomColorID, bottomColor);
-        _mat.SetColor(CrestColorID, crestColor);
-        _mat.SetColor(SurfaceDarkenID, surfaceDarken);
-        if (_ghostMat != null)
-        {
-            _ghostMat.SetColor(TopColorID, ghostColor);
-            _ghostMat.SetColor(BottomColorID, ghostColor);
-        }
+        PushStaticParams();
 
         // 闪白：瞬间到峰值后快速衰减
         if (_fxFlashElapsed < _fxFlashDur)
@@ -293,6 +302,36 @@ public class HPBarLiquid : MonoBehaviour
                 if (t2 >= 1f) { _fxGhostActive = false; fill = 0f; }
             }
             if (_ghostMat != null) _ghostMat.SetFloat(FillID, fill);
+        }
+    }
+
+    /// <summary>
+    /// 推送不依赖动画状态的参数（颜色 / 形状 / 频率等）。
+    /// 被 TickFX 每帧调用，也被 OnValidate 在 Inspector 改参时调用。
+    /// </summary>
+    private void PushStaticParams()
+    {
+        if (_mat == null) return;
+
+        _mat.SetFloat(WaveFreqID, waveFreq);
+        _mat.SetFloat(WaveSpeedID, waveSpeed);
+        _mat.SetFloat(AmbientWaveID, ambientWave);
+        _mat.SetFloat(RippleScaleID, rippleScale);
+        _mat.SetFloat(EdgeSoftnessID, edgeSoftness);
+        _mat.SetFloat(CrestWidthID, crestWidth);
+        _mat.SetFloat(CrestIntensityID, crestIntensity);
+        _mat.SetFloat(SurfaceGlowID, surfaceGlow);
+        _mat.SetFloat(SurfaceDarkenRangeID, surfaceDarkenRange);
+
+        _mat.SetColor(TopColorID, topColor);
+        _mat.SetColor(BottomColorID, bottomColor);
+        _mat.SetColor(CrestColorID, crestColor);
+        _mat.SetColor(SurfaceDarkenID, surfaceDarken);
+
+        if (_ghostMat != null)
+        {
+            _ghostMat.SetColor(TopColorID, ghostColor);
+            _ghostMat.SetColor(BottomColorID, ghostColor);
         }
     }
 
@@ -363,19 +402,7 @@ public class HPBarLiquid : MonoBehaviour
         }
 
         _mat.SetFloat(FlipID, side == 0 ? 0f : 1f);
-        _mat.SetFloat(WaveFreqID, waveFreq);
-        _mat.SetFloat(WaveSpeedID, waveSpeed);
-        _mat.SetFloat(RippleScaleID, rippleScale);
-        _mat.SetFloat(AmbientWaveID, ambientWave);
-        _mat.SetColor(TopColorID, topColor);
-        _mat.SetColor(BottomColorID, bottomColor);
-        _mat.SetColor(CrestColorID, crestColor);
-        _mat.SetFloat(EdgeSoftnessID, edgeSoftness);
-        _mat.SetFloat(CrestWidthID, crestWidth);
-        _mat.SetFloat(CrestIntensityID, crestIntensity);
-        _mat.SetFloat(SurfaceGlowID, surfaceGlow);
-        _mat.SetColor(SurfaceDarkenID, surfaceDarken);
-        _mat.SetFloat(SurfaceDarkenRangeID, surfaceDarkenRange);
+        PushStaticParams();
     }
 
     /// <summary>
@@ -456,7 +483,7 @@ public class HPBarLiquid : MonoBehaviour
         }
     }
 
-    private void UpdateFillAnimation()
+    private void UpdateFillAnimation(float dt)
     {
         if (!_fillAnimating)
         {
@@ -464,7 +491,7 @@ public class HPBarLiquid : MonoBehaviour
             return;
         }
 
-        _fillAnimElapsed += Time.deltaTime;
+        _fillAnimElapsed += dt;
         float t = Mathf.Clamp01(_fillAnimElapsed / Mathf.Max(0.001f, fillDuration));
 
         float eased = 1f - Mathf.Pow(1f - t, fillEasePower);
@@ -485,7 +512,7 @@ public class HPBarLiquid : MonoBehaviour
         _shakeElapsed = 0f;
     }
 
-    private void UpdateShake()
+    private void UpdateShake(float dt)
     {
         if (_shakeElapsed >= shakeDuration)
         {
@@ -493,7 +520,7 @@ public class HPBarLiquid : MonoBehaviour
             return;
         }
 
-        _shakeElapsed += Time.deltaTime;
+        _shakeElapsed += dt;
         float t = Mathf.Clamp01(_shakeElapsed / Mathf.Max(0.001f, shakeDuration));
 
         float envelope = Mathf.Pow(1f - t, shakeEasePower);
@@ -504,6 +531,30 @@ public class HPBarLiquid : MonoBehaviour
             _shakeAmount = 0f;
             _shakeElapsed = shakeDuration;
         }
+    }
+
+    /// <summary>
+    /// 让 Decoration（深红/深蓝底边）的宽度严格跟随当前液体填充量，
+    /// 只在有液体的区域下方显示，空槽区保持干净。
+    /// </summary>
+    private void SyncDecorationWidth(float ratio)
+    {
+        if (decorationImage == null) return;
+        RectTransform rt = decorationImage.rectTransform;
+        if (side == 0)
+        {
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(ratio, 1f);
+            rt.pivot = new Vector2(0f, 0.5f);
+        }
+        else
+        {
+            rt.anchorMin = new Vector2(1f - ratio, 0f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(1f, 0.5f);
+        }
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
     }
 
     /// <summary>
