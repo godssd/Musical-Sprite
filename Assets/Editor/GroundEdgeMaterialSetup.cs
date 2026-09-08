@@ -114,7 +114,26 @@ namespace MusicalSprite.Editor
         [MenuItem("Tools/Musical-Sprite/Generate Procedural Arena Ground Mesh")]
         public static void GenerateProceduralArenaGroundMesh()
         {
-            Mesh mesh = BuildProceduralGroundMesh(MinX, MaxX, MinY, MaxY, CornerRadius, GroundThickness, EdgeSpacing);
+            // The material is the SINGLE SOURCE OF TRUTH for all geometry-affecting
+            // parameters. Bake the mesh from its CURRENT values so re-running the tool
+            // never loses the user's tuned Arena parameters. Fall back to code constants
+            // only when the material (or a property) does not exist yet.
+            float minX = MinX, maxX = MaxX, minY = MinY, maxY = MaxY;
+            float radius = CornerRadius, thickness = GroundThickness;
+            float edgeOutset = GrassRimWidth, edgeOverhang = GrassOverhang;
+
+            Material groundMat = AssetDatabase.LoadAssetAtPath<Material>(GroundMatPath);
+            if (groundMat != null)
+            {
+                if (groundMat.HasProperty("_GroundMin"))   { Vector4 g = groundMat.GetVector("_GroundMin");   minX = g.x; minY = g.y; }
+                if (groundMat.HasProperty("_GroundMax"))   { Vector4 g = groundMat.GetVector("_GroundMax");   maxX = g.x; maxY = g.y; }
+                if (groundMat.HasProperty("_CornerRadius"))     radius    = groundMat.GetFloat("_CornerRadius");
+                if (groundMat.HasProperty("_GroundThickness"))  thickness = groundMat.GetFloat("_GroundThickness");
+                if (groundMat.HasProperty("_EdgeOutset"))       edgeOutset = groundMat.GetFloat("_EdgeOutset");
+                if (groundMat.HasProperty("_EdgeOverhang"))     edgeOverhang = groundMat.GetFloat("_EdgeOverhang");
+            }
+
+            Mesh mesh = BuildProceduralGroundMesh(minX, maxX, minY, maxY, radius, thickness, EdgeSpacing, edgeOutset, edgeOverhang);
             if (!System.IO.Directory.Exists(MeshFolder))
             {
                 System.IO.Directory.CreateDirectory(MeshFolder);
@@ -159,6 +178,8 @@ namespace MusicalSprite.Editor
             }
 
             // Always regenerate the procedural mesh so shader/mesh changes are picked up.
+            // The mesh bakes from the CURRENT material values (single source of truth),
+            // so your tuned Arena parameters are preserved — we never overwrite them here.
             GenerateProceduralArenaGroundMesh();
             Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(ProceduralGroundMeshPath);
             if (mesh == null)
@@ -167,17 +188,11 @@ namespace MusicalSprite.Editor
                 return;
             }
 
-            // Refresh code-driven parameters without overwriting runtime values like _CenterLineX.
+            // Only re-point the edge mask texture (import settings + reference).
+            // We deliberately do NOT reset any numeric material parameters here.
             Texture2D texE = AssetDatabase.LoadAssetAtPath<Texture2D>(TexEdge);
             EnsureEdgeTextureSettings(texE);
-
             groundMat.SetTexture("_EdgeTex", texE);
-            groundMat.SetFloat("_EdgeOutset", GrassRimWidth);
-            groundMat.SetFloat("_EdgeOverhang", GrassOverhang);
-            groundMat.SetFloat("_GroundThickness", GroundThickness);
-            groundMat.SetFloat("_EdgeTexTiling", 4.0f);
-            groundMat.SetFloat("_EdgeCutoff", 0.05f);
-            groundMat.SetFloat("_EdgeBrightness", 1.05f);
             EditorUtility.SetDirty(groundMat);
 
             foreach (string old in new[] { "ArenaLeft", "ArenaRight", "ArenaGround", "GrassFringe" })
@@ -305,8 +320,9 @@ namespace MusicalSprite.Editor
             mr.sharedMaterial = mat;
 
             BoxCollider bc = go.AddComponent<BoxCollider>();
-            bc.center = new Vector3((MinX + MaxX) * 0.5f, -GroundThickness * 0.5f, (MinY + MaxY) * 0.5f);
-            bc.size = new Vector3(MaxX - MinX, GroundThickness, MaxY - MinY);
+            float thickness = (mat != null && mat.HasProperty("_GroundThickness")) ? mat.GetFloat("_GroundThickness") : GroundThickness;
+            bc.center = new Vector3((MinX + MaxX) * 0.5f, -thickness * 0.5f, (MinY + MaxY) * 0.5f);
+            bc.size = new Vector3(MaxX - MinX, thickness, MaxY - MinY);
 
             Debug.Log($"[GroundEdge] {name}: procedural slab bounds={mesh.bounds}, thickness={GroundThickness}");
             return go;
@@ -322,7 +338,7 @@ namespace MusicalSprite.Editor
         //                         (uv2.y = 1). The outward offset is baked here.
         //   3) Side dirt walls  : outer profile pulled down (uv2.y = 2)
         // ----------------------------------------------------------------
-        private static Mesh BuildProceduralGroundMesh(float minX, float maxX, float minY, float maxY, float radius, float thickness, float edgeSpacing)
+        private static Mesh BuildProceduralGroundMesh(float minX, float maxX, float minY, float maxY, float radius, float thickness, float edgeSpacing, float edgeOutset, float edgeOverhang)
         {
             // 1) Inner profile of the top face.
             List<Vector2> innerProfile = BuildRoundedRectPath(minX, maxX, minY, maxY, radius, edgeSpacing, CornerSegments);
@@ -364,7 +380,7 @@ namespace MusicalSprite.Editor
             // so nothing "sticks out".
             List<Vector2> fieldProfile = new List<Vector2>(n);
             for (int i = 0; i < n; i++)
-                fieldProfile.Add(innerProfile[i] - outwardNormals[i] * GrassRimWidth);
+                fieldProfile.Add(innerProfile[i] - outwardNormals[i] * edgeOutset);
 
             List<Vector3> verts = new List<Vector3>();
             List<Vector3> normals = new List<Vector3>();
@@ -429,7 +445,7 @@ namespace MusicalSprite.Editor
             int rimOuterStart = verts.Count;
             for (int i = 0; i < n; i++)
             {
-                Vector2 p = innerProfile[i] + outwardNormals[i] * GrassOverhang;
+                Vector2 p = innerProfile[i] + outwardNormals[i] * edgeOverhang;
                 verts.Add(new Vector3(p.x, 0f, p.y));
                 normals.Add(Vector3.up);
                 uvs.Add(Vector2.zero);
@@ -437,7 +453,7 @@ namespace MusicalSprite.Editor
             }
             // Duplicate first outer rim point to close the UV loop cleanly.
             {
-                Vector2 p = innerProfile[0] + outwardNormals[0] * GrassOverhang;
+                Vector2 p = innerProfile[0] + outwardNormals[0] * edgeOverhang;
                 verts.Add(new Vector3(p.x, 0f, p.y));
                 normals.Add(Vector3.up);
                 uvs.Add(Vector2.zero);
