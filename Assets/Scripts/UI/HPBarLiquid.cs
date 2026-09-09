@@ -237,8 +237,18 @@ public class HPBarLiquid : MonoBehaviour
         if (scoreManager != null)
             scoreManager.OnHPChanged -= OnHPChanged;
 
-        if (_mat != null) { Destroy(_mat); _mat = null; }
-        if (_ghostMat != null) { Destroy(_ghostMat); _ghostMat = null; }
+        if (_mat != null)
+        {
+            if (Application.isPlaying) Destroy(_mat);
+            else DestroyImmediate(_mat);
+            _mat = null;
+        }
+        if (_ghostMat != null)
+        {
+            if (Application.isPlaying) Destroy(_ghostMat);
+            else DestroyImmediate(_ghostMat);
+            _ghostMat = null;
+        }
     }
 
     /// <summary>
