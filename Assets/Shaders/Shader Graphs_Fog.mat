@@ -42,15 +42,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _EndHeight: -771
-    - _Float: 0
-    - _FogDemnstiy: 1
-    - _NoiseScale: 6.03
-    - _NoiseSpeed: 0.335
+    - _EndHeight: -0.51
+    - _Float: 1
+    - _FogDemnstiy: 0.53
+    - _NoiseScale: 9.44
+    - _NoiseSpeed: 0.379
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _StartHeight: -43594
+    - _StartHeight: -3.3
     m_Colors:
-    - _FogColor: {r: 1, g: 1, b: 1, a: 0}
+    - _FogColor: {r: 0.14244395, g: 0.18141551, b: 0.31132078, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
