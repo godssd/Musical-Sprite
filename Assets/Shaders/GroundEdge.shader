@@ -42,6 +42,110 @@ Shader "MusicalSprite/GroundEdge"
         }
         LOD 100
 
+        HLSLINCLUDE
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+        TEXTURE2D(_RedMap);
+        SAMPLER(sampler_RedMap);
+        TEXTURE2D(_BlueMap);
+        SAMPLER(sampler_BlueMap);
+        TEXTURE2D(_EdgeTex);
+        SAMPLER(sampler_EdgeTex);
+
+        CBUFFER_START(UnityPerMaterial)
+            float4 _RedMap_ST;
+            float4 _BlueMap_ST;
+            float4 _EdgeTex_ST;
+            float4 _BaseColor;
+            float  _CenterLineX;
+            float  _CenterBlend;
+
+            float  _EdgeOutset;
+            float  _EdgeTexTiling;
+            float  _EdgeVerticalScale;
+            float  _EdgeCutoff;
+            float  _EdgeBrightness;
+            float  _EdgeOverhang;
+            float  _DebugMode;
+
+            float4 _GroundMin;
+            float4 _GroundMax;
+            float  _CornerRadius;
+            float  _GroundThickness;
+
+            float4 _SideColor;
+            float4 _BottomColor;
+            float4 _SideLightDir;
+        CBUFFER_END
+
+        // Signed-distance function for a rounded rectangle in the XZ plane.
+        float RoundedRectSDF(float2 p, float2 bmin, float2 bmax, float r)
+        {
+            float2 center = (bmin + bmax) * 0.5;
+            float2 halfSize = (bmax - bmin) * 0.5;
+            float2 d = abs(p - center) - halfSize + r;
+            return length(max(d, 0.0)) - r;
+        }
+
+        struct GroundDepthAttributes
+        {
+            float4 positionOS : POSITION;
+            float3 normalOS   : NORMAL;
+            float2 uv2        : TEXCOORD1;
+        };
+
+        struct GroundDepthVaryings
+        {
+            float4 positionCS : SV_POSITION;
+            float3 positionWS : TEXCOORD0;
+            float3 normalWS   : TEXCOORD1;
+            float2 edgeData   : TEXCOORD2;
+        };
+
+        GroundDepthVaryings GroundDepthVertex(GroundDepthAttributes input)
+        {
+            GroundDepthVaryings output;
+            output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+            output.positionCS = TransformWorldToHClip(output.positionWS);
+            output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+            output.edgeData = input.uv2;
+            return output;
+        }
+
+        // Keep the depth silhouette identical to the visible grass edge.
+        void ApplyGroundEdgeDepthClip(GroundDepthVaryings input)
+        {
+            float3 normalWS = normalize(input.normalWS);
+
+            // Side walls write depth; the hidden bottom cap does not.
+            if (input.edgeData.y > 1.5)
+            {
+                if (normalWS.y < -0.3)
+                    clip(-1.0);
+                return;
+            }
+
+            float2 rmin = _GroundMin.xy;
+            float2 rmax = _GroundMax.xy;
+            float edgeDist = RoundedRectSDF(input.positionWS.xz, rmin, rmax, _CornerRadius);
+
+            if (edgeDist <= -_EdgeOutset)
+                return;
+
+            if (edgeDist > _EdgeOverhang)
+                clip(-1.0);
+
+            float t = (edgeDist + _EdgeOutset) / max(0.0001, _EdgeOutset + _EdgeOverhang);
+            float2 edgeUV = float2(input.edgeData.x * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
+            float edgeAlpha = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, edgeUV).a;
+            edgeAlpha *= smoothstep(0.0, _CenterBlend, abs(input.positionWS.x - _CenterLineX));
+
+            float mask = smoothstep(_EdgeCutoff, _EdgeCutoff + 0.08, edgeAlpha);
+            if (mask < 0.5)
+                clip(-1.0);
+        }
+        ENDHLSL
+
         Pass
         {
             Name "ForwardLit"
@@ -55,8 +159,6 @@ Shader "MusicalSprite/GroundEdge"
             #pragma fragment frag
 
             #pragma multi_compile_fog
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             struct Attributes
             {
@@ -74,51 +176,6 @@ Shader "MusicalSprite/GroundEdge"
                 float2 uv         : TEXCOORD2;
                 float2 edgeData   : TEXCOORD3; // x = edgeU, y = edge flag
             };
-
-            TEXTURE2D(_RedMap);
-            SAMPLER(sampler_RedMap);
-            TEXTURE2D(_BlueMap);
-            SAMPLER(sampler_BlueMap);
-            TEXTURE2D(_EdgeTex);
-            SAMPLER(sampler_EdgeTex);
-
-            CBUFFER_START(UnityPerMaterial)
-                float4 _RedMap_ST;
-                float4 _BlueMap_ST;
-                float4 _EdgeTex_ST;
-                float4 _BaseColor;
-                float  _CenterLineX;
-                float  _CenterBlend;
-
-                float  _EdgeOutset;
-                float  _EdgeTexTiling;
-                float  _EdgeVerticalScale;
-                float  _EdgeCutoff;
-                float  _EdgeBrightness;
-                float  _EdgeOverhang;
-                float  _DebugMode;
-
-                float4 _GroundMin;
-                float4 _GroundMax;
-                float  _CornerRadius;
-                float  _GroundThickness;
-
-                float4 _SideColor;
-                float4 _BottomColor;
-                float4 _SideLightDir;
-            CBUFFER_END
-
-            // Signed-distance function for a rounded rectangle in the XZ plane.
-            // The mesh uses OUTWARD rounded corners (the arc bulges outside the rectangle).
-            // For that shape, the SDF is: length(max(abs(p)-halfSize+r, 0)) - r.
-            // Returns distance from p to the inner boundary (negative inside, positive outside).
-            float RoundedRectSDF(float2 p, float2 bmin, float2 bmax, float r)
-            {
-                float2 center = (bmin + bmax) * 0.5;
-                float2 halfSize = (bmax - bmin) * 0.5;
-                float2 d = abs(p - center) - halfSize + r;
-                return length(max(d, 0.0)) - r;
-            }
 
             Varyings vert(Attributes input)
             {
@@ -262,6 +319,47 @@ Shader "MusicalSprite/GroundEdge"
                 #endif
 
                 return float4(finalCol, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            Cull Off
+            ZWrite On
+            ColorMask R
+
+            HLSLPROGRAM
+            #pragma vertex GroundDepthVertex
+            #pragma fragment GroundDepthOnlyFragment
+
+            half GroundDepthOnlyFragment(GroundDepthVaryings input) : SV_Target
+            {
+                ApplyGroundEdgeDepthClip(input);
+                return input.positionCS.z;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            Cull Off
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex GroundDepthVertex
+            #pragma fragment GroundDepthNormalsFragment
+
+            half4 GroundDepthNormalsFragment(GroundDepthVaryings input) : SV_Target
+            {
+                ApplyGroundEdgeDepthClip(input);
+                return half4(NormalizeNormalPerPixel(input.normalWS), 0.0);
             }
             ENDHLSL
         }
