@@ -5,12 +5,12 @@ using UnityEngine;
 ///
 /// 当场景里 CharacterBattleSystem.allCharacters 为空时，自动造 "飞书原表 1:1" 的 5 个玩家角色 + 5 个对侧角色：
 ///   - 玩家（isPlayer=true）：小熊 (id=1, lane=-1, hp=100, combat=25, 能量 0)
-///   - 队伍 0~3（lane 0=大狗, 1=嘟嘟, 2=布姆, 3=小黑）
+///   - 队伍 0~3（lane 0=大狗, 1=屎屎, 2=布姆, 3=小黑）
 /// - 对侧用同样的 5 个数据，但 lane=-1/0..3（同样的 characterId 跨 side 各注册一次，互不冲突）
 ///
 /// 技能 skillId 与功能需求表 / 技能库（Skill Maker）保持一致：
-///   大狗=dog_howl / 嘟嘟=dudu_heal（美味牛角包）/ 布姆=bumu_bomb（炸弹雨）/ 小黑=xiaohei_clear（断弦高压）/ 小熊被动=内联减伤（不进技能库）。
-/// 输入方式按功能需求表（A/B/C 三键）：大狗 AAA / 嘟嘟 CBC / 布姆 ABA / 小黑 BCA。
+///   大狗=skill_3_howl / 屎屎=skill_4_croissant_heal（美味牛角包）/ 布姆=skill_5_bomb_rain（炸弹雨）/ 小黑=skill_6_power_surge（断弦高压）/ 小熊被动=内联减伤（不进技能库）。
+/// 输入方式按功能需求表（A/B/C 三键）：大狗 AAA / 屎屎 CBC / 布姆 ABA / 小黑 BCA。
 ///
 /// 用途：未在 Editor 里手动配置 / 未跑 Character Importer 时，让游戏仍可启动并跑出符合
 /// 「HP 上限=100+25+88+45+68=326 ; 战斗力=25+35+3+20+15=98」的稳定数值。
@@ -32,40 +32,40 @@ public static class DefaultSkillBootstrap
          "（3）大狗叫（将即将出现的音符附魔，每成功完成一个音符，增加分贝，结算完后发出狗叫按照分贝惊吓对手降低对方连击数）（必杀）",
          300,
          "狗叫后追加一次狗叫",
-         "dog_howl",
+         "skill_3_howl",
          "AAA"),
-        // id=3：队伍 lane1 嘟嘟
-        ("嘟嘟", "", 88, 3f,
+        // id=3：队伍 lane1 屎屎
+        ("屎屎", "", 88, 3f,
          "（4）（即将将出现的音符（6 个）附魔，每成功完成一个音符，就对自己进行一点生命治愈（3 点生命））（必杀）",
          200,
          "获得治疗后进入缓慢回复（大招之后每三秒根据收集音符数量 ×(1) 回复生命，持续一段时间（9s））",
-         "dudu_heal",
+         "skill_4_croissant_heal",
          "CBC"),
         // id=4：队伍 lane2 布姆（原表误写为“爱情”）
         ("布姆", "", 45, 20f,
          "（5）炸弹雨（即将将出现的音符（3 个）附魔，每完成一个音符就朝对手随机投射一颗小型炸弹（10 点伤害），造成直接生命伤害直到结算完毕）（必杀）",
          280,
          "生成更多音符 (+2)",
-         "bumu_bomb",
+         "skill_5_bomb_rain",
          "ABA"),
         // id=5：队伍 lane3 小黑
         ("小黑", "", 68, 15f,
          "（6）将身前区域的所有音符全部电没（视力完成最佳击中己方获得所有大招充能）之后陷入 3 秒沉睡",
          330,
          "范围加大，此后一段时间（30s）全队战斗力提升",
-         "xiaohei_clear",
+         "skill_6_power_surge",
          "BCA"),
     };
 
     /// <summary>默认「能力2」占位数据（与飞书表 1:1）。按 characterId-1 索引。
-    /// 团队角色（大狗/嘟嘟/布姆）的 能力2 是被动（输入方式留空）；玩家（小熊）的 能力2 是第二个主动（全体进攻，AAB，无能量）。小黑无 能力2。</summary>
+    /// 团队角色（大狗/屎屎/布姆）的 能力2 是被动（输入方式留空）；玩家（小熊）的 能力2 是第二个主动（全体进攻，AAB，无能量）。小黑无 能力2。</summary>
     public static readonly (string desc, string inputMethod, string overheat, string super)[] DefaultAbility2 = new (string, string, string, string)[]
     {
         // id=1 小熊：第二个主动（全体进攻）AAB，无能量
         ("（2）全体进攻（整个队伍战斗力上升（20%）但受到伤害增加20%）持续4s", "AAB", "战斗力额外提升5%", "战斗力额外提升15%"),
         // id=2 大狗：被动（每次扣血微增必杀积累）
         ("每次扣除生命都会微量增加必杀技积累", "", "", ""),
-        // id=3 嘟嘟：被动（全体防御下释放必杀回复更强）
+        // id=3 屎屎：被动（全体防御下释放必杀回复更强）
         ("全体防御下释放必杀回复效果更强", "", "", ""),
         // id=4 布姆：被动（全体进攻下间隔附魔投射炸弹）
         ("全体进攻下每隔一段时间会对一个音符进行附魔，成功完成后会投射一颗小型炸弹（解除进攻重置间隔）", "", "", ""),
@@ -167,7 +167,7 @@ public static class DefaultSkillBootstrap
         return c;
     }
 
-    /// <summary> 队伍角色 (id=1+(lane), isPlayer=false)。lane=0/1/2/3 对应大狗/嘟嘟/布姆/小黑。 </summary>
+    /// <summary> 队伍角色 (id=1+(lane), isPlayer=false)。lane=0/1/2/3 对应大狗/屎屎/布姆/小黑。 </summary>
     public static CharacterDataSO MakeDefaultTeam(int side, int laneIndex)
     {
         var rowIdx = laneIndex + 1; // lane 0 → row 1 (大狗)

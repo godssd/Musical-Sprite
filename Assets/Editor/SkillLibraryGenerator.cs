@@ -9,8 +9,8 @@ using System.IO;
     /// 编辑器加载时也会自动跑一次（create-if-missing）。
     ///
     /// 在 Assets/Resources/Skills/ 生成 SkillSO 资源：
-    ///   dog_howl（大狗叫）/ dudu_heal（美味牛角包）/ bumu_bomb（炸弹雨）
-    ///   / xiaohei_clear（断弦高压）/ xiaoxiong_defense_buff（全体防御）/ xiaoxiong_offense_buff（全体进攻）。
+    ///   skill_3_howl（大狗叫）/ skill_4_croissant_heal（美味牛角包）/ skill_5_bomb_rain（炸弹雨）
+    ///   / skill_6_power_surge（断弦高压）/ skill_1_team_defense（全体防御）/ skill_2_team_offense（全体进攻）。
     ///   （xiaoxiong_damage_reduce 已移除：它本是玩家减伤被动，不进技能库。）
     ///   （xiaohei_dispel 已移除：目前没有技能引用驱散效果，故不建库条目；仅保留 Dispel 效果代码——
     ///    SleepController.Dispel + ActiveSkillRuntime.DispelControl / effectType "Dispel" 作为预留词汇，
@@ -79,22 +79,22 @@ public static class SkillLibraryGenerator
         if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
         int created = 0;
-        created += Make("dog_howl", "大狗叫",
+        created += Make("skill_3_howl", "大狗叫",
             "（3）大狗叫（将即将出现的音符附魔，每成功完成一个音符，增加分贝，结算完后发出狗叫按照分贝惊吓对手降低对方连击数）（必杀）",
             300f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Left, SkillInputStep.Left },   // AAA → ←←←
             6, 3, "DogHowl", "{}", dir);
 
-        created += Make("dudu_heal", "美味牛角包",
+        created += Make("skill_4_croissant_heal", "美味牛角包",
             "（4）将即将出现的音符（6 个）附魔，每成功完成一个音符，就对自己进行一点生命治愈（3 点生命）（必杀）",
             200f, new SkillInputStep[] { SkillInputStep.Right, SkillInputStep.Down, SkillInputStep.Right }, // CBC → →↓→
             6, 3, "Heal", "{\"healPerNote\":3,\"slowRegenSeconds\":9}", dir);
 
-        created += Make("bumu_bomb", "炸弹雨",
+        created += Make("skill_5_bomb_rain", "炸弹雨",
             "（5）炸弹雨（将即将出现的音符（3 个）附魔，每完成一个音符就朝对手随机投射一颗小型炸弹（10 点伤害），造成直接生命伤害直到结算完毕）（必杀）",
             280f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Down, SkillInputStep.Left },    // ABA → ←↓←
             3, 3, "Bomb", "{\"bombDamage\":10}", dir);
 
-        created += Make("xiaohei_clear", "断弦高压",
+        created += Make("skill_6_power_surge", "断弦高压",
             "（6）将身前区域的所有音符全部电没（视为完成最佳命中，按各音符最高判定计分/充能）之后释放者小黑自身陷入 N 秒沉睡；过热 / 超级过热释放时额外激活自身 b 类战力 buff（橙黄）",
             330f, new SkillInputStep[] { SkillInputStep.Down, SkillInputStep.Right, SkillInputStep.Left },   // BCA → ↓→←
             0, 0, "ClearScreen", "{}", dir,
@@ -103,13 +103,13 @@ public static class SkillLibraryGenerator
             clearSuperRangeMult: 1.5f, clearSuperCombatMult: 1.8f, clearSuperBuffDuration: 30f);
 
         // 小熊双 buff（a 类，互斥顶替）
-        created += Make("xiaoxiong_defense_buff", "全体防御",
+        created += Make("skill_1_team_defense", "全体防御",
             "（1）全体防御：减少 20% 受到的伤害，持续 10s（同属 a 类 buff 不可共存）",
             0f, new SkillInputStep[0],
             0, 0, "Buff", "{}", dir,
             buffSlot: BuffSlot.A, buffSubType: BuffSubType.Defense, buffCombatMult: 1f, buffDamageReduce: 0.2f, buffDuration: 10f);
 
-        created += Make("xiaoxiong_offense_buff", "全体进攻",
+        created += Make("skill_2_team_offense", "全体进攻",
             "（2）全体进攻：整个队伍战斗力上升 40%，持续 10s（同属 a 类 buff 不可共存）",
             0f, new SkillInputStep[0],
             0, 0, "Buff", "{}", dir,

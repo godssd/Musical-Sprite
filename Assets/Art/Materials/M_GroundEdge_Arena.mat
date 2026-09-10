@@ -38,7 +38,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _CenterBlend: 0.15
-    - _CenterLineX: 0
+    - _CenterLineX: -0.60839814
     - _CornerRadius: 2
     - _DebugMode: 0
     - _EdgeBrightness: 1.05

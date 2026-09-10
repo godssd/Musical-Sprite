@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf887fdeb1f13794eaabaa2804fb00af, type: 3}
-  m_Name: "\u561F\u561F_3"
+  m_Name: "Aibo_2_Shit"
   m_EditorClassIdentifier: 
   characterId: 3
-  displayName: "\u5C4E\u5C4E"
+  displayName: "屎屎"
   isPlayer: 0
   profession: 
   blockColor: {r: 0.2, g: 0.8, b: 0.25, a: 1}
@@ -27,7 +27,7 @@ MonoBehaviour:
   passiveSkill: {fileID: 0}
   passiveSkillDescription: "\u5168\u4F53\u9632\u5FA1\u4E0B\u91CA\u653E\u5FC5\u6740\u56DE\u590D\u6548\u679C\u66F4\u5F3A"
   skills:
-  - skillId: dudu_heal
+  - skillId: skill_4_croissant_heal
     skill: {fileID: 11400000, guid: d070d90405440234b8604e930c4cea87, type: 2}
     energyCost: 160
     cooldown: 10

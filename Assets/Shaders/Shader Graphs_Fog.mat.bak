@@ -42,14 +42,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _EndHeight: 6.04
+    - _EndHeight: -0.51
     - _Float: 1
     - _FogDemnstiy: 0.53
     - _NoiseScale: 9.44
     - _NoiseSpeed: 0.379
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _StartHeight: -1.2
+    - _StartHeight: -3.3
     m_Colors:
     - _FogColor: {r: 0.14244395, g: 0.18141551, b: 0.31132078, a: 0}
   m_BuildTextureStacks: []

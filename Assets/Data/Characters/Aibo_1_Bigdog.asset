@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf887fdeb1f13794eaabaa2804fb00af, type: 3}
-  m_Name: "\u5927\u72D7_2"
+  m_Name: "Aibo_1_Bigdog"
   m_EditorClassIdentifier: 
   characterId: 2
   displayName: "\u5927\u72D7"
@@ -27,7 +27,7 @@ MonoBehaviour:
   passiveSkill: {fileID: 0}
   passiveSkillDescription: "\u6BCF\u6B21\u6263\u9664\u751F\u547D\u90FD\u4F1A\u5FAE\u91CF\u589E\u52A0\u5FC5\u6740\u6280\u79EF\u7D2F"
   skills:
-  - skillId: dog_howl
+  - skillId: skill_3_howl
     skill: {fileID: 11400000, guid: dbb5d7259fbddf84eaa0e23beab7b7af, type: 2}
     energyCost: 200
     cooldown: 10

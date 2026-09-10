@@ -5,7 +5,7 @@ using UnityEngine;
 /// 与飞书「角色系统」表一一对应：
 ///   1 小熊 → 灰
 ///   2 大狗 → 橙
-///   3 嘟嘟 → 绿
+///   3 屎屎 → 绿
 ///   4 布姆 → 白
 ///   5 小黑 → 黑
 /// 默认（未列出 id）→ 黄（占位）。
@@ -20,7 +20,7 @@ public static class CharacterPalette
         {
             case 1: return new Color(0.62f, 0.62f, 0.62f); // 小熊 灰
             case 2: return new Color(1.00f, 0.55f, 0.05f); // 大狗 橙
-            case 3: return new Color(0.20f, 0.80f, 0.25f); // 嘟嘟 绿
+            case 3: return new Color(0.20f, 0.80f, 0.25f); // 屎屎 绿
             case 4: return new Color(1.00f, 1.00f, 1.00f); // 布姆 白
             case 5: return new Color(0.05f, 0.05f, 0.05f); // 小黑 黑（近黑，避免纯黑在暗场不可见）
             default: return Color.yellow;

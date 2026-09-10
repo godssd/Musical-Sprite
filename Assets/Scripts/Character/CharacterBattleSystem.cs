@@ -144,7 +144,7 @@ public class CharacterBattleSystem : MonoBehaviour
             else
 #endif
             {
-                // 临时默认数据（飞书 1:1：小熊 + 大狗 + 嘟嘟 + 布姆 + 小黑），让系统可启动
+                // 临时默认数据（飞书 1:1：小熊 + 大狗 + 屎屎 + 布姆 + 小黑），让系统可启动
                 allCharacters = BuildDefaultCharacterArray();
                 usedDefault = true;
             }
@@ -207,7 +207,7 @@ public class CharacterBattleSystem : MonoBehaviour
             CombatSumBySide[side] = combat;
         }
 
-        Debug.Log($"[CharacterBattleSystem] 已装载角色：leftMaxHP={MaxHPBySide[0]} L_combat={CombatSumBySide[0]} | rightMaxHP={MaxHPBySide[1]} R_combat={CombatSumBySide[1]} | default={usedDefault} | 双方阵容均为 characterId 1..5（玩家=小熊，队伍=大狗/嘟嘟/布姆/小黑，镜像布置）");
+        Debug.Log($"[CharacterBattleSystem] 已装载角色：leftMaxHP={MaxHPBySide[0]} L_combat={CombatSumBySide[0]} | rightMaxHP={MaxHPBySide[1]} R_combat={CombatSumBySide[1]} | default={usedDefault} | 双方阵容均为 characterId 1..5（玩家=小熊，队伍=大狗/屎屎/布姆/小黑，镜像布置）");
         // 注：AutoFillMarkers 放到 Start 执行，避免 Awake 太早拿不到 NoteSpawner。
     }
 
@@ -304,7 +304,7 @@ public class CharacterBattleSystem : MonoBehaviour
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
         int n = 0;
         foreach (var m in markers) { ColorMarker(m); n++; }
-        Debug.Log($"[CharacterBattleSystem] 已按角色身份色上色 x {n} 个方块（小熊灰 / 大狗橙 / 嘟嘟绿 / 布姆白 / 小黑黑）");
+        Debug.Log($"[CharacterBattleSystem] 已按角色身份色上色 x {n} 个方块（小熊灰 / 大狗橙 / 屎屎绿 / 布姆白 / 小黑黑）");
     }
 
 #if UNITY_EDITOR

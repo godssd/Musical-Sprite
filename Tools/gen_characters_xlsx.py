@@ -85,13 +85,13 @@ rows = [
     make_row(1, "小熊（玩家自己角色）", "玩家自己角色", "演奏者", 100, 25.0, [
         ability(
             name="（1）全体防御（减少 20% 受到的伤害，持续 10s）",
-            skill_id="xiaoxiong_defense_buff", energy="无",
+            skill_id="skill_1_team_defense", energy="无",
             overheat="", super_oh="",
             input_="↓↓←",
         ),
         ability(
             name="（2）全体进攻（整个队伍战斗力上升 40%，持续 10s）",
-            skill_id="xiaoxiong_offense_buff", energy="无",
+            skill_id="skill_2_team_offense", energy="无",
             overheat="", super_oh="",
             input_="AAB",
         ),
@@ -102,18 +102,18 @@ rows = [
     make_row(2, "大狗", "队伍角色", "", 25, 35.0, [
         ability(
             name="（3）大狗叫（将即将出现的音符附魔，每成功完成一个音符，增加分贝，结算完后发出狗叫按照分贝惊吓对手降低对方连击数）（必杀）",
-            skill_id="dog_howl", energy="300",
+            skill_id="skill_3_howl", energy="300",
             overheat="狗叫后追加一次狗叫", super_oh="狗叫后追加两次狗叫",
             input_="←←←",
         ),
         *EMPTY5[1:],
     ]),
 
-    # 3) 嘟嘟 — 队伍 lane1，必杀治疗型
-    make_row(3, "嘟嘟", "队伍角色", "", 88, 3.0, [
+    # 3) 屎屎 — 队伍 lane1，必杀治疗型
+    make_row(3, "屎屎", "队伍角色", "", 88, 3.0, [
         ability(
             name="（4）美味牛角包：将即将出现的音符（6 个）附魔，每成功完成一个音符，就对自己进行一点生命治愈（3 点生命）（必杀）",
-            skill_id="dudu_heal", energy="200",
+            skill_id="skill_4_croissant_heal", energy="200",
             overheat="获得治疗后进入缓慢回复（大招之后每三秒根据收集音符数量 ×1 回复生命，持续 9s）",
             super_oh="出现更多附魔（+4）并进入缓慢回复",
             input_="→↓→",
@@ -125,7 +125,7 @@ rows = [
     make_row(4, "布姆", "队伍角色", "", 45, 20.0, [
         ability(
             name="（5）炸弹雨（将即将出现的音符（3 个）附魔，每完成一个音符就朝对手随机投射一颗小型炸弹（10 点伤害），造成直接生命伤害直到结算完毕）（必杀）",
-            skill_id="bumu_bomb", energy="280",
+            skill_id="skill_5_bomb_rain", energy="280",
             overheat="生成更多音符 (+2)", super_oh="进一步生成更多（+4）附魔音符",
             input_="←↓←",
         ),
@@ -136,7 +136,7 @@ rows = [
     make_row(5, "小黑", "队伍角色", "", 68, 15.0, [
         ability(
             name="（6）断弦高压：将身前区域的所有音符全部电没（视为完成最佳命中，按各音符最高判定计分/充能）之后释放者小黑自身陷入 3 秒沉睡",
-            skill_id="xiaohei_clear", energy="330",
+            skill_id="skill_6_power_surge", energy="330",
             overheat="范围加大，此后一段时间（30s）全队战斗力提升 30%",
             super_oh="范围加大，此后一段时间（30s）全队战斗力提升 80%",
             input_="↓→←",

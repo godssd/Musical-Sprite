@@ -60,3 +60,7 @@ crashlytics-build.properties
 
 Assets/Beatmaps
 UserSettings/Layouts/default-6000.dwlt
+
+# ===== 本地专属资产：只留本地，不上传不下载（用户约定 2026-09-09）=====
+# 仅排除「谱面 Assets/Beatmaps」与「音乐素材 Assets/Music/」两类；其余（含自作美术）一律正常上传
+Assets/Music/

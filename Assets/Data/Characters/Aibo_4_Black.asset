@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf887fdeb1f13794eaabaa2804fb00af, type: 3}
-  m_Name: "\u5C0F\u9ED1_5"
+  m_Name: "Aibo_4_Black"
   m_EditorClassIdentifier: 
   characterId: 5
   displayName: "\u5C0F\u9ED1"
@@ -27,7 +27,7 @@ MonoBehaviour:
   passiveSkill: {fileID: 0}
   passiveSkillDescription: 
   skills:
-  - skillId: xiaohei_clear
+  - skillId: skill_6_power_surge
     skill: {fileID: 11400000, guid: e7e76dc4c2f346f4486edf7c8a71b818, type: 2}
     energyCost: 230
     cooldown: 10
