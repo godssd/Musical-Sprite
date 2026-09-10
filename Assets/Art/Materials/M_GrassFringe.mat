@@ -39,7 +39,7 @@ Material:
     m_Floats:
     - _Brightness: 1.2
     - _CenterBlend: 0.15
-    - _CenterLineX: -0.60839814
+    - _CenterLineX: -0.9597
     - _ColorVariation: 0.55
     - _Cutoff: 0.25
     - _DebugAmount: 0

@@ -42,15 +42,19 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _EndHeight: 6.04
+    - _EdgeIntensity: 2.24
+    - _EdgeRange: 0.77
+    - _EndHeight: 0.83
     - _Float: 1
-    - _FogDemnstiy: 0.53
-    - _NoiseScale: 9.44
-    - _NoiseSpeed: 0.379
+    - _FogDemnstiy: 1.16
+    - _NoiseScale: 18.5
+    - _NoiseSpeed: 0.22
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _StartHeight: -1.2
+    - _StartHeight: -1.63
+    - _WaveStrength: -3.3
     m_Colors:
-    - _FogColor: {r: 0.14244395, g: 0.18141551, b: 0.31132078, a: 0}
+    - _EdgeColor: {r: 0.2735849, g: 0.068396226, b: 0.17099056, a: 1}
+    - _FogColor: {r: 0.0758814, g: 0.062745094, b: 0.16078432, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
