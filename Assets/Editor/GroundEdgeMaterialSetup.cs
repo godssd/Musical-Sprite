@@ -389,6 +389,12 @@ namespace MusicalSprite.Editor
             List<int> indices = new List<int>();
 
             // 2) Inner top face: centre point + inner-profile fan.
+            // wrapU: first profile point duplicated at the end with U += 1, so the
+            // closing fan triangle interpolates U continuously (0.99 -> 1.0) instead
+            // of jumping across the seam (0.99 -> 0.0), which used to smear the
+            // grass-edge texture along one triangle (the stray black bar).
+            float wrapU = edgeUs[0] + 1.0f;
+
             int centerIdx = verts.Count;
             verts.Add(new Vector3((minX + maxX) * 0.5f, 0f, (minY + maxY) * 0.5f));
             normals.Add(Vector3.up);
@@ -404,10 +410,18 @@ namespace MusicalSprite.Editor
                 uvs.Add(new Vector2(0f, 0f));
                 uv2s.Add(new Vector2(edgeUs[i], 1f)); // inner-field boundary (inner edge of rim)
             }
+            // Duplicate first inner-field boundary point to close the fan UV loop.
+            {
+                Vector2 p = fieldProfile[0];
+                verts.Add(new Vector3(p.x, 0f, p.y));
+                normals.Add(Vector3.up);
+                uvs.Add(new Vector2(0f, 0f));
+                uv2s.Add(new Vector2(wrapU, 1f));
+            }
 
             for (int i = 0; i < n; i++)
             {
-                int next = (i + 1) % n;
+                int next = i + 1; // no modulo: vertex n is the duplicate of vertex 0
                 // Profile is CCW; in Unity's left-handed coordinate system the
                 // visible face needs clockwise winding when viewed from above.
                 indices.Add(centerIdx);
@@ -420,10 +434,6 @@ namespace MusicalSprite.Editor
             //    innerProfile (outer edge = the real ground boundary). No geometry is
             //    created beyond the real ground, so no area is added.
             //
-            // Duplicate the first point at the end with U += 1 so the UV wrap-around
-            // seam does not compress the grass tiling into a tiny closing segment.
-            float wrapU = edgeUs[0] + 1.0f;
-
             int rimInnerStart = verts.Count;
             for (int i = 0; i < n; i++)
             {

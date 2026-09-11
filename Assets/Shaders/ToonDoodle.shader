@@ -229,10 +229,17 @@ Shader "MusicalSprite/ToonDoodle"
                 VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);
                 VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS);
 
-                // 视空间沿法线外扩固定世界宽度：偏移量不随距离缩放、不随帧变化。
+                // 视空间固定世界宽度外扩。方向 = 屏幕平面内从物体轴心指向顶点，
+                // 只依赖顶点位置（连续），不依赖法线——硬边立方体（如 BandMember
+                // 占位方块）各面法线不连续，沿法线外扩会把面片拉裂开。
                 float3 positionVS = posInputs.positionVS;
                 float3 normalVS   = normalize(mul((float3x3)UNITY_MATRIX_V, normalInputs.normalWS));
-                positionVS += normalVS * _OutlineWidth;
+
+                float3 pivotVS = TransformWorldToView(mul(GetObjectToWorldMatrix(), float4(0.0, 0.0, 0.0, 1.0)).xyz);
+                float2 dirVS = positionVS.xy - pivotVS.xy;
+                float dirLen = length(dirVS);
+                float2 offsetXY = (dirLen > 1e-4) ? dirVS / dirLen : normalize(normalVS.xy + float2(1e-4, 0.0));
+                positionVS.xy += offsetXY * _OutlineWidth;
 
                 output.positionCS = mul(UNITY_MATRIX_P, float4(positionVS, 1.0));
                 return output;

@@ -73,7 +73,6 @@ namespace MusicalSprite.EditorTools
                 groundMat.SetFloat("_ShadowIntensity", p.shadowIntensity);
                 groundMat.SetFloat("_ShadowSoftness", p.shadowSoftness);
                 groundMat.SetColor("_OutlineColor", p.outlineColor);
-                groundMat.SetFloat("_EdgeOutlineWidth", p.outlineWidth);
                 groundMat.SetFloat("_ShapeMode", 0f);
                 EditorUtility.SetDirty(groundMat);
                 Debug.Log($"[Terrain] 地面材质已写入：{groundMat.name}");
@@ -85,11 +84,25 @@ namespace MusicalSprite.EditorTools
 
             Vector2 centerL, centerR;
             float radiusL, radiusR;
-            ResolveStageGeometry(StageLeftName, p, true, out centerL, out radiusL);
-            ResolveStageGeometry(StageRightName, p, false, out centerR, out radiusR);
+            ResolveStageGeometry(StageLeftName, p, true, out centerL, out radiusL, out float topYL);
+            ResolveStageGeometry(StageRightName, p, false, out centerR, out radiusR, out float topYR);
 
-            ApplyStage(matL, p, p.stageMapLeft, centerL, radiusL, "左台面");
-            ApplyStage(matR, p, p.stageMapRight, centerR, radiusR, "右台面");
+            ApplyStage(matL, p, p.stageMapLeft, centerL, radiusL, topYL, "左台面");
+            ApplyStage(matR, p, p.stageMapRight, centerR, radiusR, topYR, "右台面");
+
+            // ---------- 2.5) 地面材质：写入台面占位裁剪 ----------
+            // 台面压在主地面边界上，地面草沿带会从台面直边侧壁下面探出来；
+            // shader 里矩形模式对台面圆盘范围内的地面片段直接 clip。
+            // 半径 +0.02 余量盖住草沿外挑（_EdgeOverhang 0.08 内的外挑尖端）。
+            if (groundMat != null)
+            {
+                groundMat.SetVector("_StageClipA",
+                    new Vector4(centerR.x, centerR.y, radiusR + 0.02f, 1f));
+                groundMat.SetVector("_StageClipB",
+                    new Vector4(centerL.x, centerL.y, radiusL + 0.02f, 1f));
+                EditorUtility.SetDirty(groundMat);
+                Debug.Log($"[Terrain] 地面台面占位裁剪已写入：A=({centerR.x:F2},{centerR.y:F2}) r={radiusR + 0.02f:F2}  B=({centerL.x:F2},{centerL.y:F2}) r={radiusL + 0.02f:F2}");
+            }
 
             // ---------- 3) 台面材质指回场景对象 ----------
             AssignStageMaterial(StageLeftName, matL);
@@ -103,7 +116,7 @@ namespace MusicalSprite.EditorTools
         }
 
         private static void ApplyStage(Material mat, TerrainProfileSO p, Texture2D map,
-            Vector2 center, float radius, string label)
+            Vector2 center, float radius, float topY, string label)
         {
             if (mat == null) return;
             mat.SetTexture("_StageMap", map);
@@ -112,6 +125,9 @@ namespace MusicalSprite.EditorTools
             mat.SetFloat("_ShapeMode", 1f);
             mat.SetVector("_DiscCenter", new Vector4(center.x, center.y, 0f, 0f));
             mat.SetFloat("_DiscRadius", radius);
+            // 侧壁判定高度 = 台面顶面世界 Y。侧壁网格法线被共用顶点平均坏，
+            // shader 只能靠世界高度区分顶面/侧壁（见 GroundEdge.shader 的 _DiscTopY）。
+            mat.SetFloat("_DiscTopY", topY);
             // 圆盘模式没有外扩几何：overhang 置 0，让草边 t 在边界处正好取到 1（草尖朝外）
             mat.SetFloat("_EdgeOutset", p.stageEdgeOutset);
             mat.SetFloat("_EdgeOverhang", 0f);
@@ -119,7 +135,6 @@ namespace MusicalSprite.EditorTools
             mat.SetFloat("_EdgeVerticalScale", p.stageEdgeVerticalScale);
             mat.SetFloat("_EdgeCutoff", p.stageEdgeCutoff);
             mat.SetColor("_OutlineColor", p.outlineColor);
-            mat.SetFloat("_EdgeOutlineWidth", p.outlineWidth);
             mat.SetFloat("_CenterLineX", p.centerLineX);
             mat.SetFloat("_CenterBlend", p.centerBlend);
             mat.SetColor("_SideColor", p.sideColor);
@@ -127,17 +142,19 @@ namespace MusicalSprite.EditorTools
             mat.SetFloat("_ShadowIntensity", p.shadowIntensity);
             mat.SetFloat("_ShadowSoftness", p.shadowSoftness);
             EditorUtility.SetDirty(mat);
-            Debug.Log($"[Terrain] {label}已写入：center=({center.x:F2},{center.y:F2}) r={radius:F2} map={(map ? map.name : "无")}");
+            Debug.Log($"[Terrain] {label}已写入：center=({center.x:F2},{center.y:F2}) r={radius:F2} topY={topY:F2} map={(map ? map.name : "无")}");
         }
 
-        /// <summary>圆心=台面根物体世界原点（半圆盘的直边中点）；半径=合并包围盒最大 XZ 半尺寸。</summary>
+        /// <summary>圆心=台面根物体世界原点（半圆盘的直边中点）；半径=合并包围盒最大 XZ 半尺寸；
+        /// topY=台面根物体自身包围盒的世界最高点（侧壁/顶面判定阈值 _DiscTopY）。</summary>
         private static void ResolveStageGeometry(string objectName, TerrainProfileSO p,
-            bool isLeft, out Vector2 center, out float radius)
+            bool isLeft, out Vector2 center, out float radius, out float topY)
         {
             center = isLeft
                 ? new Vector2(p.stageCenterLeftOverride.x, p.stageCenterLeftOverride.y)
                 : new Vector2(p.stageCenterRightOverride.x, p.stageCenterRightOverride.y);
             radius = p.stageRadiusManual;
+            topY = 0.6f; // 兜底：网格 y∈[0,0.15] × localScale.y=4
 
             var go = FindInOpenScenes(objectName);
             if (go == null)
@@ -145,6 +162,11 @@ namespace MusicalSprite.EditorTools
                 Debug.LogWarning($"[Terrain] 场景中未找到 {objectName}，使用 Profile 手动值。");
                 return;
             }
+
+            // 只看台面根物体自身的 Renderer：子对象（角色/指示器）会抬高包围盒
+            var rootRenderer = go.GetComponent<Renderer>();
+            if (rootRenderer != null)
+                topY = rootRenderer.bounds.max.y;
 
             if (p.autoStageCenterFromScene)
             {
