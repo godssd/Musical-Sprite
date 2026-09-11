@@ -953,7 +953,6 @@ GameObject:
   - component: {fileID: 215246052}
   - component: {fileID: 215246051}
   - component: {fileID: 215246050}
-  - component: {fileID: 215246054}
   m_Layer: 0
   m_Name: RightBand_Indicator_Lane2
   m_TagString: LaneIndicator
@@ -1067,35 +1066,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 215246048}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &215246054
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 215246048}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &216294173
 GameObject:
   m_ObjectHideFlags: 0
@@ -1166,8 +1136,8 @@ MonoBehaviour:
   scoreManager: {fileID: 2034993118}
   leftGround: {fileID: 0}
   rightGround: {fileID: 0}
-  leftGroundMat: {fileID: 0}
-  rightGroundMat: {fileID: 0}
+  leftGroundMat: {fileID: 2100000, guid: 127d09d415321694c823575d3577786c, type: 2}
+  rightGroundMat: {fileID: 2100000, guid: e8625321bb55b7049b948576ee45087c, type: 2}
   groundMaterial: {fileID: 2100000, guid: a529225c2fd61a143afedafeb1411555, type: 2}
   grassMaterial: {fileID: 2100000, guid: c67000119180cb7408209e8b5e2fc6bf, type: 2}
   ground: {fileID: 405065069}
@@ -1359,6 +1329,70 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 300, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!21 &290969386
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarLeft_Ghost
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 0
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 0
+    - _RippleScale: 0
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 14
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
+    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
+    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &298923499
 GameObject:
   m_ObjectHideFlags: 0
@@ -1371,7 +1405,6 @@ GameObject:
   - component: {fileID: 298923503}
   - component: {fileID: 298923502}
   - component: {fileID: 298923501}
-  - component: {fileID: 298923504}
   m_Layer: 0
   m_Name: RightBand_Member_Lane0
   m_TagString: Untagged
@@ -1417,7 +1450,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1468,35 +1501,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 298923499}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &298923504
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 298923499}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1583,13 +1587,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.51279944, y: -0, z: -0, w: 0.8585084}
-  m_LocalPosition: {x: -0.06, y: 9.87, z: -4.22}
+  m_LocalRotation: {x: 0.57357645, y: 0, z: 0, w: 0.81915206}
+  m_LocalPosition: {x: 0, y: 10.3, z: -2.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 61.701, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 62, y: 0, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1860,7 +1864,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 783856520}
+  m_Material: {fileID: 290969386}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -2128,7 +2132,6 @@ GameObject:
   - component: {fileID: 430111060}
   - component: {fileID: 430111059}
   - component: {fileID: 430111058}
-  - component: {fileID: 430111062}
   m_Layer: 0
   m_Name: LeftBand_Indicator_Lane3
   m_TagString: LaneIndicator
@@ -2242,35 +2245,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 430111056}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &430111062
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 430111056}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &430519700
 GameObject:
   m_ObjectHideFlags: 0
@@ -2283,7 +2257,6 @@ GameObject:
   - component: {fileID: 430519704}
   - component: {fileID: 430519703}
   - component: {fileID: 430519702}
-  - component: {fileID: 430519705}
   m_Layer: 0
   m_Name: RightBand_Member_Lane3
   m_TagString: Untagged
@@ -2329,7 +2302,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2380,35 +2353,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 430519700}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &430519705
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 430519700}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &443510691
 GameObject:
   m_ObjectHideFlags: 0
@@ -2913,6 +2857,70 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 484427040}
   m_CullTransparentMesh: 1
+--- !u!21 &507348070
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarRight
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0.0102
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 1
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 1
+    - _RippleScale: 0.15
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0.4
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 12
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.05, g: 0.28, b: 1, a: 1}
+    - _CrestColor: {r: 0.043880865, g: 0.038714856, b: 0.2830189, a: 1}
+    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
+    - _TopColor: {r: 0, g: 0.54250443, b: 0.7924528, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &511448552
 GameObject:
   m_ObjectHideFlags: 0
@@ -2925,7 +2933,6 @@ GameObject:
   - component: {fileID: 511448556}
   - component: {fileID: 511448555}
   - component: {fileID: 511448554}
-  - component: {fileID: 511448557}
   m_Layer: 0
   m_Name: LeftBand_Member_Lane1
   m_TagString: Untagged
@@ -2971,7 +2978,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3022,35 +3029,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 511448552}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &511448557
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 511448552}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &542948927
 GameObject:
   m_ObjectHideFlags: 0
@@ -3650,7 +3628,6 @@ GameObject:
   - component: {fileID: 604593946}
   - component: {fileID: 604593945}
   - component: {fileID: 604593944}
-  - component: {fileID: 604593947}
   m_Layer: 0
   m_Name: RightBand_Protagonist
   m_TagString: Untagged
@@ -3696,7 +3673,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0e82414817fc08c4e95b6f629f9116ee, type: 2}
+  - {fileID: 2100000, guid: 25959d7bdef7ebb48a094ca014c290eb, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3747,35 +3724,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 604593942}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &604593947
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 604593942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &606719832
 GameObject:
   m_ObjectHideFlags: 0
@@ -4062,7 +4010,6 @@ GameObject:
   - component: {fileID: 692291030}
   - component: {fileID: 692291029}
   - component: {fileID: 692291028}
-  - component: {fileID: 692291032}
   m_Layer: 0
   m_Name: RightBand_Indicator_Lane1
   m_TagString: LaneIndicator
@@ -4176,35 +4123,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 692291026}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &692291032
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 692291026}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &697127453
 GameObject:
   m_ObjectHideFlags: 0
@@ -4580,7 +4498,7 @@ Transform:
   m_GameObject: {fileID: 751003326}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 22.79, y: -2.55, z: 3.08}
+  m_LocalPosition: {x: 31.47, y: -2.55, z: 2.38}
   m_LocalScale: {x: 18.77425, y: 4.7176075, z: 13.607979}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4719,14 +4637,14 @@ RectTransform:
   m_AnchoredPosition: {x: 2.5, y: 0.5}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!21 &783856520
+--- !u!21 &828183950
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarLeft_Ghost
+  m_Name: M_HPBarLiquid_HPBarLeft
   m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -4748,18 +4666,18 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AmbientWave: 0
+    - _AmbientWave: 0.0049
     - _BlobFreq: 5.5
     - _BlobIntensity: 0
     - _BlobSoftness: 0.22
     - _BlobThreshold: 0.42
     - _ColorMask: 15
-    - _CrestIntensity: 0
+    - _CrestIntensity: 1
     - _CrestWidth: 0.08
     - _EdgeSoftness: 0.004
     - _Fill: 0
     - _Flip: 0
-    - _RippleScale: 0
+    - _RippleScale: 0.15
     - _SloshFreq: 2.2
     - _SloshSpeed: 7
     - _Stencil: 0
@@ -4768,19 +4686,19 @@ Material:
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
     - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0
+    - _SurfaceGlow: 0.4
     - _TopGlossIntensity: 0
     - _TopGlossRange: 0.22
     - _UseUIAlphaClip: 0
     - _WaveAmp: 0
-    - _WaveFreq: 14
+    - _WaveFreq: 12
     - _WaveSpeed: 5
     m_Colors:
-    - _BottomColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
-    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
-    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
-    - _TopColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
+    - _BottomColor: {r: 0.7075472, g: 0.10702395, b: 0, a: 1}
+    - _CrestColor: {r: 0.18867922, g: 0.057849765, b: 0.094645545, a: 1}
+    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
+    - _TopColor: {r: 1, g: 0.04214135, b: 0.033018887, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!1 &832575517
@@ -5824,7 +5742,6 @@ GameObject:
   - component: {fileID: 1049888506}
   - component: {fileID: 1049888505}
   - component: {fileID: 1049888504}
-  - component: {fileID: 1049888507}
   m_Layer: 0
   m_Name: LeftBand_Stage
   m_TagString: Untagged
@@ -5842,7 +5759,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -8, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2000546127}
@@ -5922,35 +5839,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1049888502}
   m_Mesh: {fileID: 116603575}
---- !u!114 &1049888507
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1049888502}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1062399893
 GameObject:
   m_ObjectHideFlags: 0
@@ -6141,7 +6029,6 @@ GameObject:
   - component: {fileID: 1085904992}
   - component: {fileID: 1085904991}
   - component: {fileID: 1085904990}
-  - component: {fileID: 1085904993}
   m_Layer: 0
   m_Name: LeftBand_Protagonist
   m_TagString: Untagged
@@ -6187,7 +6074,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0e82414817fc08c4e95b6f629f9116ee, type: 2}
+  - {fileID: 2100000, guid: 25959d7bdef7ebb48a094ca014c290eb, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6238,35 +6125,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1085904988}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &1085904993
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1085904988}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1110419722
 GameObject:
   m_ObjectHideFlags: 0
@@ -6295,7 +6153,7 @@ Transform:
   m_GameObject: {fileID: 1110419722}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -38.5, y: -45.3, z: 0.589}
+  m_LocalPosition: {x: -66.1, y: -144, z: 0.66}
   m_LocalScale: {x: 49.570343, y: 1, z: 0.43718743}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6485,75 +6343,63 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.5355337
+      value: 0.61993
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.40564013
+      value: 0.61993
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.32636586
+      value: 0.61993
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.11
+      value: 3.12
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.02
+      value: 2.95
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.06
+      value: -0.78
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9169921
+      value: 0.97379863
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.39890403
+      value: -0.22741205
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.00022316558
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.00096827786
+      value: -1.4551915e-10
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -47.019
-      objectReference: {fileID: 0}
-    - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0.099
-      objectReference: {fileID: 0}
-    - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -0.164
+      value: -26.29
       objectReference: {fileID: 0}
     - target: {fileID: 3250937567400712602, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: enableBillboard
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.94897
-      objectReference: {fileID: 0}
-    - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2.73
+      value: -2.46
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.46
+      value: -4.7
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.16
+      value: 7.3
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.w
@@ -7001,7 +6847,6 @@ GameObject:
   - component: {fileID: 1157647256}
   - component: {fileID: 1157647255}
   - component: {fileID: 1157647254}
-  - component: {fileID: 1157647257}
   m_Layer: 0
   m_Name: RightBand_Member_Lane2
   m_TagString: Untagged
@@ -7047,7 +6892,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -7098,35 +6943,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1157647252}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &1157647257
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1157647252}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1161746192
 GameObject:
   m_ObjectHideFlags: 0
@@ -7658,7 +7474,6 @@ GameObject:
   - component: {fileID: 1221926466}
   - component: {fileID: 1221926465}
   - component: {fileID: 1221926464}
-  - component: {fileID: 1221926468}
   m_Layer: 0
   m_Name: LeftBand_Indicator_Lane2
   m_TagString: LaneIndicator
@@ -7772,35 +7587,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1221926462}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &1221926468
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1221926462}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1229146208
 GameObject:
   m_ObjectHideFlags: 0
@@ -8111,7 +7897,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1607157382}
+  m_Material: {fileID: 507348070}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -8149,7 +7935,6 @@ GameObject:
   - component: {fileID: 1346042359}
   - component: {fileID: 1346042358}
   - component: {fileID: 1346042357}
-  - component: {fileID: 1346042360}
   m_Layer: 0
   m_Name: LeftBand_Member_Lane2
   m_TagString: Untagged
@@ -8195,7 +7980,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -8246,35 +8031,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1346042355}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &1346042360
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1346042355}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1350589327
 GameObject:
   m_ObjectHideFlags: 0
@@ -8549,7 +8305,6 @@ GameObject:
   - component: {fileID: 1411842339}
   - component: {fileID: 1411842338}
   - component: {fileID: 1411842337}
-  - component: {fileID: 1411842341}
   m_Layer: 0
   m_Name: RightBand_Indicator_Lane3
   m_TagString: LaneIndicator
@@ -8663,35 +8418,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1411842335}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &1411842341
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1411842335}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1412000642
 GameObject:
   m_ObjectHideFlags: 0
@@ -8883,7 +8609,6 @@ GameObject:
   - component: {fileID: 1447725153}
   - component: {fileID: 1447725152}
   - component: {fileID: 1447725151}
-  - component: {fileID: 1447725155}
   m_Layer: 0
   m_Name: RightBand_Indicator_Lane0
   m_TagString: LaneIndicator
@@ -8997,35 +8722,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1447725149}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &1447725155
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1447725149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1457371150
 GameObject:
   m_ObjectHideFlags: 0
@@ -9612,7 +9308,6 @@ GameObject:
   - component: {fileID: 1583149793}
   - component: {fileID: 1583149792}
   - component: {fileID: 1583149791}
-  - component: {fileID: 1583149795}
   m_Layer: 0
   m_Name: LeftBand_Indicator_Lane1
   m_TagString: LaneIndicator
@@ -9726,35 +9421,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1583149789}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &1583149795
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1583149789}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1589379650
 GameObject:
   m_ObjectHideFlags: 0
@@ -9888,14 +9554,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &1607157382
+--- !u!21 &1590726921
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarRight
+  m_Name: M_HPBarLiquid_HPBarRight_Ghost
   m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -9917,18 +9583,18 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AmbientWave: 0.0102
+    - _AmbientWave: 0
     - _BlobFreq: 5.5
     - _BlobIntensity: 0
     - _BlobSoftness: 0.22
     - _BlobThreshold: 0.42
     - _ColorMask: 15
-    - _CrestIntensity: 1
+    - _CrestIntensity: 0
     - _CrestWidth: 0.08
     - _EdgeSoftness: 0.004
     - _Fill: 0
     - _Flip: 1
-    - _RippleScale: 0.15
+    - _RippleScale: 0
     - _SloshFreq: 2.2
     - _SloshSpeed: 7
     - _Stencil: 0
@@ -9937,19 +9603,19 @@ Material:
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
     - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0.4
+    - _SurfaceGlow: 0
     - _TopGlossIntensity: 0
     - _TopGlossRange: 0.22
     - _UseUIAlphaClip: 0
     - _WaveAmp: 0
-    - _WaveFreq: 12
+    - _WaveFreq: 14
     - _WaveSpeed: 5
     m_Colors:
-    - _BottomColor: {r: 0.05, g: 0.28, b: 1, a: 1}
-    - _CrestColor: {r: 0.043880865, g: 0.038714856, b: 0.2830189, a: 1}
-    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
-    - _TopColor: {r: 0, g: 0.54250443, b: 0.7924528, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
+    - _BottomColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
+    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
+    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!1 &1631192984
@@ -10286,7 +9952,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1706767855}
+  m_Material: {fileID: 828183950}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -10409,55 +10075,47 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.5626362
+      value: 0.61993
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.4424647
+      value: 0.61993
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.7459618
+      value: 0.61993
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -12.19
+      value: -9.67
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.96
+      value: 4.59
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.74
+      value: 1.07
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.90956515
+      value: 0.9568652
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.41556066
+      value: -0.2905322
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.00021197295
+      value: -2.3283062e-10
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.00070547336
+      value: -1.4233591e-10
       objectReference: {fileID: 0}
     - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -49.109
-      objectReference: {fileID: 0}
-    - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0.085
-      objectReference: {fileID: 0}
-    - target: {fileID: 1963952769572339416, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -0.128
+      value: -33.78
       objectReference: {fileID: 0}
     - target: {fileID: 3250937567400712602, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: enableBillboard
@@ -10465,7 +10123,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -6.99
+      value: -2.46
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.y
@@ -10473,7 +10131,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.78
+      value: 7.3
       objectReference: {fileID: 0}
     - target: {fileID: 5387956854075987817, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
       propertyPath: m_LocalRotation.w
@@ -10528,70 +10186,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a185274cc58a6064aac63258f09dfb77, type: 3}
---- !u!21 &1706767855
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarLeft
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0.0049
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 1
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 0
-    - _RippleScale: 0.15
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0.4
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 12
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.7075472, g: 0.10702395, b: 0, a: 1}
-    - _CrestColor: {r: 0.18867922, g: 0.057849765, b: 0.094645545, a: 1}
-    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
-    - _TopColor: {r: 1, g: 0.04214135, b: 0.033018887, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &1761810944
 GameObject:
   m_ObjectHideFlags: 0
@@ -11114,7 +10708,6 @@ GameObject:
   - component: {fileID: 1834062520}
   - component: {fileID: 1834062519}
   - component: {fileID: 1834062518}
-  - component: {fileID: 1834062521}
   m_Layer: 0
   m_Name: RightBand_Stage
   m_TagString: Untagged
@@ -11132,7 +10725,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
   m_LocalPosition: {x: 8, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1472453598}
@@ -11212,35 +10805,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1834062516}
   m_Mesh: {fileID: 1868298019}
---- !u!114 &1834062521
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1834062516}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &1858881654
 GameObject:
   m_ObjectHideFlags: 0
@@ -11885,70 +11449,6 @@ RectTransform:
   m_AnchoredPosition: {x: 2.5, y: 0.5}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!21 &1970033687
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarRight_Ghost
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 0
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 1
-    - _RippleScale: 0
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 14
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
-    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
-    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
-    - _TopColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &1970716610
 GameObject:
   m_ObjectHideFlags: 0
@@ -12306,7 +11806,6 @@ GameObject:
   - component: {fileID: 2022116582}
   - component: {fileID: 2022116581}
   - component: {fileID: 2022116580}
-  - component: {fileID: 2022116583}
   m_Layer: 0
   m_Name: LeftBand_Member_Lane3
   m_TagString: Untagged
@@ -12352,7 +11851,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12403,35 +11902,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2022116578}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &2022116583
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2022116578}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &2022469897
 GameObject:
   m_ObjectHideFlags: 0
@@ -12481,7 +11951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1970033687}
+  m_Material: {fileID: 1590726921}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -12614,7 +12084,6 @@ GameObject:
   - component: {fileID: 2031485183}
   - component: {fileID: 2031485182}
   - component: {fileID: 2031485181}
-  - component: {fileID: 2031485184}
   m_Layer: 0
   m_Name: RightBand_Member_Lane1
   m_TagString: Untagged
@@ -12631,7 +12100,7 @@ Transform:
   m_GameObject: {fileID: 2031485179}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 6.5, y: 0.33, z: -0.75}
+  m_LocalPosition: {x: 6.5, y: 4.827, z: -0.75}
   m_LocalScale: {x: 0.45, y: 0.6, z: 0.45}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12660,7 +12129,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12711,35 +12180,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2031485179}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &2031485184
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2031485179}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &2034915250
 GameObject:
   m_ObjectHideFlags: 0
@@ -12752,7 +12192,6 @@ GameObject:
   - component: {fileID: 2034915254}
   - component: {fileID: 2034915253}
   - component: {fileID: 2034915252}
-  - component: {fileID: 2034915255}
   m_Layer: 0
   m_Name: LeftBand_Member_Lane0
   m_TagString: Untagged
@@ -12798,7 +12237,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: eebbc341803bf5147a5bae6911955523, type: 2}
+  - {fileID: 2100000, guid: dcb80022f80acad4eb69194deb867aec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12849,35 +12288,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2034915250}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &2034915255
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2034915250}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &2034993117
 GameObject:
   m_ObjectHideFlags: 0
@@ -13575,7 +12985,6 @@ GameObject:
   - component: {fileID: 2126044411}
   - component: {fileID: 2126044410}
   - component: {fileID: 2126044409}
-  - component: {fileID: 2126044413}
   m_Layer: 0
   m_Name: LeftBand_Indicator_Lane0
   m_TagString: LaneIndicator
@@ -13689,35 +13098,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2126044407}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &2126044413
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2126044407}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6336b1643c465c94795198f83c59c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shadowMaterial: {fileID: 2100000, guid: e0d9d89e0fdc4260a4c6bc230b282e2e, type: 2}
-  baseRadius: 0.35
-  heightScaleFactor: 0.25
-  maxRadius: 0.9
-  offsetByLightDir: 1
-  lightOffsetScale: 0.35
-  lightSquash: 0.35
-  defaultLightDir: {x: 0.4, y: 1, z: 0.3}
-  fadeStartHeight: 0.3
-  fadeEndHeight: 1.5
-  alphaMultiplier: 0.7
-  groundOffset: 0.03
-  raycastTopOffset: 0.5
-  raycastMaxDistance: 3
 --- !u!1 &2132954561
 GameObject:
   m_ObjectHideFlags: 0
