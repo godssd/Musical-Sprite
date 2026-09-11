@@ -266,6 +266,7 @@ public class BlobShadow : MonoBehaviour
                 shadowRenderer.enabled = alpha > 0.01f && shadowMaterial != null;
                 if (shadowRenderer.enabled)
                 {
+                    if (mpb == null) mpb = new MaterialPropertyBlock();
                     shadowRenderer.GetPropertyBlock(mpb);
                     Color c = shadowMaterial.GetColor(s_Color);
                     c.a = alpha;
