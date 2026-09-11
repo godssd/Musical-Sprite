@@ -16,6 +16,7 @@ namespace MusicalSprite.EditorTools
         private const string StageMatLeftName = "M_GroundEdge_Stage_A";
         private const string StageMatRightName = "M_GroundEdge_Stage_B";
         private const string GroundEdgeShaderName = "MusicalSprite/GroundEdge";
+        private const string DefaultProfilePath = "Assets/TerrainProfiles/Forest.asset";
 
         [MenuItem("Tools/Musical-Sprite/Terrain/Apply Selected Terrain Profile")]
         public static void ApplySelected()
@@ -23,8 +24,14 @@ namespace MusicalSprite.EditorTools
             var profile = Selection.activeObject as TerrainProfileSO;
             if (profile == null)
             {
-                Debug.LogError("[Terrain] 请先在 Project 窗口选中一个 TerrainProfileSO，再运行本菜单。");
-                return;
+                // 兜底：没选中时自动用默认 Profile，不再报错打断
+                profile = AssetDatabase.LoadAssetAtPath<TerrainProfileSO>(DefaultProfilePath);
+                if (profile == null)
+                {
+                    Debug.LogError($"[Terrain] 未选中 TerrainProfileSO，且默认配置 {DefaultProfilePath} 不存在。请选中一份 Profile 后再运行。");
+                    return;
+                }
+                Debug.Log($"[Terrain] 未选中 Profile，自动使用默认配置：{profile.name}");
             }
             Apply(profile);
         }
