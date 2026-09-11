@@ -157,8 +157,8 @@ namespace MusicalSprite.EditorTools
             }
         }
 
-        /// <summary>把台面材质指回场景对象。只替换旧红蓝台面材质 / 台面 GroundEdge 材质的槽位，
-        /// 不碰其他材质（防止误伤可能挂在层级下的 HitLine 等对象）。</summary>
+        /// <summary>把台面材质指回场景对象。对台面根物体自身的 Renderer 强制赋值（确定性），
+        /// 子对象（角色槽位、指示器等）不碰；被替换掉的旧材质名会打进日志。</summary>
         private static void AssignStageMaterial(string objectName, Material mat)
         {
             if (mat == null) return;
@@ -169,27 +169,23 @@ namespace MusicalSprite.EditorTools
                 return;
             }
             int slots = 0;
-            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
             {
+                // 只接管台面根物体自带的渲染器；子对象可能是角色/指示器，不碰
+                if (r.gameObject != go.gameObject) continue;
                 var mats = r.sharedMaterials;
-                bool changed = false;
+                var oldNames = new string[mats.Length];
                 for (int i = 0; i < mats.Length; i++)
                 {
-                    var m = mats[i];
-                    if (m == null) continue;
-                    bool isStageSlot = m == mat
-                        || m.name == "M_ArenaRed" || m.name == "M_ArenaBlue"
-                        || m.name.StartsWith("M_GroundEdge_Stage");
-                    if (isStageSlot)
-                    {
-                        mats[i] = mat;
-                        changed = true;
-                        slots++;
-                    }
+                    oldNames[i] = mats[i] != null ? mats[i].name : "<null>";
+                    mats[i] = mat;
+                    slots++;
                 }
-                if (changed) r.sharedMaterials = mats;
+                r.sharedMaterials = mats;
+                Debug.Log($"[Terrain] {objectName} 根渲染器材质：[{string.Join(", ", oldNames)}] → {mat.name}");
             }
-            Debug.Log($"[Terrain] {objectName} 台面材质已指回（{slots} 个槽位）。");
+            if (slots == 0)
+                Debug.LogWarning($"[Terrain] {objectName} 根物体上没有 Renderer！请检查层级结构。");
         }
 
         private static Material FindGroundMaterial(Shader shader)

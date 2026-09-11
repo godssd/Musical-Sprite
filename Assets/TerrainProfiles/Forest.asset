@@ -23,8 +23,8 @@ MonoBehaviour:
   edgeVerticalScale: 0.94
   edgeCutoff: 0.05
   edgeOverhang: 0.08
-  groundMin: {r: -8, g: -3.75, b: 0, a: 0}
-  groundMax: {r: 8, g: 3.75, b: 0, a: 0}
+  groundMin: {x: -8, y: -3.75, z: 0, w: 0}
+  groundMax: {x: 8, y: 3.75, z: 0, w: 0}
   cornerRadius: 2
   groundThickness: 0.8
   sideColor: {r: 0.45, g: 0.32, b: 0.22, a: 1}
@@ -41,6 +41,6 @@ MonoBehaviour:
   stageEdgeCutoff: 0.05
   autoStageCenterFromScene: 1
   autoStageRadiusFromScene: 1
-  stageCenterLeftOverride: {r: -8, g: 0, b: 0, a: 0}
-  stageCenterRightOverride: {r: 8, g: 0, b: 0, a: 0}
+  stageCenterLeftOverride: {x: -8, y: 0, z: 0, w: 0}
+  stageCenterRightOverride: {x: 8, y: 0, z: 0, w: 0}
   stageRadiusManual: 1.2
