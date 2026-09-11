@@ -38,21 +38,22 @@ Material:
     m_Ints: []
     m_Floats:
     - _CenterBlend: 0.15
-    - _CenterLineX: -0.9597
+    - _CenterLineX: -1.4400078
     - _CornerRadius: 2
     - _DebugMode: 0
-    - _EdgeBrightness: 1.05
     - _EdgeCutoff: 0.05
     - _EdgeOutset: 0.23
     - _EdgeOverhang: 0.08
     - _EdgeTexTiling: 19
     - _EdgeVerticalScale: 0.94
     - _GroundThickness: 0.8
+    - _ShadowIntensity: 0.55
+    - _ShadowSoftness: 0.35
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BottomColor: {r: 0.3, g: 0.2, b: 0.15, a: 1}
     - _GroundMax: {r: 8, g: 3.75, b: 0, a: 0}
     - _GroundMin: {r: -8, g: -3.75, b: 0, a: 0}
+    - _ShadowColor: {r: 0.35, g: 0.32, b: 0.45, a: 1}
     - _SideColor: {r: 0.45, g: 0.32, b: 0.22, a: 1}
     - _SideLightDir: {r: 0.5, g: 0.3, b: 0.8, a: 0}
   m_BuildTextureStacks: []

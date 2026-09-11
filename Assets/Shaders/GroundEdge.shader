@@ -15,7 +15,6 @@ Shader "MusicalSprite/GroundEdge"
         _EdgeTexTiling("Edge Texture Tiling", Float) = 2.0
         _EdgeVerticalScale("Edge Vertical Scale", Float) = 1.0
         _EdgeCutoff("Edge Alpha Cutoff", Range(0, 1)) = 0.25
-        _EdgeBrightness("Edge Color Intensity", Float) = 1.05
         _EdgeOverhang("Edge Overhang", Float) = 0.08
         [IntRange] _DebugMode("Debug Mode (0=off, 1=regions, 2=grass alpha heatmap)", Range(0, 2)) = 0
 
@@ -27,8 +26,12 @@ Shader "MusicalSprite/GroundEdge"
 
         [Header(Side and Bottom)]
         _SideColor("Side Dirt Color", Color) = (0.45, 0.32, 0.22, 1)
-        _BottomColor("Bottom Color", Color) = (0.3, 0.2, 0.15, 1)
         _SideLightDir("Fake Side Light Dir", Vector) = (0.5, 0.3, 0.8, 0)
+
+        [Header(Ground Shadow)]
+        _ShadowColor("Shadow Tint", Color) = (0.35, 0.32, 0.45, 1)
+        _ShadowIntensity("Shadow Intensity", Range(0, 1)) = 0.55
+        _ShadowSoftness("Shadow Softness", Range(0, 1)) = 0.35
     }
 
     SubShader
@@ -55,8 +58,10 @@ Shader "MusicalSprite/GroundEdge"
             #pragma fragment frag
 
             #pragma multi_compile_fog
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct Attributes
             {
@@ -94,7 +99,6 @@ Shader "MusicalSprite/GroundEdge"
                 float  _EdgeTexTiling;
                 float  _EdgeVerticalScale;
                 float  _EdgeCutoff;
-                float  _EdgeBrightness;
                 float  _EdgeOverhang;
                 float  _DebugMode;
 
@@ -104,8 +108,10 @@ Shader "MusicalSprite/GroundEdge"
                 float  _GroundThickness;
 
                 float4 _SideColor;
-                float4 _BottomColor;
                 float4 _SideLightDir;
+                float4 _ShadowColor;
+                float  _ShadowIntensity;
+                float  _ShadowSoftness;
             CBUFFER_END
 
             // Signed-distance function for a rounded rectangle in the XZ plane.
@@ -160,22 +166,36 @@ Shader "MusicalSprite/GroundEdge"
                     if (normalWS.y < -0.3)
                         clip(-1.0);
 
-                    float3 lightDir = normalize(_SideLightDir.xyz);
-                    float NdotL = saturate(dot(normalWS, lightDir));
-                    float light = lerp(0.65, 1.0, NdotL);
-                    float3 col = _SideColor.rgb * light;
+                float3 lightDir = normalize(_SideLightDir.xyz);
+                float NdotL = saturate(dot(normalWS, lightDir));
+                float light = lerp(0.65, 1.0, NdotL);
+                float3 col = _SideColor.rgb * light;
 
-                    #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
-                    float fogCoord = ComputeFogFactor(input.positionCS.z);
-                    col = MixFog(col, fogCoord);
-                    #endif
+                // 侧面接受同样的卡通化着色阴影，保持与顶面一致
+                float4 shadowCoord = TransformWorldToShadowCoord(worldPos);
+                float shadowAtten = MainLightRealtimeShadow(shadowCoord);
+                float softShadow = smoothstep(0.0, _ShadowSoftness, shadowAtten);
+                float3 shadowedCol = col * lerp(float3(1.0, 1.0, 1.0), _ShadowColor.rgb, _ShadowIntensity);
+                col = lerp(shadowedCol, col, softShadow);
 
-                    return float4(col, 1.0);
+                #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
+                float fogCoord = ComputeFogFactor(input.positionCS.z);
+                col = MixFog(col, fogCoord);
+                #endif
+
+                return float4(col, 1.0);
                 }
 
                 // ------------------------------------------------------------------
                 // Top face: red/blue ground texture blended by the center line.
-                // The edge fringe uses the SAME ground colour; _EdgeTex only cuts the shape.
+                //
+                // IMPORTANT: this shader is a NEUTRAL CANVAS. It outputs the ground
+                // albedo faithfully and performs NO ambient / focus / contact-AO /
+                // mottle math. All global atmosphere (sunny colour grade, vignette,
+                // dynamic light pool, contact shadow) is applied by the post-processing
+                // Volume (SampleSceneProfile) and by global lights. This keeps the look
+                // consistent across every ground-texture variant without restricting the
+                // art, and removes the hardcoded "black line" / "overcast" band entirely.
                 // ------------------------------------------------------------------
                 float2 worldXZ = worldPos.xz;
                 float2 rmin = _GroundMin.xy;
@@ -244,17 +264,17 @@ Shader "MusicalSprite/GroundEdge"
                     // Where the grass silhouette is present, keep the red/blue field.
                     finalCol = groundCol;
                 }
-                else
-                {
-                    if (_DebugMode > 0.5 && _DebugMode < 1.5)
-                        return float4(1.0, 0.0, 0.0, 1.0);
-                }
 
-                // Simple directional fake light for the top.
-                float3 lightDir = normalize(float3(0.5, 1.0, 0.3));
-                float NdotL = saturate(dot(normalWS, lightDir));
-                float light = lerp(0.7, 1.0, NdotL);
-                finalCol *= light;
+                // 接收主光源实时阴影（轮廓真实、随光源角度变化），但用卡通化着色/柔化加工，
+                // 避免死黑硬边：阴影区 = 原色染上 _ShadowColor 并压暗 _ShadowIntensity，
+                // 边缘用 smoothstep 柔化过渡。这是 COTL 式柔和实时投影的核心。
+                // 若未来地面出现过多细碎阴影，可调 Directional Light 的 Shadow Distance / Bias，
+                // 或关闭非角色物体的 Cast Shadows。
+                float4 shadowCoord = TransformWorldToShadowCoord(worldPos);
+                float shadowAtten = MainLightRealtimeShadow(shadowCoord);
+                float softShadow = smoothstep(0.0, _ShadowSoftness, shadowAtten);
+                float3 shadowedCol = finalCol * lerp(float3(1.0, 1.0, 1.0), _ShadowColor.rgb, _ShadowIntensity);
+                finalCol = lerp(shadowedCol, finalCol, softShadow);
 
                 #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
                 float fogCoord = ComputeFogFactor(input.positionCS.z);
@@ -319,7 +339,6 @@ Shader "MusicalSprite/GroundEdge"
                 float  _EdgeTexTiling;
                 float  _EdgeVerticalScale;
                 float  _EdgeCutoff;
-                float  _EdgeBrightness;
                 float  _EdgeOverhang;
                 float  _DebugMode;
                 float4 _GroundMin;
@@ -327,8 +346,10 @@ Shader "MusicalSprite/GroundEdge"
                 float  _CornerRadius;
                 float  _GroundThickness;
                 float4 _SideColor;
-                float4 _BottomColor;
                 float4 _SideLightDir;
+                float4 _ShadowColor;
+                float  _ShadowIntensity;
+                float  _ShadowSoftness;
             CBUFFER_END
 
             // Signed-distance function for a rounded rectangle in the XZ plane.
@@ -451,7 +472,6 @@ Shader "MusicalSprite/GroundEdge"
                 float  _EdgeTexTiling;
                 float  _EdgeVerticalScale;
                 float  _EdgeCutoff;
-                float  _EdgeBrightness;
                 float  _EdgeOverhang;
                 float  _DebugMode;
                 float4 _GroundMin;
@@ -459,8 +479,10 @@ Shader "MusicalSprite/GroundEdge"
                 float  _CornerRadius;
                 float  _GroundThickness;
                 float4 _SideColor;
-                float4 _BottomColor;
                 float4 _SideLightDir;
+                float4 _ShadowColor;
+                float  _ShadowIntensity;
+                float  _ShadowSoftness;
             CBUFFER_END
 
             float RoundedRectSDF(float2 p, float2 bmin, float2 bmax, float r)

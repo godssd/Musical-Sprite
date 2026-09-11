@@ -76,6 +76,11 @@ public class CharacterCubeMarker : MonoBehaviour
         baseScale = transform.localScale;
         baseLocalPos = transform.localPosition;
         Registry[RegKey(side, laneIndex)] = this;
+
+        // 自动确保有通用贴地阴影组件（P2 占位 cube 技术验证；后续角色模型同样复用 BlobShadow）。
+        var blob = GetComponent<BlobShadow>();
+        if (blob == null) blob = gameObject.AddComponent<BlobShadow>();
+
         if (modelPrefab != null) SetModelPrefab(modelPrefab);
     }
 

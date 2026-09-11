@@ -42,13 +42,13 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _EdgeIntensity: 2.24
+    - _EdgeIntensity: 2.21
     - _EdgeRange: 0.77
     - _EndHeight: 0.83
     - _Float: 1
     - _FogDemnstiy: 1.16
-    - _NoiseScale: 18.5
-    - _NoiseSpeed: 0.22
+    - _NoiseScale: 6.2
+    - _NoiseSpeed: 0.298
     - _QueueControl: 0
     - _QueueOffset: 0
     - _StartHeight: -1.63
