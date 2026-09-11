@@ -437,7 +437,10 @@ Shader "MusicalSprite/ToonDoodle"
 
             half4 DepthNormalsFrag(DepthNormalsVaryings input) : SV_TARGET
             {
-                return half4(PackNormal(input.normalWS), 0.0);
+                // 与 GroundEdge.DepthNormals 同款编码：原始世界空间法线写入 _CameraNormalsTexture。
+                // 不用 PackNormal —— 它在 Core.hlsl include 链中未声明（d3d11 编译错误根因）。
+                float3 normalWS = normalize(input.normalWS);
+                return half4(NormalizeNormalPerPixel(normalWS), 0.0);
             }
             ENDHLSL
         }
