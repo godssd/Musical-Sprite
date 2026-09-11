@@ -16,7 +16,7 @@
 | 美术 | 手绘卡通，参考《Cult of the Lamb》（高饱和、暗阴影、粗黑描边森林营地风） |
 | 角色 | 小熊(主角·熊女孩) / 大狗(黄狗) / 小黑(黑猫·鱼骨吉他) / 布姆(炸弹沙锤) / 屎屎(牛角包蟹腿)，视觉已冻结不可改 |
 | 视角 | 俯视锁视角，红蓝双方 5v5 镜像布阵，HUD 上方红/蓝血条 |
-| 工程路径 | 副机 `D:\unity\plan go\Musical Sprite`；**主机 `D:\UGit\Musical-Sprite`** |
+| 工程路径 | 主机/副机均为 `D:\unity\plan go\Musical Sprite`（2026-09-11 用户拍板：以此为准，副机拉取更新即可；旧记录 `D:\UGit\Musical-Sprite` 有误已废弃） |
 
 ---
 

@@ -19,9 +19,8 @@ Shader "MusicalSprite/ToonDoodle"
         _HighlightColor("高光色", Color) = (1.1, 1.05, 0.95, 1)
 
         [Header(Outline)]
-        _OutlineWidth("描边宽度", Range(0, 0.1)) = 0.02
+        _OutlineWidth("描边宽度 (世界单位)", Range(0, 0.1)) = 0.03
         _OutlineColor("描边颜色", Color) = (0.05, 0.05, 0.08, 1)
-        _OutlineDoodle("描边也抖动", Range(0, 1)) = 1
     }
 
     SubShader
@@ -74,8 +73,9 @@ Shader "MusicalSprite/ToonDoodle"
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
 
-            // SRP Batcher 约束：所有 Pass 的 UnityPerMaterial 布局必须完全一致。
-            // 此处使用「全属性并集」，ForwardLit / Outline 两 Pass 共用，避免 SRP Batcher 失效。
+            // SRP Batcher 约束：所有 5 个 Pass 的 UnityPerMaterial 布局必须完全一致。
+            // 此处使用「全属性并集」。_OutlineDoodle 已废弃（描边不再做顶点抖动），
+            // 仅保留成员占位以维持布局与旧材质序列化数据兼容。
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
                 float4 _BaseColor;
@@ -168,7 +168,13 @@ Shader "MusicalSprite/ToonDoodle"
         }
 
         // ============================================================
-        // Pass 2 : Inverted Hull Outline
+        // Pass 2 : Inverted Hull Outline（稳定版）
+        // 修复记录（2026-09-11）：
+        // 旧实现把 Doodle 抖动与法线偏移直接加在裁剪空间坐标上
+        // （posCS.xy += offset * positionCS.w），抖动量随距离放大且每帧随机，
+        // 导致描边壳整片乱飞（黑色不稳定方块）并随机切片盖住模型本体（模型被截断）。
+        // 现改为：视空间沿法线外扩固定世界宽度，无任何逐帧随机位移；
+        // Doodle 手绘感由 ForwardLit 的 UV 采样抖动独立承担。
         // ============================================================
         Pass
         {
@@ -178,7 +184,7 @@ Shader "MusicalSprite/ToonDoodle"
             Cull Front
             ZWrite On
             ZTest LEqual
-            Offset 0, 1   // 稍微推远，避免正面自身遮挡
+            Offset 1, 1
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -198,11 +204,7 @@ Shader "MusicalSprite/ToonDoodle"
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float2 uv         : TEXCOORD0;
             };
-
-            TEXTURE2D(_BaseMap);
-            SAMPLER(sampler_BaseMap);
 
             // 与 ForwardLit 完全一致的全属性并集（SRP Batcher 约束）。
             CBUFFER_START(UnityPerMaterial)
@@ -221,47 +223,221 @@ Shader "MusicalSprite/ToonDoodle"
                 float  _OutlineDoodle;
             CBUFFER_END
 
-            float2 hash22(float2 p)
-            {
-                float3 p3  = frac(float3(p.xyx) * 0.1031);
-                p3 += dot(p3, p3.yzx + 33.33);
-                return frac((p3.xx + p3.yz) * p3.zy);
-            }
-
-            float2 doodleOffset(float2 uv, float time)
-            {
-                float2 grid = floor(uv * _DoodleSize);
-                float2 rnd  = hash22(grid + floor(time * _DoodleSpeed));
-                return (rnd * 2 - 1) * _DoodleIntensity;
-            }
-
             Varyings vert(Attributes input)
             {
                 Varyings output;
                 VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);
                 VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS);
 
-                float3 normalWS = normalInputs.normalWS;
-                float3 normalVS = normalize(mul((float3x3)UNITY_MATRIX_V, normalWS));
-                float2 offset   = normalVS.xy * _OutlineWidth * posInputs.positionCS.w;
+                // 视空间沿法线外扩固定世界宽度：偏移量不随距离缩放、不随帧变化。
+                float3 positionVS = posInputs.positionVS;
+                float3 normalVS   = normalize(mul((float3x3)UNITY_MATRIX_V, normalInputs.normalWS));
+                positionVS += normalVS * _OutlineWidth;
 
-                float4 posCS = posInputs.positionCS;
-                posCS.xy += offset;
-
-                #ifdef _DOODLE_ON
-                float2 uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                float2 dOffset = doodleOffset(uv, _Time.y);
-                posCS.xy += dOffset * _OutlineDoodle * posInputs.positionCS.w;
-                #endif
-
-                output.positionCS = posCS;
-                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                output.positionCS = mul(UNITY_MATRIX_P, float4(positionVS, 1.0));
                 return output;
             }
 
             float4 frag(Varyings input) : SV_Target
             {
                 return _OutlineColor;
+            }
+            ENDHLSL
+        }
+
+        // ============================================================
+        // Pass 3 : ShadowCaster —— 写入主光阴影贴图。
+        // 缺失后果：套用本 shader 的物体不投射实时阴影，
+        // 地面（GroundEdge 采样 MainLightRealtimeShadow）收不到它们的影子。
+        // ============================================================
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex ShadowVert
+            #pragma fragment ShadowFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                float4 _BaseColor;
+                float  _DoodleSize;
+                float  _DoodleSpeed;
+                float  _DoodleIntensity;
+                float  _StepCount;
+                float  _ShadowThreshold;
+                float4 _ShadowColor;
+                float  _HighlightThreshold;
+                float4 _HighlightColor;
+                float  _OutlineWidth;
+                float4 _OutlineColor;
+                float  _OutlineDoodle;
+            CBUFFER_END
+
+            float3 _LightDirection;
+
+            struct ShadowAttributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+            };
+
+            struct ShadowVaryings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            ShadowVaryings ShadowVert(ShadowAttributes input)
+            {
+                ShadowVaryings output;
+                VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);
+                VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS);
+
+                float4 positionCS = TransformWorldToHClip(
+                    ApplyShadowBias(posInputs.positionWS, normalInputs.normalWS, _LightDirection));
+
+                #if UNITY_REVERSED_Z
+                positionCS.z = min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                #else
+                positionCS.z = max(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                #endif
+
+                output.positionCS = positionCS;
+                return output;
+            }
+
+            half4 ShadowFrag(ShadowVaryings input) : SV_Target
+            {
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        // ============================================================
+        // Pass 4 : DepthOnly —— 写入相机深度纹理（深度 prepass / 移动端路径）。
+        // ============================================================
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            Cull Back
+            ZWrite On
+            ColorMask 0
+
+            HLSLPROGRAM
+            #pragma vertex DepthOnlyVert
+            #pragma fragment DepthOnlyFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct DepthOnlyAttributes
+            {
+                float4 positionOS : POSITION;
+            };
+
+            struct DepthOnlyVaryings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                float4 _BaseColor;
+                float  _DoodleSize;
+                float  _DoodleSpeed;
+                float  _DoodleIntensity;
+                float  _StepCount;
+                float  _ShadowThreshold;
+                float4 _ShadowColor;
+                float  _HighlightThreshold;
+                float4 _HighlightColor;
+                float  _OutlineWidth;
+                float4 _OutlineColor;
+                float  _OutlineDoodle;
+            CBUFFER_END
+
+            DepthOnlyVaryings DepthOnlyVert(DepthOnlyAttributes input)
+            {
+                DepthOnlyVaryings output;
+                output.positionCS = GetVertexPositionInputs(input.positionOS.xyz).positionCS;
+                return output;
+            }
+
+            half DepthOnlyFrag(DepthOnlyVaryings input) : SV_TARGET
+            {
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        // ============================================================
+        // Pass 5 : DepthNormals —— 写入深度 + 法线（PC 端 SSAO prepass 用）。
+        // 缺失后果：PC_Renderer 上的 SSAO 看不到套用本 shader 的物体。
+        // ============================================================
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            Cull Back
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVert
+            #pragma fragment DepthNormalsFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct DepthNormalsAttributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+            };
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS   : TEXCOORD0;
+            };
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                float4 _BaseColor;
+                float  _DoodleSize;
+                float  _DoodleSpeed;
+                float  _DoodleIntensity;
+                float  _StepCount;
+                float  _ShadowThreshold;
+                float4 _ShadowColor;
+                float  _HighlightThreshold;
+                float4 _HighlightColor;
+                float  _OutlineWidth;
+                float4 _OutlineColor;
+                float  _OutlineDoodle;
+            CBUFFER_END
+
+            DepthNormalsVaryings DepthNormalsVert(DepthNormalsAttributes input)
+            {
+                DepthNormalsVaryings output;
+                VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = posInputs.positionCS;
+                output.normalWS = normalize(TransformObjectToWorldNormal(input.normalOS));
+                return output;
+            }
+
+            half4 DepthNormalsFrag(DepthNormalsVaryings input) : SV_TARGET
+            {
+                return half4(PackNormal(input.normalWS), 0.0);
             }
             ENDHLSL
         }

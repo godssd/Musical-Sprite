@@ -25,7 +25,23 @@ namespace MusicalSprite.Editor
             "MusicalSprite/GrassFringe",
             "MusicalSprite/ScenePropSprite",
             "MusicalSprite/Fog",
+            // 2026-09-11 收紧：UI / 粒子 / 文本 / 透明精灵类不是卡通主体，转了必坏
+            "Sprites/",
+            "GUI/",
+            "Particles/",
+            "Unlit/",
+            "Text Mesh",
+            "TextMeshPro/",
+            "Universal Render Pipeline/Particles",
+            "Universal Render Pipeline/Sprites",
+            "Universal Render Pipeline/Unlit",
         };
+
+        // 按对象名跳过：gameplay 标记与动态换材质的物体不转。
+        // CenterLine = 判定标记（转了会过曝荧光粉）；Indicator = 运行时脚本会切回
+        // 原材质（activeMaterial/idleMaterial），转一半会出现 Toon/非 Toon 混跳；
+        // HitLine / Frame / HP = 轨道与 HUD 相关元素。
+        private static readonly string[] SkipNameKeywords = { "CenterLine", "Indicator", "HitLine", "HPBar", "Frame", "HP" };
 
         [MenuItem("Tools/Musical-Sprite/Convert Selected to ToonDoodle")]
         public static void ConvertSelected()
@@ -76,6 +92,7 @@ namespace MusicalSprite.Editor
                 var renderers = root.GetComponentsInChildren<Renderer>(true);
                 foreach (var r in renderers)
                 {
+                    if (ShouldSkipRenderer(r)) { skipped++; continue; }
                     var mats = r.sharedMaterials;
                     bool changed = false;
                     for (int m = 0; m < mats.Length; m++)
@@ -103,8 +120,8 @@ namespace MusicalSprite.Editor
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[ToonDoodle] 转换完成：{converted} 个 Renderer 已套用 ToonDoodle，{skipped} 个跳过（特殊 shader / 已是 Toon）。" +
-                      $"生成材质在 {AutoFolder}，可 Ctrl+Z 撤销。");
+            Debug.Log($"[ToonDoodle] 转换完成：{converted} 个 Renderer 已套用 ToonDoodle，{skipped} 个跳过" +
+                      $"（特殊 shader / 包内置材质 / gameplay 标记对象）。生成材质在 {AutoFolder}，可 Ctrl+Z 撤销。");
         }
 
         private static bool ShouldSkip(Material src)
@@ -112,6 +129,21 @@ namespace MusicalSprite.Editor
             if (src.shader == null) return true;
             foreach (var prefix in SkipShaderPrefixes)
                 if (src.shader.name.StartsWith(prefix)) return true;
+            // URP / 其他包内置默认材质（如 URP 包自带的白色 Lit.mat）不是美术资产，不转
+            string assetPath = AssetDatabase.GetAssetPath(src);
+            if (assetPath.StartsWith("Packages/")) return true;
+            return false;
+        }
+
+        private static bool ShouldSkipRenderer(Renderer r)
+        {
+            if (r == null) return true;
+            for (Transform t = r.transform; t != null; t = t.parent)
+            {
+                string n = t.name;
+                foreach (var kw in SkipNameKeywords)
+                    if (n.Contains(kw)) return true;
+            }
             return false;
         }
 
@@ -135,9 +167,8 @@ namespace MusicalSprite.Editor
             mat.SetColor("_ShadowColor", new Color(0.35f, 0.30f, 0.45f, 1f));
             mat.SetFloat("_HighlightThreshold", 0.75f);
             mat.SetColor("_HighlightColor", new Color(1.1f, 1.05f, 0.95f, 1f));
-            mat.SetFloat("_OutlineWidth", 0.02f);
+            mat.SetFloat("_OutlineWidth", 0.03f);
             mat.SetColor("_OutlineColor", new Color(0.05f, 0.05f, 0.08f, 1f));
-            mat.SetFloat("_OutlineDoodle", 1f);
 
             string safeName = string.IsNullOrEmpty(src.name) ? "mat" : src.name;
             string path = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(AutoFolder, "TD_" + safeName + ".mat"));
