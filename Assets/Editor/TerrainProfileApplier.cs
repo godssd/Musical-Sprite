@@ -157,6 +157,41 @@ namespace MusicalSprite.EditorTools
             }
         }
 
+        /// <summary>把台面材质指回场景对象。只替换旧红蓝台面材质 / 台面 GroundEdge 材质的槽位，
+        /// 不碰其他材质（防止误伤可能挂在层级下的 HitLine 等对象）。</summary>
+        private static void AssignStageMaterial(string objectName, Material mat)
+        {
+            if (mat == null) return;
+            var go = FindInOpenScenes(objectName);
+            if (go == null)
+            {
+                Debug.LogWarning($"[Terrain] 场景中未找到 {objectName}，跳过材质指回。");
+                return;
+            }
+            int slots = 0;
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var m = mats[i];
+                    if (m == null) continue;
+                    bool isStageSlot = m == mat
+                        || m.name == "M_ArenaRed" || m.name == "M_ArenaBlue"
+                        || m.name.StartsWith("M_GroundEdge_Stage");
+                    if (isStageSlot)
+                    {
+                        mats[i] = mat;
+                        changed = true;
+                        slots++;
+                    }
+                }
+                if (changed) r.sharedMaterials = mats;
+            }
+            Debug.Log($"[Terrain] {objectName} 台面材质已指回（{slots} 个槽位）。");
+        }
+
         private static Material FindGroundMaterial(Shader shader)
         {
             foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
