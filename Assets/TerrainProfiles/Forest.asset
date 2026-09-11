@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e7a91c25b8d4f60a3d2e8b5c7f14903, type: 3}
+  m_Name: Forest
+  m_EditorClassIdentifier: 
+  groundRedMap: {fileID: 2800000, guid: e58fc9c9a70b6c84fab460f83fadad1d, type: 3}
+  groundBlueMap: {fileID: 2800000, guid: 06d17a5ce2ca53d45956fd1e4739bc7a, type: 3}
+  grassMask: {fileID: 2800000, guid: 1e994d153e35d354290b382b3f40487a, type: 3}
+  groundTint: {r: 1, g: 1, b: 1, a: 1}
+  centerLineX: -1.4400078
+  centerBlend: 0.15
+  edgeOutset: 0.23
+  edgeTiling: 19
+  edgeVerticalScale: 0.94
+  edgeCutoff: 0.05
+  edgeOverhang: 0.08
+  groundMin: {r: -8, g: -3.75, b: 0, a: 0}
+  groundMax: {r: 8, g: 3.75, b: 0, a: 0}
+  cornerRadius: 2
+  groundThickness: 0.8
+  sideColor: {r: 0.45, g: 0.32, b: 0.22, a: 1}
+  shadowColor: {r: 0.35, g: 0.32, b: 0.45, a: 1}
+  shadowIntensity: 0.55
+  shadowSoftness: 0.35
+  outlineColor: {r: 0.05, g: 0.05, b: 0.08, a: 1}
+  outlineWidth: 0.03
+  stageMapLeft: {fileID: 2800000, guid: 7c3f2a91d4e54b608a1d3f2c5e9b4a17, type: 3}
+  stageMapRight: {fileID: 2800000, guid: 9d5e8b03f2a746c1b8e4d6a0c3f17e52, type: 3}
+  stageEdgeOutset: 0.23
+  stageEdgeTiling: 4
+  stageEdgeVerticalScale: 0.94
+  stageEdgeCutoff: 0.05
+  autoStageCenterFromScene: 1
+  autoStageRadiusFromScene: 1
+  stageCenterLeftOverride: {r: -8, g: 0, b: 0, a: 0}
+  stageCenterRightOverride: {r: 8, g: 0, b: 0, a: 0}
+  stageRadiusManual: 1.2

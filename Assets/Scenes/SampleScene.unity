@@ -1166,8 +1166,8 @@ MonoBehaviour:
   scoreManager: {fileID: 2034993118}
   leftGround: {fileID: 0}
   rightGround: {fileID: 0}
-  leftGroundMat: {fileID: 2100000, guid: 127d09d415321694c823575d3577786c, type: 2}
-  rightGroundMat: {fileID: 2100000, guid: e8625321bb55b7049b948576ee45087c, type: 2}
+  leftGroundMat: {fileID: 0}
+  rightGroundMat: {fileID: 0}
   groundMaterial: {fileID: 2100000, guid: a529225c2fd61a143afedafeb1411555, type: 2}
   grassMaterial: {fileID: 2100000, guid: c67000119180cb7408209e8b5e2fc6bf, type: 2}
   ground: {fileID: 405065069}
@@ -5892,7 +5892,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a4dfdf85008bf244480752c18d2b727f, type: 2}
+  - {fileID: 2100000, guid: 5a8d2c6f9b314e70a2c5d8e1f4b73906, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -11182,7 +11182,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 30a286faad7f82c408dd717a5d4442fe, type: 2}
+  - {fileID: 2100000, guid: 6b9e3d70ac425f81b3d6e9f2a5c84017, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

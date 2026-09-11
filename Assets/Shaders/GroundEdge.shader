@@ -18,6 +18,16 @@ Shader "MusicalSprite/GroundEdge"
         _EdgeOverhang("Edge Overhang", Float) = 0.08
         [IntRange] _DebugMode("Debug Mode (0=off, 1=regions, 2=grass alpha heatmap)", Range(0, 2)) = 0
 
+        [Header(Stage Disc Mode)]
+        _ShapeMode("Shape Mode (0=RoundedRect, 1=Disc)", Range(0, 1)) = 0
+        _StageMap("Stage Map (Disc Mode)", 2D) = "white" {}
+        _DiscCenter("Disc Center (XZ)", Vector) = (0, 0, 0, 0)
+        _DiscRadius("Disc Radius", Float) = 1.2
+
+        [Header(Grass Outline)]
+        _OutlineColor("Grass Outline Color", Color) = (0.05, 0.05, 0.08, 1)
+        _EdgeOutlineWidth("Grass Outline Width (world units)", Float) = 0.03
+
         [Header(Ground Bounds)]
         _GroundMin("Ground Min", Vector) = (-8, -3.75, 0, 0)
         _GroundMax("Ground Max", Vector) = (8, 3.75, 0, 0)
@@ -86,6 +96,8 @@ Shader "MusicalSprite/GroundEdge"
             SAMPLER(sampler_BlueMap);
             TEXTURE2D(_EdgeTex);
             SAMPLER(sampler_EdgeTex);
+            TEXTURE2D(_StageMap);
+            SAMPLER(sampler_StageMap);
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _RedMap_ST;
@@ -112,6 +124,13 @@ Shader "MusicalSprite/GroundEdge"
                 float4 _ShadowColor;
                 float  _ShadowIntensity;
                 float  _ShadowSoftness;
+
+                float4 _StageMap_ST;
+                float  _ShapeMode;
+                float4 _DiscCenter;
+                float  _DiscRadius;
+                float4 _OutlineColor;
+                float  _EdgeOutlineWidth;
             CBUFFER_END
 
             // Signed-distance function for a rounded rectangle in the XZ plane.
@@ -153,11 +172,15 @@ Shader "MusicalSprite/GroundEdge"
                 float3 normalWS = normalize(input.normalWS);
 
                 // ------------------------------------------------------------------
-                // Side / bottom faces: render as dirt. Detect by uv2.y (set to 2 in the mesh).
-                // We do not use world-space normal here because the thin side wall normals
-                // were being averaged with the top face by RecalculateNormals().
+                // Side / bottom faces: render as dirt. Detect by uv2.y (set to 2 in the
+                // generated ground mesh), or — in disc mode (stage platforms, whose mesh
+                // has no uv2 ring) — by a near-horizontal world normal.
+                // We do not use world-space normal on the rect ground because the thin
+                // side wall normals were being averaged with the top face by
+                // RecalculateNormals().
                 // ------------------------------------------------------------------
-                if (input.edgeData.y > 1.5)
+                bool isSideFace = input.edgeData.y > 1.5 || (_ShapeMode > 0.5 && normalWS.y < 0.3);
+                if (isSideFace)
                 {
                     if (_DebugMode > 0.5)
                         return float4(0.0, 0.0, 1.0, 1.0);
@@ -201,25 +224,44 @@ Shader "MusicalSprite/GroundEdge"
                 float2 rmin = _GroundMin.xy;
                 float2 rmax = _GroundMax.xy;
 
-                // Ground UV (clamp so the fringe repeats the border colour rather than tiling).
-                float u = saturate((worldXZ.x - rmin.x) / max(0.0001, (rmax.x - rmin.x)));
-                float v = saturate((worldXZ.y - rmin.y) / max(0.0001, (rmax.y - rmin.y)));
-                float2 groundUV = float2(u, v);
+                float3 groundCol;
+                float edgeDist;
 
-                float4 redMap  = SAMPLE_TEXTURE2D(_RedMap, sampler_RedMap, groundUV);
-                float4 blueMap = SAMPLE_TEXTURE2D(_BlueMap, sampler_BlueMap, groundUV);
+                if (_ShapeMode > 0.5)
+                {
+                    // ------------------------------------------------------------------
+                    // Disc mode (stage platforms): texture mapped across the disc,
+                    // signed distance = distance to the disc boundary (negative inside).
+                    // ------------------------------------------------------------------
+                    edgeDist = distance(worldXZ, _DiscCenter.xy) - _DiscRadius;
+                    float2 stageUV = (worldXZ - _DiscCenter.xy) / max(0.0001, 2.0 * _DiscRadius) + 0.5;
+                    groundCol = SAMPLE_TEXTURE2D(_StageMap, sampler_StageMap, stageUV).rgb * _BaseColor.rgb;
+                }
+                else
+                {
+                    // Ground UV (clamp so the fringe repeats the border colour rather than tiling).
+                    float u = saturate((worldXZ.x - rmin.x) / max(0.0001, (rmax.x - rmin.x)));
+                    float v = saturate((worldXZ.y - rmin.y) / max(0.0001, (rmax.y - rmin.y)));
+                    float2 groundUV = float2(u, v);
 
-                float halfBlend = max(0.0001, _CenterBlend * 0.5);
-                float redWeight = 1.0 - smoothstep(_CenterLineX - halfBlend, _CenterLineX + halfBlend, worldXZ.x);
-                float3 groundCol = lerp(blueMap.rgb, redMap.rgb, redWeight) * _BaseColor.rgb;
+                    float4 redMap  = SAMPLE_TEXTURE2D(_RedMap, sampler_RedMap, groundUV);
+                    float4 blueMap = SAMPLE_TEXTURE2D(_BlueMap, sampler_BlueMap, groundUV);
 
-                // Distance from the original inner boundary (negative inside, positive outside).
-                float edgeDist = RoundedRectSDF(worldXZ, rmin, rmax, _CornerRadius);
+                    float halfBlend = max(0.0001, _CenterBlend * 0.5);
+                    float redWeight = 1.0 - smoothstep(_CenterLineX - halfBlend, _CenterLineX + halfBlend, worldXZ.x);
+                    groundCol = lerp(blueMap.rgb, redMap.rgb, redWeight) * _BaseColor.rgb;
+
+                    // Distance from the original inner boundary (negative inside, positive outside).
+                    edgeDist = RoundedRectSDF(worldXZ, rmin, rmax, _CornerRadius);
+                }
 
                 float3 finalCol = groundCol;
 
                 // Grass rim = the outermost strip of the REAL ground.
-                // edgeDist = 0 at the real edge, edgeDist = -_EdgeOutset at the rim's inner edge.
+                // Rect ground: edgeDist = 0 at the real edge, -_EdgeOutset at the rim's inner
+                // edge, +_EdgeOverhang at the fringe tips (fringe geometry overhangs).
+                // Disc stage: the mesh ends at the boundary, so the grass band lives fully
+                // inside (edgeDist from -_EdgeOutset up to 0).
                 if (edgeDist > -_EdgeOutset)
                 {
                     if (_DebugMode > 0.5 && _DebugMode < 1.5)
@@ -232,7 +274,11 @@ Shader "MusicalSprite/GroundEdge"
                     // t: 0 at the rim's inner edge (meets the red/blue field),
                     //    1 at the outer edge (grass tips point outward, possibly overhanging).
                     float t = (edgeDist + _EdgeOutset) / max(0.0001, _EdgeOutset + _EdgeOverhang);
+                    // Perimeter U: rect ground uses the mesh's uv2.x ring; disc stage mesh
+                    // has no ring, so derive it from the world angle around the disc.
                     float edgeU = input.edgeData.x;
+                    if (_ShapeMode > 0.5)
+                        edgeU = atan2(worldXZ.y - _DiscCenter.y, worldXZ.x - _DiscCenter.x) * 0.15915494 + 0.5;
                     float edgeV = saturate(t * _EdgeVerticalScale);
                     float2 edgeUV = float2(edgeU * _EdgeTexTiling, edgeV);
 
@@ -249,6 +295,7 @@ Shader "MusicalSprite/GroundEdge"
 
                     // No grass right on the center seam. The grass mask should be 0 at the
                     // center line and fully present everywhere else along the rim.
+                    // (Disc stage: the platform sits far from the seam, so this is a no-op.)
                     float seamDist = abs(worldXZ.x - _CenterLineX);
                     float seamMask = smoothstep(0.0, _CenterBlend, seamDist);
                     edgeAlpha *= seamMask;
@@ -263,6 +310,17 @@ Shader "MusicalSprite/GroundEdge"
 
                     // Where the grass silhouette is present, keep the red/blue field.
                     finalCol = groundCol;
+
+                    // Grass outline: a dark contour hugging the outer silhouette of the
+                    // grass band, matching the ToonDoodle outline of props/characters.
+                    // Rect ground: outer silhouette sits at the fringe tips (edgeDist ~
+                    // _EdgeOverhang). Disc stage: outer silhouette is the disc boundary
+                    // (edgeDist ~ 0).
+                    float outlineEdge = (_ShapeMode > 0.5)
+                        ? -_EdgeOutlineWidth
+                        : _EdgeOverhang - _EdgeOutlineWidth;
+                    if (edgeDist > outlineEdge)
+                        finalCol = _OutlineColor.rgb;
                 }
 
                 // 接收主光源实时阴影（轮廓真实、随光源角度变化），但用卡通化着色/柔化加工，
@@ -350,6 +408,13 @@ Shader "MusicalSprite/GroundEdge"
                 float4 _ShadowColor;
                 float  _ShadowIntensity;
                 float  _ShadowSoftness;
+
+                float4 _StageMap_ST;
+                float  _ShapeMode;
+                float4 _DiscCenter;
+                float  _DiscRadius;
+                float4 _OutlineColor;
+                float  _EdgeOutlineWidth;
             CBUFFER_END
 
             // Signed-distance function for a rounded rectangle in the XZ plane.
@@ -365,7 +430,8 @@ Shader "MusicalSprite/GroundEdge"
             // depth silhouette matches the visible grass-rim silhouette.
             void ClipGroundEdge(float3 worldPos, float3 normalWS, float2 edgeData)
             {
-                if (edgeData.y > 1.5)
+                bool isSideFace = edgeData.y > 1.5 || (_ShapeMode > 0.5 && normalWS.y < 0.3);
+                if (isSideFace)
                 {
                     // Bottom cap faces downward; cull it (matches ForwardLit).
                     if (normalWS.y < -0.3)
@@ -374,9 +440,9 @@ Shader "MusicalSprite/GroundEdge"
                 }
 
                 float2 worldXZ = worldPos.xz;
-                float2 rmin = _GroundMin.xy;
-                float2 rmax = _GroundMax.xy;
-                float edgeDist = RoundedRectSDF(worldXZ, rmin, rmax, _CornerRadius);
+                float edgeDist = (_ShapeMode > 0.5)
+                    ? distance(worldXZ, _DiscCenter.xy) - _DiscRadius
+                    : RoundedRectSDF(worldXZ, _GroundMin.xy, _GroundMax.xy, _CornerRadius);
 
                 if (edgeDist > -_EdgeOutset)
                 {
@@ -385,7 +451,10 @@ Shader "MusicalSprite/GroundEdge"
                         clip(-1.0);
 
                     float t = (edgeDist + _EdgeOutset) / max(1e-4, _EdgeOutset + _EdgeOverhang);
-                    float2 edgeUV = float2(edgeData.x * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
+                    float edgeU = edgeData.x;
+                    if (_ShapeMode > 0.5)
+                        edgeU = atan2(worldXZ.y - _DiscCenter.y, worldXZ.x - _DiscCenter.x) * 0.15915494 + 0.5;
+                    float2 edgeUV = float2(edgeU * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
                     float edgeAlpha = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, edgeUV).a;
 
                     // No grass on the center seam.
@@ -483,6 +552,13 @@ Shader "MusicalSprite/GroundEdge"
                 float4 _ShadowColor;
                 float  _ShadowIntensity;
                 float  _ShadowSoftness;
+
+                float4 _StageMap_ST;
+                float  _ShapeMode;
+                float4 _DiscCenter;
+                float  _DiscRadius;
+                float4 _OutlineColor;
+                float  _EdgeOutlineWidth;
             CBUFFER_END
 
             float RoundedRectSDF(float2 p, float2 bmin, float2 bmax, float r)
@@ -495,7 +571,8 @@ Shader "MusicalSprite/GroundEdge"
 
             void ClipGroundEdge(float3 worldPos, float3 normalWS, float2 edgeData)
             {
-                if (edgeData.y > 1.5)
+                bool isSideFace = edgeData.y > 1.5 || (_ShapeMode > 0.5 && normalWS.y < 0.3);
+                if (isSideFace)
                 {
                     if (normalWS.y < -0.3)
                         clip(-1.0);
@@ -503,9 +580,9 @@ Shader "MusicalSprite/GroundEdge"
                 }
 
                 float2 worldXZ = worldPos.xz;
-                float2 rmin = _GroundMin.xy;
-                float2 rmax = _GroundMax.xy;
-                float edgeDist = RoundedRectSDF(worldXZ, rmin, rmax, _CornerRadius);
+                float edgeDist = (_ShapeMode > 0.5)
+                    ? distance(worldXZ, _DiscCenter.xy) - _DiscRadius
+                    : RoundedRectSDF(worldXZ, _GroundMin.xy, _GroundMax.xy, _CornerRadius);
 
                 if (edgeDist > -_EdgeOutset)
                 {
@@ -513,7 +590,10 @@ Shader "MusicalSprite/GroundEdge"
                         clip(-1.0);
 
                     float t = (edgeDist + _EdgeOutset) / max(1e-4, _EdgeOutset + _EdgeOverhang);
-                    float2 edgeUV = float2(edgeData.x * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
+                    float edgeU = edgeData.x;
+                    if (_ShapeMode > 0.5)
+                        edgeU = atan2(worldXZ.y - _DiscCenter.y, worldXZ.x - _DiscCenter.x) * 0.15915494 + 0.5;
+                    float2 edgeUV = float2(edgeU * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
                     float edgeAlpha = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, edgeUV).a;
 
                     float seamMask = smoothstep(0.0, _CenterBlend, abs(worldXZ.x - _CenterLineX));
