@@ -265,3 +265,67 @@ public class SelfPowerAuraFx : MonoBehaviour
         return go;
     }
 }
+
+/// <summary>
+/// 牛角包（美味牛角包）过热/超级过热缓慢恢复视觉（暂时占位）：
+/// 复用小黑 b 类攻击增益「1 个方块绕角色旋转」的样式，颜色改为绿色；
+/// 缓慢回复期间（默认 9s）持续绕释放者旋转，到期自动淡出销毁。
+/// 待专门制作相关特效时替换本占位实现（挂接点在 ActiveSkillRuntime.Regen）。
+/// </summary>
+public class RegenAuraFx : MonoBehaviour
+{
+    public Transform orbitTarget;
+    private Transform cube;
+    private Material mat;
+    private float orbitSpeed = 3.2f;
+    private float life = 0f;
+    public float duration = 9f;
+
+    void Start()
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = "RegenCube";
+        go.transform.SetParent(transform, false);
+        var col = go.GetComponent<Collider>(); if (col != null) Destroy(col);
+        var r = go.GetComponent<Renderer>();
+        // 绿色：复用小黑方块样式（方块尺寸/旋转/正弦起伏一致），仅颜色改绿
+        r.material = AuraMat.Create(new Color(0.3f, 1f, 0.3f, 0.9f), new Color(0.2f, 1f, 0.2f) * 2.0f, 0.9f);
+        mat = r.material;
+        cube = go.transform;
+        cube.localScale = new Vector3(0.45f, 0.45f, 0.45f);
+    }
+
+    void Update()
+    {
+        if (cube == null) return;
+        float t = Time.time * orbitSpeed;
+        float radius = 1.0f;
+        float yOff = Mathf.Sin(t * 1.4f) * 0.25f;
+        Vector3 offset = new Vector3(Mathf.Cos(t), yOff, Mathf.Sin(t)) * radius;
+        if (orbitTarget != null)
+        {
+            transform.position = orbitTarget.position;
+            cube.localPosition = offset;
+        }
+        cube.rotation = Quaternion.Euler(t * 60f, t * 80f, 0f);
+
+        // 到期淡出销毁（最后约 0.45s 渐隐）
+        life += Time.deltaTime;
+        if (life >= duration)
+        {
+            Color c = mat.GetColor("_BaseColor");
+            c.a -= Time.deltaTime * 2f;
+            mat.SetColor("_BaseColor", c);
+            if (c.a <= 0f) Destroy(gameObject);
+        }
+    }
+
+    public static GameObject Spawn(Transform target, float duration)
+    {
+        var go = new GameObject("RegenAura");
+        var fx = go.AddComponent<RegenAuraFx>();
+        fx.orbitTarget = target;
+        fx.duration = duration;
+        return go;
+    }
+}

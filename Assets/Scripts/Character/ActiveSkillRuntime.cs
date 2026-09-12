@@ -152,6 +152,9 @@ public class ActiveSkillRuntime : MonoBehaviour
             int count = (skill != null) ? skill.charmedNoteCount : 1;
             if (releaseFever == FeverState.SuperFever && skill != null) count += skill.charmBonusSuperFever;
             else if (releaseFever == FeverState.Fever && skill != null) count += skill.charmBonusFever;
+            // 过热附魔数上限（拍板1）：普通+过热 ≤6，超级过热 ≤10；过热/超级过热已是替换关系（else if），不叠加
+            int charmCap = (releaseFever == FeverState.SuperFever) ? 10 : 6;
+            count = Mathf.Min(count, charmCap);
             ownerSpawner.RequestCharm(this, Mathf.Max(1, count), charmColor, targetSide);
         }
 
@@ -504,10 +507,13 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (marker != null) SpawnHealVfx(marker.transform.position);
     }
 
-    /// <summary>牛角包过热/超级过热：技能结束后 9 秒缓慢恢复，每 3 秒一跳共 3 跳，每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × regenPerTickHpRate)。</summary>
+    /// <summary>牛角包过热/超级过热：技能结束后 9 秒缓慢恢复，每 3 秒一跳共 3 跳，每跳回血 = ceil(本次命中附魔音符数 completedCount × regenPerNote)。regenPerNote 默认1（用户设计『收集音符数量×1』），可在技能库调参面板调整。</summary>
     private System.Collections.IEnumerator Regen()
     {
         float interval = (skill != null) ? skill.regenInterval : 3f;
+        // 缓慢回复视觉（暂时占位）：围着释放者旋转的绿色方块，持续 = 间隔×跳数（默认 9s）。
+        // 复用小黑 b 类攻击增益的方块旋转样式（RegenAuraFx），颜色改绿；待专门制作特效时替换。
+        if (marker != null) RegenAuraFx.Spawn(marker.transform, interval * 3f);
         int ticks = 0;
         while (ticks < 3)
         {
@@ -517,11 +523,10 @@ public class ActiveSkillRuntime : MonoBehaviour
             if (_battleSys == null) _battleSys = FindFirstObjectByType<CharacterBattleSystem>();
             if (_scoreMgr != null && _battleSys != null)
             {
-                int hpSum = _battleSys.GetMaxHP(ownerSide);
-                float rate = (skill != null) ? skill.regenPerTickHpRate : 0.002f;
-                int heal = Mathf.CeilToInt(completedCount * hpSum * rate);
+                // 牛角包缓慢恢复：每跳回血 = ceil(本次命中附魔音符数 completedCount × regenPerNote)；regenPerNote 默认1，可在技能库调参（用户设计『收集音符数量×1』）
+                int regenPerNote = (skill != null) ? skill.regenPerNote : 1;
+                int heal = Mathf.CeilToInt(completedCount * regenPerNote);
                 _scoreMgr.Heal(ownerSide, heal);
-                if (marker != null) SpawnHealVfx(marker.transform.position);
             }
         }
     }

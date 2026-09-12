@@ -42,7 +42,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _CenterBlend: 0.15
-    - _CenterLineX: -1.0663258
+    - _CenterLineX: -1.4500331
     - _CornerRadius: 2
     - _DebugMode: 0
     - _DiscRadius: 1.2

@@ -237,8 +237,10 @@ public class CharacterCubeMarker : MonoBehaviour
     {
         if (prefab == null || spawnedModel != null) return;
         spawnedModel = Instantiate(prefab, transform);
-        spawnedModel.transform.localPosition = Vector3.zero;
-        spawnedModel.transform.localRotation = Quaternion.identity;
+        // 保留 prefab 自身的本地 Transform，允许不同 Spine 角色在 prefab 里预先对位
+        // （pivot 不在视觉中心的角色需要本地偏移/旋转/缩放）。
+        spawnedModel.transform.SetLocalPositionAndRotation(prefab.transform.localPosition, prefab.transform.localRotation);
+        spawnedModel.transform.localScale = prefab.transform.localScale;
         var selfRend = GetComponent<Renderer>();
         if (selfRend != null) selfRend.enabled = false;
     }
