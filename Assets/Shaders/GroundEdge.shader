@@ -345,13 +345,6 @@ Shader "MusicalSprite/GroundEdge"
                         return float4(heat, 1.0);
                     }
 
-                    // No grass right on the center seam. The grass mask should be 0 at the
-                    // center line and fully present everywhere else along the rim.
-                    // (Disc stage: the platform sits far from the seam, so this is a no-op.)
-                    float seamDist = abs(worldXZ.x - _CenterLineX);
-                    float seamMask = smoothstep(0.0, _CenterBlend, seamDist);
-                    edgeAlpha *= seamMask;
-
                     // Grass mask: alpha = grass, alpha = 0 = no grass (the gaps the
                     // texture did not paint). The top face was intentionally overhung by
                     // _EdgeOverhang so that clipping these gaps reveals the dirt side wall
@@ -370,7 +363,7 @@ Shader "MusicalSprite/GroundEdge"
                     // V 向采样 clamp 到 [0,1]：贴图 Repeat 寻址下带内缘(t≈0)向上采样
                     // 会绕到贴图顶部（草尖端 α≈0）画出假线；U 向周向平铺保持 Repeat。
                     float vHi = clamp(edgeUV.y + kTex * _EdgeTex_TexelSize.y, 0.0, 1.0);
-                    float aOut = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, float2(edgeUV.x, vHi)).a * seamMask;
+                    float aOut = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, float2(edgeUV.x, vHi)).a;
                     float lvl = _EdgeCutoff + 0.04;
                     bool onLine = grassHere && aOut < lvl;
 
@@ -538,10 +531,6 @@ Shader "MusicalSprite/GroundEdge"
                     float2 edgeUV = float2(edgeU * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
                     float edgeAlpha = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, edgeUV).a;
 
-                    // No grass on the center seam.
-                    float seamMask = smoothstep(0.0, _CenterBlend, abs(worldXZ.x - _CenterLineX));
-                    edgeAlpha *= seamMask;
-
                     float mask = smoothstep(_EdgeCutoff, _EdgeCutoff + 0.08, edgeAlpha);
                     // 镜像 ForwardLit：只有“无草、且向草内探一小步也无草”的矩形片段
                     // 才裁剪（描边带 / 圆盘草洞棕色填充都保留深度）。
@@ -701,9 +690,6 @@ Shader "MusicalSprite/GroundEdge"
                         edgeU = atan2(worldXZ.y - _DiscCenter.y, worldXZ.x - _DiscCenter.x) * 0.15915494 + 0.5;
                     float2 edgeUV = float2(edgeU * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
                     float edgeAlpha = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, edgeUV).a;
-
-                    float seamMask = smoothstep(0.0, _CenterBlend, abs(worldXZ.x - _CenterLineX));
-                    edgeAlpha *= seamMask;
 
                     float mask = smoothstep(_EdgeCutoff, _EdgeCutoff + 0.08, edgeAlpha);
                     // 镜像 ForwardLit：只有“无草、且向草内探一小步也无草”的矩形片段
