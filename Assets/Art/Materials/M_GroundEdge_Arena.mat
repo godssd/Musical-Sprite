@@ -66,7 +66,7 @@ Material:
     - _ShadowColor: {r: 0.35, g: 0.32, b: 0.45, a: 1}
     - _SideColor: {r: 0.45, g: 0.32, b: 0.22, a: 1}
     - _SideLightDir: {r: 0.5, g: 0.3, b: 0.8, a: 0}
-    - _StageClipA: {r: 8, g: 0, b: 1.22, a: 1}
-    - _StageClipB: {r: -8, g: 0, b: 1.22, a: 1}
+    - _StageClipA: {r: 8, g: 0, b: 1.2005, a: 1}
+    - _StageClipB: {r: -8, g: 0, b: 1.2005, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

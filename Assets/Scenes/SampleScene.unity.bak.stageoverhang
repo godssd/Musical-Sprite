@@ -289,70 +289,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 14939981}
   m_CullTransparentMesh: 1
---- !u!21 &16901687
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarRight
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0.0102
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 1
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 1
-    - _RippleScale: 0.15
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0.4
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 12
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.05, g: 0.28, b: 1, a: 1}
-    - _CrestColor: {r: 0.043880865, g: 0.038714856, b: 0.2830189, a: 1}
-    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
-    - _TopColor: {r: 0, g: 0.54250443, b: 0.7924528, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &28674162
 GameObject:
   m_ObjectHideFlags: 0
@@ -841,7 +777,7 @@ Mesh:
       format: 0
       dimension: 0
     m_DataSize: 1664
-    _typelessdata: 00000000000000000000000000000000000080bf000000000000003f0000003f000000009a99193e00000000000000000000803f000000000000003f0000003f6b4961b3000000009a9999bf802277bfa49581bea49581bdffffff3e000000006b4961b39a99193e9a9999bf7b5762bf0c5ded3e0d5d6dbdffffff3e00000000f863203e00000000334998bff3c0e53cfd9c7bbfaf8e3abe14b5103fea2a8c3bf863203e9a99193e334998bf0b5aa43cfd9c7b3f34a23bbe14b5103fea2a8c3bb9049f3e00000000c05d94bfea4b533dfd9c7bbf723635befc20213f60918b3cb9049f3e9a99193ec05d94bfec6f333dfd9c7b3fd05837befc20213f60918b3ce71eeb3e000000006ce88dbfe60c983dfd9c7bbf79c42cbec5fb303f10e51b3de71eeb3e9a99193e6ce88dbf70d0883dfd9c7b3f4bec2fbec5fb303f10e51b3d9999193f00000000820585bfd8d9c33dfd9c7bbfbc5d21be0000403fa030893d9999193f9a99193e820585bf9991b53dfd9c7b3f307d25be0000403fa030893df2023b3f00000000dab773bff14cec3dfd9c7bbf2a3413bee5eb4d3f2b9bd33df2023b3f9a99193edab773bf8237df3dfd9c7b3f363918bee5eb4d3f2b9bd33d2439593f00000000243959bf775a083efe9c7bbfd28502be79825a3f1af6153e2439593f9a99193e243959bfd485023efe9c7b3f795a08be79825a3f1af6153ed9b7733f00000000f3023bbf3939183efd9c7bbf7e37dfbd9a8c653f6c50483ed9b7733f9a99193ef3023bbf2b34133efd9c7b3fed4cecbd9a8c653f6c50483e8105853f000000009a9919bf317d253efd9c7bbfa191b5bdebd96e3f0000803e8105853f9a99193e9a9919bfbb5d213efd9c7b3fd7d9c3bdebd96e3f0000803e6ce88d3f00000000e81eebbe49ec2f3efe9c7bbf71d088bdaf41763f75089e3e6ce88d3f9a99193ee81eebbe77c42c3efe9c7b3fed0c98bdaf41763f75089e3ec05d943f00000000b8049fbecc58373efe9c7bbfed6f33bd75a37b3f09bebd3ec05d943f9a99193eb8049fbe7436353efe9c7b3fed4b53bd75a37b3f09bebd3e3349983f00000000fe6320be36a23b3efc9c7bbf0e5aa4bcaae77e3fd695de3e3349983f9a99193efe6320beaf8e3a3efc9c7b3ff7c0e5bcaae77e3fd695de3e9a99993f0000000000000000bdb53c3efc9c7bbfdcee833b0000803f0000003f9a99993f9a99193e00000000bdb53c3efc9c7b3fdcee83bb0000803f0000003f3349983f00000000fe63203eaf8e3a3efc9c7bbff7c0e53caae77e3f15b5103f3349983f9a99193efe63203e36a23b3efc9c7b3f0e5aa43caae77e3f15b5103fc05d943f00000000b8049f3e7436353efe9c7bbfeb4b533d75a37b3ffc20213fc05d943f9a99193eb8049f3ecc58373efe9c7b3fed6f333d75a37b3ffc20213f6ce88d3f00000000e81eeb3e77c42c3efe9c7bbfed0c983daf41763fc6fb303f6ce88d3f9a99193ee81eeb3e49ec2f3efe9c7b3f71d0883daf41763fc6fb303f8105853f000000009a99193fbb5d213efd9c7bbfd7d9c33debd96e3f0000403f8105853f9a99193e9a99193f317d253efd9c7b3fa191b53debd96e3f0000403fd9b7733f00000000f3023b3f2b34133efd9c7bbfed4cec3d9a8c653fe5eb4d3fd9b7733f9a99193ef3023b3f3a39183efd9c7b3f7e37df3d9a8c653fe5eb4d3f2439593f000000002439593fd485023efe9c7bbf795a083e79825a3f79825a3f2439593f9a99193e2439593f785a083efe9c7b3fd285023e79825a3f79825a3ff2023b3f00000000dab7733f8237df3dfd9c7bbf3639183ee5eb4d3f9b8c653ff2023b3f9a99193edab7733ff04cec3dfd9c7b3f2a34133ee5eb4d3f9b8c653f9999193f000000008205853f9991b53dfd9c7bbf307d253e0000403fecd96e3f9999193f9a99193e8205853fd8d9c33dfd9c7b3fbb5d213e0000403fecd96e3fe71eeb3e000000006ce88d3f6fd0883dfd9c7bbf4bec2f3ec5fb303faf41763fe71eeb3e9a99193e6ce88d3fe60c983dfd9c7b3f7ac42c3ec5fb303faf41763fb9049f3e00000000c05d943fec6f333dfd9c7bbfcf58373efc20213f75a37b3fb9049f3e9a99193ec05d943feb4b533dfd9c7b3f7236353efc20213f75a37b3ff863203e000000003349983f0b5aa43cfd9c7bbf34a23b3e14b5103faae77e3ff863203e9a99193e3349983ff3c0e53cfd9c7b3fb08e3a3e14b5103faae77e3f6b4961b3000000009a99993f7b5762bf0c5dedbe0d5d6d3dffffff3e0000803f6b4961b39a99193e9a99993f802277bfa495813ea495813dffffff3e0000803f
+    _typelessdata: 00000000000000000000000000000000000080bf000000000000003f0000003f000000009a99193e00000000000000000000803f000000000000003f0000003f3c6ea924000000009a9999bf00000000000080bf000000000000003f000000003c6ea9249a99193e9a9999bf000000000000803f000000000000003f00000000fd63203e00000000334998bf00000000000080bf0000000015b5103fda2a8c3bfd63203e9a99193e334998bf000000000000803f0000000015b5103fda2a8c3bb7049f3e00000000c05d94bf00000000000080bf00000000fc20213f5c918b3cb7049f3e9a99193ec05d94bf000000000000803f00000000fc20213f5c918b3ce61eeb3e000000006ce88dbf00000000000080bf00000000c5fb303f0ce51b3de61eeb3e9a99193e6ce88dbf000000000000803f00000000c5fb303f0ce51b3d9a99193f00000000810585bf00000000000080bf000000000000403fa330893d9a99193f9a99193e810585bf000000000000803f000000000000403fa330893df2023b3f00000000d8b773bf00000000000080bf00000000e5eb4d3f2f9bd33df2023b3f9a99193ed8b773bf000000000000803f00000000e5eb4d3f2f9bd33d2439593f00000000243959bf00000000000080bf000000007a825a3f1af6153e2439593f9a99193e243959bf000000000000803f000000007a825a3f1af6153ed8b7733f00000000f2023bbf00000000000080bf000000009a8c653f6c50483ed8b7733f9a99193ef2023bbf000000000000803f000000009a8c653f6c50483e8105853f000000009a9919bf00000000000080bf00000000ecd96e3f0000803e8105853f9a99193e9a9919bf000000000000803f00000000ecd96e3f0000803e6ce88d3f00000000e61eebbe00000000000080bf00000000af41763f75089e3e6ce88d3f9a99193ee61eebbe000000000000803f00000000af41763f75089e3ec05d943f00000000b7049fbe00000000000080bf0000000075a37b3f09bebd3ec05d943f9a99193eb7049fbe000000000000803f0000000075a37b3f09bebd3e3349983f00000000fd6320be00000000000080bf00000000aae77e3fd695de3e3349983f9a99193efd6320be000000000000803f00000000aae77e3fd695de3e9a99993f000000000000000000000000000080bf000000000000803f0000003f9a99993f9a99193e00000000000000000000803f000000000000803f0000003f3349983f00000000fd63203e00000000000080bf00000000aae77e3f15b5103f3349983f9a99193efd63203e000000000000803f00000000aae77e3f15b5103fc05d943f00000000b7049f3e00000000000080bf0000000075a37b3ffc20213fc05d943f9a99193eb7049f3e000000000000803f0000000075a37b3ffc20213f6ce88d3f00000000e61eeb3e00000000000080bf00000000af41763fc5fb303f6ce88d3f9a99193ee61eeb3e000000000000803f00000000af41763fc5fb303f8105853f000000009a99193f00000000000080bf00000000ecd96e3f0000403f8105853f9a99193e9a99193f000000000000803f00000000ecd96e3f0000403fd8b7733f00000000f2023b3f00000000000080bf000000009a8c653fe5eb4d3fd8b7733f9a99193ef2023b3f000000000000803f000000009a8c653fe5eb4d3f2439593f000000002439593f00000000000080bf000000007a825a3f7a825a3f2439593f9a99193e2439593f000000000000803f000000007a825a3f7a825a3ff2023b3f00000000d8b7733f00000000000080bf00000000e5eb4d3f9a8c653ff2023b3f9a99193ed8b7733f000000000000803f00000000e5eb4d3f9a8c653f9a99193f000000008105853f00000000000080bf000000000000403fecd96e3f9a99193f9a99193e8105853f000000000000803f000000000000403fecd96e3fe61eeb3e000000006ce88d3f00000000000080bf00000000c5fb303faf41763fe61eeb3e9a99193e6ce88d3f000000000000803f00000000c5fb303faf41763fb7049f3e00000000c05d943f00000000000080bf00000000fc20213f75a37b3fb7049f3e9a99193ec05d943f000000000000803f00000000fc20213f75a37b3ffd63203e000000003349983f00000000000080bf0000000015b5103faae77e3ffd63203e9a99193e3349983f000000000000803f0000000015b5103faae77e3f3c6ea924000000009a99993f00000000000080bf000000000000003f0000803f3c6ea9249a99193e9a99993f000000000000803f000000000000003f0000803f
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 0
@@ -909,6 +845,70 @@ Mesh:
     offset: 0
     size: 0
     path: 
+--- !u!21 &117331304
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarLeft_Ghost
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 0
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 0
+    - _RippleScale: 0
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 14
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
+    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
+    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &134550053
 GameObject:
   m_ObjectHideFlags: 0
@@ -1004,6 +1004,70 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 300, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!21 &182556927
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarRight_Ghost
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 0
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 1
+    - _RippleScale: 0
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 14
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
+    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
+    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &215246048
 GameObject:
   m_ObjectHideFlags: 0
@@ -1750,70 +1814,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &349150996
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarLeft_Ghost
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 0
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 0
-    - _RippleScale: 0
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 14
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
-    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
-    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
-    - _TopColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &385634996
 GameObject:
   m_ObjectHideFlags: 0
@@ -1928,7 +1928,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 349150996}
+  m_Material: {fileID: 117331304}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -7618,6 +7618,70 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 300, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!21 &1264656658
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarLeft
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0.0049
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 1
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 0
+    - _RippleScale: 0.15
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0.4
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 12
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.7075472, g: 0.10702395, b: 0, a: 1}
+    - _CrestColor: {r: 0.18867922, g: 0.057849765, b: 0.094645545, a: 1}
+    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
+    - _TopColor: {r: 1, g: 0.04214135, b: 0.033018887, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &1269850758
 GameObject:
   m_ObjectHideFlags: 0
@@ -7833,7 +7897,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 16901687}
+  m_Material: {fileID: 2092134688}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -8437,70 +8501,6 @@ RectTransform:
   m_AnchoredPosition: {x: 4, y: 2.5}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!21 &1417958332
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarLeft
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0.0049
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 1
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 0
-    - _RippleScale: 0.15
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0.4
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 12
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.7075472, g: 0.10702395, b: 0, a: 1}
-    - _CrestColor: {r: 0.18867922, g: 0.057849765, b: 0.094645545, a: 1}
-    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
-    - _TopColor: {r: 1, g: 0.04214135, b: 0.033018887, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &1419348383
 GameObject:
   m_ObjectHideFlags: 0
@@ -9421,70 +9421,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1583149789}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!21 &1588706469
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarRight_Ghost
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 0
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 1
-    - _RippleScale: 0
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 14
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
-    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
-    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
-    - _TopColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &1589379650
 GameObject:
   m_ObjectHideFlags: 0
@@ -9952,7 +9888,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1417958332}
+  m_Material: {fileID: 1264656658}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -11080,7 +11016,7 @@ Mesh:
       format: 0
       dimension: 0
     m_DataSize: 1664
-    _typelessdata: 00000000000000000000000000000000000080bf000000000000003f0000003f000000009a99193e00000000000000000000803f000000000000003f0000003f6b4961b3000000009a9999bf802277bfa49581bea49581bdffffff3e000000006b4961b39a99193e9a9999bf7b5762bf0c5ded3e0d5d6dbdffffff3e00000000f863203e00000000334998bff3c0e53cfd9c7bbfaf8e3abe14b5103fea2a8c3bf863203e9a99193e334998bf0b5aa43cfd9c7b3f34a23bbe14b5103fea2a8c3bb9049f3e00000000c05d94bfea4b533dfd9c7bbf723635befc20213f60918b3cb9049f3e9a99193ec05d94bfec6f333dfd9c7b3fd05837befc20213f60918b3ce71eeb3e000000006ce88dbfe60c983dfd9c7bbf79c42cbec5fb303f10e51b3de71eeb3e9a99193e6ce88dbf70d0883dfd9c7b3f4bec2fbec5fb303f10e51b3d9999193f00000000820585bfd8d9c33dfd9c7bbfbc5d21be0000403fa030893d9999193f9a99193e820585bf9991b53dfd9c7b3f307d25be0000403fa030893df2023b3f00000000dab773bff14cec3dfd9c7bbf2a3413bee5eb4d3f2b9bd33df2023b3f9a99193edab773bf8237df3dfd9c7b3f363918bee5eb4d3f2b9bd33d2439593f00000000243959bf775a083efe9c7bbfd28502be79825a3f1af6153e2439593f9a99193e243959bfd485023efe9c7b3f795a08be79825a3f1af6153ed9b7733f00000000f3023bbf3939183efd9c7bbf7e37dfbd9a8c653f6c50483ed9b7733f9a99193ef3023bbf2b34133efd9c7b3fed4cecbd9a8c653f6c50483e8105853f000000009a9919bf317d253efd9c7bbfa191b5bdebd96e3f0000803e8105853f9a99193e9a9919bfbb5d213efd9c7b3fd7d9c3bdebd96e3f0000803e6ce88d3f00000000e81eebbe49ec2f3efe9c7bbf71d088bdaf41763f75089e3e6ce88d3f9a99193ee81eebbe77c42c3efe9c7b3fed0c98bdaf41763f75089e3ec05d943f00000000b8049fbecc58373efe9c7bbfed6f33bd75a37b3f09bebd3ec05d943f9a99193eb8049fbe7436353efe9c7b3fed4b53bd75a37b3f09bebd3e3349983f00000000fe6320be36a23b3efc9c7bbf0e5aa4bcaae77e3fd695de3e3349983f9a99193efe6320beaf8e3a3efc9c7b3ff7c0e5bcaae77e3fd695de3e9a99993f0000000000000000bdb53c3efc9c7bbfdcee833b0000803f0000003f9a99993f9a99193e00000000bdb53c3efc9c7b3fdcee83bb0000803f0000003f3349983f00000000fe63203eaf8e3a3efc9c7bbff7c0e53caae77e3f15b5103f3349983f9a99193efe63203e36a23b3efc9c7b3f0e5aa43caae77e3f15b5103fc05d943f00000000b8049f3e7436353efe9c7bbfeb4b533d75a37b3ffc20213fc05d943f9a99193eb8049f3ecc58373efe9c7b3fed6f333d75a37b3ffc20213f6ce88d3f00000000e81eeb3e77c42c3efe9c7bbfed0c983daf41763fc6fb303f6ce88d3f9a99193ee81eeb3e49ec2f3efe9c7b3f71d0883daf41763fc6fb303f8105853f000000009a99193fbb5d213efd9c7bbfd7d9c33debd96e3f0000403f8105853f9a99193e9a99193f317d253efd9c7b3fa191b53debd96e3f0000403fd9b7733f00000000f3023b3f2b34133efd9c7bbfed4cec3d9a8c653fe5eb4d3fd9b7733f9a99193ef3023b3f3a39183efd9c7b3f7e37df3d9a8c653fe5eb4d3f2439593f000000002439593fd485023efe9c7bbf795a083e79825a3f79825a3f2439593f9a99193e2439593f785a083efe9c7b3fd285023e79825a3f79825a3ff2023b3f00000000dab7733f8237df3dfd9c7bbf3639183ee5eb4d3f9b8c653ff2023b3f9a99193edab7733ff04cec3dfd9c7b3f2a34133ee5eb4d3f9b8c653f9999193f000000008205853f9991b53dfd9c7bbf307d253e0000403fecd96e3f9999193f9a99193e8205853fd8d9c33dfd9c7b3fbb5d213e0000403fecd96e3fe71eeb3e000000006ce88d3f6fd0883dfd9c7bbf4bec2f3ec5fb303faf41763fe71eeb3e9a99193e6ce88d3fe60c983dfd9c7b3f7ac42c3ec5fb303faf41763fb9049f3e00000000c05d943fec6f333dfd9c7bbfcf58373efc20213f75a37b3fb9049f3e9a99193ec05d943feb4b533dfd9c7b3f7236353efc20213f75a37b3ff863203e000000003349983f0b5aa43cfd9c7bbf34a23b3e14b5103faae77e3ff863203e9a99193e3349983ff3c0e53cfd9c7b3fb08e3a3e14b5103faae77e3f6b4961b3000000009a99993f7b5762bf0c5dedbe0d5d6d3dffffff3e0000803f6b4961b39a99193e9a99993f802277bfa495813ea495813dffffff3e0000803f
+    _typelessdata: 00000000000000000000000000000000000080bf000000000000003f0000003f000000009a99193e00000000000000000000803f000000000000003f0000003f3c6ea924000000009a9999bf00000000000080bf000000000000003f000000003c6ea9249a99193e9a9999bf000000000000803f000000000000003f00000000fd63203e00000000334998bf00000000000080bf0000000015b5103fda2a8c3bfd63203e9a99193e334998bf000000000000803f0000000015b5103fda2a8c3bb7049f3e00000000c05d94bf00000000000080bf00000000fc20213f5c918b3cb7049f3e9a99193ec05d94bf000000000000803f00000000fc20213f5c918b3ce61eeb3e000000006ce88dbf00000000000080bf00000000c5fb303f0ce51b3de61eeb3e9a99193e6ce88dbf000000000000803f00000000c5fb303f0ce51b3d9a99193f00000000810585bf00000000000080bf000000000000403fa330893d9a99193f9a99193e810585bf000000000000803f000000000000403fa330893df2023b3f00000000d8b773bf00000000000080bf00000000e5eb4d3f2f9bd33df2023b3f9a99193ed8b773bf000000000000803f00000000e5eb4d3f2f9bd33d2439593f00000000243959bf00000000000080bf000000007a825a3f1af6153e2439593f9a99193e243959bf000000000000803f000000007a825a3f1af6153ed8b7733f00000000f2023bbf00000000000080bf000000009a8c653f6c50483ed8b7733f9a99193ef2023bbf000000000000803f000000009a8c653f6c50483e8105853f000000009a9919bf00000000000080bf00000000ecd96e3f0000803e8105853f9a99193e9a9919bf000000000000803f00000000ecd96e3f0000803e6ce88d3f00000000e61eebbe00000000000080bf00000000af41763f75089e3e6ce88d3f9a99193ee61eebbe000000000000803f00000000af41763f75089e3ec05d943f00000000b7049fbe00000000000080bf0000000075a37b3f09bebd3ec05d943f9a99193eb7049fbe000000000000803f0000000075a37b3f09bebd3e3349983f00000000fd6320be00000000000080bf00000000aae77e3fd695de3e3349983f9a99193efd6320be000000000000803f00000000aae77e3fd695de3e9a99993f000000000000000000000000000080bf000000000000803f0000003f9a99993f9a99193e00000000000000000000803f000000000000803f0000003f3349983f00000000fd63203e00000000000080bf00000000aae77e3f15b5103f3349983f9a99193efd63203e000000000000803f00000000aae77e3f15b5103fc05d943f00000000b7049f3e00000000000080bf0000000075a37b3ffc20213fc05d943f9a99193eb7049f3e000000000000803f0000000075a37b3ffc20213f6ce88d3f00000000e61eeb3e00000000000080bf00000000af41763fc5fb303f6ce88d3f9a99193ee61eeb3e000000000000803f00000000af41763fc5fb303f8105853f000000009a99193f00000000000080bf00000000ecd96e3f0000403f8105853f9a99193e9a99193f000000000000803f00000000ecd96e3f0000403fd8b7733f00000000f2023b3f00000000000080bf000000009a8c653fe5eb4d3fd8b7733f9a99193ef2023b3f000000000000803f000000009a8c653fe5eb4d3f2439593f000000002439593f00000000000080bf000000007a825a3f7a825a3f2439593f9a99193e2439593f000000000000803f000000007a825a3f7a825a3ff2023b3f00000000d8b7733f00000000000080bf00000000e5eb4d3f9a8c653ff2023b3f9a99193ed8b7733f000000000000803f00000000e5eb4d3f9a8c653f9a99193f000000008105853f00000000000080bf000000000000403fecd96e3f9a99193f9a99193e8105853f000000000000803f000000000000403fecd96e3fe61eeb3e000000006ce88d3f00000000000080bf00000000c5fb303faf41763fe61eeb3e9a99193e6ce88d3f000000000000803f00000000c5fb303faf41763fb7049f3e00000000c05d943f00000000000080bf00000000fc20213f75a37b3fb7049f3e9a99193ec05d943f000000000000803f00000000fc20213f75a37b3ffd63203e000000003349983f00000000000080bf0000000015b5103faae77e3ffd63203e9a99193e3349983f000000000000803f0000000015b5103faae77e3f3c6ea924000000009a99993f00000000000080bf000000000000003f0000803f3c6ea9249a99193e9a99993f000000000000803f000000000000003f0000803f
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 0
@@ -11951,7 +11887,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1588706469}
+  m_Material: {fileID: 182556927}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -12100,7 +12036,7 @@ Transform:
   m_GameObject: {fileID: 2031485179}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 6.5, y: 0.36, z: -0.75}
+  m_LocalPosition: {x: 6.5, y: 4.827, z: -0.75}
   m_LocalScale: {x: 0.45, y: 0.6, z: 0.45}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12709,6 +12645,70 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2086663964}
   m_CullTransparentMesh: 1
+--- !u!21 &2092134688
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarRight
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0.0102
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 1
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 1
+    - _RippleScale: 0.15
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0.4
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 12
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.05, g: 0.28, b: 1, a: 1}
+    - _CrestColor: {r: 0.043880865, g: 0.038714856, b: 0.2830189, a: 1}
+    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
+    - _TopColor: {r: 0, g: 0.54250443, b: 0.7924528, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &2103292341
 GameObject:
   m_ObjectHideFlags: 0

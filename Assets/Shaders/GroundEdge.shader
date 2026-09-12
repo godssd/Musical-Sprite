@@ -36,8 +36,8 @@ Shader "MusicalSprite/GroundEdge"
         // 矩形主地面在台面圆盘占位范围内直接裁掉：台面压在主地面边界上，
         // 不裁的话地面草沿带会从台面直边侧壁下面探出来形成“裙边”。
         // xy=圆心XZ, z=裁剪半径(台面半径+微量), w=开关
-        _StageClipA("Stage Clip A (x, z, radius, on)", Vector) = (8, 0, 1.22, 0)
-        _StageClipB("Stage Clip B (x, z, radius, on)", Vector) = (-8, 0, 1.22, 0)
+        _StageClipA("Stage Clip A (x, z, radius, on)", Vector) = (8, 0, 1.2005, 0)
+        _StageClipB("Stage Clip B (x, z, radius, on)", Vector) = (-8, 0, 1.2005, 0)
 
         [Header(Ground Bounds)]
         _GroundMin("Ground Min", Vector) = (-8, -3.75, 0, 0)
@@ -272,7 +272,10 @@ Shader "MusicalSprite/GroundEdge"
                     // ------------------------------------------------------------------
                     edgeDist = distance(worldXZ, _DiscCenter.xy) - _DiscRadius;
                     float2 stageUV = (worldXZ - _DiscCenter.xy) / max(0.0001, 2.0 * _DiscRadius) + 0.5;
-                    groundCol = SAMPLE_TEXTURE2D(_StageMap, sampler_StageMap, stageUV).rgb * _BaseColor.rgb;
+                    float4 stageTex = SAMPLE_TEXTURE2D(_StageMap, sampler_StageMap, stageUV);
+                    // 透明像素用原图 RGB 会透出蓝青色（yuantai 贴图透明区存色），
+                    // 圆盘顶面应只在贴图不透明处显示图案，透明处露泥土棕。
+                    groundCol = lerp(_SideColor.rgb, stageTex.rgb * _BaseColor.rgb, stageTex.a);
                 }
                 else
                 {
@@ -301,6 +304,18 @@ Shader "MusicalSprite/GroundEdge"
                 // inside (edgeDist from -_EdgeOutset up to 0).
                 if (edgeDist > -_EdgeOutset)
                 {
+                    // 矩形地面草沿带：如果伸进台面圆盘占位区域内，同样裁掉。
+                    // 否则草沿带会和台面侧壁/顶面重叠，在交界处形成竖线/杂色。
+                    // 草沿带内边界比顶面内缩了 _EdgeOutset，所以裁剪半径需要按勾股定理
+                    // 加长：sqrt(r^2 + EdgeOutset^2)，否则圆盘端点处会露出一小段。
+                    if (_ShapeMode < 0.5)
+                    {
+                        float grassClipA = sqrt(_StageClipA.z * _StageClipA.z + _EdgeOutset * _EdgeOutset);
+                        float grassClipB = sqrt(_StageClipB.z * _StageClipB.z + _EdgeOutset * _EdgeOutset);
+                        if (_StageClipA.w > 0.5 && distance(worldXZ, _StageClipA.xy) < grassClipA) clip(-1.0);
+                        if (_StageClipB.w > 0.5 && distance(worldXZ, _StageClipB.xy) < grassClipB) clip(-1.0);
+                    }
+
                     if (_DebugMode > 0.5 && _DebugMode < 1.5)
                         return float4(0.0, 1.0, 0.0, 1.0);
 
@@ -503,6 +518,15 @@ Shader "MusicalSprite/GroundEdge"
 
                 if (edgeDist > -_EdgeOutset)
                 {
+                    // 矩形地面草沿带：同样按 sqrt(r^2 + EdgeOutset^2) 裁剪，避免端点残留。
+                    if (_ShapeMode < 0.5)
+                    {
+                        float grassClipA = sqrt(_StageClipA.z * _StageClipA.z + _EdgeOutset * _EdgeOutset);
+                        float grassClipB = sqrt(_StageClipB.z * _StageClipB.z + _EdgeOutset * _EdgeOutset);
+                        if (_StageClipA.w > 0.5 && distance(worldXZ, _StageClipA.xy) < grassClipA) clip(-1.0);
+                        if (_StageClipB.w > 0.5 && distance(worldXZ, _StageClipB.xy) < grassClipB) clip(-1.0);
+                    }
+
                     // Safety: never write depth beyond the overhang edge.
                     if (edgeDist > _EdgeOverhang)
                         clip(-1.0);
@@ -659,6 +683,15 @@ Shader "MusicalSprite/GroundEdge"
 
                 if (edgeDist > -_EdgeOutset)
                 {
+                    // 矩形地面草沿带：同样按 sqrt(r^2 + EdgeOutset^2) 裁剪，避免端点残留。
+                    if (_ShapeMode < 0.5)
+                    {
+                        float grassClipA = sqrt(_StageClipA.z * _StageClipA.z + _EdgeOutset * _EdgeOutset);
+                        float grassClipB = sqrt(_StageClipB.z * _StageClipB.z + _EdgeOutset * _EdgeOutset);
+                        if (_StageClipA.w > 0.5 && distance(worldXZ, _StageClipA.xy) < grassClipA) clip(-1.0);
+                        if (_StageClipB.w > 0.5 && distance(worldXZ, _StageClipB.xy) < grassClipB) clip(-1.0);
+                    }
+
                     if (edgeDist > _EdgeOverhang)
                         clip(-1.0);
 

@@ -236,6 +236,177 @@ namespace MusicalSprite.Editor
         }
 
         // ----------------------------------------------------------------
+        // Stage disc overhang lip
+        //
+        // Fixes two reported issues at the stage<->ground boundary:
+        //   1) The stage side wall "looks recessed / hollow": the disc mesh ends
+        //      exactly at r = _DiscRadius (1.2) with NO outward grass fringe, so the
+        //      dirt side wall pokes through at the top. The main ground avoids this
+        //      because its _EdgeOverhang = 0.08 builds a real overhang ring that caps
+        //      the wall top.
+        //   2) The black seam line: the rect ground is clipped to
+        //      sqrt(clipR^2 + EdgeOutset^2) ~= 1.222 around the stage, but the disc
+        //      only reaches r = 1.2, so the ring r in [1.2, 1.222] has neither disc
+        //      nor ground -> background shows through as a black line.
+        //
+        // We add a thin outward grass lip (r 1.2 -> 1.2+overhang) as a CHILD of each
+        // stage, rendered with the SAME stage material. The shader computes edgeDist
+        // in world space, so the lip is automatically drawn as the grass overhang and
+        // covers both the seam and the wall-top gap. No shader change, no grass-logic
+        // change — we only use the existing, already-tuned overhang path.
+        //
+        // Revert: run "Remove Stage Overhang Lips" (or delete the "StageOverhangLip"
+        // children + set _EdgeOverhang back to 0 on both stage materials).
+        // ----------------------------------------------------------------
+        private const string StageLipMeshPath = "Assets/Art/Meshes/StageOverhangLip.asset";
+        private const int StageLipSegments = 24;
+
+        [MenuItem("Tools/Musical-Sprite/Add Stage Overhang Lips")]
+        public static void AddStageOverhangLips()
+        {
+            Material matA = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Materials/M_GroundEdge_Stage_A.mat");
+            Material matB = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Materials/M_GroundEdge_Stage_B.mat");
+            if (matA == null || matB == null)
+            {
+                Debug.LogError("[GroundEdge] Stage materials not found.");
+                return;
+            }
+
+            // Overhang amount comes from the material (single source of truth), exactly
+            // like the main-ground generator reads _EdgeOverhang. First run: enable it.
+            float overhang = matA.GetFloat("_EdgeOverhang");
+            if (overhang < 0.001f) overhang = 0.08f;
+
+            float discRadius = 1.2f;
+            float topY = 0.15f; // local top height of the disc mesh (world = *4 via scale)
+            Mesh lip = BuildStageOverhangLipMesh(discRadius, overhang, topY, StageLipSegments);
+
+            if (!System.IO.Directory.Exists(MeshFolder))
+                System.IO.Directory.CreateDirectory(MeshFolder);
+            Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(StageLipMeshPath);
+            if (existing != null)
+            {
+                existing.Clear();
+                existing.SetVertices(lip.vertices);
+                existing.SetNormals(lip.normals);
+                existing.SetUVs(0, lip.uv);
+                existing.SetIndices(lip.triangles, MeshTopology.Triangles, 0);
+                existing.RecalculateBounds();
+                EditorUtility.SetDirty(existing);
+                lip = existing;
+            }
+            else
+            {
+                AssetDatabase.CreateAsset(lip, StageLipMeshPath);
+            }
+            AssetDatabase.SaveAssets();
+
+            AddLipToStage("LeftBand_Stage", lip, matA);
+            AddLipToStage("RightBand_Stage", lip, matB);
+
+            // Commit the overhang amount so the shader renders to the lip's outer edge
+            // (clip threshold = _EdgeOverhang).
+            matA.SetFloat("_EdgeOverhang", overhang);
+            matB.SetFloat("_EdgeOverhang", overhang);
+            EditorUtility.SetDirty(matA);
+            EditorUtility.SetDirty(matB);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[GroundEdge] Added stage overhang lips (discRadius={discRadius}, overhang={overhang}). " +
+                      "Revert: 'Remove Stage Overhang Lips' menu, or delete StageOverhangLip children + _EdgeOverhang=0.");
+        }
+
+        [MenuItem("Tools/Musical-Sprite/Remove Stage Overhang Lips")]
+        public static void RemoveStageOverhangLips()
+        {
+            RemoveLipFromStage("LeftBand_Stage");
+            RemoveLipFromStage("RightBand_Stage");
+            Material matA = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Materials/M_GroundEdge_Stage_A.mat");
+            Material matB = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Materials/M_GroundEdge_Stage_B.mat");
+            if (matA != null) { matA.SetFloat("_EdgeOverhang", 0f); EditorUtility.SetDirty(matA); }
+            if (matB != null) { matB.SetFloat("_EdgeOverhang", 0f); EditorUtility.SetDirty(matB); }
+            AssetDatabase.SaveAssets();
+            Debug.Log("[GroundEdge] Removed stage overhang lips and reset _EdgeOverhang to 0.");
+        }
+
+        private static void AddLipToStage(string stageName, Mesh lip, Material mat)
+        {
+            GameObject stage = GameObject.Find(stageName);
+            if (stage == null) { Debug.LogError($"[GroundEdge] {stageName} not found in scene."); return; }
+            Transform existingChild = stage.transform.Find("StageOverhangLip");
+            if (existingChild != null) Object.DestroyImmediate(existingChild.gameObject);
+
+            GameObject lipGO = new GameObject("StageOverhangLip");
+            lipGO.transform.SetParent(stage.transform, false);
+            lipGO.transform.localPosition = Vector3.zero;
+            lipGO.transform.localRotation = Quaternion.identity;
+            lipGO.transform.localScale = Vector3.one;
+
+            MeshFilter mf = lipGO.AddComponent<MeshFilter>();
+            mf.sharedMesh = lip;
+            MeshRenderer mr = lipGO.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            mr.receiveShadows = true;
+            EditorUtility.SetDirty(stage);
+        }
+
+        private static void RemoveLipFromStage(string stageName)
+        {
+            GameObject stage = GameObject.Find(stageName);
+            if (stage == null) return;
+            Transform child = stage.transform.Find("StageOverhangLip");
+            if (child != null) Object.DestroyImmediate(child.gameObject);
+        }
+
+        // Half-disc lip (x >= 0 local half), matching the embedded HalfCylinder's curved
+        // edge. Inner edge sits exactly on the disc boundary (r = discRadius, y = topY);
+        // outer edge overhangs by `overhang`. Flat at top height so it caps the wall top
+        // exactly like the main ground's overhang ring (which is also flat, not drooped).
+        private static Mesh BuildStageOverhangLipMesh(float discRadius, float overhang, float topY, int segments)
+        {
+            float rIn = discRadius;
+            float rOut = discRadius + overhang;
+
+            List<Vector3> verts = new List<Vector3>();
+            List<Vector3> normals = new List<Vector3>();
+            List<Vector2> uvs = new List<Vector2>();
+            List<int> indices = new List<int>();
+
+            for (int i = 0; i <= segments; i++)
+            {
+                float t = (float)i / segments;
+                float ang = -Mathf.PI * 0.5f + Mathf.PI * t; // -90deg .. +90deg
+                float cx = Mathf.Cos(ang);
+                float sz = Mathf.Sin(ang);
+                verts.Add(new Vector3(rIn * cx, topY, rIn * sz));
+                verts.Add(new Vector3(rOut * cx, topY, rOut * sz));
+                normals.Add(Vector3.up);
+                normals.Add(Vector3.up);
+                uvs.Add(Vector2.zero);
+                uvs.Add(Vector2.zero);
+            }
+            for (int i = 0; i < segments; i++)
+            {
+                int a = i * 2;           // inner i
+                int b = i * 2 + 1;       // outer i
+                int c = (i + 1) * 2;     // inner i+1
+                int d = (i + 1) * 2 + 1; // outer i+1
+                // Cull Off in the shader, so winding is irrelevant for visibility.
+                indices.Add(a); indices.Add(c); indices.Add(b);
+                indices.Add(b); indices.Add(c); indices.Add(d);
+            }
+            Mesh m = new Mesh();
+            m.name = "StageOverhangLip";
+            m.SetVertices(verts);
+            m.SetNormals(normals);
+            m.SetUVs(0, uvs);
+            m.SetIndices(indices, MeshTopology.Triangles, 0);
+            m.RecalculateBounds();
+            return m;
+        }
+
+        // ----------------------------------------------------------------
         // Helpers
         // ----------------------------------------------------------------
         private static Shader LoadShader(string name, string path)
@@ -488,13 +659,20 @@ namespace MusicalSprite.Editor
             // 4) Side dirt walls: built at the REAL ground edge (innerProfile) and
             //    pulled straight down. This is directly under the ground edge, so the
             //    brown dirt no longer "sticks out" beyond the playfield.
+            //
+            //    The closing segment (last profile point -> first profile point) must NOT
+            //    wrap UV back to edgeUs[0]=0.0 — that jump (≈0.99 -> 0.0) makes the Repeat-
+            //    addressed grass-edge/surface texture interpolate across the whole strip and
+            //    smear a stray black bar along one triangle. Instead, for the last segment we
+            //    reuse profile point 0 but assign it wrapU (edgeUs[0]+1.0) so UV goes 0.99 -> 1.0
+            //    continuously across the seam, exactly like the inner fan and grass rim already do.
             for (int i = 0; i < n; i++)
             {
-                int j = (i + 1) % n;
+                bool isLast = (i + 1) >= n;
                 Vector2 pA = innerProfile[i];
-                Vector2 pB = innerProfile[j];
+                Vector2 pB = isLast ? innerProfile[0] : innerProfile[i + 1];
                 Vector2 nA = outwardNormals[i];
-                Vector2 nB = outwardNormals[j];
+                Vector2 nB = isLast ? outwardNormals[0] : outwardNormals[i + 1];
 
                 int baseIdx = verts.Count;
                 verts.Add(new Vector3(pA.x, 0f, pA.y));
@@ -505,7 +683,7 @@ namespace MusicalSprite.Editor
                 verts.Add(new Vector3(pB.x, 0f, pB.y));
                 normals.Add(new Vector3(nB.x, 0f, nB.y));
                 uvs.Add(Vector2.zero);
-                uv2s.Add(new Vector2(edgeUs[j], 2f));
+                uv2s.Add(new Vector2(isLast ? wrapU : edgeUs[i + 1], 2f));
 
                 verts.Add(new Vector3(pA.x, -thickness, pA.y));
                 normals.Add(new Vector3(nA.x, 0f, nA.y));
@@ -515,7 +693,7 @@ namespace MusicalSprite.Editor
                 verts.Add(new Vector3(pB.x, -thickness, pB.y));
                 normals.Add(new Vector3(nB.x, 0f, nB.y));
                 uvs.Add(Vector2.zero);
-                uv2s.Add(new Vector2(edgeUs[j], 2f));
+                uv2s.Add(new Vector2(isLast ? wrapU : edgeUs[i + 1], 2f));
 
                 // Outward-facing triangles for a CCW profile.
                 indices.Add(baseIdx + 0);

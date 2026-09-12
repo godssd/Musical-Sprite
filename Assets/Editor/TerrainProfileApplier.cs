@@ -93,15 +93,16 @@ namespace MusicalSprite.EditorTools
             // ---------- 2.5) 地面材质：写入台面占位裁剪 ----------
             // 台面压在主地面边界上，地面草沿带会从台面直边侧壁下面探出来；
             // shader 里矩形模式对台面圆盘范围内的地面片段直接 clip。
-            // 半径 +0.02 余量盖住草沿外挑（_EdgeOverhang 0.08 内的外挑尖端）。
+            // 半径为台面半径 + 极小余量（仅防 z-fight）。台面 _EdgeOverhang=0（外挑已关闭），
+            // 余量过大（旧值 0.02）会在台面直边处留下裸露缝隙，形成竖向黑线；收到 0.0005 即不可见。
             if (groundMat != null)
             {
                 groundMat.SetVector("_StageClipA",
-                    new Vector4(centerR.x, centerR.y, radiusR + 0.02f, 1f));
+                    new Vector4(centerR.x, centerR.y, radiusR + 0.0005f, 1f));
                 groundMat.SetVector("_StageClipB",
-                    new Vector4(centerL.x, centerL.y, radiusL + 0.02f, 1f));
+                    new Vector4(centerL.x, centerL.y, radiusL + 0.0005f, 1f));
                 EditorUtility.SetDirty(groundMat);
-                Debug.Log($"[Terrain] 地面台面占位裁剪已写入：A=({centerR.x:F2},{centerR.y:F2}) r={radiusR + 0.02f:F2}  B=({centerL.x:F2},{centerL.y:F2}) r={radiusL + 0.02f:F2}");
+                Debug.Log($"[Terrain] 地面台面占位裁剪已写入：A=({centerR.x:F2},{centerR.y:F2}) r={radiusR + 0.0005f:F4}  B=({centerL.x:F2},{centerL.y:F2}) r={radiusL + 0.0005f:F4}");
             }
 
             // ---------- 3) 台面材质指回场景对象 ----------
