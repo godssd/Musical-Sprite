@@ -75,6 +75,7 @@ Shader "MusicalSprite/GroundEdge"
             ZWrite On
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
 
@@ -194,6 +195,7 @@ Shader "MusicalSprite/GroundEdge"
                 // skirt normals pointing almost straight up/down (|ny| ~ 0.98); a normal
                 // test alone can never catch them.
                 // ------------------------------------------------------------------
+                bool isBottomFace = normalWS.y < -0.3;
                 bool isSideFace = input.edgeData.y > 1.5
                     || (_ShapeMode > 0.5 && (normalWS.y < 0.3 || worldPos.y < _DiscTopY - 0.002));
                 if (isSideFace)
@@ -201,22 +203,25 @@ Shader "MusicalSprite/GroundEdge"
                     if (_DebugMode > 0.5)
                         return float4(0.0, 0.0, 1.0, 1.0);
 
-                    // Bottom cap faces downward; cull it.
-                    if (normalWS.y < -0.3)
+                    // The arena underside is hidden by design, but a stage can be moved
+                    // beyond the arena edge for composition/debugging. Keep its existing
+                    // bottom cap visible so the platform still reads as a solid slab.
+                    if (isBottomFace && _ShapeMode < 0.5)
                         clip(-1.0);
 
-                // 圆盘侧壁：网格法线已被平均破坏，改用从圆心出发的径向水平假法线，
+                // 圆盘侧壁：网格法线已被平均破坏，改用从物体原点出发的径向水平假法线，
                 // 保证侧壁光照方向一致、呈现干净的泥土色。
                 float3 sideNormal = normalWS;
-                if (_ShapeMode > 0.5)
+                if (_ShapeMode > 0.5 && !isBottomFace)
                 {
-                    float2 radial = worldPos.xz - _DiscCenter.xy;
+                    float2 discCenter = TransformObjectToWorld(float3(0.0, 0.0, 0.0)).xz;
+                    float2 radial = worldPos.xz - discCenter;
                     sideNormal = normalize(float3(radial.x, 0.0, radial.y));
                 }
 
                 float3 lightDir = normalize(_SideLightDir.xyz);
                 float NdotL = saturate(dot(sideNormal, lightDir));
-                float light = lerp(0.65, 1.0, NdotL);
+                float light = _ShapeMode > 0.5 ? 0.65 : lerp(0.65, 1.0, NdotL);
                 float3 col = _SideColor.rgb * light;
 
                 // 侧面接受同样的卡通化着色阴影，保持与顶面一致
@@ -246,6 +251,11 @@ Shader "MusicalSprite/GroundEdge"
                 // art, and removes the hardcoded "black line" / "overcast" band entirely.
                 // ------------------------------------------------------------------
                 float2 worldXZ = worldPos.xz;
+                // The stage material used to store an absolute world-space centre.
+                // That value went stale as soon as the stage was moved, pushing UVs
+                // outside 0..1 and making the texture repeat. The mesh origin is the
+                // true half-disc centre and follows translation automatically.
+                float2 discCenter = TransformObjectToWorld(float3(0.0, 0.0, 0.0)).xz;
 
                 // 矩形主地面：台面圆盘占位范围内直接裁掉（含少量余量盖住外挑草尖），
                 // 防止地面草沿带从台面直边侧壁下面探出来。只对矩形模式生效，
@@ -270,12 +280,13 @@ Shader "MusicalSprite/GroundEdge"
                     // Disc mode (stage platforms): texture mapped across the disc,
                     // signed distance = distance to the disc boundary (negative inside).
                     // ------------------------------------------------------------------
-                    edgeDist = distance(worldXZ, _DiscCenter.xy) - _DiscRadius;
-                    float2 stageUV = (worldXZ - _DiscCenter.xy) / max(0.0001, 2.0 * _DiscRadius) + 0.5;
+                    float2 stageRadial = worldXZ - discCenter;
+                    edgeDist = length(stageRadial) - _DiscRadius;
+                    float2 stageUV = stageRadial / max(0.0001, 2.0 * _DiscRadius) + 0.5;
                     float4 stageTex = SAMPLE_TEXTURE2D(_StageMap, sampler_StageMap, stageUV);
-                    // 透明像素用原图 RGB 会透出蓝青色（yuantai 贴图透明区存色），
-                    // 圆盘顶面应只在贴图不透明处显示图案，透明处露泥土棕。
-                    groundCol = lerp(_SideColor.rgb, stageTex.rgb * _BaseColor.rgb, stageTex.a);
+                    // RGB already contains the painted continuation under the PNG's
+                    // transparent fringe. The mask clips it at the actual contour.
+                    groundCol = stageTex.rgb * _BaseColor.rgb;
                 }
                 else
                 {
@@ -330,7 +341,7 @@ Shader "MusicalSprite/GroundEdge"
                     // has no ring, so derive it from the world angle around the disc.
                     float edgeU = input.edgeData.x;
                     if (_ShapeMode > 0.5)
-                        edgeU = atan2(worldXZ.y - _DiscCenter.y, worldXZ.x - _DiscCenter.x) * 0.15915494 + 0.5;
+                        edgeU = atan2(worldXZ.y - discCenter.y, worldXZ.x - discCenter.x) * 0.15915494 + 0.5;
                     float edgeV = saturate(t * _EdgeVerticalScale);
                     float2 edgeUV = float2(edgeU * _EdgeTexTiling, edgeV);
 
@@ -345,10 +356,9 @@ Shader "MusicalSprite/GroundEdge"
                         return float4(heat, 1.0);
                     }
 
-                    // Grass mask: alpha = grass, alpha = 0 = no grass (the gaps the
-                    // texture did not paint). The top face was intentionally overhung by
-                    // _EdgeOverhang so that clipping these gaps reveals the dirt side wall
-                    // underneath, never open sky — the area does NOT shrink.
+                    // Grass mask: alpha = grass, alpha = 0 = outside the contour.
+                    // Pixels outside the painted contour are clipped below, while the
+                    // underlying half-cylinder mesh keeps its original round shape.
                     float mask = smoothstep(_EdgeCutoff, _EdgeCutoff + 0.08, edgeAlpha);
 
                     // 描边 = V 向（带宽方向）单向检测，只画在草像素内侧：
@@ -371,10 +381,8 @@ Shader "MusicalSprite/GroundEdge"
                         finalCol = _OutlineColor.rgb;
                     else if (grassHere)
                         finalCol = groundCol;
-                    else if (_ShapeMode > 0.5)
-                        finalCol = _SideColor.rgb;      // 圆盘草洞填泥土棕
                     else
-                        clip(-1.0);                     // 矩形草洞保持镂空
+                        clip(-1.0);                     // 描边外统一裁掉，贴图不会越线
                 }
 
                 // 接收主光源实时阴影（轮廓真实、随光源角度变化），但用卡通化着色/柔化加工，
@@ -414,6 +422,7 @@ Shader "MusicalSprite/GroundEdge"
             ZWrite On
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex DepthOnlyVert
             #pragma fragment DepthOnlyFrag
 
@@ -484,6 +493,39 @@ Shader "MusicalSprite/GroundEdge"
                 return length(max(d, 0.0)) - r;
             }
 
+            float3 FitStagePerimeter(float3 posWS)
+            {
+                if (_ShapeMode < 0.5)
+                    return posWS;
+
+                float2 center = TransformObjectToWorld(float3(0.0, 0.0, 0.0)).xz;
+                float2 radial = posWS.xz - center;
+                float radialLength = length(radial);
+                if (abs(radialLength - _DiscRadius) > max(0.001, _DiscRadius * 0.02))
+                    return posWS;
+
+                float edgeU = atan2(radial.y, radial.x) * 0.15915494 + 0.5;
+                float innerT = 0.0;
+                float outerT = 1.0;
+                [unroll]
+                for (int i = 0; i < 8; i++)
+                {
+                    float midT = (innerT + outerT) * 0.5;
+                    float alpha = SAMPLE_TEXTURE2D_LOD(
+                        _EdgeTex, sampler_EdgeTex,
+                        float2(edgeU * _EdgeTexTiling, saturate(midT * _EdgeVerticalScale)), 0).a;
+                    if (alpha >= _EdgeCutoff + 0.04)
+                        innerT = midT;
+                    else
+                        outerT = midT;
+                }
+
+                float contourRadius = _DiscRadius - _EdgeOutset
+                    + innerT * (_EdgeOutset + _EdgeOverhang);
+                posWS.xz = center + radial * (contourRadius / max(0.0001, radialLength));
+                return posWS;
+            }
+
             // Discards exactly the fragments the ForwardLit pass discards, so the
             // depth silhouette matches the visible grass-rim silhouette.
             void ClipGroundEdge(float3 worldPos, float3 normalWS, float2 edgeData)
@@ -492,13 +534,14 @@ Shader "MusicalSprite/GroundEdge"
                     || (_ShapeMode > 0.5 && (normalWS.y < 0.3 || worldPos.y < _DiscTopY - 0.002));
                 if (isSideFace)
                 {
-                    // Bottom cap faces downward; cull it (matches ForwardLit).
-                    if (normalWS.y < -0.3)
+                    // Stage bottom caps are visible in ForwardLit; keep their depth too.
+                    if (normalWS.y < -0.3 && _ShapeMode < 0.5)
                         clip(-1.0);
                     return;
                 }
 
                 float2 worldXZ = worldPos.xz;
+                float2 discCenter = TransformObjectToWorld(float3(0.0, 0.0, 0.0)).xz;
                 // 矩形主地面：台面占位裁剪（与 ForwardLit 镜像，保证深度轮廓一致）。
                 if (_ShapeMode < 0.5)
                 {
@@ -506,7 +549,7 @@ Shader "MusicalSprite/GroundEdge"
                     if (_StageClipB.w > 0.5 && distance(worldXZ, _StageClipB.xy) < _StageClipB.z) clip(-1.0);
                 }
                 float edgeDist = (_ShapeMode > 0.5)
-                    ? distance(worldXZ, _DiscCenter.xy) - _DiscRadius
+                    ? distance(worldXZ, discCenter) - _DiscRadius
                     : RoundedRectSDF(worldXZ, _GroundMin.xy, _GroundMax.xy, _CornerRadius);
 
                 if (edgeDist > -_EdgeOutset)
@@ -527,17 +570,14 @@ Shader "MusicalSprite/GroundEdge"
                     float t = (edgeDist + _EdgeOutset) / max(1e-4, _EdgeOutset + _EdgeOverhang);
                     float edgeU = edgeData.x;
                     if (_ShapeMode > 0.5)
-                        edgeU = atan2(worldXZ.y - _DiscCenter.y, worldXZ.x - _DiscCenter.x) * 0.15915494 + 0.5;
+                        edgeU = atan2(worldXZ.y - discCenter.y, worldXZ.x - discCenter.x) * 0.15915494 + 0.5;
                     float2 edgeUV = float2(edgeU * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
                     float edgeAlpha = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, edgeUV).a;
 
                     float mask = smoothstep(_EdgeCutoff, _EdgeCutoff + 0.08, edgeAlpha);
-                    // 镜像 ForwardLit：只有“无草、且向草内探一小步也无草”的矩形片段
-                    // 才裁剪（描边带 / 圆盘草洞棕色填充都保留深度）。
                     bool grassHere = mask >= 0.5;
-                    // 镜像 ForwardLit：描边只画在草内侧（保留深度），无草矩形片段
-                    // 直接裁剪；圆盘草洞保留（ForwardLit 填棕）。
-                    if (!grassHere && _ShapeMode < 0.5)
+                    // ForwardLit 在两种形状中都裁掉描边外区域，深度必须一致。
+                    if (!grassHere)
                         clip(-1.0);
                 }
             }
@@ -546,6 +586,7 @@ Shader "MusicalSprite/GroundEdge"
             {
                 DepthOnlyVaryings output;
                 float3 posWS = TransformObjectToWorld(input.positionOS.xyz);
+                posWS = FitStagePerimeter(posWS);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.positionCS = TransformWorldToHClip(posWS);
                 output.positionWS = posWS;
@@ -579,6 +620,7 @@ Shader "MusicalSprite/GroundEdge"
             ZWrite On
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex DepthNormalsVert
             #pragma fragment DepthNormalsFrag
 
@@ -648,18 +690,52 @@ Shader "MusicalSprite/GroundEdge"
                 return length(max(d, 0.0)) - r;
             }
 
+            float3 FitStagePerimeter(float3 posWS)
+            {
+                if (_ShapeMode < 0.5)
+                    return posWS;
+
+                float2 center = TransformObjectToWorld(float3(0.0, 0.0, 0.0)).xz;
+                float2 radial = posWS.xz - center;
+                float radialLength = length(radial);
+                if (abs(radialLength - _DiscRadius) > max(0.001, _DiscRadius * 0.02))
+                    return posWS;
+
+                float edgeU = atan2(radial.y, radial.x) * 0.15915494 + 0.5;
+                float innerT = 0.0;
+                float outerT = 1.0;
+                [unroll]
+                for (int i = 0; i < 8; i++)
+                {
+                    float midT = (innerT + outerT) * 0.5;
+                    float alpha = SAMPLE_TEXTURE2D_LOD(
+                        _EdgeTex, sampler_EdgeTex,
+                        float2(edgeU * _EdgeTexTiling, saturate(midT * _EdgeVerticalScale)), 0).a;
+                    if (alpha >= _EdgeCutoff + 0.04)
+                        innerT = midT;
+                    else
+                        outerT = midT;
+                }
+
+                float contourRadius = _DiscRadius - _EdgeOutset
+                    + innerT * (_EdgeOutset + _EdgeOverhang);
+                posWS.xz = center + radial * (contourRadius / max(0.0001, radialLength));
+                return posWS;
+            }
+
             void ClipGroundEdge(float3 worldPos, float3 normalWS, float2 edgeData)
             {
                 bool isSideFace = edgeData.y > 1.5
                     || (_ShapeMode > 0.5 && (normalWS.y < 0.3 || worldPos.y < _DiscTopY - 0.002));
                 if (isSideFace)
                 {
-                    if (normalWS.y < -0.3)
+                    if (normalWS.y < -0.3 && _ShapeMode < 0.5)
                         clip(-1.0);
                     return;
                 }
 
                 float2 worldXZ = worldPos.xz;
+                float2 discCenter = TransformObjectToWorld(float3(0.0, 0.0, 0.0)).xz;
                 // 矩形主地面：台面占位裁剪（与 ForwardLit 镜像，保证深度轮廓一致）。
                 if (_ShapeMode < 0.5)
                 {
@@ -667,7 +743,7 @@ Shader "MusicalSprite/GroundEdge"
                     if (_StageClipB.w > 0.5 && distance(worldXZ, _StageClipB.xy) < _StageClipB.z) clip(-1.0);
                 }
                 float edgeDist = (_ShapeMode > 0.5)
-                    ? distance(worldXZ, _DiscCenter.xy) - _DiscRadius
+                    ? distance(worldXZ, discCenter) - _DiscRadius
                     : RoundedRectSDF(worldXZ, _GroundMin.xy, _GroundMax.xy, _CornerRadius);
 
                 if (edgeDist > -_EdgeOutset)
@@ -687,17 +763,14 @@ Shader "MusicalSprite/GroundEdge"
                     float t = (edgeDist + _EdgeOutset) / max(1e-4, _EdgeOutset + _EdgeOverhang);
                     float edgeU = edgeData.x;
                     if (_ShapeMode > 0.5)
-                        edgeU = atan2(worldXZ.y - _DiscCenter.y, worldXZ.x - _DiscCenter.x) * 0.15915494 + 0.5;
+                        edgeU = atan2(worldXZ.y - discCenter.y, worldXZ.x - discCenter.x) * 0.15915494 + 0.5;
                     float2 edgeUV = float2(edgeU * _EdgeTexTiling, saturate(t * _EdgeVerticalScale));
                     float edgeAlpha = SAMPLE_TEXTURE2D(_EdgeTex, sampler_EdgeTex, edgeUV).a;
 
                     float mask = smoothstep(_EdgeCutoff, _EdgeCutoff + 0.08, edgeAlpha);
-                    // 镜像 ForwardLit：只有“无草、且向草内探一小步也无草”的矩形片段
-                    // 才裁剪（描边带 / 圆盘草洞棕色填充都保留深度）。
                     bool grassHere = mask >= 0.5;
-                    // 镜像 ForwardLit：描边只画在草内侧（保留深度），无草矩形片段
-                    // 直接裁剪；圆盘草洞保留（ForwardLit 填棕）。
-                    if (!grassHere && _ShapeMode < 0.5)
+                    // ForwardLit 在两种形状中都裁掉描边外区域，深度必须一致。
+                    if (!grassHere)
                         clip(-1.0);
                 }
             }
@@ -706,6 +779,7 @@ Shader "MusicalSprite/GroundEdge"
             {
                 DepthNormalsVaryings output;
                 float3 posWS = TransformObjectToWorld(input.positionOS.xyz);
+                posWS = FitStagePerimeter(posWS);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.positionCS = TransformWorldToHClip(posWS);
                 output.positionWS = posWS;
