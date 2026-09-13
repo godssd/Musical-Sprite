@@ -271,6 +271,7 @@ public class CharacterBattleSystem : MonoBehaviour
         if (marker == null) marker = go.AddComponent<CharacterCubeMarker>();
         marker.side = side;
         marker.laneIndex = lane;
+        marker.Register();   // 用正确 (side,lane) 重新登记：Awake 可能在 side/laneIndex 被赋值前已登记（默认 laneIndex=-1），否则 GetAt 按 lane 查不到 → 命中不跳
         ColorMarker(marker);
     }
 

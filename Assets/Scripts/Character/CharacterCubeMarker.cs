@@ -71,11 +71,23 @@ public class CharacterCubeMarker : MonoBehaviour
         return m;
     }
 
+    private int? registeredKey = null;
+
+    /// <summary>把本 marker 登记进全局 (side,lane) Registry；若已登记过先移除旧键，
+    /// 避免 side/laneIndex 后续被修改后残留旧键，导致 GetAt 按 lane 查不到本 marker（普通命中不跳、受击走 side 全搜不受影响）。</summary>
+    public void Register()
+    {
+        if (registeredKey.HasValue) Registry.Remove(registeredKey.Value);
+        int key = RegKey(side, laneIndex);
+        Registry[key] = this;
+        registeredKey = key;
+    }
+
     void Awake()
     {
         baseScale = transform.localScale;
         baseLocalPos = transform.localPosition;
-        Registry[RegKey(side, laneIndex)] = this;
+        Register();
 
         // 自动确保有通用贴地阴影组件（P2 占位 cube 技术验证；后续角色模型同样复用 BlobShadow）。
         var blob = GetComponent<BlobShadow>();
@@ -86,7 +98,8 @@ public class CharacterCubeMarker : MonoBehaviour
 
     void OnDestroy()
     {
-        Registry.Remove(RegKey(side, laneIndex));
+        if (registeredKey.HasValue) Registry.Remove(registeredKey.Value);
+        registeredKey = null;
     }
 
     /// <summary>

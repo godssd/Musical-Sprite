@@ -114,20 +114,28 @@ public class BattleVisualsController : MonoBehaviour
         }
 
         // 普通命中：对应音轨角色向上跳一下（修复：之前被误删，导致命中时角色不跳）。
-        // 释放主动技能期间屏蔽该表现（ActiveSkillRuntime 维护 CastingSides 集合）。
-        if (rank != "MISS" && !ActiveSkillRuntime.IsSideCasting(side))
+        // 释放主动技能期间屏蔽该表现（ActiveSkillRuntime 维护 CastingSides 集合，属设计行为）。
+        if (rank != "MISS")
         {
-            var m = CharacterCubeMarker.GetAt(side, lane);
-            if (m != null)
+            if (ActiveSkillRuntime.IsSideCasting(side))
             {
-                bool fever = FeverManager.Instance != null && FeverManager.Instance.GetState(side) >= FeverState.Fever;
-                m.PlayTarget(fever);   // 命中有专门动画（Spine 角色）；cube 角色走 Jump 兜底
+                // 诊断：技能释放期按设计屏蔽普通命中（正常）。若你"没放技能却频繁看到这条"，说明 CastingSides 没清掉 → 另查。
+                Debug.Log($"[BattleVisuals] side{side} 命中被 IsSideCasting 屏蔽（技能释放期，属设计行为）");
             }
             else
             {
-                // 诊断：该 (side, lane) 在 Registry 里查不到 marker（marker 的 laneIndex 与音符 lane 对不上）→ 命中动画整条跳过。
-                // 受击(OnSideDamaged)走 side 全搜不受影响，所以表现为"受击正常、命中没反应"。
-                Debug.LogWarning($"[BattleVisuals] side{side} lane{lane} 命中但 GetAt 返回 null（该 lane 未注册 CharacterCubeMarker）→ 跳过命中动画");
+                var m = CharacterCubeMarker.GetAt(side, lane);
+                if (m != null)
+                {
+                    bool fever = FeverManager.Instance != null && FeverManager.Instance.GetState(side) >= FeverState.Fever;
+                    m.PlayTarget(fever);   // 命中有专门动画（Spine 角色）；cube 角色走 Jump 兜底
+                }
+                else
+                {
+                    // 诊断：该 (side, lane) 在 Registry 里查不到 marker（marker 的 laneIndex 与音符 lane 对不上）→ 命中动画整条跳过。
+                    // 受击(OnSideDamaged)走 side 全搜不受影响，所以表现为"受击正常、命中没反应"。
+                    Debug.LogWarning($"[BattleVisuals] side{side} lane{lane} 命中但 GetAt 返回 null（该 lane 未注册 CharacterCubeMarker）→ 跳过命中动画");
+                }
             }
         }
 
