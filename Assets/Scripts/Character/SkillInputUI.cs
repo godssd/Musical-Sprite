@@ -173,7 +173,13 @@ public class SkillInputUI : MonoBehaviour
         // 注意：呼应 = 只脉冲发光（PulseGlow），不弹跳——弹跳是「命中音符」的语义（NoteMover.PlayHitAnimation / HoldNote.PlayHitPop），
         // 技能按键呼应若带弹跳会与命中表现混淆，故用 PulseGlow 而非 Flash。
         foreach (var rt in matching)
-            if (rt.marker != null) rt.marker.PulseGlow();
+        {
+            if (rt.marker != null)
+            {
+                rt.marker.PulseGlow();
+                rt.marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillSelect);  // 呼号：每次正确按键呼应播一次（第三次完整序列时 BeginCast 播 SkillStart 优先级10 立即打断）
+            }
+        }
 
         // 完整匹配某技能 → 触发释放并立刻重置为无输入状态。
         foreach (var rt in matching)

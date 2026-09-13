@@ -118,7 +118,17 @@ public class BattleVisualsController : MonoBehaviour
         if (rank != "MISS" && !ActiveSkillRuntime.IsSideCasting(side))
         {
             var m = CharacterCubeMarker.GetAt(side, lane);
-            if (m != null) m.Jump();
+            if (m != null)
+            {
+                bool fever = FeverManager.Instance != null && FeverManager.Instance.GetState(side) >= FeverState.Fever;
+                m.PlayTarget(fever);   // 命中有专门动画（Spine 角色）；cube 角色走 Jump 兜底
+            }
+            else
+            {
+                // 诊断：该 (side, lane) 在 Registry 里查不到 marker（marker 的 laneIndex 与音符 lane 对不上）→ 命中动画整条跳过。
+                // 受击(OnSideDamaged)走 side 全搜不受影响，所以表现为"受击正常、命中没反应"。
+                Debug.LogWarning($"[BattleVisuals] side{side} lane{lane} 命中但 GetAt 返回 null（该 lane 未注册 CharacterCubeMarker）→ 跳过命中动画");
+            }
         }
 
         // 注意：普通音符命中不再让角色 cube 发光闪烁（用户确认：普通音符不需要该表现）。

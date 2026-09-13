@@ -16,6 +16,7 @@ public class CharacterClass
     public float combatPower;
     public Color blockColor = Color.yellow;
     public GameObject modelPrefab;   // 美术接入：角色外观预制体（由 CharacterDataSO.modelPrefab 注入；空=占位 cube）
+    public string animationPrefix;    // 美术接入：Spine 动画名前缀（由 CharacterDataSO.animationPrefix 注入，传给 CharacterAnimator）
 
     public int maxHP;
     public int currentHP;
@@ -63,6 +64,7 @@ public class CharacterClass
             combatPower = data.combatPower,
             blockColor = data.blockColor,
             modelPrefab = data.modelPrefab,
+            animationPrefix = data.animationPrefix,
             maxHP = data.maxHP,
             currentHP = data.maxHP,
         };

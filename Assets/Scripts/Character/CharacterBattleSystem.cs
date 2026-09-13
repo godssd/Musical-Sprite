@@ -47,6 +47,9 @@ public class CharacterBattleSystem : MonoBehaviour
         // 主动技能运行时：为每个队伍角色挂载 ActiveSkillRuntime（大狗叫等）
         SetupSkillRuntimes();
 
+        // 订阅战斗事件 → 角色动画（受击全队 / 胜负终态 / 过热进入与断连）
+        SubscribeBattleEvents();
+
         if (startWithFullSkillEnergy)
         {
             foreach (var character in CharacterRoster.AllTeamCharacters())
@@ -294,7 +297,7 @@ public class CharacterBattleSystem : MonoBehaviour
         CharacterClass c = m.IsPlayer ? CharacterRoster.GetPlayer(m.side) : CharacterRoster.GetTeam(m.side, m.laneIndex);
         Color col = (c != null) ? c.blockColor : Color.yellow;
         // 美术接入：注入角色外观预制体（空=维持原 cube）。多网格模型由 CharacterCubeMarker 统一上色。
-        if (c != null && c.modelPrefab != null) m.SetModelPrefab(c.modelPrefab);
+        if (c != null && c.modelPrefab != null) m.SetModelPrefab(c.modelPrefab, c.animationPrefix);
         m.ColorAll(col);
     }
 
@@ -380,5 +383,64 @@ public class CharacterBattleSystem : MonoBehaviour
         Debug.Log($"[Skill] side {side} lane {laneIndex} 释放 {skill.displayName} ({skill.effectType})");
         // P2 末：在 ScoreManager 对对侧玩家造成 effectParamsJSON 里的 damage
         return true;
+    }
+
+    // ===== 角色动画事件订阅（框架：战斗逻辑只发语义，CharacterCubeMarker 转发给 Spine 动画）=====
+
+    private void SubscribeBattleEvents()
+    {
+        var fever = FindFirstObjectByType<FeverManager>();
+        if (fever != null) fever.OnStateChanged += OnFeverStateChanged;
+        var sm = FindFirstObjectByType<ScoreManager>();
+        if (sm != null) sm.OnSideDamaged += OnSideDamaged;
+        if (GameManager.Instance != null) GameManager.Instance.OnBattleResult += OnBattleResult;
+    }
+
+    private void OnDestroy()
+    {
+        var fever = FindFirstObjectByType<FeverManager>();
+        if (fever != null) fever.OnStateChanged -= OnFeverStateChanged;
+        var sm = FindFirstObjectByType<ScoreManager>();
+        if (sm != null) sm.OnSideDamaged -= OnSideDamaged;
+        if (GameManager.Instance != null) GameManager.Instance.OnBattleResult -= OnBattleResult;
+    }
+
+    private void OnFeverStateChanged(FeverState oldState, FeverState newState, int side)
+    {
+        var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None)
+            .Where(m => m != null && m.side == side);
+        if (newState == FeverState.Fever || newState == FeverState.SuperFever)
+        {
+            // 进入过热：全队 Special + 过热 loop
+            foreach (var m in markers) m.EnterFever();
+        }
+        else if (newState == FeverState.None && (oldState == FeverState.Fever || oldState == FeverState.SuperFever))
+        {
+            // 断连退出过热：先切普通 loop（ExitFever 立即切），再播颓废（Decadent 优先级2 打断刚切回的普通 loop 1）
+            foreach (var m in markers) { m.ExitFever(); m.PlayDecadent(); }
+        }
+    }
+
+    private void OnSideDamaged(int side)
+    {
+        var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None)
+            .Where(m => m != null && m.side == side);
+        foreach (var m in markers) m.PlayHit();
+    }
+
+    private void OnBattleResult(int winnerSide, int loserSide)
+    {
+        if (winnerSide >= 0)
+        {
+            var winMarkers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None)
+                .Where(m => m != null && m.side == winnerSide);
+            foreach (var m in winMarkers) m.PlayVictory();
+        }
+        if (loserSide >= 0)
+        {
+            var loseMarkers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None)
+                .Where(m => m != null && m.side == loserSide);
+            foreach (var m in loseMarkers) m.PlayFail();
+        }
     }
 }

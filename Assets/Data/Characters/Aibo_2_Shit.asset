@@ -18,6 +18,7 @@ MonoBehaviour:
   profession: 
   blockColor: {r: 0.2, g: 0.8, b: 0.25, a: 1}
   modelPrefab: {fileID: 3759424119228320983, guid: e5e53859aca5099469bdd43f2350fae4, type: 3}
+  animationPrefix: Aibo_2_Shit
   laneIndex: 1
   maxHP: 88
   combatPower: 3

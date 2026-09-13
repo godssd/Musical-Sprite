@@ -50,6 +50,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     private Dictionary<HoldNote, int> charmedHoldNodes = new Dictionary<HoldNote, int>(); // 每条链尚未结算的附魔节点数
     private int completedCount;           // 成功数（非 MISS，用于削减对方连击的强度）
     private bool requestClosed;           // spawner 端配额是否已全部分配完
+    private float _charmStuckTime = 0f;    // 附魔结算超时计时（安全兜底②：防技能卡死）
     private float cooldownLeft;
     private FeverState releaseFever = FeverState.None;  // 技能释放（能量清空）瞬间捕获的过热档；整段连叫锁定，后续不重判（2026-08-27）
     private ScoreManager _scoreMgr;                      // 懒加载缓存：用于造成对方 HP 伤害 / 治疗
@@ -88,7 +89,7 @@ public class ActiveSkillRuntime : MonoBehaviour
             return;
         }
 
-        // 安全兜底：仅在「谱面已彻底结束（所有音符生成并消失，IsFinished）但仍有被附魔音符对象因异常未回调结算」时，
+        // 安全兜底①：仅在「谱面已彻底结束（所有音符生成并消失，IsFinished）但仍有被附魔音符对象因异常未回调结算」时，
         // 才强制结算放狗叫。绝不在音符仍在进行中时强制释放——避免「场上还有附魔音符就提前叫」（用户重点关切）。
         // 正常流程由 TrySettleFromCharm 在「所有被附魔音符对象都已结算消失 + 配额关闭」时驱动 Settle。
         if ((phase == Phase.Grow || phase == Phase.Charming)
@@ -96,6 +97,24 @@ public class ActiveSkillRuntime : MonoBehaviour
             && ownerSpawner != null && ownerSpawner.IsFinished)
         {
             if (phase != Phase.Releasing && phase != Phase.Cooldown) Settle();
+        }
+        // 安全兜底②：配额已关(requestClosed)但仍有附魔音符/长按节点未结算（疑似某个被附魔音符丢失、未回调 OnCharmedNoteResolved），
+        // 超时(3s)强制 Settle，避免技能永久卡在 Charming → CastingSides 永远含本 side → 屏蔽普通/过热命中、屏蔽再次输入(SkillSelect)、
+        // Settle 不到导致 SkillAttak 不播。这正是"受击正常(走 side 全搜)但命中/呼号/技能攻击全没反应"的疑似根因。
+        else if ((phase == Phase.Grow || phase == Phase.Charming)
+            && requestClosed
+            && (charmedNotes.Count > 0 || charmedHoldNodes.Count > 0))
+        {
+            _charmStuckTime += Time.deltaTime;
+            if (_charmStuckTime > 3f)
+            {
+                Debug.LogWarning($"[ActiveSkill {skill?.displayName}] 附魔结算超时({_charmStuckTime:F1}s)：强制 Settle 避免卡死（CastingSides 将清除）");
+                Settle();
+            }
+        }
+        else
+        {
+            _charmStuckTime = 0f;
         }
     }
 
@@ -115,6 +134,14 @@ public class ActiveSkillRuntime : MonoBehaviour
 
         phase = Phase.Grow;
         completedCount = 0;
+        _charmStuckTime = 0f;   // 重置附魔结算超时计时
+        // 技能动画：进入释放即常驻技能准备攻击 loop（SkillLoop），并播释放启动 oneshot（SkillStart 优先级10 打断呼号 SkillSelect 9）
+        if (marker != null)
+        {
+            marker.SetSkillLoopLock(true);   // 锁定 loop：技能期间不吃控制（含过热进入）
+            marker.SetLoopState(CharacterAnimator.CharacterAnimationState.SkillLoop);
+            marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillStart);
+        }
         charmedNotes.Clear();
         charmedHoldNodes.Clear();
         requestClosed = false;
@@ -243,6 +270,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     {
         if (phase == Phase.Releasing || phase == Phase.Cooldown) return;
         phase = Phase.Releasing;
+        if (marker != null) marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillAttak);  // 释放攻击 oneshot（播完回 SkillLoop）
 
         // 过热判定：使用技能释放瞬间（能量清空时）已锁定的档位，整段连叫不再重判。
         // 即便附魔期断连/掉出过热，也不会影响已确定的连叫次数（用户 2026-08-27 要求）。
@@ -273,6 +301,21 @@ public class ActiveSkillRuntime : MonoBehaviour
         }
     }
 
+    /// <summary>技能收尾动画：播 SkillEnd oneshot（优先级11，播完回 loop），并切回当前 fever 状态对应的 loop
+    /// （过热/超级过热=PlayFever，否则 PlayNormal）。</summary>
+    private void EndSkillAnim()
+    {
+        if (marker != null)
+        {
+            marker.SetSkillLoopLock(false);   // 解除锁定，允许切回过热/普通 loop
+            marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillEnd);
+            var fs = (feverManager != null) ? feverManager.GetState(ownerSide) : FeverState.None;
+            marker.SetLoopState(fs == FeverState.Fever || fs == FeverState.SuperFever
+                ? CharacterAnimator.CharacterAnimationState.PlayFever
+                : CharacterAnimator.CharacterAnimationState.PlayNormal);
+        }
+    }
+
     /// <summary>按过热次数连发音浪；最后一次发射完后才缩小并进入冷却。</summary>
     private System.Collections.IEnumerator FireSequence(int shots)
     {
@@ -293,6 +336,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         // 彻底结算完毕：大狗缩回正常状态 + 冷却
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
+        EndSkillAnim();   // 技能结束：播 SkillEnd oneshot 后切回当前 fever 状态对应的 loop
         CastingSides.Remove(ownerSide);   // 释放期结束：恢复普通命中角色跳跃
         // 冷却取本槽在角色文档配置的「技能冷却」；0 / 未填 = 无冷却（立刻回到 Standby 可再次释放）。
         cooldownLeft = slotCooldown;
@@ -303,6 +347,7 @@ public class ActiveSkillRuntime : MonoBehaviour
     {
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
+        EndSkillAnim();   // 技能结束：播 SkillEnd oneshot 后切回当前 fever 状态对应的 loop
         CastingSides.Remove(ownerSide);   // 释放期结束：恢复普通命中跳跃
 
         // 牛角包：过热 / 超级过热 -> 技能结束后启动 9 秒缓慢恢复（每 3 秒一跳，共 3 跳）
@@ -364,6 +409,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
+        EndSkillAnim();   // 技能结束：播 SkillEnd oneshot 后切回当前 fever 状态对应的 loop
         CastingSides.Remove(ownerSide);
         cooldownLeft = slotCooldown;
     }
@@ -386,6 +432,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
         if (marker != null) marker.ShrinkUnglow();
         phase = Phase.Cooldown;
+        EndSkillAnim();   // 技能结束：播 SkillEnd oneshot 后切回当前 fever 状态对应的 loop
         CastingSides.Remove(ownerSide);
         cooldownLeft = slotCooldown;
     }
@@ -437,10 +484,14 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (jfm != null) jfm.ShowFeedback(hn.side, lane, rank, pos, hn);
     }
 
-    /// <summary>每个被附魔音符「命中成功」时触发一次：按 effectType 分发投弹 / 回血。</summary>
+    /// <summary>每个被附魔音符「命中成功」时触发一次：按 effectType 分发投弹 / 回血，并播「释放技能攻击」动画（逐次结算/效果释放）。</summary>
     private void OnPerCharmSuccess()
     {
         if (skill == null) return;
+        // 释放技能攻击动画：每个被附魔音符命中成功即播一次（技能最终效果释放，与逐音符结算同源）。
+        // 大狗叫(DogHowl)的效果是 FireSequence 音浪，不在此逐次播攻击动画，避免与音浪表现冲突（其 SkillAttak 由 Settle 末尾那次释放承担）。
+        if (marker != null && skill.effectType != "DogHowl")
+            marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillAttak);
         switch (skill.effectType)
         {
             case "Bomb": ThrowBomb(); break;

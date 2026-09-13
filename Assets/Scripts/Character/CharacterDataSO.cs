@@ -76,6 +76,10 @@ public class CharacterDataSO : ScriptableObject
     [Tooltip("角色外观预制体（接入美术后填）。非空时 CharacterCubeMarker 会实例化它作为子物体并隐藏默认占位 cube。空 = 维持原 cube 占位（向后兼容，不破坏现有 Demo）")]
     public GameObject modelPrefab;
 
+    [Header("动画（Spine 命名）")]
+    [Tooltip("Spine 动画名前缀，如 Aibo_2_Shit / Player_01_Bear / Player_02_...。运行时完整动画名 = 前缀 + '_' + 标准槽位后缀(如 02_Play_Normal)。CharacterAnimator 运行时据此自动在 SkeletonData 中发现动画；由导入器/手动填写。其它 4 角色按各自编号与名字填（玩家=Player_XX_名字，队伍=Aibo_X_名字）")]
+    public string animationPrefix;
+
     [Header("战斗属性（飞书 hp / 战斗力 列）")]
     [Tooltip("仅 isPlayer=false 时有效：0~3 对应四条音轨")]
     public int laneIndex = 0;
