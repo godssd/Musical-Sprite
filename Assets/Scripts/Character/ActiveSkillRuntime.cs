@@ -50,7 +50,6 @@ public class ActiveSkillRuntime : MonoBehaviour
     private Dictionary<HoldNote, int> charmedHoldNodes = new Dictionary<HoldNote, int>(); // 每条链尚未结算的附魔节点数
     private int completedCount;           // 成功数（非 MISS，用于削减对方连击的强度）
     private bool requestClosed;           // spawner 端配额是否已全部分配完
-    private float _charmStuckTime = 0f;    // 附魔结算超时计时（安全兜底②：防技能卡死）
     private float cooldownLeft;
     private FeverState releaseFever = FeverState.None;  // 技能释放（能量清空）瞬间捕获的过热档；整段连叫锁定，后续不重判（2026-08-27）
     private ScoreManager _scoreMgr;                      // 懒加载缓存：用于造成对方 HP 伤害 / 治疗
@@ -89,32 +88,15 @@ public class ActiveSkillRuntime : MonoBehaviour
             return;
         }
 
-        // 安全兜底①：仅在「谱面已彻底结束（所有音符生成并消失，IsFinished）但仍有被附魔音符对象因异常未回调结算」时，
-        // 才强制结算放狗叫。绝不在音符仍在进行中时强制释放——避免「场上还有附魔音符就提前叫」（用户重点关切）。
-        // 正常流程由 TrySettleFromCharm 在「所有被附魔音符对象都已结算消失 + 配额关闭」时驱动 Settle。
+        // 安全兜底（仅 IsFinished）：仅在「谱面已彻底结束（所有音符生成并消失，IsFinished）但仍有被附魔音符对象因异常未回调结算」时，
+        // 才强制结算。绝不在音符仍在进行中时强制释放——避免「场上还有附魔音符就提前叫」。
+        // 技能本身没有任何"最大持续时间"限制：只要还有附魔音符（已在场或预定尚未生成）未结算，就一直维持 SkillLoop 等待，
+        // 由 TrySettleFromCharm 在「所有被附魔音符对象都已结算消失 + 配额关闭 + 无预定待生成」时驱动 Settle。
         if ((phase == Phase.Grow || phase == Phase.Charming)
             && (charmedNotes.Count > 0 || charmedHoldNodes.Count > 0)
             && ownerSpawner != null && ownerSpawner.IsFinished)
         {
             if (phase != Phase.Releasing && phase != Phase.Cooldown) Settle();
-        }
-        // 安全兜底②：配额已关(requestClosed)但仍有附魔音符/长按节点未结算（疑似某个被附魔音符丢失、未回调 OnCharmedNoteResolved），
-        // 超时(3s)强制 Settle，避免技能永久卡在 Charming → CastingSides 永远含本 side → 屏蔽普通/过热命中、屏蔽再次输入(SkillSelect)、
-        // Settle 不到导致 SkillAttak 不播。这正是"受击正常(走 side 全搜)但命中/呼号/技能攻击全没反应"的疑似根因。
-        else if ((phase == Phase.Grow || phase == Phase.Charming)
-            && requestClosed
-            && (charmedNotes.Count > 0 || charmedHoldNodes.Count > 0))
-        {
-            _charmStuckTime += Time.deltaTime;
-            if (_charmStuckTime > 3f)
-            {
-                Debug.LogWarning($"[ActiveSkill {skill?.displayName}] 附魔结算超时({_charmStuckTime:F1}s)：强制 Settle 避免卡死（CastingSides 将清除）");
-                Settle();
-            }
-        }
-        else
-        {
-            _charmStuckTime = 0f;
         }
     }
 
@@ -134,7 +116,6 @@ public class ActiveSkillRuntime : MonoBehaviour
 
         phase = Phase.Grow;
         completedCount = 0;
-        _charmStuckTime = 0f;   // 重置附魔结算超时计时
         // 技能动画：进入释放即常驻技能准备攻击 loop（SkillLoop），并播释放启动 oneshot（SkillStart 优先级10 打断呼号 SkillSelect 9）
         if (marker != null)
         {
