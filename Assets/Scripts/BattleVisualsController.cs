@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 
 /// <summary>
 /// 战斗视觉总控。
@@ -124,7 +125,10 @@ public class BattleVisualsController : MonoBehaviour
             }
             else
             {
-                var m = CharacterCubeMarker.GetAt(side, lane);
+                // 用 side + laneIndex 精确查找对应音轨角色：与受击(OnSideDamaged)同一套 FindObjectsByType 机制，
+                // 不再依赖静态 Registry（迁移路径下 Registry 键可能因登记时机/键碰撞而不可靠，导致 GetAt 返回 null、命中整条跳过）。
+                var m = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None)
+                            .FirstOrDefault(x => x.side == side && x.laneIndex == lane);
                 if (m != null)
                 {
                     bool fever = FeverManager.Instance != null && FeverManager.Instance.GetState(side) >= FeverState.Fever;
@@ -132,9 +136,9 @@ public class BattleVisualsController : MonoBehaviour
                 }
                 else
                 {
-                    // 诊断：该 (side, lane) 在 Registry 里查不到 marker（marker 的 laneIndex 与音符 lane 对不上）→ 命中动画整条跳过。
-                    // 受击(OnSideDamaged)走 side 全搜不受影响，所以表现为"受击正常、命中没反应"。
-                    Debug.LogWarning($"[BattleVisuals] side{side} lane{lane} 命中但 GetAt 返回 null（该 lane 未注册 CharacterCubeMarker）→ 跳过命中动画");
+                    // 诊断：按 (side, laneIndex) 全搜仍找不到对应轨角色 → 该 lane 无 marker（laneIndex 与音符 lane 对不上）→ 命中整条跳过。
+                    // 受击走 side 全搜不受影响，所以表现为"受击正常、命中没反应"。
+                    Debug.LogWarning($"[BattleVisuals] side{side} lane{lane} 命中但 FindObjectsByType 按 side+laneIndex 未匹配到 CharacterCubeMarker → 跳过命中动画");
                 }
             }
         }

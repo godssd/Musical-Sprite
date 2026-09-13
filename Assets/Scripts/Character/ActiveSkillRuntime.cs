@@ -140,7 +140,21 @@ public class ActiveSkillRuntime : MonoBehaviour
         {
             marker.SetSkillLoopLock(true);   // 锁定 loop：技能期间不吃控制（含过热进入）
             marker.SetLoopState(CharacterAnimator.CharacterAnimationState.SkillLoop);
-            marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillStart);
+            // 强判定：释放起点动画(SkillStart)是否真正播放。只看有没有被播放（不看打不打断）。
+            // 若被更高优先级动画（Opening/Victory/Fail 等优先级 20）挡住、SkillStart 没播出来 → 视为「技能未释放」，
+            // 撤销本次释放（不消耗能量 / 不附魔 / 不占槽 / 不进入 Casting），避免「动画没出但技能已生效」的半吊子状态。
+            bool started = marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillStart);
+            if (!started)
+            {
+                marker.SetSkillLoopLock(false);
+                var fs = (feverManager != null) ? feverManager.GetState(ownerSide) : FeverState.None;
+                marker.SetLoopState(fs == FeverState.Fever || fs == FeverState.SuperFever
+                    ? CharacterAnimator.CharacterAnimationState.PlayFever
+                    : CharacterAnimator.CharacterAnimationState.PlayNormal);
+                phase = Phase.Standby;   // 回 Standby：CastingSides/能量/附魔 尚未触发，无需清理
+                Debug.LogWarning($"[ActiveSkill {skill?.displayName}] SkillStart 未播放（被高优先级动画挡住）→ 视为技能未释放，已撤销本次释放");
+                return;
+            }
         }
         charmedNotes.Clear();
         charmedHoldNodes.Clear();
@@ -255,11 +269,15 @@ public class ActiveSkillRuntime : MonoBehaviour
         TrySettleFromCharm();
     }
 
-    /// <summary>所有附魔音符对象都已结算消失（集合空），且 spawner 配额已分配完 -> 立刻 Settle；否则等待剩下的。</summary>
+    /// <summary>所有附魔音符对象都已结算消失（集合空），且 spawner 配额已分配完，且"无预定尚未生成的附魔音符" -> 立刻 Settle；否则等待剩下的。</summary>
     private void TrySettleFromCharm()
     {
         if (phase != Phase.Grow && phase != Phase.Charming) return;
-        if (requestClosed && charmedNotes.Count == 0 && charmedHoldNodes.Count == 0)
+        // 场上存在判定必须包含"即将生成但尚未生成"的附魔音符（reservedCharmsByNote）：否则开局放技能、场上 0 音符时，
+        // 附魔配额被预定给未来音符后立即 OnCharmRequestClosed（requestClosed=true）但 charmedNotes 仍空 → 技能在附魔音符出现前就 Settle。
+        // 加 !HasPendingCharmFor：只有"已生成+已结算"且"无预定未生成"才真正结束。
+        if (requestClosed && charmedNotes.Count == 0 && charmedHoldNodes.Count == 0
+            && (ownerSpawner == null || !ownerSpawner.HasPendingCharmFor(this)))
             Settle();
     }
 

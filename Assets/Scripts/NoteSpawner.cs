@@ -409,6 +409,21 @@ public class NoteSpawner : MonoBehaviour
 
     }
 
+    /// <summary>是否还有「等待分配(remaining>0)」或「已预定尚未生成」的附魔音符属于 owner。
+    /// 供 ActiveSkillRuntime.TrySettleFromCharm 判断"场上是否还有附魔音符"——避免场上 0 音符时技能立即结束、附魔还没出现。</summary>
+    public bool HasPendingCharmFor(ActiveSkillRuntime owner)
+    {
+        if (owner == null) return false;
+        // 已在 activeCharms 中等待分配（remaining>0）的附魔请求
+        foreach (var req in activeCharms)
+            if (req.owner == owner && req.remaining > 0) return true;
+        // 已预定但尚未生成的附魔音符（生成即附魔）
+        foreach (var list in reservedCharmsByNote.Values)
+            foreach (var rc in list)
+                if (rc.owner == owner) return true;
+        return false;
+    }
+
     private void CloseCharmRequestsIfFinished()
     {
         if (!IsFinished || activeCharms.Count == 0) return;
@@ -416,6 +431,16 @@ public class NoteSpawner : MonoBehaviour
         activeCharms.Clear();
         foreach (var request in requests)
             if (request.owner != null) request.owner.OnCharmRequestClosed();
+        // 谱面已结束：作废所有"已预定但尚未生成"的附魔音符（这些音符不会再生成），
+        // 避免 HasPendingCharmFor 因残留预定永远返回 true → 技能永不 Settle（CastingSides 永不清除）。
+        // 作废方式：调用对应 owner 的 OnCharmRequestClosed（置 requestClosed + 触发结算判定），随后清空预定表。
+        if (reservedCharmsByNote.Count > 0)
+        {
+            foreach (var kv in reservedCharmsByNote)
+                foreach (var rc in kv.Value)
+                    if (rc.owner != null) rc.owner.OnCharmRequestClosed();
+            reservedCharmsByNote.Clear();
+        }
     }
 
     /// <summary>把被附魔音符染成附魔颜色（取释放方自身颜色）。</summary>

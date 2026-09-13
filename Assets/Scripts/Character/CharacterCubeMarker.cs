@@ -63,7 +63,9 @@ public class CharacterCubeMarker : MonoBehaviour
 
     /// <summary>按 (side, lane) 索引的全局角色标记表，供普通命中时按音轨查找对应角色跳跃。</summary>
     private static System.Collections.Generic.Dictionary<int, CharacterCubeMarker> Registry = new System.Collections.Generic.Dictionary<int, CharacterCubeMarker>();
-    private static int RegKey(int side, int lane) => side * 4 + lane;
+    // 改为 side*100+lane：原 side*4+lane 会让 side1 玩家(laneIndex=-1 → key=3) 与 side0 lane3(key=3) 撞键，
+    // 导致 GetAt(0,3) 误返回玩家 marker、且玩家 marker 覆盖队友 lane3 的登记。放大基数避免任意 lane(-1..3) 与 side(0..1) 碰撞。
+    private static int RegKey(int side, int lane) => side * 100 + lane;
     /// <summary>按 side/lane 取得对应音轨角色标记（无则返回 null）。</summary>
     public static CharacterCubeMarker GetAt(int side, int lane)
     {
@@ -375,11 +377,13 @@ public class CharacterCubeMarker : MonoBehaviour
         if (a != null) a.PlayOnce(CharacterAnimator.CharacterAnimationState.Decadent);
     }
 
-    /// <summary>技能段播放：Select / Start / Attak / End / Loop 等，按优先级路由（Spine 角色）；cube 角色无对应动画（no-op）。</summary>
-    public void PlaySkillStep(CharacterAnimator.CharacterAnimationState step)
+    /// <summary>技能段播放：Select / Start / Attak / End / Loop 等，按优先级路由（Spine 角色）；cube 角色无对应动画（返回 false）。
+    /// 返回 true 表示动画真正播放（调用方可据此判定「释放起点动画是否放出」）。</summary>
+    public bool PlaySkillStep(CharacterAnimator.CharacterAnimationState step)
     {
         var a = GetAnimator();
-        if (a != null) a.PlayOnce(step);
+        if (a != null) return a.PlayOnce(step);
+        return false;
     }
 
     /// <summary>胜利终态 loop（优先级 20，直接中断一切）。</summary>
