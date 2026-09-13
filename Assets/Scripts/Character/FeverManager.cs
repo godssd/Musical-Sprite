@@ -18,11 +18,23 @@ public class FeverManager : MonoBehaviour
     private int[] combo = new int[2];
     private FeverState[] state = new FeverState[2];
 
+    /// <summary>单例访问（同 BuffController / SleepController 模式）。</summary>
+    public static FeverManager Instance { get; private set; }
+
     public event Action<FeverState, FeverState, int> OnStateChanged; // (old, new, side)
 
     void Awake()
     {
+        if (Instance == null) Instance = this;
         EnsureConfig();
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+        var spawners = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
+        foreach (var s in spawners)
+            s.OnJudge -= HandleJudge;
     }
 
     void Start()
@@ -37,13 +49,6 @@ public class FeverManager : MonoBehaviour
         EnsureFeverBanner();
         EnsureEnergyVFX();
         EnsureEnergyBar();
-    }
-
-    void OnDestroy()
-    {
-        NoteSpawner[] spawners = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
-        foreach (var s in spawners)
-            s.OnJudge -= HandleJudge;
     }
 
     private void HandleJudge(int side, int lane, string rank, Vector3 pos, UnityEngine.Object source)

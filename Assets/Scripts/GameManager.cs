@@ -30,6 +30,9 @@ public class GameManager : MonoBehaviour
 
     private bool winnerShown = false;
 
+    /// <summary>战斗结果事件：(winnerSide, loserSide)；-1 表示平局无胜者。订阅方用于播放 Victory/Fail 终态动画。</summary>
+    public event System.Action<int, int> OnBattleResult;
+
     /// <summary>当前对战是否已结束（血量归零或谱面结束已出胜者）。</summary>
     public bool isGameOver { get; private set; }
 
@@ -122,6 +125,8 @@ public class GameManager : MonoBehaviour
             color = Color.white;
         }
 
+        int winnerSide = (leftScore > rightScore) ? 0 : (rightScore > leftScore ? 1 : -1);
+        OnBattleResult?.Invoke(winnerSide, 1 - winnerSide);   // 平局 winnerSide=-1（双方不播）
         ShowWinner(result, color);
         winnerShown = true;
         isGameOver = true;
@@ -144,6 +149,8 @@ public class GameManager : MonoBehaviour
             color = new Color(0.9f, 0.2f, 0.2f, 1f);
         }
 
+        int winnerSide = (defeatedSide == 0) ? 1 : 0;
+        OnBattleResult?.Invoke(winnerSide, defeatedSide);
         ShowWinner(result, color);
         winnerShown = true;
         isGameOver = true;

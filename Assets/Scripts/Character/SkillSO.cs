@@ -88,8 +88,10 @@ public class SkillSO : ScriptableObject
     public float healHpRate = 0.005f;       // 生命值总和 × 0.5%
     [Tooltip("美味牛角包：战斗力部分系数（战斗力总和 × 1.5%）")]
     public float healCombatRate = 0.015f;   // 战斗力总和 × 1.5%
-    [Tooltip("过热/超级过热缓慢恢复每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × 本系数)。0.002 = 生命值总和的 0.2%")]
+    [Tooltip("过热/超级过热缓慢恢复每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × 本系数)。0.002 = 生命值总和的 0.2%（已弃用：Regen 现改用 regenPerNote 整数系数）")]
     public float regenPerTickHpRate = 0.002f; // 生命值总和 × 0.2%
+    [Tooltip("过热/超级过热缓慢恢复：每命中一个附魔音符、每跳回复的生命数（整数，向上取整）。默认1，可在 Inspector / 技能库调参面板调整。对应设计『收集音符数量 ×1』")]
+    public int regenPerNote = 1;
     [Tooltip("过热/超级过热缓慢恢复间隔（秒）；替换原硬编码 3s。可在 Inspector / 技能库调参面板调整。")]
     public float regenInterval = 3f;
 

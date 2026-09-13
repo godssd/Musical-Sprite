@@ -71,22 +71,35 @@ public class CharacterCubeMarker : MonoBehaviour
         return m;
     }
 
+    private int? registeredKey = null;
+
+    /// <summary>把本 marker 登记进全局 (side,lane) Registry；若已登记过先移除旧键，
+    /// 避免 side/laneIndex 后续被修改后残留旧键，导致 GetAt 按 lane 查不到本 marker（普通命中不跳、受击走 side 全搜不受影响）。</summary>
+    public void Register()
+    {
+        if (registeredKey.HasValue) Registry.Remove(registeredKey.Value);
+        int key = RegKey(side, laneIndex);
+        Registry[key] = this;
+        registeredKey = key;
+    }
+
     void Awake()
     {
         baseScale = transform.localScale;
         baseLocalPos = transform.localPosition;
-        Registry[RegKey(side, laneIndex)] = this;
+        Register();
 
         // 自动确保有通用贴地阴影组件（P2 占位 cube 技术验证；后续角色模型同样复用 BlobShadow）。
         var blob = GetComponent<BlobShadow>();
         if (blob == null) blob = gameObject.AddComponent<BlobShadow>();
 
-        if (modelPrefab != null) SetModelPrefab(modelPrefab);
+        if (modelPrefab != null) SetModelPrefab(modelPrefab, null);
     }
 
     void OnDestroy()
     {
-        Registry.Remove(RegKey(side, laneIndex));
+        if (registeredKey.HasValue) Registry.Remove(registeredKey.Value);
+        registeredKey = null;
     }
 
     /// <summary>
@@ -232,15 +245,31 @@ public class CharacterCubeMarker : MonoBehaviour
     }
 
     /// <summary>由 CharacterBattleSystem 在装配 marker 时调用：注入角色外观预制体（数据驱动，非破坏式）。
-    /// 非空时实例化到自身子节点并隐藏默认占位 cube 渲染器；重复调用只实例化一次。</summary>
-    public void SetModelPrefab(GameObject prefab)
+    /// 非空时实例化到自身子节点并隐藏默认占位 cube 渲染器；重复调用只实例化一次。
+    /// 同时幂等地挂载 CharacterAnimator 并把动画前缀（animationPrefix）注入，供 Spine 动画自动发现。</summary>
+    public void SetModelPrefab(GameObject prefab, string animationPrefix = null)
     {
-        if (prefab == null || spawnedModel != null) return;
-        spawnedModel = Instantiate(prefab, transform);
-        spawnedModel.transform.localPosition = Vector3.zero;
-        spawnedModel.transform.localRotation = Quaternion.identity;
-        var selfRend = GetComponent<Renderer>();
-        if (selfRend != null) selfRend.enabled = false;
+        if (prefab == null) return;
+        if (spawnedModel == null)
+        {
+            spawnedModel = Instantiate(prefab, transform);
+            // 保留 prefab 自身的本地 Transform，允许不同 Spine 角色在 prefab 里预先对位
+            // （pivot 不在视觉中心的角色需要本地偏移/旋转/缩放）。
+            spawnedModel.transform.SetLocalPositionAndRotation(prefab.transform.localPosition, prefab.transform.localRotation);
+            spawnedModel.transform.localScale = prefab.transform.localScale;
+            var selfRend = GetComponent<Renderer>();
+            if (selfRend != null) selfRend.enabled = false;
+        }
+
+        // 自动挂载动画驱动器（幂等）：从 CharacterDataSO.animationPrefix 注入命名前缀。
+        // 已实例化时仍刷新前缀并重建可用动画表（修复 Awake 用默认前缀 → ColorMarker 带正确前缀被 spawnedModel!=null 守卫跳过的隐患）。
+        var anim = spawnedModel.GetComponent<CharacterAnimator>();
+        if (anim == null) anim = spawnedModel.AddComponent<CharacterAnimator>();
+        if (!string.IsNullOrEmpty(animationPrefix))
+        {
+            anim.animationPrefix = animationPrefix;
+            anim.Rebuild();
+        }
     }
 
     /// <summary>
@@ -288,6 +317,90 @@ public class CharacterCubeMarker : MonoBehaviour
         transform.localPosition = baseLocalPos;
         jumpCo = null;
     }
+
+    // ===== 统一动画 API（对战手柄）：转发给 Spine 的 CharacterAnimator；cube 角色走原有反馈（no-op 或兜底）=====
+    // 战斗逻辑只调语义，不关心具体动画；换角/加角只需填 CharacterDataSO（modelPrefab + animationPrefix）。
+
+    private CharacterAnimator GetAnimator()
+    {
+        if (spawnedModel == null) return null;
+        return spawnedModel.GetComponent<CharacterAnimator>();
+    }
+
+    /// <summary>开场：Spine 角色播 Opening 一次，结束后自动接回当前 loop。</summary>
+    public void PlayOpening() => GetAnimator()?.PlayOpening();
+
+    /// <summary>普通/过热命中：Spine 角色播对应命中动画；若 Spine 命中动画名缺失（available 未注册）则回退 cube 跳跃兜底，
+    /// 避免"既没 Spine 动画、也没 cube 反馈"的静默无反应（双轨：未接入 Spine 的角色 + Spine 动画未就位的过渡期都仍有反馈）。</summary>
+    public void PlayTarget(bool fever)
+    {
+        var a = GetAnimator();
+        if (a != null)
+        {
+            bool played = a.PlayOnce(fever ? CharacterAnimator.CharacterAnimationState.TargetFever : CharacterAnimator.CharacterAnimationState.TargetNormal);
+            if (!played) Jump();   // Spine 命中动画缺失/被高优先级打断 → 回退 cube 跳跃
+        }
+        else Jump();   // 未接入 Spine 的 cube 角色保留命中跳跃
+    }
+
+    /// <summary>受击：全队播 Hit（Spine 角色）；cube 角色无受击动画，暂不做额外反馈（避免与命中跳跃混淆）。</summary>
+    public void PlayHit()
+    {
+        var a = GetAnimator();
+        if (a != null) a.PlayOnce(CharacterAnimator.CharacterAnimationState.Hit);
+    }
+
+    /// <summary>进入过热：Spine 角色播 Special 后切到过热 loop（PlayFever）。</summary>
+    public void EnterFever()
+    {
+        var a = GetAnimator();
+        if (a != null)
+        {
+            a.PlayOnce(CharacterAnimator.CharacterAnimationState.Special);
+            a.SetLoopState(CharacterAnimator.CharacterAnimationState.PlayFever);
+        }
+    }
+
+    /// <summary>退出过热（未断连，正常冷却结束）：切回普通 loop。</summary>
+    public void ExitFever()
+    {
+        var a = GetAnimator();
+        if (a != null) a.SetLoopState(CharacterAnimator.CharacterAnimationState.PlayNormal);
+    }
+
+    /// <summary>过热断连颓废：Spine 角色播 Decadent（当前已是普通 loop）。</summary>
+    public void PlayDecadent()
+    {
+        var a = GetAnimator();
+        if (a != null) a.PlayOnce(CharacterAnimator.CharacterAnimationState.Decadent);
+    }
+
+    /// <summary>技能段播放：Select / Start / Attak / End / Loop 等，按优先级路由（Spine 角色）；cube 角色无对应动画（no-op）。</summary>
+    public void PlaySkillStep(CharacterAnimator.CharacterAnimationState step)
+    {
+        var a = GetAnimator();
+        if (a != null) a.PlayOnce(step);
+    }
+
+    /// <summary>胜利终态 loop（优先级 20，直接中断一切）。</summary>
+    public void PlayVictory()
+    {
+        var a = GetAnimator();
+        if (a != null) a.SetLoopState(CharacterAnimator.CharacterAnimationState.Victory);
+    }
+
+    /// <summary>失败终态 loop（优先级 20，直接中断一切）。</summary>
+    public void PlayFail()
+    {
+        var a = GetAnimator();
+        if (a != null) a.SetLoopState(CharacterAnimator.CharacterAnimationState.Fail);
+    }
+
+    /// <summary>技能期间锁定 loop 状态（转发给 Spine 动画驱动器；cube 角色无动画，no-op）。</summary>
+    public void SetSkillLoopLock(bool on) => GetAnimator()?.SetSkillLoopLock(on);
+
+    /// <summary>显式切换 loop 状态（供技能/过热退出等需要直接切 loop 的调用方使用）。</summary>
+    public void SetLoopState(CharacterAnimator.CharacterAnimationState state) => GetAnimator()?.SetLoopState(state);
 
     /// <summary>沉睡视觉：on=true 时方块变灰 + 熄灯；on=false 时恢复身份色（沉睡解除）。</summary>
     public void ApplySleepVisual(bool on)

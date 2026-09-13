@@ -34,11 +34,12 @@ MonoBehaviour:
   effectParamsJSON: '{"healPerNote":3,"slowRegenSeconds":9}'
   charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
   charmBonusFever: 0
-  charmBonusSuperFever: 0
+  charmBonusSuperFever: 4
   bombDamageRate: 0.1
   healHpRate: 0.005
   healCombatRate: 0.015
   regenPerTickHpRate: 0.002
+  regenPerNote: 1
   regenInterval: 3
   buffSlot: 0
   buffSubType: 0
