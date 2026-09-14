@@ -50,15 +50,21 @@ public class SkillInputUI : MonoBehaviour
     private readonly SkillInputStep[] touchSteps = { SkillInputStep.Left, SkillInputStep.Down, SkillInputStep.Right };
     private Coroutine[] popCo = new Coroutine[3];
 
-    // 全局输入缓冲：按顺序累积玩家按下的技能步骤；匹配某角色完整序列才释放。
-    private List<SkillInputStep> buffer = new List<SkillInputStep>();
-    private float lastInputTime = -999f;
+    // 按 side 隔离的输入缓冲：每个 side 按顺序累积技能步骤；匹配该 side 某角色完整序列才释放。
+    // side 0 = 玩家（键盘/触摸），side 1 = AI（由 OpponentInput.FeedInput 模拟输入，与玩家同一条管线）。
+    private System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<SkillInputStep>> sideBuffers = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<SkillInputStep>>();
+    private System.Collections.Generic.Dictionary<int, float> sideLastInput = new System.Collections.Generic.Dictionary<int, float>();
 
     void Start()
     {
         if (battle == null) battle = FindFirstObjectByType<CharacterBattleSystem>();
         BuildButtons();
         RefreshButtonColors();
+        // 初始化双 side 缓冲（side 0 玩家 / side 1 AI；按需自动建，这里预建避免首次访问判断）
+        sideBuffers[0] = new System.Collections.Generic.List<SkillInputStep>();
+        sideBuffers[1] = new System.Collections.Generic.List<SkillInputStep>();
+        sideLastInput[0] = -999f;
+        sideLastInput[1] = -999f;
     }
 
     void BuildButtons()
@@ -127,32 +133,36 @@ public class SkillInputUI : MonoBehaviour
             if (Input.GetKeyDown(skillKeys[i]))
             {
                 Flash(i, pressedColor);
-                OnKeyPressed(touchSteps[i]);
+                FeedInput(0, touchSteps[i]);
             }
         }
     }
 
-    /// <summary>按下一个技能输入步：维护全局有序缓冲，按「限时 + 有效前缀 + 完整匹配」规则处理，避免输入错误引发 bug。</summary>
-    private void OnKeyPressed(SkillInputStep step)
+    /// <summary>按下一个技能输入步（按 side 隔离）。side 0=玩家(键盘/触摸)，side 1=AI 模拟输入。
+    /// 维护该 side 的有序缓冲，按「限时 + 有效前缀 + 完整匹配」规则处理，避免输入错误引发 bug。
+    /// 模拟玩家释放：完整匹配某角色序列即调用 BeginCast（与玩家键盘/触摸完全一致，AI 不直接调用 BeginCast）。</summary>
+    public FeedResult FeedInput(int side, SkillInputStep step)
     {
-        float now = Time.time;
+        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(side)) return FeedResult.Rejected;
 
-        // 沉睡期间无法输入技能（玩家 side 0）
-        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(0)) return;
+        if (!sideBuffers.TryGetValue(side, out var buffer)) { buffer = new System.Collections.Generic.List<SkillInputStep>(); sideBuffers[side] = buffer; }
+        if (!sideLastInput.TryGetValue(side, out float lastInputTime)) lastInputTime = -999f;
+
+        float now = Time.time;
 
         // ① 超时：与上次输入间隔超过 inputInterval → 立刻重置为无输入状态（当前这步作为新起点）。
         if (buffer.Count > 0 && (now - lastInputTime) > inputInterval)
             buffer.Clear();
 
         buffer.Add(step);
-        lastInputTime = now;
+        sideLastInput[side] = now;
 
-        // 收集「当前缓冲是有效前缀」且可响应（Standby、能量门槛满足）的运行时
+        // 收集「当前缓冲是有效前缀」且可响应（Standby、能量门槛满足）的该 side 运行时
         var runtimes = FindObjectsByType<ActiveSkillRuntime>(FindObjectsSortMode.None);
-        List<ActiveSkillRuntime> matching = new List<ActiveSkillRuntime>();
+        System.Collections.Generic.List<ActiveSkillRuntime> matching = new System.Collections.Generic.List<ActiveSkillRuntime>();
         foreach (var rt in runtimes)
         {
-            if (rt.ownerSide != 0 || rt.owner == null || !rt.owner.HasActiveSkill) continue;
+            if (rt.ownerSide != side || rt.owner == null || !rt.owner.HasActiveSkill) continue;
             if (rt.phase != ActiveSkillRuntime.Phase.Standby) continue;            // 进行中/冷却中不响应
             if (rt.NeedsEnergyGate && !rt.IsSlotFull()) continue;         // 仅能量技能卡对应槽能量门槛
             var seq = rt.inputSequence;
@@ -162,23 +172,19 @@ public class SkillInputUI : MonoBehaviour
 
         if (matching.Count == 0)
         {
-            // ② 没有任何角色符合当前输入（无人闪烁）→ 立刻重置为无输入状态（并红色错误闪烁提示）。
+            // ② 没有任何角色符合当前输入（无人呼应）→ 立刻重置为无输入状态（玩家侧红色错误闪烁提示）。
             buffer.Clear();
-            lastInputTime = -999f;
-            FlashError();
-            return;
+            sideLastInput[side] = -999f;
+            if (side == 0) FlashError();
+            return FeedResult.Rejected;
         }
 
-        // 用户 2026-08-26 反馈：恢复「右侧按键有效前缀命中时角色 cube 呼应」反馈（曾因外部反馈误删，现恢复）。
-        // 注意：呼应 = 只脉冲发光（PulseGlow），不弹跳——弹跳是「命中音符」的语义（NoteMover.PlayHitAnimation / HoldNote.PlayHitPop），
-        // 技能按键呼应若带弹跳会与命中表现混淆，故用 PulseGlow 而非 Flash。
+        // 呼号：每次正确前缀按键呼应播一次 SkillSelect 动画（不闪光——闪光已在 ActiveSkillRuntime 层精简，
+        // 仅保留「技能释放开始(BeginCast.GrowGlow)」与「释放技能攻击(Settle/FireSequence)」两处 PulseGlow）。
         foreach (var rt in matching)
         {
             if (rt.marker != null)
-            {
-                rt.marker.PulseGlow();
-                rt.marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillSelect);  // 呼号：每次正确按键呼应播一次（第三次完整序列时 BeginCast 播 SkillStart 优先级10 立即打断）
-            }
+                rt.marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillSelect);  // 第三次完整序列时 BeginCast 播 SkillStart(优先级10) 立即打断
         }
 
         // 完整匹配某技能 → 触发释放并立刻重置为无输入状态。
@@ -186,12 +192,14 @@ public class SkillInputUI : MonoBehaviour
         {
             if (buffer.Count == rt.inputSequence.Length)
             {
+                Debug.Log($"[SkillInputUI][诊断] side={side} 完整匹配→调用 BeginCast：skill={rt.SkillRef?.displayName ?? "?"} eff={rt.SkillRef?.effectType ?? "?"} buffer.Count={buffer.Count} seqLen={rt.inputSequence.Length} phase={rt.phase}");
                 rt.BeginCast();
                 buffer.Clear();
-                lastInputTime = -999f;
-                return;
+                sideLastInput[side] = -999f;
+                return FeedResult.Triggered;
             }
         }
+        return FeedResult.Accepted;
     }
 
     /// <summary>buf 是否为 seq 的前缀（长度可小于 seq，但逐项必须相等）。</summary>
@@ -207,7 +215,7 @@ public class SkillInputUI : MonoBehaviour
     {
         if (idx < 0 || idx > 2) return;
         Flash(touchSteps[idx]);                         // 同组按钮一起高亮
-        OnKeyPressed(touchSteps[idx]);                 // 错误反馈最后执行，保证三个按钮都保持红闪
+        FeedInput(0, touchSteps[idx]);                 // 玩家侧(0)输入；错误反馈最后执行，保证三个按钮都保持红闪
     }
 
     private void Flash(SkillInputStep step)
@@ -263,6 +271,9 @@ public class SkillInputUI : MonoBehaviour
             if (btnImages[i] != null) btnImages[i].color = idleColor;
     }
 }
+
+/// <summary>FeedInput 结果：Accepted=缓冲是有效前缀、继续等待后续输入；Triggered=完整匹配已触发释放；Rejected=无任何角色呼应、缓冲已清空。</summary>
+public enum FeedResult { Accepted, Triggered, Rejected }
 
 /// <summary>接收透明按钮点击事件的最小代理组件。</summary>
 public class SkillButtonProxy : MonoBehaviour, IPointerClickHandler

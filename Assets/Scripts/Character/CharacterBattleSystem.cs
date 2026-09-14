@@ -95,6 +95,13 @@ public class CharacterBattleSystem : MonoBehaviour
             }
         }
         skillRuntimesReady = true;
+        // 临时诊断：验证每 side 实际挂载的主动技能运行时数量（排查 AI 侧是否漏挂）
+        {
+            var allRt = FindObjectsByType<ActiveSkillRuntime>(FindObjectsSortMode.None);
+            int c0 = 0, c1 = 0;
+            foreach (var r in allRt) { if (r.ownerSide == 0) c0++; else if (r.ownerSide == 1) c1++; }
+            Debug.Log($"[CharacterBattleSystem][诊断] 主动技能运行时挂载计数：side0={c0} side1={c1}（共{allRt.Length}）");
+        }
         Debug.Log("[CharacterBattleSystem] 已为每个角色挂载主动技能运行时与被动控制器（能力1~能力5）");
     }
 
@@ -108,10 +115,10 @@ public class CharacterBattleSystem : MonoBehaviour
             var slot = inst.activeSlots[si];
             if (slot == null || !slot.Exists || slot.IsPassive) continue;
             var rt = marker.gameObject.AddComponent<ActiveSkillRuntime>();
-            SkillInputStep[] seq = SkillSO.ParseInputMethod(slot.inputMethod);
-            if (seq.Length == 0 && slot.skill != null) seq = slot.skill.inputSequence;
             // 优先用槽内 SkillSO；为空时按 skillId 反查（如小熊双技能仅填了 skillId）
             var so = slot.skill ?? ((!string.IsNullOrEmpty(slot.skillId)) ? SkillSO.FindById(slot.skillId) : null);
+            SkillInputStep[] seq = SkillSO.ParseInputMethod(slot.inputMethod);
+            if (seq.Length == 0 && so != null) seq = so.inputSequence;   // 回退到已反查的 SkillSO 序列（AI 槽位 skill 引用为空、仅填 skillId 时必需）
             rt.Setup(inst, marker, spawner, oppCombo, side, fever, so, slot.cooldown, slot.NeedsEnergy, seq, si);
         }
     }

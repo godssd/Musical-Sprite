@@ -103,16 +103,32 @@ public class ActiveSkillRuntime : MonoBehaviour
     /// <summary>主动释放入口：只有能量满 + Standby 才可开始。由 SkillInputUI 在序列按对后调用。</summary>
     public void BeginCast()
     {
-        if (phase != Phase.Standby) return;
-        if (owner == null || !owner.HasActiveSkill) return;
+        if (phase != Phase.Standby)
+        {
+            Debug.LogWarning($"[Skill][诊断] BeginCast 被拒：phase={phase}（非 Standby），skill={skill?.displayName} side={ownerSide}");
+            return;
+        }
+        if (owner == null || !owner.HasActiveSkill)
+        {
+            Debug.LogWarning($"[Skill][诊断] BeginCast 被拒：ownerNull={(owner == null)} hasActive={(owner != null ? owner.HasActiveSkill : false)}，skill={skill?.displayName} side={ownerSide}");
+            return;
+        }
         // 沉睡期间无法释放技能（控制免疫可抵抗）
         if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(ownerSide))
         {
             Debug.Log($"[Skill] side{ownerSide} 沉睡中，无法释放 {skill?.displayName}");
             return;
         }
-        if (needsEnergy && !owner.IsSlotFull(slotIndex)) return;   // 仅需要能量的技能才卡对应槽能量门槛
-        if (skill == null) return;
+        if (needsEnergy && !owner.IsSlotFull(slotIndex))
+        {
+            Debug.LogWarning($"[Skill][诊断] BeginCast 被拒：能量未满（needsEnergy={needsEnergy} slotIndex={slotIndex} IsSlotFull={owner.IsSlotFull(slotIndex)}），skill={skill?.displayName} side={ownerSide}");
+            return;   // 仅需要能量的技能才卡对应槽能量门槛
+        }
+        if (skill == null)
+        {
+            Debug.LogWarning($"[Skill][诊断] BeginCast 被拒：skill 为 null，side={ownerSide}");
+            return;
+        }
 
         phase = Phase.Grow;
         completedCount = 0;
@@ -125,15 +141,18 @@ public class ActiveSkillRuntime : MonoBehaviour
             // 若被更高优先级动画（Opening/Victory/Fail 等优先级 20）挡住、SkillStart 没播出来 → 视为「技能未释放」，
             // 撤销本次释放（不消耗能量 / 不附魔 / 不占槽 / 不进入 Casting），避免「动画没出但技能已生效」的半吊子状态。
             bool started = marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillStart);
+            Debug.Log($"[ActiveSkill][诊断] BeginCast 内 SkillStart 播放结果 started={started}（marker类型={(marker != null ? marker.GetType().Name : "null")}），skill={skill?.displayName} side={ownerSide}");
             if (!started)
             {
+                // 强判定（恢复，AI 应与玩家一致）：释放起点动画(SkillStart)没播出来（被更高优先级动画挡住，或动画缺失）
+                // → 视为「技能未释放」，撤销本次释放（不消耗能量 / 不附魔 / 不占槽 / 不进入 Casting）。
                 marker.SetSkillLoopLock(false);
                 var fs = (feverManager != null) ? feverManager.GetState(ownerSide) : FeverState.None;
                 marker.SetLoopState(fs == FeverState.Fever || fs == FeverState.SuperFever
                     ? CharacterAnimator.CharacterAnimationState.PlayFever
                     : CharacterAnimator.CharacterAnimationState.PlayNormal);
                 phase = Phase.Standby;   // 回 Standby：CastingSides/能量/附魔 尚未触发，无需清理
-                Debug.LogWarning($"[ActiveSkill {skill?.displayName}] SkillStart 未播放（被高优先级动画挡住）→ 视为技能未释放，已撤销本次释放");
+                Debug.LogWarning($"[ActiveSkill {skill?.displayName}] SkillStart 未播放（被高优先级动画挡住或动画缺失）→ 视为技能未释放，已撤销本次释放");
                 return;
             }
         }
@@ -218,7 +237,7 @@ public class ActiveSkillRuntime : MonoBehaviour
             OnPerCharmSuccess();   // 逐音符触发：投弹 / 回血（Bomb / Heal 技能）
         }
         if (phase == Phase.Grow) phase = Phase.Charming;
-        if (success && (phase == Phase.Grow || phase == Phase.Charming) && marker != null) marker.PulseGlow();
+        // 注：逐音符命中闪烁已移除——闪光只在「技能释放开始(BeginCast.GrowGlow)」与「释放技能攻击(Settle/FireSequence 的 PulseGlow)」两处。
         TrySettleFromCharm();
     }
 
@@ -229,7 +248,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         completedCount++;
         OnPerCharmSuccess();   // 逐音符触发：投弹 / 回血（Bomb / Heal 技能）
         if (phase == Phase.Grow) phase = Phase.Charming;
-        if ((phase == Phase.Grow || phase == Phase.Charming) && marker != null) marker.PulseGlow();
+        // 注：逐节点命中闪烁已移除——同 OnCharmedNoteResolved，闪光只在 BeginCast 与 Settle/FireSequence。
         ResolveCharmNode(hn);
     }
 

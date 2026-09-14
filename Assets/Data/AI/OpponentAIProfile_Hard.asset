@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7dcc4060417d4864db8a67e6d9351cae, type: 3}
+  m_Name: OpponentAIProfile_Hard
+  m_EditorClassIdentifier: 
+  difficultyName: Hard
+  noteHitRate: 0.8
+  offsetMinMul: 0
+  offsetMaxMul: 0.6
+  evaluateInterval: 3.5
+  releaseProbability: 0.6
+  inputSpeed: 0.7
+  dogHowlOppComboThreshold: 20
+  healHpRatioThreshold: 0.45
+  clearScreenNoteThreshold: 1
+  offenseScoreLeadThreshold: 900
+  offenseAfterDogHowlChance: 0.12
+  offenseAfterBombChance: 0.2

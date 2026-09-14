@@ -790,4 +790,19 @@ public class NoteSpawner : MonoBehaviour
         }
         Debug.Log($"[ClearScreen] band=[{xMin:F2},{xMax:F2}] cleared {cleared} tap note(s)");
     }
+
+    /// <summary>统计本侧（自身 side）[xMin, xMax] 带内「尚未命中」的生效音符数（普通点击按位置；长按整条计 1）。
+    /// 供 OpponentInput 的小黑清屏条件判断「可清音符数」使用。</summary>
+    public int CountNotesInRange(float xMin, float xMax)
+    {
+        int n = 0;
+        foreach (var note in activeNotes)
+        {
+            if (note == null || note.isHit) continue;
+            float x = note.transform.position.x;
+            if (x >= xMin && x <= xMax) n++;
+        }
+        n += activeHoldNotes.Count;   // 长按整条视为可清
+        return n;
+    }
 }

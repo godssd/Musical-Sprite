@@ -13,10 +13,23 @@ using MusicalSprite.Editor;
 /// </summary>
 public class MusicalSpriteDebugWindow : EditorWindow
 {
-    // AI
-    private float aiStrength = 0.8f;
-    private float aiAimOffset = 0f;
-    private float aiMissChance = 0.05f;
+    // AI（新框架：直接编辑 OpponentAIProfile 难度资产，旧 aimOffset/missChance 模型已淘汰）
+    private OpponentAIProfile aiProfileRef;            // 直接编辑的难度资产引用（默认指向场景中 OpponentInput.profile）
+    private float aiNoteHitRate = 0.6f;
+    private float aiOffsetMin = 0f;
+    private float aiOffsetMax = 1f;
+    private float aiEvaluateInterval = 5f;
+    private float aiReleaseProb = 0.4f;
+    private float aiInputSpeed = 1f;
+    private int aiDogHowlCombo = 30;
+    private float aiHealHpRatio = 0.35f;
+    private int aiClearScreenNotes = 2;
+    private int aiOffenseLead = 1300;
+    private float aiOffenseAfterDog = 0.05f;
+    private float aiOffenseAfterBomb = 0.1f;
+
+    // 新建难度资产时的名称（默认 Custom，可改）
+    private string aiNewProfileName = "OpponentAIProfile_Custom";
 
     // 分数
     private int perfectScore = 100;
@@ -85,9 +98,18 @@ public class MusicalSpriteDebugWindow : EditorWindow
 
     private void LoadPrefs()
     {
-        aiStrength = EditorPrefs.GetFloat(PREFS + "aiStrength", aiStrength);
-        aiAimOffset = EditorPrefs.GetFloat(PREFS + "aiAimOffset", aiAimOffset);
-        aiMissChance = EditorPrefs.GetFloat(PREFS + "aiMissChance", aiMissChance);
+        aiNoteHitRate = EditorPrefs.GetFloat(PREFS + "aiNoteHitRate", aiNoteHitRate);
+        aiOffsetMin = EditorPrefs.GetFloat(PREFS + "aiOffsetMin", aiOffsetMin);
+        aiOffsetMax = EditorPrefs.GetFloat(PREFS + "aiOffsetMax", aiOffsetMax);
+        aiEvaluateInterval = EditorPrefs.GetFloat(PREFS + "aiEvaluateInterval", aiEvaluateInterval);
+        aiReleaseProb = EditorPrefs.GetFloat(PREFS + "aiReleaseProb", aiReleaseProb);
+        aiInputSpeed = EditorPrefs.GetFloat(PREFS + "aiInputSpeed", aiInputSpeed);
+        aiDogHowlCombo = EditorPrefs.GetInt(PREFS + "aiDogHowlCombo", aiDogHowlCombo);
+        aiHealHpRatio = EditorPrefs.GetFloat(PREFS + "aiHealHpRatio", aiHealHpRatio);
+        aiClearScreenNotes = EditorPrefs.GetInt(PREFS + "aiClearScreenNotes", aiClearScreenNotes);
+        aiOffenseLead = EditorPrefs.GetInt(PREFS + "aiOffenseLead", aiOffenseLead);
+        aiOffenseAfterDog = EditorPrefs.GetFloat(PREFS + "aiOffenseAfterDog", aiOffenseAfterDog);
+        aiOffenseAfterBomb = EditorPrefs.GetFloat(PREFS + "aiOffenseAfterBomb", aiOffenseAfterBomb);
         perfectScore = EditorPrefs.GetInt(PREFS + "perfectScore", perfectScore);
         goodScore = EditorPrefs.GetInt(PREFS + "goodScore", goodScore);
         missScore = EditorPrefs.GetInt(PREFS + "missScore", missScore);
@@ -114,9 +136,18 @@ public class MusicalSpriteDebugWindow : EditorWindow
 
     private void SavePrefs()
     {
-        EditorPrefs.SetFloat(PREFS + "aiStrength", aiStrength);
-        EditorPrefs.SetFloat(PREFS + "aiAimOffset", aiAimOffset);
-        EditorPrefs.SetFloat(PREFS + "aiMissChance", aiMissChance);
+        EditorPrefs.SetFloat(PREFS + "aiNoteHitRate", aiNoteHitRate);
+        EditorPrefs.SetFloat(PREFS + "aiOffsetMin", aiOffsetMin);
+        EditorPrefs.SetFloat(PREFS + "aiOffsetMax", aiOffsetMax);
+        EditorPrefs.SetFloat(PREFS + "aiEvaluateInterval", aiEvaluateInterval);
+        EditorPrefs.SetFloat(PREFS + "aiReleaseProb", aiReleaseProb);
+        EditorPrefs.SetFloat(PREFS + "aiInputSpeed", aiInputSpeed);
+        EditorPrefs.SetInt(PREFS + "aiDogHowlCombo", aiDogHowlCombo);
+        EditorPrefs.SetFloat(PREFS + "aiHealHpRatio", aiHealHpRatio);
+        EditorPrefs.SetInt(PREFS + "aiClearScreenNotes", aiClearScreenNotes);
+        EditorPrefs.SetInt(PREFS + "aiOffenseLead", aiOffenseLead);
+        EditorPrefs.SetFloat(PREFS + "aiOffenseAfterDog", aiOffenseAfterDog);
+        EditorPrefs.SetFloat(PREFS + "aiOffenseAfterBomb", aiOffenseAfterBomb);
         EditorPrefs.SetInt(PREFS + "perfectScore", perfectScore);
         EditorPrefs.SetInt(PREFS + "goodScore", goodScore);
         EditorPrefs.SetInt(PREFS + "missScore", missScore);
@@ -144,11 +175,10 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private void SyncFromScene()
     {
         OpponentInput opponent = FindFirstObjectByType<OpponentInput>();
-        if (opponent != null)
+        if (opponent != null && opponent.profile != null)
         {
-            aiAimOffset = opponent.aimOffset;
-            aiMissChance = opponent.missChance;
-            aiStrength = Mathf.Clamp01(1f - aiAimOffset / 0.05f);
+            aiProfileRef = opponent.profile;
+            SyncFromProfile(opponent.profile);
         }
 
         ScoreManager scoreManager = FindFirstObjectByType<ScoreManager>();
@@ -242,22 +272,151 @@ public class MusicalSpriteDebugWindow : EditorWindow
         }
     }
 
+    private void SyncFromProfile(OpponentAIProfile p)
+    {
+        if (p == null) return;
+        aiNoteHitRate = p.noteHitRate;
+        aiOffsetMin = p.offsetMinMul;
+        aiOffsetMax = p.offsetMaxMul;
+        aiEvaluateInterval = p.evaluateInterval;
+        aiReleaseProb = p.releaseProbability;
+        aiInputSpeed = p.inputSpeed;
+        aiDogHowlCombo = p.dogHowlOppComboThreshold;
+        aiHealHpRatio = p.healHpRatioThreshold;
+        aiClearScreenNotes = p.clearScreenNoteThreshold;
+        aiOffenseLead = p.offenseScoreLeadThreshold;
+        aiOffenseAfterDog = p.offenseAfterDogHowlChance;
+        aiOffenseAfterBomb = p.offenseAfterBombChance;
+    }
+
+    private void ApplyToProfile(OpponentAIProfile p)
+    {
+        if (p == null) return;
+        p.noteHitRate = aiNoteHitRate;
+        p.offsetMinMul = aiOffsetMin;
+        p.offsetMaxMul = aiOffsetMax;
+        p.evaluateInterval = aiEvaluateInterval;
+        p.releaseProbability = aiReleaseProb;
+        p.inputSpeed = aiInputSpeed;
+        p.dogHowlOppComboThreshold = aiDogHowlCombo;
+        p.healHpRatioThreshold = aiHealHpRatio;
+        p.clearScreenNoteThreshold = aiClearScreenNotes;
+        p.offenseScoreLeadThreshold = aiOffenseLead;
+        p.offenseAfterDogHowlChance = aiOffenseAfterDog;
+        p.offenseAfterBombChance = aiOffenseAfterBomb;
+        EditorUtility.SetDirty(p);
+        AssetDatabase.SaveAssets();
+    }
+
+    /// <summary>把当前窗口里的 12 个参数另存为一个新的难度资产（Assets/Data/AI/）。同名自动加序号。</summary>
+    private void CreateNewProfile(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) name = "OpponentAIProfile_Custom";
+        if (!AssetDatabase.IsValidFolder("Assets/Data/AI"))
+            AssetDatabase.CreateFolder("Assets/Data", "AI");
+        string basePath = "Assets/Data/AI/" + name + ".asset";
+        string path = AssetDatabase.GenerateUniqueAssetPath(basePath);
+        var p = ScriptableObject.CreateInstance<OpponentAIProfile>();
+        ApplyToProfile(p);                       // 把窗口当前参数写入新资产
+        AssetDatabase.CreateAsset(p, path);
+        AssetDatabase.SaveAssets();
+        aiProfileRef = p;
+        SyncFromProfile(p);
+        Debug.Log("[MS Debug] 已新建难度资产：" + path);
+    }
+
+    /// <summary>删除当前选中的难度资产（含 .meta）；基础 4 档会额外警告。同时清空场景引用。</summary>
+    private void DeleteCurrentProfile()
+    {
+        if (aiProfileRef == null)
+        {
+            Debug.LogWarning("[MS Debug] 当前没有选中任何难度资产，无法删除（可先用「从场景/资产读取」或「新建难度资产」）。");
+            return;
+        }
+        string path = AssetDatabase.GetAssetPath(aiProfileRef);
+        if (string.IsNullOrEmpty(path))
+        {
+            Debug.LogWarning("[MS Debug] 选中的 Profile 不在磁盘上（运行时临时实例），无法删除。请先「新建」或「从场景/资产读取」一个磁盘上的资产。");
+            return;
+        }
+        bool isBase = path.Contains("OpponentAIProfile_Easy") || path.Contains("OpponentAIProfile_Medium")
+                   || path.Contains("OpponentAIProfile_Hard") || path.Contains("OpponentAIProfile_Nightmare");
+        string msg = isBase
+            ? "确定要删除基础难度资产「" + aiProfileRef.name + "」吗？\n路径：" + path + "\n（这是 4 个基础档之一，删除后需重新生成。）"
+            : "确定要删除难度资产「" + aiProfileRef.name + "」吗？\n路径：" + path;
+        if (EditorUtility.DisplayDialog("删除难度资产", msg, "删除", "取消"))
+        {
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.SaveAssets();
+            // 若场景 OpponentInput 引用的就是它，一并清空，避免悬空引用
+            var opp = FindFirstObjectByType<OpponentInput>();
+            if (opp != null && opp.profile == aiProfileRef) { opp.profile = null; EditorUtility.SetDirty(opp); }
+            aiProfileRef = null;
+            Debug.Log("[MS Debug] 已删除难度资产：" + path);
+        }
+    }
+
     private void DrawAI()
     {
-        GUILayout.Label("AI 对手", EditorStyles.boldLabel);
+        GUILayout.Label("AI 对手（新框架：难度参数表 OpponentAIProfile）", EditorStyles.boldLabel);
         EditorGUILayout.BeginVertical(GUI.skin.box);
 
-        aiStrength = EditorGUILayout.Slider("AI 综合实力", aiStrength, 0f, 1f);
-        EditorGUILayout.HelpBox("0 = 很弱（大幅偏移、高 Miss 率），1 = 很强（接近 Perfect）。", MessageType.None);
+        aiProfileRef = (OpponentAIProfile)EditorGUILayout.ObjectField("难度资产 Profile", aiProfileRef, typeof(OpponentAIProfile), false);
+        EditorGUILayout.HelpBox("直接编辑该难度资产（Assets/Data/AI/ 下 Easy/Medium/Hard/Nightmare）。留空则自动指向场景中 OpponentInput.profile。修改会写回资产并保存。", MessageType.None);
 
-        aiAimOffset = EditorGUILayout.FloatField("判定偏移 aimOffset", aiAimOffset);
-        aiMissChance = EditorGUILayout.Slider("Miss 概率", aiMissChance, 0f, 1f);
-
-        if (GUILayout.Button("按综合实力自动设置"))
+        if (GUILayout.Button("从场景/资产读取当前值"))
         {
-            aiAimOffset = (1f - aiStrength) * 0.05f;
-            aiMissChance = (1f - aiStrength) * 0.25f;
+            OpponentInput opponent = FindFirstObjectByType<OpponentInput>();
+            OpponentAIProfile src = (aiProfileRef != null) ? aiProfileRef : (opponent != null ? opponent.profile : null);
+            if (src != null) { aiProfileRef = src; SyncFromProfile(src); }
+            else Debug.LogWarning("[MS Debug] 未找到 OpponentAIProfile（场景中 OpponentInput.profile 为空）。");
         }
+
+        aiNoteHitRate = EditorGUILayout.Slider("命中概率 noteHitRate", aiNoteHitRate, 0f, 1f);
+        EditorGUILayout.HelpBox("只决定 AI 是否按正确时机按下按键（不按=无输入，音符自然 MISS）。", MessageType.None);
+
+        aiOffsetMin = EditorGUILayout.FloatField("偏移下限 offsetMinMul (×goodWindow)", aiOffsetMin);
+        aiOffsetMax = EditorGUILayout.FloatField("偏移上限 offsetMaxMul (×goodWindow)", aiOffsetMax);
+        EditorGUILayout.HelpBox("偏移上限>1 表示有概率「点出但未命中」(超出 GOOD 窗口即 MISS)；小音符(小型点击)有效窗口=0.6×goodWindow，故 offsetFrac>0.6 必 MISS。", MessageType.None);
+
+        aiEvaluateInterval = EditorGUILayout.FloatField("技能评估间隔 evaluateInterval (秒)", aiEvaluateInterval);
+        aiReleaseProb = EditorGUILayout.Slider("发动概率 releaseProbability", aiReleaseProb, 0f, 1f);
+        aiInputSpeed = EditorGUILayout.FloatField("输入手速 inputSpeed (秒/整段)", aiInputSpeed);
+
+        aiDogHowlCombo = EditorGUILayout.IntField("大狗叫连击阈值 dogHowlOppComboThreshold", aiDogHowlCombo);
+        aiHealHpRatio = EditorGUILayout.Slider("牛角包血量阈值 healHpRatioThreshold", aiHealHpRatio, 0f, 1f);
+        aiClearScreenNotes = EditorGUILayout.IntField("清屏音符阈值 clearScreenNoteThreshold", aiClearScreenNotes);
+        aiOffenseLead = EditorGUILayout.IntField("全体进攻领先阈值 offenseScoreLeadThreshold", aiOffenseLead);
+
+        aiOffenseAfterDog = EditorGUILayout.Slider("追加进攻(主=大狗叫) offenseAfterDogHowlChance", aiOffenseAfterDog, 0f, 1f);
+        aiOffenseAfterBomb = EditorGUILayout.Slider("追加进攻(主=炸弹雨) offenseAfterBombChance", aiOffenseAfterBomb, 0f, 1f);
+        EditorGUILayout.HelpBox("主技能=大狗叫/炸弹雨 时，按对应概率额外追加全体进攻（先进攻后主技能，不要求领先 1300）。", MessageType.None);
+
+        // —— 难度资产管理（替代原「套用中等预设」）——
+        EditorGUILayout.Space(6);
+        EditorGUILayout.LabelField("难度资产管理", EditorStyles.boldLabel);
+
+        GUILayout.BeginHorizontal();
+        aiNewProfileName = EditorGUILayout.TextField("新资产名称", aiNewProfileName);
+        if (GUILayout.Button("新建难度资产", GUILayout.Width(110)))
+        {
+            CreateNewProfile(aiNewProfileName);
+        }
+        GUILayout.EndHorizontal();
+        EditorGUILayout.HelpBox("把当前窗口里这 12 个参数另存为一个新难度资产到 Assets/Data/AI/（基础 4 档之外可随意制作）。同名会自动加序号。", MessageType.None);
+
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("删除当前资产"))
+        {
+            DeleteCurrentProfile();
+        }
+        if (GUILayout.Button("（调试）强制 AI 立即放一个技能"))
+        {
+            var opp = FindFirstObjectByType<OpponentInput>();
+            if (opp != null) opp.ForceCastSkill();
+            else Debug.LogWarning("[MS Debug] 未找到 OpponentInput。");
+        }
+        GUILayout.EndHorizontal();
 
         EditorGUILayout.EndVertical();
     }
@@ -378,13 +537,19 @@ public class MusicalSpriteDebugWindow : EditorWindow
     /// </summary>
     private void ApplyValues(bool silent)
     {
-        // 1. AI
+        // 1. AI（新框架：写回 OpponentAIProfile 难度资产，旧 aimOffset/missChance 模型已淘汰）
         OpponentInput opponent = FindFirstObjectByType<OpponentInput>();
-        if (opponent != null)
+        OpponentAIProfile targetProfile = (aiProfileRef != null) ? aiProfileRef : (opponent != null ? opponent.profile : null);
+        if (targetProfile != null)
         {
-            opponent.aimOffset = aiAimOffset;
-            opponent.missChance = aiMissChance;
-            EditorUtility.SetDirty(opponent);
+            ApplyToProfile(targetProfile);
+            // 若场景 opponent.profile 与手动指定的资产不同，也同步写回场景引用的那份
+            if (opponent != null && opponent.profile != null && opponent.profile != targetProfile)
+                ApplyToProfile(opponent.profile);
+        }
+        else
+        {
+            Debug.LogWarning("[MS Debug] 未找到 OpponentAIProfile，AI 参数未应用（请在场景中给 OpponentInput.profile 拖入难度资产）。");
         }
 
         // 2. 分数
@@ -467,8 +632,12 @@ public class MusicalSpriteDebugWindow : EditorWindow
         SavePrefs();
 
         if (!silent)
-            Debug.Log("[MS Debug] 参数已应用：aimOffset=" + aiAimOffset + " miss=" + aiMissChance +
-                      " perfect=" + perfectScore + " good=" + goodScore + " clear=" + clearScore +
+            Debug.Log("[MS Debug] 参数已应用：AI profile=" + (targetProfile != null ? targetProfile.name : "null") +
+                      " hitRate=" + aiNoteHitRate + " offset=[" + aiOffsetMin + "," + aiOffsetMax + "]" +
+                      " eval=" + aiEvaluateInterval + " releaseProb=" + aiReleaseProb + " inputSpeed=" + aiInputSpeed +
+                      " dogHowlCombo=" + aiDogHowlCombo + " healHp=" + aiHealHpRatio + " clearNotes=" + aiClearScreenNotes +
+                      " offenseLead=" + aiOffenseLead + " offAfterDog=" + aiOffenseAfterDog + " offAfterBomb=" + aiOffenseAfterBomb +
+                      " | perfect=" + perfectScore + " good=" + goodScore + " clear=" + clearScore +
                       " pass=" + passScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius +
                       " chainTapHold=" + chainTapHoldDuration + " slideSettle=" + holdSlideSettleWindow + " breakTh=" + holdBreakThreshold + " earlyGrace=" + holdEarlySlideGrace + " laneTol=" + holdLaneTolerance +
                       " | Fever 系数=" + feverMult + " Super 系数=" + superMult + " Fever阈值=" + feverThresh + " Super阈值=" + superThresh);

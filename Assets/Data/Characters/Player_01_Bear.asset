@@ -20,7 +20,7 @@ MonoBehaviour:
   laneIndex: -1
   maxHP: 100
   combatPower: 25
-  activeSkill: {fileID: 11400000, guid: 0899d40231147694288ce200eba0bd6a, type: 2}
+  activeSkill: {fileID: 11400000, guid: 51758055551fd1c4483439372af0322d, type: 2}
   skillId: 
   activeSkillDescription: "\uFF081\uFF09\u5168\u4F53\u9632\u5FA1\u751F\u6210\u4E00\u4E2A\u5168\u4F53\u62A4\u76FE\uFF0C\u8FD9\u6BB5\u65F6\u95F4\u5185\u514D\u75AB\u4E00\u5207\u63A7\u5236\u5E76\u4E14\u51CF\u5C1120%\u53D7\u5230\u7684\u4F24\u5BB3\u6301\u7EED10s\uFF08\u6CE8\u610F\u540C\u5C5Ea\u7C7Bbuff\u4E0D\u53EF\u4EE5\u5171\u5B58\uFF09"
   activeEnergyCost: 0
@@ -28,7 +28,7 @@ MonoBehaviour:
   passiveSkillDescription: 
   skills:
   - skillId: skill_1_team_defense
-    skill: {fileID: 11400000, guid: 0899d40231147694288ce200eba0bd6a, type: 2}
+    skill: {fileID: 11400000, guid: 51758055551fd1c4483439372af0322d, type: 2}
     energyCost: 0
     cooldown: 60
     inputMethod: "\u2193\u2193\u2190"
@@ -36,7 +36,7 @@ MonoBehaviour:
     overheatDesc: 
     superOverheatDesc: 
   - skillId: skill_2_team_offense
-    skill: {fileID: 11400000, guid: 7c2c0046005211f439b37639e623040f, type: 2}
+    skill: {fileID: 11400000, guid: 92f85db39b4cb124c9d040c2f95a836e, type: 2}
     energyCost: 0
     cooldown: 60
     inputMethod: "\u2190\u2190\u2193"

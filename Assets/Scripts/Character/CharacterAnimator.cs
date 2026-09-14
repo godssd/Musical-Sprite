@@ -98,22 +98,33 @@ public class CharacterAnimator : MonoBehaviour
     private CharacterAnimationState currentState;
     private bool skillLoopLocked = false;   // 技能期间锁定 loop（见 SetSkillLoopLock）
 
+    private bool IsReady => skel != null && skel.AnimationState != null;
+
     void Awake()
     {
         skel = GetComponentInChildren<SkeletonAnimation>(true);
         if (skel == null)
         {
-            Debug.LogError("[CharacterAnimator] 找不到 SkeletonAnimation 子组件。", this);
+            Debug.LogError($"[CharacterAnimator] 找不到 SkeletonAnimation 子组件。gameObject={gameObject.name}", this);
+            enabled = false;
+        }
+        else if (skel.AnimationState == null)
+        {
+            Debug.LogError($"[CharacterAnimator] SkeletonAnimation.AnimationState 为 null（SkeletonDataAsset 可能缺失或导入失败）。gameObject={gameObject.name} prefix={animationPrefix}", this);
             enabled = false;
         }
     }
 
     void Start()
     {
+        if (!IsReady) return;
         Rebuild();
         currentLoopState = initialState;
         PlayOpening();   // 开场：装配即播一次 Opening，结束后 Update 自动接回 initialState（默认 PlayNormal）
     }
+
+    /// <summary>供外部（CharacterCubeMarker）快速判断该模型是否已有可正常驱动的 Spine 运行时。</summary>
+    public bool HasValidSkeleton() => skel != null && skel.SkeletonDataAsset != null && skel.AnimationState != null;
 
     /// <summary>运行时自动发现：按 prefix + 槽位后缀在 SkeletonData 中查找，存在才注册（缺失动画自动跳过）。
     /// 可由 CharacterCubeMarker 在注入 animationPrefix 后再次调用以重建（换角/框架健壮性）。</summary>
@@ -143,7 +154,7 @@ public class CharacterAnimator : MonoBehaviour
 
     void Update()
     {
-        if (skel == null || available == null) return;
+        if (!IsReady || available == null) return;
         var st = skel.AnimationState;
         var cur = st.GetTrack(0);
         string desired = ResolveName(currentLoopState);
@@ -178,7 +189,7 @@ public class CharacterAnimator : MonoBehaviour
         bool changed = (currentLoopState != loopState);
         currentLoopState = loopState;
         if (!changed) return;
-        if (skel != null && available != null)
+        if (IsReady && available != null)
         {
             var cur = skel.AnimationState.GetTrack(0);
             if (cur == null || cur.Loop)
@@ -193,7 +204,7 @@ public class CharacterAnimator : MonoBehaviour
     /// 返回 true 表示实际播放了（调用方可据此决定是否回退 cube 兜底表现）。</summary>
     public bool PlayOnce(CharacterAnimationState onceState)
     {
-        if (skel == null || available == null) return false;
+        if (!IsReady || available == null) return false;
         if (!available.TryGetValue(onceState, out var e)) return false;
         if (e.loop) { SetLoopState(onceState); return true; }
         string name = ResolveName(onceState);
@@ -257,7 +268,7 @@ public class CharacterAnimator : MonoBehaviour
 
     private void PlayLoop(CharacterAnimationState state)
     {
-        if (!available.TryGetValue(state, out var e)) return;
+        if (!IsReady || !available.TryGetValue(state, out var e)) return;
         string name = ResolveName(state);
         if (string.IsNullOrEmpty(name)) return;
         skel.AnimationState.SetAnimation(0, name, true);

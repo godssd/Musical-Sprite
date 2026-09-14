@@ -24,10 +24,37 @@ public static class ShitSpineSetup
     // 屎屎 Spine 导出 scale 为 0.01，骨架本身尺寸较大；先放大到 1.0 保证场上可见，之后可在 Inspector 微调。
     private const float PrefabRootScale = 1.0f;
 
-    [MenuItem("Musical Sprite/Setup Shit Spine Character", priority = 300)]
-    public static void Run()
+    // 移到 Danger Zone 子菜单，避免顶部一屏误点；点击后仍需二次确认，且 prefab 已正常会自动跳过。
+    [MenuItem("Musical Sprite/Danger Zone/Setup Shit Spine Character (重建 Spine 资产)", priority = 300)]
+    public static void Run() => Run(false);
+
+    /// <summary>
+    /// 重建屎屎 Spine prefab。
+    /// force=false 时：若现有 Shit.prefab 引用完整且 SkeletonData 可加载，则直接跳过（防误点弄坏好的 prefab）。
+    /// 这是破坏式操作（删除并重建 SkeletonDataAsset、覆盖 Shit.prefab），仅在重新导出 Spine 美术后使用。
+    /// 强制重建：在 Editor 控制台执行 ShitSpineSetup.Run(true)
+    /// </summary>
+    public static void Run(bool force)
     {
-        // 1. 强制重新导入：先删除旧的 SkeletonDataAsset，让 Spine 自动重建 AtlasAsset + SkeletonDataAsset
+        // 0. 危险操作二次确认（默认取消）
+        if (!EditorUtility.DisplayDialog(
+            "危险操作：重建屎屎 Spine",
+            "此操作会删除并重建 Shit_SkeletonData.asset，并覆盖 Shit.prefab。\n\n仅在「重新用 Spine 编辑器导出了屎屎美术」后才需要。\n正常项目请勿点击，否则可能把正常的 prefab 弄成绿块。",
+            "我确定要重建", "取消"))
+        {
+            Debug.Log("[ShitSpineSetup] 已取消，未做任何改动。");
+            return;
+        }
+
+        // 1. 若现有 prefab 已正常且非强制，直接跳过（防误点把好的 prefab 弄坏）
+        if (!force && PrefabAlreadyValid())
+        {
+            Debug.LogWarning("[ShitSpineSetup] 现有 Shit.prefab 引用完整（SkeletonData + 材质），无需重建，已安全跳过。" +
+                             "如需强制重建请执行 ShitSpineSetup.Run(true)。");
+            return;
+        }
+
+        // 2. 强制重新导入：先删除旧的 SkeletonDataAsset，让 Spine 自动重建 AtlasAsset + SkeletonDataAsset
         if (AssetDatabase.LoadAssetAtPath<SkeletonDataAsset>(SkeletonDataPath) != null)
         {
             bool deleted = AssetDatabase.DeleteAsset(SkeletonDataPath);
@@ -81,6 +108,19 @@ public static class ShitSpineSetup
         spineGo.transform.localPosition = Vector3.zero;
         spineGo.transform.localRotation = Quaternion.identity;
 
+        // 关键：保存 prefab 前强制标记所有对象 dirty，防止引用丢失
+        var spineRenderer = spineGo.GetComponent<SkeletonRenderer>();
+        var spineAnim = spineGo.GetComponent<SkeletonAnimation>();
+        if (spineRenderer != null && spineRenderer.skeletonDataAsset == null)
+            spineRenderer.skeletonDataAsset = skeletonDataAsset;
+        if (spineAnim != null && spineAnim.skeletonDataAsset == null)
+            spineAnim.skeletonDataAsset = skeletonDataAsset;
+        if (spineRenderer != null) EditorUtility.SetDirty(spineRenderer);
+        if (spineAnim != null) EditorUtility.SetDirty(spineAnim);
+        EditorUtility.SetDirty(spineGo);
+        EditorUtility.SetDirty(root);
+        AssetDatabase.SaveAssets();
+
         // 6. 存为 prefab
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath, out bool prefabSuccess);
         GameObject.DestroyImmediate(root);
@@ -91,7 +131,16 @@ public static class ShitSpineSetup
             return;
         }
 
-        Debug.Log($"[ShitSpineSetup] Prefab 已保存：{PrefabPath}");
+        // 6.5 验证 prefab 引用确实写进去了（防止再次变成绿色方块）
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        if (!ValidatePrefabReferences(prefab, skeletonDataAsset))
+        {
+            Debug.LogError("[ShitSpineSetup] Prefab 引用校验失败，请手动检查 Shit.prefab 的 SkeletonRenderer.skeletonDataAsset 是否为空。");
+            return;
+        }
+
+        Debug.Log($"[ShitSpineSetup] Prefab 已保存并校验通过：{PrefabPath}");
 
         // 7. 填进角色数据 ScriptableObject
         var characterData = AssetDatabase.LoadAssetAtPath<CharacterDataSO>(CharacterDataPath);
@@ -192,9 +241,15 @@ public static class ShitSpineSetup
             EditorUtility.SetDirty(renderer);
 
             var anim = go.AddComponent<SkeletonAnimation>();
+            // 先显式绑定数据再 Initialize，防止 Initialize 后引用被清空
+            anim.skeletonDataAsset = skeletonDataAsset;
             // 关键：编辑器模式下用 true，让组件立即创建 Skeleton/AnimationState
             anim.Initialize(true);
+            // Initialize 后再次确认，某些 spine-unity 版本会重置字段
+            if (anim.skeletonDataAsset == null) anim.skeletonDataAsset = skeletonDataAsset;
+            if (renderer.skeletonDataAsset == null) renderer.skeletonDataAsset = skeletonDataAsset;
             EditorUtility.SetDirty(anim);
+            EditorUtility.SetDirty(renderer);
             EditorUtility.SetDirty(go);
             return anim;
         }
@@ -203,6 +258,48 @@ public static class ShitSpineSetup
             Debug.LogError($"[ShitSpineSetup] 方案 B（手动创建）也失败：{e.Message}\n{e.StackTrace}");
             return null;
         }
+    }
+
+    private static bool ValidatePrefabReferences(GameObject prefab, SkeletonDataAsset expectedData)
+    {
+        if (prefab == null || expectedData == null) return false;
+        var renderer = prefab.GetComponentInChildren<SkeletonRenderer>(true);
+        if (renderer == null)
+        {
+            Debug.LogError("[ShitSpineSetup] 校验失败：prefab 下找不到 SkeletonRenderer。");
+            return false;
+        }
+        if (renderer.skeletonDataAsset != expectedData)
+        {
+            Debug.LogError($"[ShitSpineSetup] 校验失败：SkeletonRenderer.skeletonDataAsset 不匹配。期望={expectedData.name}，实际={(renderer.skeletonDataAsset == null ? "null" : renderer.skeletonDataAsset.name)}");
+            return false;
+        }
+        var anim = prefab.GetComponentInChildren<SkeletonAnimation>(true);
+        if (anim == null)
+        {
+            Debug.LogWarning("[ShitSpineSetup] 校验警告：prefab 下找不到 SkeletonAnimation（不影响渲染，但无动画）。");
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// 现有 Shit.prefab 是否引用完整且可正常驱动：SkeletonRenderer 有 SkeletonData、MeshRenderer 材质非空。
+    /// 用于防误点保护——已正常就不重建。
+    /// </summary>
+    private static bool PrefabAlreadyValid()
+    {
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+        if (prefab == null) return false;
+
+        var renderer = prefab.GetComponentInChildren<SkeletonRenderer>(true);
+        if (renderer == null || renderer.skeletonDataAsset == null) return false;
+
+        var meshRenderer = prefab.GetComponentInChildren<MeshRenderer>(true);
+        if (meshRenderer == null) return false;
+        var mats = meshRenderer.sharedMaterials;
+        if (mats == null || mats.Length == 0 || mats.Any(m => m == null)) return false;
+
+        return true;
     }
 
     private static Type FindSpineEditorInstantiationType()

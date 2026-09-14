@@ -61,6 +61,10 @@ public class CharacterCubeMarker : MonoBehaviour
 
     private GameObject spawnedModel;
 
+    [Header("朝向调试")]
+    [Tooltip("true=右侧(side=1)角色自动水平镜像，面向左侧中心（仅翻转 Spine 子模型 localScale.x，不动根节点/占位方块）")]
+    public bool flipFacing = true;
+
     /// <summary>按 (side, lane) 索引的全局角色标记表，供普通命中时按音轨查找对应角色跳跃。</summary>
     private static System.Collections.Generic.Dictionary<int, CharacterCubeMarker> Registry = new System.Collections.Generic.Dictionary<int, CharacterCubeMarker>();
     // 改为 side*100+lane：原 side*4+lane 会让 side1 玩家(laneIndex=-1 → key=3) 与 side0 lane3(key=3) 撞键，
@@ -247,8 +251,8 @@ public class CharacterCubeMarker : MonoBehaviour
     }
 
     /// <summary>由 CharacterBattleSystem 在装配 marker 时调用：注入角色外观预制体（数据驱动，非破坏式）。
-    /// 非空时实例化到自身子节点并隐藏默认占位 cube 渲染器；重复调用只实例化一次。
-    /// 同时幂等地挂载 CharacterAnimator 并把动画前缀（animationPrefix）注入，供 Spine 动画自动发现。</summary>
+    /// 非空时实例化到自身子节点；Spine 有效时隐藏默认占位 cube，Spine 无效（SkeletonDataAsset 缺失/导入失败）时保留 cube 可见并打 Warning。
+    /// 重复调用只实例化一次。同时幂等地挂载 CharacterAnimator 并把动画前缀（animationPrefix）注入，供 Spine 动画自动发现。</summary>
     public void SetModelPrefab(GameObject prefab, string animationPrefix = null)
     {
         if (prefab == null) return;
@@ -259,8 +263,12 @@ public class CharacterCubeMarker : MonoBehaviour
             // （pivot 不在视觉中心的角色需要本地偏移/旋转/缩放）。
             spawnedModel.transform.SetLocalPositionAndRotation(prefab.transform.localPosition, prefab.transform.localRotation);
             spawnedModel.transform.localScale = prefab.transform.localScale;
-            var selfRend = GetComponent<Renderer>();
-            if (selfRend != null) selfRend.enabled = false;
+            // 右侧(side=1)角色自动水平镜像，面向左侧中心（仅翻 Spine 子模型，不影响根节点/占位方块）
+            if (side == 1 && flipFacing)
+            {
+                var fs = spawnedModel.transform.localScale;
+                spawnedModel.transform.localScale = new Vector3(-Mathf.Abs(fs.x), fs.y, fs.z);
+            }
         }
 
         // 自动挂载动画驱动器（幂等）：从 CharacterDataSO.animationPrefix 注入命名前缀。
@@ -272,6 +280,26 @@ public class CharacterCubeMarker : MonoBehaviour
             anim.animationPrefix = animationPrefix;
             anim.Rebuild();
         }
+
+        // Spine 校验：没有有效 Skeleton/AnimationState 时保留占位 cube 可见，避免角色"凭空消失"且 Update 爆 NRE。
+        bool validSpine = anim != null && anim.HasValidSkeleton();
+        var selfRend = GetComponent<Renderer>();
+        if (selfRend != null) selfRend.enabled = !validSpine;
+        if (!validSpine)
+        {
+            Debug.LogWarning($"[CharacterCubeMarker] {gameObject.name}(side={side},lane={laneIndex}) 的模型 prefab={prefab.name} Spine 未就绪（SkeletonDataAsset 缺失/导入失败/AnimationState 为 null），已保留占位 cube 可见。animationPrefix={animationPrefix}", this);
+        }
+    }
+
+    /// <summary>调试用：按当前 flipFacing 重新应用 / 撤销朝向翻转（运行时或编辑模式点右键菜单即可）。
+    /// 先恢复为正向，再按 (side==1 &amp;&amp; flipFacing) 决定镜像，避免多次调用叠加负负得正。</summary>
+    [ContextMenu("Musical-Sprite/刷新朝向 Flip Facing")]
+    public void RefreshFlip()
+    {
+        if (spawnedModel == null) return;
+        var s = spawnedModel.transform.localScale;
+        float ax = Mathf.Abs(s.x);
+        spawnedModel.transform.localScale = new Vector3((side == 1 && flipFacing) ? -ax : ax, s.y, s.z);
     }
 
     /// <summary>
@@ -377,13 +405,32 @@ public class CharacterCubeMarker : MonoBehaviour
         if (a != null) a.PlayOnce(CharacterAnimator.CharacterAnimationState.Decadent);
     }
 
-    /// <summary>技能段播放：Select / Start / Attak / End / Loop 等，按优先级路由（Spine 角色）；cube 角色无对应动画（返回 false）。
-    /// 返回 true 表示动画真正播放（调用方可据此判定「释放起点动画是否放出」）。</summary>
+    /// <summary>技能段播放：Select / Start / Attak / End / Loop 等，按优先级路由（Spine 角色）；cube 角色无对应动画。
+    /// 返回 true 表示「释放起点动画已播放」（调用方 BeginCast 据此判定是否撤销整次释放）。
+    ///
+    /// 占位 cube（无 Spine，GetAnimator() 为 null）分支：美术未接入期间，用 cube 自身已有的闪烁/变大发光反馈
+    /// 作为「技能动画」等价物，并返回 true（视为已播放），使 BeginCast 的「SkillStart 未播放即撤销」判定
+    /// 不会对占位角色误伤（否则所有占位方块永远放不出技能、也无呼号闪烁）。
+    /// 一旦 CharacterDataSO.modelPrefab 接入 Spine，GetAnimator() 自动返回 Spine，此处走真实动画分支，
+    /// 撤销逻辑对该角色照常生效（Spine 的 SkillStart 被高优先级动画挡住同样会撤销）——与「AI 与玩家一致」铁律兼容。
+    /// 该分支在美术全接入后自然失效，无需专门清理。</summary>
     public bool PlaySkillStep(CharacterAnimator.CharacterAnimationState step)
     {
         var a = GetAnimator();
         if (a != null) return a.PlayOnce(step);
-        return false;
+
+        // 占位 cube（无 Spine）：用自身反馈替代动画，并返回 true（视为已播放）。
+        switch (step)
+        {
+            case CharacterAnimator.CharacterAnimationState.SkillSelect:
+                Flash();            // 呼号：方块闪烁一下（对应「呼号响应反馈（方块闪烁）」）
+                return true;
+            case CharacterAnimator.CharacterAnimationState.SkillStart:
+                GrowGlow();         // 释放起点：变大发光（BeginCast 后续第 173 行会再调一次 GrowGlow，幂等安全）
+                return true;
+            default:
+                return true;        // Attak/End/Loop 等 cube 无对应动画，视为已播放，不阻塞释放流程
+        }
     }
 
     /// <summary>胜利终态 loop（优先级 20，直接中断一切）。</summary>
