@@ -464,6 +464,7 @@ public class CharacterCubeMarker : MonoBehaviour
             sleepBaseColors = new Color[rends.Length];
             for (int i = 0; i < rends.Length; i++)
             {
+                if (IsBlobShadowRenderer(rends[i])) { sleepBaseColors[i] = Color.white; continue; }
                 if (rends[i].material == null) { sleepBaseColors[i] = Color.white; continue; }
                 sleepBaseColors[i] = rends[i].material.color;
                 SetMarkerColor(rends[i].material, new Color(0.35f, 0.35f, 0.35f)); // 灰：沉睡
@@ -477,10 +478,18 @@ public class CharacterCubeMarker : MonoBehaviour
             if (glowCo != null) StopCoroutine(glowCo);
             if (sleepBaseColors != null)
                 for (int i = 0; i < rends.Length && i < sleepBaseColors.Length; i++)
-                    if (rends[i].material != null) SetMarkerColor(rends[i].material, sleepBaseColors[i]);
+                    if (rends[i].material != null && !IsBlobShadowRenderer(rends[i]))
+                        SetMarkerColor(rends[i].material, sleepBaseColors[i]);
             SetEmission(Color.black);
             transform.localScale = baseScale;                      // 恢复
             sleepVisualOn = false;
         }
+    }
+
+    private bool IsBlobShadowRenderer(Renderer r)
+    {
+        if (r == null) return false;
+        // BlobShadow 组件会创建一个名为 "BlobShadow" 的子物体并挂上 MeshRenderer；跳过它避免访问无 _Color 属性的材质。
+        return r.gameObject.name == "BlobShadow" || r.GetComponentInParent<BlobShadow>() != null;
     }
 }

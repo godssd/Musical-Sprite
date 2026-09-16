@@ -11,7 +11,8 @@ using UnityEngine;
 /// </summary>
 public static class BlobShadowSetupEditor
 {
-    [MenuItem("Tools/Musical Sprite/为角色方块添加 BlobShadow")]
+    // 2026-09-14 隐藏：角色已配置 BlobShadow，菜单暂时不需要显示。保留代码以便日后恢复。
+    // [MenuItem("Tools/Musical Sprite/为角色方块添加 BlobShadow")]
     private static void AttachBlobShadowsToBandMembers()
     {
         // 优先从 LeftBand/RightBand 根节点下找；找不到则全局按名字匹配

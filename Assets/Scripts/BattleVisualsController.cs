@@ -97,8 +97,8 @@ public class BattleVisualsController : MonoBehaviour
 
     private void OnJudge(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)
     {
-        // 沉睡期间该侧无命中表现（输入已被屏蔽，此处作双保险，且避免沉睡中残留连击跳动）
-        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(side)) return;
+        // 沉睡期间该轨道角色无命中表现（输入已被屏蔽，此处作双保险，且避免沉睡中残留连击跳动）
+        if (SleepController.Instance != null && SleepController.Instance.IsCharacterSleeping(side, lane)) return;
 
         ComboDisplay target = side == 0 ? leftComboDisplay : rightComboDisplay;
         if (target == null) return;

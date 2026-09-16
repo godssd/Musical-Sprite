@@ -37,6 +37,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private int missScore = 0;
     private int clearScore = 50;
     private int passScore = 80;
+    private int yesScore = 10;      // 连点音符每次点击（非最后一下）
 
     // 音符
     private float leadTime = 2f;
@@ -84,7 +85,9 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private void OnDisable()
     {
         EditorApplication.playModeStateChanged -= OnPlayModeChanged;
-        SavePrefs();
+        // 2026-09-14：不再在关窗口时自动存草稿。
+        // 「应用所有修改」才会把当前面板值写入 EditorPrefs，确保下次打开是上次应用值；
+        // 没点应用就关闭 → 正确回退到上次应用值。
     }
 
     private void OnPlayModeChanged(PlayModeStateChange state)
@@ -115,6 +118,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         missScore = EditorPrefs.GetInt(PREFS + "missScore", missScore);
         clearScore = EditorPrefs.GetInt(PREFS + "clearScore", clearScore);
         passScore = EditorPrefs.GetInt(PREFS + "passScore", passScore);
+        yesScore = EditorPrefs.GetInt(PREFS + "yesScore", yesScore);
         leadTime = EditorPrefs.GetFloat(PREFS + "leadTime", leadTime);
         noteRadius = EditorPrefs.GetFloat(PREFS + "noteRadius", noteRadius);
         totalBeats = EditorPrefs.GetInt(PREFS + "totalBeats", totalBeats);
@@ -153,6 +157,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorPrefs.SetInt(PREFS + "missScore", missScore);
         EditorPrefs.SetInt(PREFS + "clearScore", clearScore);
         EditorPrefs.SetInt(PREFS + "passScore", passScore);
+        EditorPrefs.SetInt(PREFS + "yesScore", yesScore);
         EditorPrefs.SetFloat(PREFS + "leadTime", leadTime);
         EditorPrefs.SetFloat(PREFS + "noteRadius", noteRadius);
         EditorPrefs.SetInt(PREFS + "totalBeats", totalBeats);
@@ -189,6 +194,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             missScore = scoreManager.missScore;
             clearScore = scoreManager.clearScore;
             passScore = scoreManager.passScore;
+            yesScore = scoreManager.yesScore;
         }
 
         NoteSpawner spawner = FindFirstObjectByType<NoteSpawner>();
@@ -245,7 +251,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
     private void OnGUI()
     {
         GUILayout.Label("Musical Sprite 调试工具", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("运行时修改以下参数，点击「应用」生效。参数会自动保存，进入 Play 模式时也会重新应用，不会被重置。", MessageType.Info);
+        EditorGUILayout.HelpBox("修改参数后点击「应用所有修改」写入工程（EditorPrefs）并注入运行时；只改不应用，关闭窗口后会回退到上次应用值。「保存难度资产」仅把当前 AI 参数另存/覆盖 .asset，不应用。", MessageType.Info);
         GUILayout.Space(10);
 
         scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -305,24 +311,51 @@ public class MusicalSpriteDebugWindow : EditorWindow
         p.offenseAfterDogHowlChance = aiOffenseAfterDog;
         p.offenseAfterBombChance = aiOffenseAfterBomb;
         EditorUtility.SetDirty(p);
-        AssetDatabase.SaveAssets();
+        // 2026-09-14：这里不再自动 SaveAssets，避免「应用所有修改」顺手写回 .asset。
+        // 只有「保存难度资产」按钮会显式调 SaveAssets。
     }
 
-    /// <summary>把当前窗口里的 12 个参数另存为一个新的难度资产（Assets/Data/AI/）。同名自动加序号。</summary>
-    private void CreateNewProfile(string name)
+    /// <summary>保存难度资产：把当前窗口 12 个 AI 参数写入 Assets/Data/AI/{name}.asset。
+    /// 同名资产会询问是否覆盖；不同名则新建。本操作只写磁盘 .asset，不注入运行时。</summary>
+    private void SaveProfileAsset(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) name = "OpponentAIProfile_Custom";
         if (!AssetDatabase.IsValidFolder("Assets/Data/AI"))
             AssetDatabase.CreateFolder("Assets/Data", "AI");
-        string basePath = "Assets/Data/AI/" + name + ".asset";
-        string path = AssetDatabase.GenerateUniqueAssetPath(basePath);
-        var p = ScriptableObject.CreateInstance<OpponentAIProfile>();
-        ApplyToProfile(p);                       // 把窗口当前参数写入新资产
-        AssetDatabase.CreateAsset(p, path);
+        string path = "Assets/Data/AI/" + name + ".asset";
+
+        bool overwrite = false;
+        OpponentAIProfile existing = null;
+        if (System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Application.dataPath), path)))
+        {
+            existing = AssetDatabase.LoadAssetAtPath<OpponentAIProfile>(path);
+            if (existing != null)
+            {
+                overwrite = EditorUtility.DisplayDialog("覆盖难度资产",
+                    $"已存在难度资产「{name}」，是否覆盖？\n路径：{path}",
+                    "覆盖", "取消");
+                if (!overwrite) return;
+            }
+        }
+
+        OpponentAIProfile p;
+        if (overwrite && existing != null)
+        {
+            p = existing;
+        }
+        else
+        {
+            p = ScriptableObject.CreateInstance<OpponentAIProfile>();
+        }
+        ApplyToProfile(p);
+        if (!overwrite)
+        {
+            AssetDatabase.CreateAsset(p, path);
+        }
         AssetDatabase.SaveAssets();
         aiProfileRef = p;
         SyncFromProfile(p);
-        Debug.Log("[MS Debug] 已新建难度资产：" + path);
+        Debug.Log("[MS Debug] 已保存难度资产：" + path);
     }
 
     /// <summary>删除当前选中的难度资产（含 .meta）；基础 4 档会额外警告。同时清空场景引用。</summary>
@@ -397,13 +430,13 @@ public class MusicalSpriteDebugWindow : EditorWindow
         EditorGUILayout.LabelField("难度资产管理", EditorStyles.boldLabel);
 
         GUILayout.BeginHorizontal();
-        aiNewProfileName = EditorGUILayout.TextField("新资产名称", aiNewProfileName);
-        if (GUILayout.Button("新建难度资产", GUILayout.Width(110)))
+        aiNewProfileName = EditorGUILayout.TextField("资产名称", aiNewProfileName);
+        if (GUILayout.Button("保存难度资产", GUILayout.Width(110)))
         {
-            CreateNewProfile(aiNewProfileName);
+            SaveProfileAsset(aiNewProfileName);
         }
         GUILayout.EndHorizontal();
-        EditorGUILayout.HelpBox("把当前窗口里这 12 个参数另存为一个新难度资产到 Assets/Data/AI/（基础 4 档之外可随意制作）。同名会自动加序号。", MessageType.None);
+        EditorGUILayout.HelpBox("把当前窗口里这 12 个 AI 参数保存为 Assets/Data/AI/ 下的难度资产。同名覆盖、不同名新建；只写 .asset，不应用到运行时。", MessageType.None);
 
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("删除当前资产"))
@@ -431,6 +464,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
         missScore = EditorGUILayout.IntField("MISS 分数", missScore);
         clearScore = EditorGUILayout.IntField("CLEAR 分数(长按每段)", clearScore);
         passScore = EditorGUILayout.IntField("PASS 分数(小型点击)", passScore);
+        yesScore = EditorGUILayout.IntField("YES 分数(连点每次点击)", yesScore);
         EditorGUILayout.HelpBox("CLEAR = 长按音符每完成一段链接（节点→节点）的加分；PASS = 小型点击音符命中统一加分。", MessageType.None);
 
         EditorGUILayout.EndVertical();
@@ -561,6 +595,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
             scoreManager.missScore = missScore;
             scoreManager.clearScore = clearScore;
             scoreManager.passScore = passScore;
+            scoreManager.yesScore = yesScore;
             // P2: 追分 / 扣血参数
             scoreManager.catchUpDiffThreshold = catchUpDiffThreshold;
             scoreManager.catchUpInterval = catchUpInterval;
@@ -627,7 +662,8 @@ public class MusicalSpriteDebugWindow : EditorWindow
             cfg.superFeverComboThreshold = superThresh;
             EditorUtility.SetDirty(cfg);
         }
-        if (feverGuids.Length > 0) AssetDatabase.SaveAssets();
+        // 2026-09-14：「应用所有修改」不再写任何 .asset（包括 Fever 配置）。
+        // 只把当前面板值保存到 EditorPrefs 并注入运行时实例。
 
         SavePrefs();
 
@@ -638,7 +674,7 @@ public class MusicalSpriteDebugWindow : EditorWindow
                       " dogHowlCombo=" + aiDogHowlCombo + " healHp=" + aiHealHpRatio + " clearNotes=" + aiClearScreenNotes +
                       " offenseLead=" + aiOffenseLead + " offAfterDog=" + aiOffenseAfterDog + " offAfterBomb=" + aiOffenseAfterBomb +
                       " | perfect=" + perfectScore + " good=" + goodScore + " clear=" + clearScore +
-                      " pass=" + passScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius +
+                      " pass=" + passScore + " yes=" + yesScore + " miss=" + missScore + " leadTime=" + leadTime + " radius=" + noteRadius +
                       " chainTapHold=" + chainTapHoldDuration + " slideSettle=" + holdSlideSettleWindow + " breakTh=" + holdBreakThreshold + " earlyGrace=" + holdEarlySlideGrace + " laneTol=" + holdLaneTolerance +
                       " | Fever 系数=" + feverMult + " Super 系数=" + superMult + " Fever阈值=" + feverThresh + " Super阈值=" + superThresh);
     }

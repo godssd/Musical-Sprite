@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: OpponentAIProfile_Nightmare
   m_EditorClassIdentifier: 
   difficultyName: Nightmare
-  noteHitRate: 0.95
-  offsetMinMul: 0
-  offsetMaxMul: 0.35
-  evaluateInterval: 2.5
-  releaseProbability: 0.8
-  inputSpeed: 0.5
-  dogHowlOppComboThreshold: 12
-  healHpRatioThreshold: 1
-  clearScreenNoteThreshold: 1
-  offenseScoreLeadThreshold: 500
-  offenseAfterDogHowlChance: 0.2
-  offenseAfterBombChance: 0.3
+  noteHitRate: 0.6
+  offsetMinMul: 0.4
+  offsetMaxMul: 1.5
+  evaluateInterval: 5
+  releaseProbability: 0.4
+  inputSpeed: 1
+  dogHowlOppComboThreshold: 30
+  healHpRatioThreshold: 0.35
+  clearScreenNoteThreshold: 2
+  offenseScoreLeadThreshold: 1300
+  offenseAfterDogHowlChance: 0.05
+  offenseAfterBombChance: 0.1

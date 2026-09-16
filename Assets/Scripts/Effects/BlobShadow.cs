@@ -16,6 +16,10 @@ public class BlobShadow : MonoBehaviour
     [Tooltip("Ground 层掩码，决定射线能命中哪些物体作为地面")]
     public LayerMask groundMask = ~0;
 
+    [Header("锚点输出（供能量槽等复用）")]
+    [Tooltip("最近一次射线命中的地面 Y（世界坐标）。能量槽可据此把槽稳定压在角色脚底，与 marker pivot / Spine 开关 / 角色身高无关。")]
+    public float lastGroundY = 0f;
+
     [Tooltip("阴影贴地 quad 使用的材质（留空则从 Resources/Materials/M_BlobShadow 加载）")]
     public Material shadowMaterial;
 
@@ -219,6 +223,7 @@ public class BlobShadow : MonoBehaviour
 
         if (found)
         {
+            lastGroundY = hit.point.y;   // 暴露脚底接触点，供能量槽定位
             float height = Mathf.Max(0f, transform.position.y - hit.point.y);
             float t = Mathf.InverseLerp(fadeStartHeight, fadeEndHeight, height);
             float alpha = Mathf.Lerp(1f, 0f, t) * alphaMultiplier;

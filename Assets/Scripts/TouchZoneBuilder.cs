@@ -29,13 +29,13 @@ public class TouchZoneBuilder : MonoBehaviour
     public Material debugMaterial;
 
     [Tooltip("触控区在 X 方向的中心（默认 -7，紧贴红方场地 X=-8 的玩家端边缘）")]
-    public float centerX = -7f;
+    public float centerX = -6f;
 
     [Tooltip("触控区在 X 方向的半宽（默认 1，即 X 方向跨度 2 个单位，呈小垫子）")]
-    public float halfWidth = 1f;
+    public float halfWidth = 3f;
 
     [Tooltip("触控区在 Z 方向的半厚度（默认 0.65，略大于车道间距一半，方便指头按）")]
-    public float halfDepth = 0.65f;
+    public float halfDepth = 0.775f;
 
     void Awake()
     {

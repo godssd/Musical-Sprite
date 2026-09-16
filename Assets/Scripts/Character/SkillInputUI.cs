@@ -143,8 +143,6 @@ public class SkillInputUI : MonoBehaviour
     /// 模拟玩家释放：完整匹配某角色序列即调用 BeginCast（与玩家键盘/触摸完全一致，AI 不直接调用 BeginCast）。</summary>
     public FeedResult FeedInput(int side, SkillInputStep step)
     {
-        if (SleepController.Instance != null && SleepController.Instance.IsSideSleeping(side)) return FeedResult.Rejected;
-
         if (!sideBuffers.TryGetValue(side, out var buffer)) { buffer = new System.Collections.Generic.List<SkillInputStep>(); sideBuffers[side] = buffer; }
         if (!sideLastInput.TryGetValue(side, out float lastInputTime)) lastInputTime = -999f;
 
@@ -157,7 +155,7 @@ public class SkillInputUI : MonoBehaviour
         buffer.Add(step);
         sideLastInput[side] = now;
 
-        // 收集「当前缓冲是有效前缀」且可响应（Standby、能量门槛满足）的该 side 运行时
+        // 收集「当前缓冲是有效前缀」且可响应（Standby、能量门槛满足、角色未沉睡）的该 side 运行时
         var runtimes = FindObjectsByType<ActiveSkillRuntime>(FindObjectsSortMode.None);
         System.Collections.Generic.List<ActiveSkillRuntime> matching = new System.Collections.Generic.List<ActiveSkillRuntime>();
         foreach (var rt in runtimes)
@@ -167,6 +165,8 @@ public class SkillInputUI : MonoBehaviour
             if (rt.NeedsEnergyGate && !rt.IsSlotFull()) continue;         // 仅能量技能卡对应槽能量门槛
             var seq = rt.inputSequence;
             if (seq == null || seq.Length == 0) continue;
+            int lane = (rt.marker != null) ? rt.marker.laneIndex : -1;
+            if (SleepController.Instance != null && SleepController.Instance.IsCharacterSleeping(side, lane)) continue; // 沉睡角色不响应技能输入
             if (IsPrefix(seq, buffer)) matching.Add(rt);
         }
 

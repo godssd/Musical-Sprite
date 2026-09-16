@@ -10,7 +10,8 @@ using UnityEditor;
 /// </summary>
 public class AICreateProfiles
 {
-    [MenuItem("Tools/Musical Sprite/生成 AI 难度资产")]
+    // 2026-09-14 隐藏：难度资产已生成完毕，菜单暂时不需要显示。保留代码以便日后恢复。
+    // [MenuItem("Tools/Musical Sprite/生成 AI 难度资产")]
     public static void Generate()
     {
         string dir = "Assets/Data/AI";

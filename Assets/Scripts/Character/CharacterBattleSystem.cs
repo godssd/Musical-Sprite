@@ -131,6 +131,7 @@ public class CharacterBattleSystem : MonoBehaviour
         if (ctrl == null) ctrl = marker.gameObject.AddComponent<PassiveSkillController>();
         ctrl.owner = inst;
         ctrl.ownerSide = side;
+        ctrl.ownerLane = (marker != null) ? marker.laneIndex : -1;
         ctrl.passiveSlots = inst.passiveSlots;
         ctrl.enabled = true;
     }

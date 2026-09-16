@@ -48,7 +48,7 @@ public class NoteSpawner : MonoBehaviour
     public int laneCount = 4;
 
     [Tooltip("相邻轨道在 Z 轴上的间距")]
-    public float laneSpacing = 1f;
+    public float laneSpacing = 1.7f;
 
     [Header("判定参数（时间窗口，单位：秒）")]
     [Tooltip("音符圆柱半径（X 方向半长）。同时决定视觉大小与 GOOD 窗口：goodWindow = 半径 / 接近速度")]
@@ -72,8 +72,8 @@ public class NoteSpawner : MonoBehaviour
     public float holdLaneTolerance = 1.0f;
 
     [Header("连点音符判定")]
-    [Tooltip("连点音符命中后停留等待下一次点击的时间（秒）")]
-    public float chainTapHoldDuration = 0.4f;
+    [Tooltip("连点音符后退减速时长（秒）：命中后极快后退、匀减速到 0。同时也是前进段启动前的时间。")]
+    public float chainTapHoldDuration = 1f;
 
     [Header("键盘输入键位（PC 测试用）")]
     [Tooltip("每条轨道对应的按键。lane 顺序（0=最下 → 3=最上）：0=空格，1=C，2=D，3=W。与屏幕从上到下 W,D,C,空格 对应")]
@@ -298,7 +298,7 @@ public class NoteSpawner : MonoBehaviour
         if (mover == null) mover = go.AddComponent<NoteMover>();
         mover.Init(spawnPos, hitPos, data.time, leadTime, conductor, centerLine,
             noteRadius, isSmallTap, laneSpan, laneSpacing, isChainTap, data.chainTapCount,
-            chainTapHoldDuration);
+            chainTapHoldDuration, goodWindow);
 
         activeNotes.Add(note);
 
@@ -645,9 +645,14 @@ public class NoteSpawner : MonoBehaviour
             float absDt;
             if (chainContinuation)
             {
-                // 连点音符停留期间不再按首次 hitTime 判定，倒计时内的每次按下都有效。
+                // 连点音符后退/前进期间不再按首次 hitTime 判定，而是按"重新接触判定线"时刻
+                // （ChainTapNextContactTime）判定；仅在该时刻附近 goodWindow 内可点击，否则跳过
+                // （越过后由 Miss 流程处理）。
                 if (note.IsChainTapExpired(songTime)) continue;
-                absDt = 0f;
+                NoteMover m = note.GetComponent<NoteMover>();
+                float nct = m != null ? m.ChainTapNextContactTime : songTime;
+                absDt = Mathf.Abs(songTime - nct);
+                if (absDt > goodWindow) continue;
             }
             else
             {
@@ -668,9 +673,12 @@ public class NoteSpawner : MonoBehaviour
         if (best == null) return;
 
         // 小型点击音符：不做 PERFECT/GOOD 区分，命中统一 PASS 评价（80 分）。
-        // 连点音符沿用普通大点击的 PERFECT/GOOD 判定，每次命中都单独计分/计连击。
+        // 连点音符：每次点击给 YES（10 分），最后一次（还需完成次数 ≤1）给 CLEAR（50 分）。
+        //   底层"获得即结算"保留：每次评价都经 ScoreManager.HandleJudge 计分 + 充能（actual/10）。
         string rank;
-        if (best.isSmallTap)
+        if (best.isChainTap)
+            rank = (best.chainTapRemaining <= 1) ? "CLEAR" : "YES";
+        else if (best.isSmallTap)
             rank = "PASS";
         else
             rank = bestAbsDt <= perfectWindow ? "PERFECT" : "GOOD";

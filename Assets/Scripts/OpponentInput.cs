@@ -341,6 +341,8 @@ public class OpponentInput : MonoBehaviour
             if (rt.ownerSide != 1) continue;
             if (!BigPremiseMet(rt)) continue;
             if (!SkillConditionMet(rt)) continue;
+            int lane = (rt.marker != null) ? rt.marker.laneIndex : -1;
+            if (SleepController.Instance != null && SleepController.Instance.IsCharacterSleeping(1, lane)) continue; // 沉睡角色不参与候选
             candidates.Add(rt);
         }
         if (candidates.Count == 0) return;

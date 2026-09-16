@@ -41,6 +41,12 @@ public class ActiveSkillRuntime : MonoBehaviour
     private bool needsEnergy = true;      // 是否需要能量门槛（无能量技能=false：跳过充能/能量满/清空）
     public SkillInputStep[] inputSequence; // 本槽输入序列（供 SkillInputUI 匹配）
     private int slotIndex = 0;             // 本运行时对应的主动槽索引（用于按槽清空/查询能量）
+
+    // ---- 供能量槽（EnergyBarWorldSpace）读取 CD 进度的只读属性（2026-09-16，纯增量） ---- //
+    public int SlotIndex => slotIndex;                 // 本运行时对应主动槽索引
+    public float CooldownLeft => cooldownLeft;         // CD 剩余秒数（仅 phase==Cooldown 时在递减）
+    public float CooldownTotal => slotCooldown;        // CD 总时长秒数（无冷却=0）
+    public Phase CurrentPhase => phase;                // 当前阶段（Standby/Grow/Charming/Releasing/Cooldown）
     public Color charmColor = Color.yellow; // 本次附魔颜色（取释放方自身颜色）
 
     /// <summary>供 SkillInputUI 判断：该技能是否需要"能量满"才能开始输入。无能量技能=false（随时可输入）。</summary>
@@ -404,10 +410,14 @@ public class ActiveSkillRuntime : MonoBehaviour
         }
 
         // 释放者（小黑）自身沉睡：作为清屏的代价（控制免疫可抵抗）。
-        // 沉睡期间该侧禁命中/禁主动技能/被动失效；解除方式为：驱散 / 时长到 / 队伍扣血。
+        // 沉睡期间该角色禁命中/禁主动技能/被动失效；队友不受影响。解除方式：驱散 / 时长到 / 队伍扣血。
         float sleepSec = (skill != null && skill.clearSleepSeconds > 0f) ? skill.clearSleepSeconds : 3f;
         var sleepCtrl = SleepController.EnsureInstance();
-        if (sleepCtrl != null) sleepCtrl.Sleep(ownerSide, sleepSec);
+        if (sleepCtrl != null)
+        {
+            int lane = (marker != null) ? marker.laneIndex : -1;
+            sleepCtrl.SleepCharacter(ownerSide, lane, sleepSec);
+        }
         else Debug.LogWarning("[ClearScreen] SleepController 未找到，沉睡未生效");
 
         // 激活自身 b 类 buff（小黑个人战力，与 a 类相乘叠加）

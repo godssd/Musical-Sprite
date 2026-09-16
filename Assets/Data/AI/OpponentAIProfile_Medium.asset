@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   difficultyName: Medium
   noteHitRate: 0.6
-  offsetMinMul: 0
+  offsetMinMul: 0.2
   offsetMaxMul: 1
   evaluateInterval: 5
   releaseProbability: 0.4
