@@ -1,0 +1,22 @@
+{
+  "name": "bomb_rain (skill_5)",
+  "base_dir": "Assets/Art/UI/sprites",
+  "output_dir": "Tools/_gen_recolor/bomb_rain_full",
+  "suffix": "_skill_5_bomb_rain",
+  "anchors": {
+    "tap_normal_outer": [109, 107, 86],
+    "tap_normal_inner": [225, 225, 213],
+    "completed_outer":  [187, 183, 154],
+    "completed_inner":  [195, 190, 159]
+  },
+  "generic_digit": true,
+  "ringpaw": {
+    "map_select_from_sample": "005/Note_Tap_Select_skill_5_bomb_rain.png",
+    "select_targets": ["Note_Wide_Select.png", "Note_Tap_Small_Select.png"],
+    "normal": [
+      { "name": "Note_Wide.png",       "adopt_from": "Note_Wide_skill_5_bomb_rain.png" },
+      { "name": "Note_Tap_Small.png",  "ring_paint_from": "Note_Tap_Small_skill_5_bomb_rain.png", "ring_solid": 2, "ring_fade": 1 }
+    ]
+  },
+  "judgment": true
+}

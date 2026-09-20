@@ -233,11 +233,21 @@ public class ActiveSkillRuntime : MonoBehaviour
         charmedHoldNodes[hn] = pending + nodeCount;
     }
 
-    /// <summary>被附魔的普通 tap 音符结算（命中/MISS/消失）时由 Note 调用。success=true 表示非 MISS。</summary>
-    public void OnCharmedNoteResolved(Note n, bool success)
+    /// <summary>连点音符某一次「附魔数字」命中时由 Note 调用：触发 1 次技能效果，但不移除音符、不结算
+    /// （音符仍在链上，等最后一击才结算）。用于"附魔 K 次 = 触发 K 次效果"（见附魔规则.md P2）。</summary>
+    public void OnCharmedNoteDigitHit(Note n)
+    {
+        if (n == null) return;
+        completedCount++;
+        OnPerCharmSuccess();   // 逐数字触发：投弹 / 回血（Bomb / Heal 技能）
+    }
+
+    /// <summary>被附魔的普通 tap 音符结算（命中/MISS/消失）时由 Note 调用。success=true 表示非 MISS。
+    /// triggerEffect=false 时只结算、不重复计效果（连点最后一击若已用 OnCharmedNoteDigitHit 计过，则传 false）。</summary>
+    public void OnCharmedNoteResolved(Note n, bool success, bool triggerEffect = true)
     {
         charmedNotes.Remove(n);
-        if (success)
+        if (success && triggerEffect)
         {
             completedCount++;
             OnPerCharmSuccess();   // 逐音符触发：投弹 / 回血（Bomb / Heal 技能）

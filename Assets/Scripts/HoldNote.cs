@@ -114,6 +114,7 @@ public class HoldNote : MonoBehaviour
         wasCharmed = true;
         owner.OnHoldCharmed(this, 1);
         TintCharmedNode(index);
+        RefreshCharmedBands();   // P3：连续附魔区间整体点亮（首/末附魔节点之间所有链接带换皮肤）
         return true;
     }
 
@@ -123,19 +124,75 @@ public class HoldNote : MonoBehaviour
         ActiveSkillRuntime charmOwner = charmOwnersByNode[index];
         if (charmOwner == null) return;
         charmOwnersByNode[index] = null;
-        if (success) charmOwner.OnCharmNodeSuccess(this);
+        if (success)
+        {
+            charmOwner.OnCharmNodeSuccess(this);
+            // P3：完成 → 相邻两段链接带标记"完成态"（区间重算时覆盖表优先用 Slide_Judgment）
+            if (index - 1 >= 0 && index - 1 < bandCompletedOverlay.Count) bandCompletedOverlay[index - 1] = true;
+            if (index >= 0 && index < bandCompletedOverlay.Count) bandCompletedOverlay[index] = true;
+        }
         else charmOwner.OnCharmNodeFail(this);
+        RefreshCharmedBands();   // 区间可能收缩（该节点不再附魔）→ 重算链接带覆盖表
     }
 
     // ===== 视觉 =====
     private List<Transform> nodeTransforms = new List<Transform>();
     private List<MeshRenderer> nodeRends = new List<MeshRenderer>();
     private List<Material> nodeMats = new List<Material>();
+    private List<Texture2D> nodeBaseTex = new List<Texture2D>();   // 节点基础贴图（tap / wide）
+    private List<Texture2D> nodeSelectTex = new List<Texture2D>(); // 节点命中 Select 贴图（tapSelect / wideSelect）
 
-    private List<List<Transform>> segmentGroups = new List<List<Transform>>();      // 每段含多段细分圆柱
-    private List<List<MeshRenderer>> segmentRendGroups = new List<List<MeshRenderer>>();
-    private List<List<Material>> segmentMatGroups = new List<List<Material>>();
-    private const int BarSegmentCount = 16; // 每段细分圆柱数
+    // ===== 链接带（ribbon）视觉：每段一个连续 mesh + 一张 select 覆盖带，替代原 16 圆柱细分 =====
+    private List<GameObject> bandGOs = new List<GameObject>();
+    private List<Mesh> bandMeshes = new List<Mesh>();
+    private List<Material> bandMats = new List<Material>();
+    private List<MeshRenderer> bandRends = new List<MeshRenderer>();
+    private List<Mesh> bandOverlayMeshes = new List<Mesh>();   // select 覆盖带：跟随进度线从链头渐覆到进度点
+    private List<Material> bandOverlayMats = new List<Material>();
+    private List<MeshRenderer> bandOverlayRends = new List<MeshRenderer>();
+    // P3 附魔换皮：每段带子的贴图覆盖表（null=基础贴图）。UpdateBands 每帧会重设贴图，
+    // 所以附魔换皮必须走覆盖表，由每帧刷新时读取，而不是只 Set 一次（会被冲掉）。
+    private List<Texture2D> bandTexOverrides = new List<Texture2D>();          // base 带：附魔态=Note_Slide_Link 皮肤
+    private List<Texture2D> bandOverlayTexOverrides = new List<Texture2D>();   // select 覆盖带：完成态=Note_Slide_Judgment 皮肤(缺则 Link_Select)
+    private List<bool> bandCompletedOverlay = new List<bool>();                // 每段链接带是否已完成（完成态覆盖优先用 Slide_Judgment）
+    private Transform progressMarker;
+    private Material progressMat;
+    private Sprite slideLinkSprite, slideLinkSelectSprite, slideJudgmentSprite;
+    private Texture2D slideLinkTex, slideLinkSelectTex, slideJudgmentTex;
+    private Texture2D progressTexOverride;   // P3：进度线皮肤贴图（技能有 Slide_Judgment 皮肤时用，null=基础）
+    private float markerDist = 0f;     // 进度线位置=从判定线沿链体(朝 spawn 侧)已覆盖距离(世界单位)；<0=越判定线内→Miss
+    private float normalSpeed = 1f;    // 音符移动速度(Setup 用 exitLeadTimes 推算，值同 NoteMover)
+
+    [Tooltip("链接带端点内缩比例（相对节点贴图实际半宽）：1=带子刚好从节点贴图外沿开始/结束，0=贴到节点中心（被音符完全盖住，无缝）。")]
+    public float bandEndInsetRatio = 0.0f;
+    [Tooltip("③ 链接带端锚点向节点内埋入的深度（世界单位）：带子端边落在节点贴图下方被盖住（renderQueue 3000>2998），旋转/接缝时不再露缝、不扫过音符顶部。配合双侧固定侧边锚点用。")]
+    public float nodeBandOverlap = 0.12f;
+    [Tooltip("链接带整体宽度系数（乘到 BandWidth 上）：1=与所连节点同宽，<1=更细。带子粗细由几何决定，与贴图尺寸无关。")]
+    public float bandWidthScale = 0.6f;
+    [Tooltip("链拍带越过判定线后软边消失的过渡宽度（世界单位，smoothstep）。")]
+    public float bandFadeWidth = 0.8f;
+    [Tooltip("链接带每段纵向细分段数，越大曲线越平滑。")]
+    public int bandSubdiv = 24;
+    [Tooltip("链接带越过粉杠（中线）后逐顶点渐显的过渡宽度（世界单位，smoothstep）。替代旧的全局计时渐显。")]
+    public float bandRevealWidth = 0.5f;
+    [HideInInspector][Tooltip("（已弃用 v2）旧稳定位偏移，v2 稳定位=判定线(0)，仅保留字段防反序列化丢数据。")]
+    public float markerHoldOffset = 0.5f;
+    [Tooltip("Miss 判定距离（世界单位）：进度线衰退到判定线内该距离时触发断连 Miss（默认 0.5）。")]
+    public float markerMissDist = 0.5f;
+    [Tooltip("链接带越过判定线后带宽缩小下限（1=不缩，0.75=缩到 3/4）。与通用命中缩小一致。")]
+    public float bandShrinkMin = 0.75f;
+    [Tooltip("进度线 marker 缩放倍数（基于 slideJudgment 贴图原始尺寸 1:1）。1=完全按贴图尺寸。")]
+    public float progressMarkerScale = 1.0f;
+    [Tooltip("进度线 marker 绕 Y 轴偏航角（度）。slideJudgment 贴图为 9x69 竖窄条（长边在 quad 的 Z 边），默认 0 即长边沿 Z=垂直音轨线；90 会把竖条放倒成沿音轨的横条。")]
+    public float progressMarkerYaw = 0f;
+    [Tooltip("进度线相对 rideY 的抬升高度（世界单位）。0.075=运行期下调70%后实测值；遮挡主要靠材质渲染队列(3100)解决，高度只做微调。")]
+    public float progressMarkerLift = 0.075f;
+    [Tooltip("链接带相对节点下沉量（世界单位），防 z-fighting 闪。")]
+    public float bandRideYDip = 0.02f;
+    [Tooltip("链接带沿整条链长的连续顶点色渐变（subtle），长段也有一致渐变感，不依赖纹理拉伸。")]
+    public bool bandGradient = true;
+    [Tooltip("链长渐变强度（0=关，0.2=头端暗 20%）。")]
+    public float bandGradientStrength = 0.2f;
 
     private Vector3 baseNodeScale;
     private Vector3[] nodeBaseScales;   // 每个节点基础缩放，MISS 逐段缩小时乘以收缩系数
@@ -143,12 +200,16 @@ public class HoldNote : MonoBehaviour
     private Vector3[] exitPositions;
     private float[] exitLeadTimes;
     private float rideY;
-    private float breakTimer = 0f;
+    [Tooltip("起手宽限（秒）：StartHold 后头 0.08s 内视作按住，立刻建进度、不误断连。")]
+    public float holdStartGrace = 0.08f;
+    private float holdStartTime = -999f;
     private float fadeTimer = -1f;
     private bool missMode = false;        // 漏击后改为逐段越过判定线缩小消失（而非整条统一缩小）
     private bool missReported = false;    // MISS 反馈是否已上报（只报一次）
     private bool skillCleared = false;    // 清屏整条清除后置位：连接线应在原地逐段变大变白消失（覆盖漏击黑消失）
     private float missShrinkSpan = 0.5f;  // 越过判定线后多少距离内完成缩小消失
+    [Tooltip("④ Miss 时节点（贴图 quad）的不透明度：改到 0.6，让链接音符漏击时变半透而非硬切消失。")]
+    private float missNodeAlpha = 0.6f;    // [2026-09-18 ④由 1 改 0.6]
 
     [Tooltip("节点越过各自判定线后「按时间」缩小消失的时长（秒）。替代硬切隐藏，让音符是「变小」而非瞬间不见。[PLACEHOLDER 可微调]")]
     public float holdNodeShrinkDuration = 0.25f;
@@ -156,8 +217,13 @@ public class HoldNote : MonoBehaviour
     // 命中放大（pop）表现：命中瞬间节点球体放大并变白，随后回落到基础缩放（与点击音符"放大变白"语义一致）
     private float[] nodePop;              // 每节点弹跳计时（>0 时放大），初始化于 BuildVisuals
     private float[] nodeShrinkStart;      // 每节点缩没动画起始时间（Time.time），-1 表示未开始，初始化于 BuildVisuals
-    private float hitPopDuration = 0.18f; // 命中放大持续（秒）[PLACEHOLDER 可微调]
-    private float hitPopScale = 1.35f;    // 命中峰值放大倍数 [PLACEHOLDER 可微调]
+    private float hitPopDuration = 0.30f; // 命中放大持续（秒）[2026-09-18 ②调长，避免"变大切图"一闪而过]
+    private float hitPopScale = 1.55f;    // 命中峰值放大倍数 [2026-09-18 ②调大]
+
+    // ② 命中"变大切图"反馈优先级高于缩没：反馈（放大 + 停留）未播完前，缩没动画不启动，确保看得见
+    private float nodeCompleteLinger = 0.12f; // 命中放大结束后额外保留（不缩没）时长
+    private float skillClearFeedbackGuard = 0f; // ① 技能清屏时，命中反馈(变大+停留)播完前整体 alpha 钉 1 的延迟时长
+    private float[] nodeFeedbackEnd;           // 每节点反馈结束时刻（Time.time）；此前缩没不启动（默认 0 = 已过期，正常缩没）
 
     // 命中后可见性缓冲：已命中（hasLit）或正在放大弹跳（nodePop>0）的元素，
     // 越过判定线后保留 glowBufferDist 一小段才隐藏，让"发白+放大"命中反馈能被看到（2b 修复）。
@@ -229,30 +295,18 @@ public class HoldNote : MonoBehaviour
             if (nodeMats[i] == null) continue;
             Color c = nodeMats[i].color; c.a = a; nodeMats[i].color = c;
         }
-        for (int s = 0; s < segmentMatGroups.Count; s++)
-        {
-            for (int i = 0; i < segmentMatGroups[s].Count; i++)
-            {
-                if (segmentMatGroups[s][i] == null) continue;
-                Color c = segmentMatGroups[s][i].color; c.a = a; segmentMatGroups[s][i].color = c;
-            }
-        }
+        // 链接带透明度改由 UpdateBandAll 的逐顶点 alpha（含漏击/收尾）控制，不在这里统一设置
     }
 
     private void ResetAllToBlack()
     {
+        // 链接带不发黑：漏击/断连时由 UpdateBandAll 整体降到 α=0.75 并随判定线软边消失。
+        // 节点已改贴图 quad：重置为 base 贴图 + 白 tint（不再用黑色涂黑），保证漏击时仍是完整音符图。
         for (int i = 0; i < nodeMats.Count; i++)
         {
             if (nodeMats[i] == null) continue;
-            nodeMats[i].color = Color.black;
-        }
-        for (int s = 0; s < segmentMatGroups.Count; s++)
-        {
-            for (int i = 0; i < segmentMatGroups[s].Count; i++)
-            {
-                if (segmentMatGroups[s][i] == null) continue;
-                segmentMatGroups[s][i].color = Color.black;
-            }
+            if (i < nodeBaseTex.Count && nodeBaseTex[i] != null) nodeMats[i].mainTexture = nodeBaseTex[i];
+            nodeMats[i].color = Color.white;
         }
     }
 
@@ -261,13 +315,19 @@ public class HoldNote : MonoBehaviour
     {
         if (nodeIndex < 0 || nodeIndex >= nodeCount) return;
         nodePop[nodeIndex] = 1f; // 触发弹跳（从峰值开始回落）
-        if (nodeMats[nodeIndex] != null) nodeMats[nodeIndex].color = Color.white;
+        // ② 记录反馈结束时刻：放大(hitPopDuration) + 停留(nodeCompleteLinger) 期间，缩没动画不启动
+        nodeFeedbackEnd[nodeIndex] = Time.time + hitPopDuration + nodeCompleteLinger;
+        if (nodeMats[nodeIndex] != null)
+        {
+            nodeMats[nodeIndex].color = Color.white; // 贴图 tint 白（命中切 Select 只换贴图，不改 tint）
+            if (nodeSelectTex[nodeIndex] != null) nodeMats[nodeIndex].mainTexture = nodeSelectTex[nodeIndex];
+        }
     }
 
-    /// <summary>每帧推进各节点命中弹跳：放大倍数从峰值随时间回落到 1。漏击/断连时由 ApplyMissDisappear 接管缩放，此处跳过。</summary>
+    /// <summary>每帧推进各节点命中弹跳：放大倍数从峰值随时间回落到 1。漏击/断连时由 UpdateBandVisibility 接管连接带缩放/透明度，此处跳过节点缩放。</summary>
     private void UpdateHitPops()
     {
-        if (missMode) return; // 漏击/断连时由 ApplyMissDisappear 接管缩放
+        if (missMode) return; // 漏击/断连时连接带缩放/透明度由 UpdateBandVisibility 接管
         for (int i = 0; i < nodeCount; i++)
         {
             if (nodePop[i] <= 0f) continue;
@@ -290,13 +350,13 @@ public class HoldNote : MonoBehaviour
     {
         if (nodeRends[i] == null) return;
 
-        bool revealed = IsBeyondLine(nodeTransforms[i].position.x, cx);
+        bool revealed = IsBeyondLine(NodeRawPos(i).x, cx);  // ③ 与带子统一用外推坐标，避免粉杠遮罩与节点错位
         float nodeJudgeX = hitPositions[i].x;
         float glowLineX = nodeJudgeX + (litGlow ? glowBufferDist : 0f);
         bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, glowLineX);
 
-        // 尚未抵达粉杠：保持隐藏，不启动缩没
-        if (!revealed)
+        // 清屏(skillCleared)：整条长按原地变白放大消失，跳过"未显现隐藏"（解决断弦高压残留未显现音节）
+        if (!revealed && !skillCleared)
         {
             nodeRends[i].enabled = false;
             return;
@@ -309,8 +369,26 @@ public class HoldNote : MonoBehaviour
             return;
         }
 
+        // ② 命中"变大切图"反馈优先级高于缩没：反馈（放大 + nodeCompleteLinger 停留）未播完前，
+        // 缩没动画不启动，确保"变大切图"反馈清晰可见（否则节点越过判定线即被缩没吞掉）。
+        if (!missMode && Time.time < nodeFeedbackEnd[i])
+        {
+            nodeRends[i].enabled = true;
+            return;
+        }
+
+        // 清屏(skillCleared)：整条原地放大淡出，不进入缩没动画（由对象级 SetAlpha 整体淡出），避免"变小消失"
+        if (skillCleared)
+        {
+            nodeRends[i].enabled = true;
+            return;
+        }
+
         // 已完全越过各自判定线：启动/推进「按时间」缩没动画（替代硬切隐藏）
-        if (nodeShrinkStart[i] < 0f) nodeShrinkStart[i] = Time.time;
+        // ③ 缩没起点对齐反馈结束时刻：若已在反馈结束前写入过 nodeShrinkStart（陈旧起点），
+        // 重设到 nodeFeedbackEnd 起算，确保"变大切图"完整播完后再缩没（修复"命中直接变小消失"）。
+        if (nodeShrinkStart[i] < 0f || nodeShrinkStart[i] < nodeFeedbackEnd[i])
+            nodeShrinkStart[i] = Mathf.Max(nodeFeedbackEnd[i], Time.time);
         float t = (Time.time - nodeShrinkStart[i]) / Mathf.Max(holdNodeShrinkDuration, 0.0001f);
         if (t >= 1f)
         {
@@ -326,6 +404,13 @@ public class HoldNote : MonoBehaviour
             baseScale = baseScale * sc;
         }
         nodeTransforms[i].localScale = baseScale;
+        // ④ Miss：节点缩没期间恒定半透（missNodeAlpha=0.6），让链接音符漏击"变透"而非硬切消失
+        if (nodeMats[i] != null)
+        {
+            Color c = nodeMats[i].color;
+            c.a = missMode ? missNodeAlpha : 1f;
+            nodeMats[i].color = c;
+        }
     }
 
     void Start()
@@ -346,78 +431,122 @@ public class HoldNote : MonoBehaviour
         nodeBaseScales = new Vector3[nodeCount];
         nodePop = new float[nodeCount];
         nodeShrinkStart = new float[nodeCount];
+        nodeFeedbackEnd = new float[nodeCount];
         for (int i = 0; i < nodeCount; i++) nodeShrinkStart[i] = -1f; // -1 表示尚未开始缩没
 
-        // 节点圆柱（逐节点宽度：连轨节点覆盖相邻两轨，普通节点单轨）
+        // 节点（平躺贴图 quad，复用普通/跨轨音符贴图）：普通节点 = Note_Tap/Select，跨轨节点 = Note_Wide/Select
         float r = noteRadius / 0.5f;
+        var lib = NoteSpriteLibrary.Instance;
 
         for (int i = 0; i < nodeCount; i++)
         {
             int span = NodeSpan(i);
             float linkedWidth = laneSpacing * (span - 1) + noteRadius * 2f;
-            Vector3 nodeScale = new Vector3(span > 1 ? noteRadius * 2f : r, 0.12f, span > 1 ? linkedWidth : r);
+            Sprite baseSp = (span > 1) ? (lib != null ? lib.wide : null) : (lib != null ? lib.tap : null);
+            Sprite selSp  = (span > 1) ? (lib != null ? lib.wideSelect : null) : (lib != null ? lib.tapSelect : null);
+            Texture2D baseTex = baseSp != null ? baseSp.texture : null;
+            Texture2D selTex  = selSp != null ? selSp.texture : null;
+            float ppu = baseSp != null ? baseSp.pixelsPerUnit : 100f;
+            // 贴图 1:1 尺寸（世界单位）：宽 = 贴图像素宽 / PPU，沿带方向；高 = 贴图像素高 / PPU，带宽方向
+            float w = baseTex != null ? baseTex.width / ppu : (span > 1 ? linkedWidth : r);
+            float h = baseTex != null ? baseTex.height / ppu : (span > 1 ? noteRadius * 2f : r);
 
             var go = new GameObject($"HoldNode_{i}");
             var t = go.transform;
             t.SetParent(transform, false);
             var mf = go.AddComponent<MeshFilter>();
-            // 连轨 Hold 的头尾节点与连接带保持同样的圆角长方形外观，
-            // 普通单轨 Hold 仍使用圆柱体，避免误改原有单轨视觉。
-            mf.sharedMesh = span > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
+            mf.sharedMesh = MakeQuadMesh(w, h); // 平躺 quad（XZ 平面），与带子同朝向
             var rend = go.AddComponent<MeshRenderer>();
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             rend.receiveShadows = false;
-            var mat = CreateColoredMaterial(Color.black);
+            var mat = CreateNodeTexMaterial(baseTex);
             rend.material = mat;
-            t.localScale = nodeScale;
-            nodeBaseScales[i] = nodeScale;
+            t.localScale = Vector3.one; // mesh 已按 1:1 原生尺寸建好，不再额外缩放
+            nodeBaseScales[i] = Vector3.one;
 
             nodeTransforms.Add(t);
             nodeRends.Add(rend);
             nodeMats.Add(mat);
+            nodeBaseTex.Add(baseTex);
+            nodeSelectTex.Add(selTex);
         }
 
-        // 连接 bar：节点 i 与 i+1 之间一段，拆成多段便于逐段变白。
-        // 段宽度取两端节点宽度的最大值（节点一宽一窄时也按宽的那端走），
-        // mesh 与 localScale 都按段独立决定，避免 chain 级"全 Linked 化"。
-        baseBarSegRadius = r * 0.18f;
+        // 连接带（ribbon）：节点 i 与 i+1 之间一段连续 mesh（base）+ 一张 select 覆盖带（overlay）。
+        // UV 沿带长按纵横比平铺（G5），越判定线 smoothstep 软边 + 逐顶点渐显（G1），越线带宽缩小（G2）。
+        slideLinkSprite = (NoteSpriteLibrary.Instance != null) ? NoteSpriteLibrary.Instance.slideLink : null;
+        slideLinkSelectSprite = (NoteSpriteLibrary.Instance != null) ? NoteSpriteLibrary.Instance.slideLinkSelect : null;
+        slideJudgmentSprite = (NoteSpriteLibrary.Instance != null) ? NoteSpriteLibrary.Instance.slideJudgment : null;
+        slideLinkTex = (slideLinkSprite != null) ? slideLinkSprite.texture : null;
+        slideLinkSelectTex = (slideLinkSelectSprite != null) ? slideLinkSelectSprite.texture : null;
+        slideJudgmentTex = (slideJudgmentSprite != null) ? slideJudgmentSprite.texture : null;
+        if (slideLinkTex != null) slideLinkTex.wrapMode = TextureWrapMode.Repeat;       // G5 平铺
+        if (slideLinkSelectTex != null) slideLinkSelectTex.wrapMode = TextureWrapMode.Repeat;
+
         for (int s = 0; s < nodeCount - 1; s++)
         {
-            int spanA = NodeSpan(s);
-            int spanB = NodeSpan(s + 1);
-            int segSpan = Mathf.Max(spanA, spanB);
-            float linkedWidth = laneSpacing * (segSpan - 1) + noteRadius * 2f;
+            // base 带
+            var go = new GameObject($"SlideBand_{s}");
+            go.transform.SetParent(transform, false);
+            var mf = go.AddComponent<MeshFilter>();
+            var mesh = new Mesh();
+            mf.mesh = mesh;
+            var rend = go.AddComponent<MeshRenderer>();
+            rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            rend.receiveShadows = false;
+            var mat = CreateBandMaterial(slideLinkTex, 2998);
+            rend.material = mat;
+            rend.enabled = false;
+            bandGOs.Add(go); bandMeshes.Add(mesh); bandMats.Add(mat); bandRends.Add(rend);
+            bandTexOverrides.Add(null);   // P3：附魔覆盖表与段一一对应
+            bandCompletedOverlay.Add(false);
 
-            var segTs = new List<Transform>();
-            var segRends = new List<MeshRenderer>();
-            var segMats = new List<Material>();
-            for (int k = 0; k < BarSegmentCount; k++)
-            {
-                var segGo = new GameObject($"HoldSeg_{s}_{k}");
-                var segT = segGo.transform;
-                segT.SetParent(transform, false);
-                var smf = segGo.AddComponent<MeshFilter>();
-                smf.sharedMesh = segSpan > 1 ? NoteMover.RoundedRectMesh : CylinderMesh;
-                var sRend = segGo.AddComponent<MeshRenderer>();
-                sRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                sRend.receiveShadows = false;
-                var sMat = CreateColoredMaterial(Color.black);
-                sRend.material = sMat;
-                segT.localScale = segSpan > 1
-                    ? new Vector3(0.001f, 0.12f, linkedWidth)
-                    : new Vector3(baseBarSegRadius, 1f, baseBarSegRadius);
-                segTs.Add(segT);
-                segRends.Add(sRend);
-                segMats.Add(sMat);
-            }
-            segmentGroups.Add(segTs);
-            segmentRendGroups.Add(segRends);
-            segmentMatGroups.Add(segMats);
+            // select 覆盖带（跟随进度线渐覆；renderQueue 高于 base，低于节点 3000）
+            var ogo = new GameObject($"SlideBandSelect_{s}");
+            ogo.transform.SetParent(transform, false);
+            var omf = ogo.AddComponent<MeshFilter>();
+            var omesh = new Mesh();
+            omf.mesh = omesh;
+            var orend = ogo.AddComponent<MeshRenderer>();
+            orend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            orend.receiveShadows = false;
+            var omat = CreateBandMaterial(slideLinkSelectTex, 2999);
+            orend.material = omat;
+            orend.enabled = false;
+            bandOverlayMeshes.Add(omesh); bandOverlayMats.Add(omat); bandOverlayRends.Add(orend);
+            bandOverlayTexOverrides.Add(null);   // P3：完成态覆盖表与段一一对应
+        }
+
+        // 进度线 marker（slideJudgment 贴图，按原始尺寸 1:1），仅按住期间显示，表达"已完成/未完成"分界
+        if (slideJudgmentTex != null)
+        {
+            var pm = new GameObject("SlideProgressMarker");
+            pm.transform.SetParent(transform, false);
+            var pmf = pm.AddComponent<MeshFilter>();
+            pmf.mesh = MakeQuadMesh(1f, 1f);
+            var prend = pm.AddComponent<MeshRenderer>();
+            prend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            prend.receiveShadows = false;
+            progressMat = new Material(Shader.Find("Sprites/Default"));
+            progressMat.mainTexture = slideJudgmentTex;
+            progressMat.color = Color.white;
+            progressMat.SetInt("_Cull", 0);
+            // 渲染队列 3100 > 提示灯(3050) > 节点(3000) > 带子(2998/2999)：进度线永远最后画、压在判定线/提示灯之上。
+            // 抬 y 只解决与地面的深度关系；与判定线/提示灯的遮挡关系必须靠队列（透明队列内按 queue+距离排序，3050 会盖住默认 3000 的本材质）。
+            progressMat.renderQueue = 3100;
+            prend.material = progressMat;
+            progressMarker = pm.transform;
+            // 尺寸在 UpdateProgressMarker 每帧按贴图原始尺寸设置（1:1），这里先给 1
+            pm.transform.localScale = new Vector3(1f, 1f, 1f);
+            pm.SetActive(false);
         }
 
         if (charmOwnersByNode != null)
+        {
             for (int i = 0; i < charmOwnersByNode.Length; i++)
-                if (charmOwnersByNode[i] != null) TintCharmedNode(i);
+                if (charmOwnersByNode[i] != null)
+                    TintCharmedNode(i);
+            RefreshCharmedBands();   // 预定路径：生成前已 TryCharmNode 时带子尚未构建、覆盖表没写上，构建完成后这里统一重算区间
+        }
 
         // 预计算越过判定线的终点（再往前 1.5 单位），与 NoteMover 一致
         exitPositions = new Vector3[nodeCount];
@@ -433,6 +562,10 @@ public class HoldNote : MonoBehaviour
         }
 
         rideY = hitPositions[0].y;
+
+        // 音符移动速度（供进度线速度模型），与 NoteMover 推算一致
+        if (spawnPositions.Length > 0 && exitPositions.Length > 0 && exitLeadTimes.Length > 0 && exitLeadTimes[0] > 1e-4f)
+            normalSpeed = (exitPositions[0] - spawnPositions[0]).magnitude / exitLeadTimes[0];
 
         // 初始隐藏
         for (int i = 0; i < nodeRends.Count; i++) nodeRends[i].enabled = false;
@@ -454,7 +587,7 @@ public class HoldNote : MonoBehaviour
 
         float songTime = conductor.songPosition;
 
-        UpdateHitPops(); // 推进各节点命中放大弹跳（missMode 时内部跳过，由 ApplyMissDisappear 接管缩放）
+        UpdateHitPops(); // 推进各节点命中放大弹跳（missMode 时内部跳过，连接带缩放/透明度由 UpdateBandVisibility 接管）
 
         if (fadeTimer < 0f)
         {
@@ -466,9 +599,6 @@ public class HoldNote : MonoBehaviour
                 nodeTransforms[i].position = new Vector3(p.x, rideY, p.z);
             }
 
-            UpdateAllSegments();
-            UpdateSegmentColors(songTime);
-
             // 可见性：按元素"前沿"是否越过粉杠决定显示
             float cx = centerLine != null ? centerLine.currentX : 0f;
             // 修复（2026-08-26 Issue 4）：节点可见性 + 缩没动画统一交给 UpdateNodeVisual，
@@ -478,13 +608,12 @@ public class HoldNote : MonoBehaviour
                 if (nodeRends[i] != null)
                     UpdateNodeVisual(i, cx, hasLit || nodePop[i] > 0f);
             }
-            UpdateSegmentVisibility(cx, judgeLineX);
+            UpdateBandAll(cx, judgeLineX);   // 带子几何 + 完成覆盖 + 逐顶点渐显/软边
+            UpdateProgressMarker();
 
-            // 漏击消失：每个节点 / 段小片各自越过判定线后缩小并淡出（不再整条统一缩小）
+            // 漏击消失：每个节点各自越过判定线后缩小并淡出；链接带透明度/软边由 UpdateBandAll 处理（α=0.75 + 越线消失）
             if (missMode)
             {
-                ApplyMissDisappear(cx, judgeLineX);
-
                 // 断连/漏击后，附魔节点仍要等到各自越过判定线才算“经过一个音符”，不能在断连瞬间提前结算。
                 for (int i = 0; i < nodeCount; i++)
                     if (songTime >= times[i]) ResolveCharmedNode(i, false);
@@ -522,8 +651,10 @@ public class HoldNote : MonoBehaviour
         else
         {
             // 收尾：音符继续按原速度移动，用判定线 judgeLineX 作为固定的消失边界。
-            // 清屏消灭（skillCleared）走命中反馈（白 + 放大 + 淡出），不要再重置成黑色。
-            if (fadeTimer <= 0f && !skillCleared)
+            // 完成态保留完成图：手动完成(!skillCleared)与清屏(skillCleared)的节点都保留 Select 白图 + 放大，
+            // 随收尾 SetAlpha 淡出（修复"clear 不切完成图"）。
+            // 仅漏击/断连(missMode)在收尾首帧重置为 base 图（保证漏击时是完整音符图而非残留完成白图）。
+            if (fadeTimer <= 0f && !skillCleared && missMode)
             {
                 ResetAllToBlack();
             }
@@ -536,8 +667,6 @@ public class HoldNote : MonoBehaviour
                 nodeTransforms[i].position = new Vector3(p.x, rideY, p.z);
             }
 
-            UpdateAllSegments();
-
             float judgeX = judgeLineX;
             // 修复（2026-08-26 Issue 4）：收尾阶段节点可见性 + 缩没动画同样交给 UpdateNodeVisual，
             // 逾越各自判定线后「按时间」缩小消失，避免刚越过判定线就被销毁而看不到缩没。
@@ -546,12 +675,15 @@ public class HoldNote : MonoBehaviour
                 if (nodeRends[i] != null)
                     UpdateNodeVisual(i, centerLine != null ? centerLine.currentX : 0f, hasLit || nodePop[i] > 0f);
             }
-            UpdateSegmentVisibility(centerLine != null ? centerLine.currentX : 0f, judgeX);
+            UpdateBandAll(centerLine != null ? centerLine.currentX : 0f, judgeX);
+            UpdateProgressMarker();
 
             // 完成：整体透明度淡出；断连/漏击：保持不透明，只通过判定线裁剪消失
             if (!broken)
             {
-                float alpha = 1f - Mathf.Clamp01(fadeTimer / fadeDuration);
+                // ① 技能清屏：延迟淡出保命中反馈（fadeTimer 在反馈窗口内视为 0，alpha 钉 1）
+                float fd = skillCleared ? skillClearFeedbackGuard : 0f;
+                float alpha = 1f - Mathf.Clamp01((fadeTimer - fd) / Mathf.Max(fadeDuration, 1e-4f));
                 SetAlpha(alpha);
             }
 
@@ -565,7 +697,7 @@ public class HoldNote : MonoBehaviour
                 if (!IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, nodeJudgeX)) { allGone = false; break; }
                 if (nodeShrinkStart[i] < 0f || (Time.time - nodeShrinkStart[i]) < holdNodeShrinkDuration) { allGone = false; break; }
             }
-            if (allGone || fadeTimer > maxFadeLife)
+            if (allGone || fadeTimer > maxFadeLife + (skillCleared ? skillClearFeedbackGuard : 0f))  // ① 技能清屏延长存活，等反馈播完再淡出销毁
             {
                 finished = true;
                 Destroy(gameObject);
@@ -573,250 +705,409 @@ public class HoldNote : MonoBehaviour
         }
     }
 
-    private void UpdateAllSegments()
+    // ============================================================
+    // 链接带（ribbon）实现：单连续 mesh + 沿带长 UV 平铺 + 越线 smoothstep 软边
+    // 替代原 16 圆柱细分，彻底消除分段 on/off 锯齿。
+    // ============================================================
+
+    private float BandWidth(int nodeIndex)
     {
-        for (int s = 0; s < segmentGroups.Count; s++)
+        int span = NodeSpan(nodeIndex);
+        return laneSpacing * (span - 1) + noteRadius * 2f;
+    }
+
+    private Material CreateBandMaterial(Texture2D tex, int renderQueue)
+    {
+        Material m = new Material(Shader.Find("Sprites/Default"));
+        m.mainTexture = tex;
+        m.color = Color.white;
+        m.SetInt("_Cull", 0); // 双面，避免视角下背面被剔除
+        m.renderQueue = renderQueue;  // base=2998 / overlay=2999，均低于节点（默认 3000）
+        return m;
+    }
+
+    /// <summary>节点贴图材质：Sprites/Default 自带 alpha 混合，renderQueue 高于带子（3000），节点盖住带子接头。</summary>
+    private Material CreateNodeTexMaterial(Texture2D tex)
+    {
+        Material m = new Material(Shader.Find("Sprites/Default"));
+        m.mainTexture = tex;
+        m.color = Color.white;
+        m.SetInt("_Cull", 0);
+        m.renderQueue = 3000;
+        return m;
+    }
+
+    private static Mesh MakeQuadMesh(float w, float h)
+    {
+        var m = new Mesh();
+        float hw = w * 0.5f, hh = h * 0.5f;
+        m.vertices = new Vector3[] { new Vector3(-hw, 0, hh), new Vector3(hw, 0, hh), new Vector3(hw, 0, -hh), new Vector3(-hw, 0, -hh) };
+        m.uv = new Vector2[] { new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0) };
+        m.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
+        m.colors = new Color[] { Color.white, Color.white, Color.white, Color.white };
+        return m;
+    }
+
+    private static float Smoothstep(float e0, float e1, float x)
+    {
+        float t = Mathf.Clamp01((x - e0) / (e1 - e0));
+        return t * t * (3f - 2f * t);
+    }
+
+    private Vector3 NodeHalfVec(int i)
+    {
+        int span = NodeSpan(i);
+        float hx = noteRadius;                                   // X 半宽（普通/跨轨节点 X 方向都窄）
+        float hz = (span > 1) ? (laneSpacing * 0.5f + noteRadius) : noteRadius; // Z 半宽：跨轨胶囊沿 Z 长
+        return new Vector3(hx, 0f, hz);
+    }
+
+    /// <summary>重建一段 ribbon 的子区间 [u0,u1]（u 为整段参数 0..1）：位置含端点内缩(G4)+越线带宽缩小(G2)，
+    /// UV 按纵横比平铺(G5)，顶点色含链长渐变(G5)。yDip 控制相对 rideY 下沉（base/overlay 不同，防 z-fight）。</summary>
+    private void RebuildRibbon(int s, float u0, float u1, Mesh mesh, float judgeX, float cumStart, float totalLen, float yDip, float edgeX0 = float.NaN, float edgeX1 = float.NaN)
+    {
+        int M = Mathf.Max(2, bandSubdiv);
+        // 端点用"时间外推"位置（节点到终点后被 Clamp01 钉死，用 nodeTransforms 会让跨轨斜向段被压缩畸变）；
+        // 外推后两端以 normalSpeed 持续流动，段方向恒定→保持原形状。
+        Vector3 a = NodeRawPos(s);
+        Vector3 b = NodeRawPos(s + 1);
+        Vector3 dir = b - a;
+        float segLen = dir.magnitude;
+        dir = segLen > 0.0001f ? dir / segLen : Vector3.right;
+        // ② 带宽边缘垂直于带方向偏移所需的法向量（详见下方 cL/cR）
+        Vector3 perp = new Vector3(dir.z, 0f, -dir.x);
+        if (perp.sqrMagnitude > 1e-6f) perp.Normalize(); else perp = Vector3.forward;
+        // G4：带端内缩按所接节点贴图实际半宽沿带方向投影
+        float halfA = (Mathf.Abs(dir.x) * NodeHalfVec(s).x + Mathf.Abs(dir.z) * NodeHalfVec(s).z) * bandEndInsetRatio;
+        float halfB = (Mathf.Abs(dir.x) * NodeHalfVec(s + 1).x + Mathf.Abs(dir.z) * NodeHalfVec(s + 1).z) * bandEndInsetRatio;
+        // ③ 双侧固定"直边"锚点（音符=竖长胶囊，长轴沿 Z，故直边=±X 长侧边，±Z 为圆头曲边）：
+        // 带端落在节点朝目标侧的 X 直边内侧，从直边出线、不接圆头曲边；同 X(dx≈0)回退中心锚。
+        // 埋入 nodeBandOverlap 使端边落在音符贴图下方被盖住(3000>2998)，任意旋转角度不露头不露缝。
+        float dx = b.x - a.x;
+        int sgnX = (Mathf.Abs(dx) > 1e-4f) ? (dx > 0f ? 1 : -1) : 0;
+        float hxA = NodeHalfVec(s).x, hxB = NodeHalfVec(s + 1).x;
+        Vector3 aEdge = a + new Vector3(sgnX * (hxA - nodeBandOverlap), 0f, 0f) + dir * halfA;
+        Vector3 bEdge = b + new Vector3(-sgnX * (hxB - nodeBandOverlap), 0f, 0f) - dir * halfB;
+        float wA = BandWidth(s) * bandWidthScale, wB = BandWidth(s + 1) * bandWidthScale;
+        bool flip = b.x >= a.x;
+        float tileWorld = Mathf.Max(0.0001f, (wA + wB) * 0.5f); // G5：每"一格带宽"平铺一次，保持纵横比不变形
+        int vCount = (M + 1) * 2;
+        Vector3[] verts = new Vector3[vCount];
+        Vector2[] uvs = new Vector2[vCount];
+        Color[] cols = new Color[vCount];
+        for (int i = 0; i <= M; i++)
         {
-            Vector3 a = nodeTransforms[s].position;
-            Vector3 b = nodeTransforms[s + 1].position;
-            Vector3 dir = b - a;
-            float totalLen = dir.magnitude;
-            var segs = segmentGroups[s];
-            var rends = segmentRendGroups[s];
-
-            if (totalLen < 0.001f)
+            float u = u0 + (u1 - u0) * (i / (float)M);
+            Vector3 p = Vector3.Lerp(aEdge, bEdge, u);
+            float w = Mathf.Lerp(wA, wB, u);
+            // G2：越判定线后带宽缩小（下限 bandShrinkMin）
+            float fade = side == 0 ? Smoothstep(judgeX - bandFadeWidth, judgeX, p.x) : Smoothstep(judgeX + bandFadeWidth, judgeX, p.x);
+            float widthScale = bandShrinkMin + (1f - bandShrinkMin) * fade;
+            float ww = w * widthScale;
+            Vector3 cL = p + perp * (ww * 0.5f);
+            Vector3 cR = p - perp * (ww * 0.5f);
+            verts[2 * i] = new Vector3((flip ? cR.x : cL.x), rideY - yDip, (flip ? cR.z : cL.z));
+            verts[2 * i + 1] = new Vector3((flip ? cL.x : cR.x), rideY - yDip, (flip ? cL.z : cR.z));
+            // G5：uv.x 沿带长按世界长度平铺（与带宽成比例），uv.y 跨宽 0..1
+            float worldLenFromStart = u * segLen;
+            uvs[2 * i] = new Vector2(worldLenFromStart / tileWorld, 1f);
+            uvs[2 * i + 1] = new Vector2(worldLenFromStart / tileWorld, 0f);
+            // G5：链长渐变（subtle），保留在 RGB，供 ApplyBandAlpha 只改 alpha
+            float bf = 1f;
+            if (bandGradient && totalLen > 0.0001f)
             {
-                for (int k = 0; k < segs.Count; k++)
-                {
-                    segs[k].position = a;
-                    segs[k].localScale = new Vector3(segs[k].localScale.x, 0.001f, segs[k].localScale.z);
-                }
-                continue;
+                float grad = Mathf.Clamp01((cumStart + u * segLen) / totalLen);
+                bf = 1f - bandGradientStrength * (1f - grad);
             }
+            cols[2 * i] = new Color(bf, bf, bf, 1f);
+            cols[2 * i + 1] = new Color(bf, bf, bf, 1f);
+        }
+        int[] tris = new int[M * 6];
+        for (int i = 0; i < M; i++)
+        {
+            int o = i * 6;
+            int i0 = 2 * i, i1 = 2 * i + 1, i2 = 2 * i + 2, i3 = 2 * i + 3;
+            tris[o] = i0; tris[o + 1] = i1; tris[o + 2] = i2;
+            tris[o + 3] = i2; tris[o + 4] = i1; tris[o + 5] = i3;
+        }
+        mesh.Clear();
+        // ② 带子顶点在世界坐标构建，但 band GO 挂在根 transform 下、mesh 顶点是局部坐标，
+        // 渲染时会被根再平移一次 => 带子相对节点/粉杠"恒偏"。此处统一转成根局部坐标，消除双重偏移。
+        // 根在原点(identity)时为恒等变换，零副作用；根有平移时彻底对齐节点与粉杠。
+        for (int k = 0; k < verts.Length; k++) verts[k] = transform.InverseTransformPoint(verts[k]);
+        // ① 端点竖切（替代脆弱的 coverWorldX 容差补丁）：u=0/u=1 端强制 x 为竖直值，保证带端永远垂直音轨线、旋转不露斜楔。
+        // overlay(黄液) 用传入 edgeX（液面竖直墙，前沿/远端）；
+        // base 带用**节点中心 x**（a.x/b.x，胶囊 z 最宽处）——端边整体埋进音符贴图下方(2998<3000)，消除斜向时圆头与带端之间的楔形缝。
+        // 侧边锚点(aEdge/bEdge)仅作带子中心线/旋转圆心，不变。
+        float vx0 = float.IsNaN(edgeX0) ? a.x : edgeX0;
+        float vx1 = float.IsNaN(edgeX1) ? b.x : edgeX1;
+        float lx0 = transform.InverseTransformPoint(new Vector3(vx0, 0f, 0f)).x; verts[0].x = lx0; verts[1].x = lx0;
+        float lx1 = transform.InverseTransformPoint(new Vector3(vx1, 0f, 0f)).x; verts[2 * M].x = lx1; verts[2 * M + 1].x = lx1;
+        mesh.vertices = verts;
+        mesh.uv = uvs;
+        mesh.colors = cols;
+        mesh.triangles = tris;
+        mesh.RecalculateNormals();
+    }
 
-            // 逐段宽度：取两端节点各自的宽度（1=普通单轨，2=连轨），
-            // 不再用链级 laneSpan，从而避免“链内有一个连轨节点就把所有段都画粗”。
-            int spanA = NodeSpan(s);
-            int spanB = NodeSpan(s + 1);
-            bool hasWide = spanA > 1 || spanB > 1;
+    private void SetBandTexture(Material mat, Texture2D tex)
+    {
+        if (mat != null && mat.mainTexture != (Texture)tex) mat.mainTexture = tex;
+    }
 
-            Vector3 normDir = dir.normalized;
-            float headEdgeOffset = noteRadius;
-            float tailEdgeOffset = noteRadius;
-            float usableLen = Mathf.Max(0f, totalLen - headEdgeOffset - tailEdgeOffset);
-            Vector3 start = a + normDir * headEdgeOffset;
-            Vector3 end = b - normDir * tailEdgeOffset;
+    /// <summary>逐顶点 alpha：过粉杠 reveal（G1）+ 越判定线 fade（G2）+ 整体 g（漏击/收尾）。保留 RGB 渐变，只写 alpha。</summary>
+    private void ApplyBandAlpha(Mesh mesh, float revealX, float judgeX, float g)
+    {
+        if (mesh == null || mesh.vertexCount < 4) return;
+        Vector3[] vs = mesh.vertices;
+        Color[] cols = mesh.colors;
+        if (cols == null || cols.Length != vs.Length) cols = new Color[vs.Length];
+        // ③ 顶点已转根局部坐标(改动②)，revealX/judgeX 为世界值，须同步转局部才能与 vp.x 同坐标系比较，
+        // 否则粉杠移动时遮罩边界与节点/粉杠"恒偏"。根 identity 时两处恒等、零副作用。
+        float localRevealX = transform.InverseTransformPoint(new Vector3(revealX, 0f, 0f)).x;
+        float localJudgeX = transform.InverseTransformPoint(new Vector3(judgeX, 0f, 0f)).x;
+        int M = vs.Length / 2 - 1;
+        // fen gang reveal gradient to crossed side
+        float odSign = (spawnPositions.Length > 0 && spawnPositions[0].x > judgeX) ? 1f : -1f;
+        for (int i = 0; i <= M; i++)
+        {
+            Vector3 vp = vs[2 * i];
+            float rev = Smoothstep(localRevealX, localRevealX - odSign * bandRevealWidth, vp.x);
+            float fade = side == 0 ? Smoothstep(localJudgeX - bandFadeWidth, localJudgeX, vp.x) : Smoothstep(localJudgeX + bandFadeWidth, localJudgeX, vp.x);
+            float alpha = rev * fade * g;
+            cols[2 * i].a = alpha;
+            cols[2 * i + 1].a = alpha;
+        }
+        mesh.colors = cols;
+    }
 
-            int n = segs.Count;
-            float segLen = n > 1 ? usableLen / n * 1.05f : usableLen;
+    /// <summary>按时间线性插值节点位置，不钳制 t：节点越过终点后继续沿原方向(=normalSpeed)外推。
+    /// 供链接带几何使用——节点 transform 在 MoveAndFade 里被 Clamp01 钉死后，跨轨斜向链接段会被压缩畸变；
+    /// 外推后两端仍以 normalSpeed 持续流动，段方向恒定→保持原形状，越判定线部分由软边淡出。节点视觉仍用 nodeTransforms(钉死缩没)。</summary>
+    private Vector3 NodeRawPos(int i)
+    {
+        float songTime = conductor != null ? conductor.songPosition : 0f;
+        float t = (songTime - (times[i] - leadTime)) / Mathf.Max(exitLeadTimes[i], 1e-4f);
+        t = Mathf.Max(0f, t);  // ③ 只钳生成侧：避免尾端未生成节点(t<0)时带子外推伸出节点之外，导致粉杠遮罩与节点错位；保留 t>1 头端外推防畸变
+        return Vector3.Lerp(spawnPositions[i], exitPositions[i], t);
+    }
 
-            // 连轨/混合段的阶梯参数（沿 X 步进、Z 插值，避免斜四边形）
-            float directionX = Mathf.Sign(b.x - a.x);
-            if (Mathf.Abs(b.x - a.x) < 0.001f) directionX = side == 0 ? -1f : 1f;
-            float startX = a.x + directionX * noteRadius;
-            float endX = b.x - directionX * noteRadius;
-            float usableX = Mathf.Abs(endX - startX);
+    /// <summary>每帧统一驱动带子：几何(RebuildRibbon) + 完成覆盖(select overlay 跟随进度线) + 逐顶点 alpha。</summary>
+    private void UpdateBandAll(float revealX, float judgeX)
+    {
+        float g = 1f;
+        if (missMode) g = 0.6f;   // ④ Miss 时连接带整体降到 0.6 半透（原为 0.75，更明显"变透"）
+        else if (fadeTimer >= 0f && !broken) { float fd = skillCleared ? skillClearFeedbackGuard : 0f; g = 1f - Mathf.Clamp01((fadeTimer - fd) / Mathf.Max(fadeDuration, 1e-4f)); }  // ① 技能清屏延迟淡出保命中反馈
 
-            for (int k = 0; k < n; k++)
+        // 带子端点位置：用"时间外推"而非节点 transform（节点到终点被 Clamp01 钉死会导致跨轨斜向链接段被压缩畸变）。
+        // 外推后两端都以 normalSpeed 持续流动，段方向恒定→保持原形状，越判定线部分由软边淡出。
+        Vector3[] rawPos = new Vector3[nodeCount];
+        for (int i = 0; i < nodeCount; i++) rawPos[i] = NodeRawPos(i);
+
+        // 链长累计（渐变用）
+        float[] cum = new float[bandMeshes.Count + 1];
+        float total = 0f;
+        for (int s = 0; s < bandMeshes.Count; s++)
+        {
+            cum[s] = total;
+            total += Vector3.Distance(rawPos[s], rawPos[s + 1]);
+        }
+
+        // 液面区间模型 [coverLo, coverHi]（od = 朝 spawn 侧距判定线距离，od>0=spawn 侧未完成部分，od<0=已越过判定线的完成侧）：
+        // 按住(Holding)：[-∞, markerDist] —— 黄液填"已完成侧"（判定线已越过的一侧，玩家视角左侧；镜像侧则右侧），
+        //   前沿横杠钉在 markerDist(按住=0=判定线，始终垂直音轨线)；od>0 的 spawn 侧剩余链带保持 base 不充能；
+        // 松手衰退：markerDist<0 → 黄液右边界随衰退退入判定线内（断连预警可见，Break 逻辑不变）；
+        // 完成态(Done 未断连，含技能清屏)：[-∞,+∞] 整条覆盖（Select 完成图）；
+        // 其他（未命中/Waiting/Miss）：空区间 → 无任何黄色（修复"没点也充能"）。
+        bool holdingNow = (state == HoldState.Holding);
+        bool completed = (state == HoldState.Done && !broken);
+        float odSign = (spawnPositions.Length > 0 && spawnPositions[0].x > judgeLineX) ? 1f : -1f;
+        float coverLo, coverHi;
+        if (holdingNow)
+        {
+            coverLo = float.NegativeInfinity;   // 完成侧一直填到链最前端（越线淡出由 ApplyBandAlpha fade 负责）
+            coverHi = markerDist;               // 前沿横杠：按住=0(判定线)，松手衰退为负(退入线内)
+        }
+        else if (completed) { coverLo = float.NegativeInfinity; coverHi = float.PositiveInfinity; }
+        else { coverLo = 1f; coverHi = -1f; }  // 空区间 → 永不 hasCov
+
+        for (int s = 0; s < bandMeshes.Count; s++)
+        {
+            Vector3 a = rawPos[s], b = rawPos[s + 1];
+            // 完成态：整条（含未显现段）都 revealed，保证清屏/手动完成时连接带在判定线前也整条显示完成图（无残留暗段）
+            bool revealed = completed || IsBeyondLine(a.x, revealX) || IsBeyondLine(b.x, revealX);
+            bandRends[s].enabled = revealed;
+
+            // base：整段 base 贴图（P3：附魔段用覆盖表里的 Slide_Link 皮肤，null=基础）
+            SetBandTexture(bandMats[s], (bandTexOverrides[s] != null) ? bandTexOverrides[s] : slideLinkTex);
+            RebuildRibbon(s, 0f, 1f, bandMeshes[s], judgeX, cum[s], total, bandRideYDip);
+
+            // overlay：覆盖段 = 该段 od 范围与 [coverLo, coverHi] 区间交；端点用 edgeX 钉竖（替代旧 coverWorldX 容差补丁）
+            float od0 = odSign * (a.x - judgeLineX);
+            float od1 = odSign * (b.x - judgeLineX);
+            float odLo = Mathf.Min(od0, od1), odHi = Mathf.Max(od0, od1);
+            float dA = Mathf.Max(odLo, coverLo);
+            float dB = Mathf.Min(odHi, coverHi);
+            bool isVert = Mathf.Abs(od1 - od0) < 1e-6f;  // 跨轨垂直段：od 几乎不变
+            bool hasCov = isVert ? (od0 >= coverLo - 1e-4f && od0 <= coverHi + 1e-4f) : (dB - dA > 1e-4f);
+            if (hasCov)
             {
-                float t = (k + 0.5f) / n;
-                segs[k].position = Vector3.Lerp(start, end, t);
+                float u0c, u1c;
+                if (isVert) { u0c = 0f; u1c = 1f; }   // 竖段整段覆盖（两端钉同 worldX → 也是竖边），修复"跨轨段无黄液"
+                else { u0c = (dA - od0) / (od1 - od0); u1c = (dB - od0) / (od1 - od0); }
+                float uMin = Mathf.Min(u0c, u1c), uMax = Mathf.Max(u0c, u1c);
+                // 覆盖区两端边界 od 值（uMin/uMax 端），换算 worldX 钉竖：前沿(od=markerDist)竖贴判定线、远端(od=dA)竖在深处
+                float odAtUMin = (od1 > od0) ? dA : dB;
+                float odAtUMax = (od1 > od0) ? dB : dA;
+                float edgeX0 = judgeLineX + odSign * odAtUMin;
+                float edgeX1 = judgeLineX + odSign * odAtUMax;
+                RebuildRibbon(s, uMin, uMax, bandOverlayMeshes[s], judgeX, cum[s], total, bandRideYDip + 0.005f, edgeX0, edgeX1);
+            }
+            bandOverlayRends[s].enabled = revealed && hasCov;
+            // P3：完成态覆盖带贴图同样走覆盖表（附魔段完成后=Slide_Judgment / Link_Select 皮肤）
+            if (bandOverlayMats[s] != null)
+                SetBandTexture(bandOverlayMats[s], (bandOverlayTexOverrides[s] != null) ? bandOverlayTexOverrides[s] : slideLinkSelectTex);
+            ApplyBandAlpha(bandMeshes[s], revealX, judgeX, g);
+            if (hasCov) ApplyBandAlpha(bandOverlayMeshes[s], revealX, judgeX, g);
+        }
+    }
 
-                if (!hasWide)
-                {
-                    // 普通 ↔ 普通：细连接线（圆柱）
-                    segs[k].rotation = Quaternion.FromToRotation(Vector3.up, normDir);
-                    segs[k].localScale = new Vector3(baseBarSegRadius, segLen, baseBarSegRadius);
-                }
-                else
-                {
-                    // 含连轨节点：阶梯宽带。混合段（一端连轨一端普通）按位置插值宽度
-                    // => 粗到细的渐变链接，而不是整段统一粗。
-                    float kSpan = Mathf.Lerp(spanA, spanB, t);
-                    float width = laneSpacing * (kSpan - 1) + noteRadius * 2f;
-                    float stairSegLen = usableX / n * 1.12f;
-                    float x = Mathf.Lerp(startX, endX, t);
-                    float z = Mathf.Lerp(a.z, b.z, t);
-                    segs[k].position = new Vector3(x, a.y, z);
-                    segs[k].rotation = Quaternion.identity;
-                    segs[k].localScale = new Vector3(stairSegLen, 0.12f, width);
-                }
+    /// <summary>进度线 marker：按 slideJudgment 原始尺寸 1:1。Holding 时位置由 markerDist 推出（沿链体朝 spawn 侧距判定线 markerDist 的世界点），
+    /// 不再随飞行节点越跑越远；仅 Holding 且未完成时显示，完成(State.Done)自动隐藏。</summary>
+    private void UpdateProgressMarker()
+    {
+        if (progressMarker == null) return;
+        bool show = (state == HoldState.Holding && !finished);
+        progressMarker.gameObject.SetActive(show);
+        if (!show) return;
+
+        // P3：进度线贴图走皮肤覆盖（附魔技能有 Slide_Judgment 皮肤时换皮，null=基础）
+        if (progressMat != null)
+            SetBandTexture(progressMat, (progressTexOverride != null) ? progressTexOverride : slideJudgmentTex);
+
+        // 尺寸：slideJudgment 原始贴图 1:1（不重算纵横比，用户已定好），每帧强制 localScale 防父级缩放干扰
+        float ww = (slideJudgmentSprite != null) ? slideJudgmentSprite.rect.width / slideJudgmentSprite.pixelsPerUnit : 1f;
+        float hh = (slideJudgmentSprite != null) ? slideJudgmentSprite.rect.height / slideJudgmentSprite.pixelsPerUnit : 1f;
+        progressMarker.localScale = new Vector3(ww * progressMarkerScale, 1f, hh * progressMarkerScale);
+        // ① 进度线强制垂直音轨线（长边沿 Z）：slideJudgment 为竖窄条(9x69)，长边本就在 quad 的 Z 边，yaw=0 即正确；
+        //   90 会把竖条放倒成沿音轨(沿 X)的横条。角度 Inspector 可调(progressMarkerYaw)
+        progressMarker.rotation = Quaternion.Euler(0f, progressMarkerYaw, 0f);
+
+        // 进度线位置由 markerDist 推出：沿"时间外推链"(NodeRawPos) 距判定线 markerDist 的世界点。
+        // 与带子液面共用同一坐标源(NodeRawPos)，避免斜向链上进度线钉节点、液面外推导致的 z 分离空档。
+        Vector3 mp = ChainPointAtRawDist(markerDist);
+        // y 抬升：仅做视觉微调(0.25=约半音符高)；与判定线/提示灯的层级关系由材质渲染队列 3100 保证（永远最后画、不被遮挡）。Inspector 可调(progressMarkerLift)
+        progressMarker.position = new Vector3(mp.x, rideY + progressMarkerLift, mp.z);
+    }
+
+    /// <summary>返回链体上"朝 spawn 侧距判定线 d"的世界点（进度线 marker 落点）；d 超出链范围时取最外侧(首)节点。</summary>
+    private Vector3 ChainPointAtOutsideDist(float d)
+    {
+        if (nodeTransforms.Count == 0) return transform.position;
+        float odSign = (spawnPositions.Length > 0 && spawnPositions[0].x > judgeLineX) ? 1f : -1f;
+        for (int s = 0; s < nodeTransforms.Count - 1; s++)
+        {
+            float od0 = odSign * (nodeTransforms[s].position.x - judgeLineX);
+            float od1 = odSign * (nodeTransforms[s + 1].position.x - judgeLineX);
+            float lo = Mathf.Min(od0, od1), hi = Mathf.Max(od0, od1);
+            if (d >= lo && d <= hi && Mathf.Abs(od1 - od0) > 1e-5f)
+            {
+                float u = (d - od0) / (od1 - od0);
+                return Vector3.Lerp(nodeTransforms[s].position, nodeTransforms[s + 1].position, u);
             }
         }
+        return nodeTransforms[0].position; // 超出链范围：取最外侧(首)节点
+    }
+
+    /// <summary>返回"时间外推链"(NodeRawPos)上"朝 spawn 侧距判定线 d"的世界点（进度线 marker 落点）。
+    /// 与带子液面(UpdateBandAll 的 cover=markerDist)共用同一坐标源——两者都按 NodeRawPos 在 od=markerDist 处取交点，
+    /// 因此进度线永远贴在黄色液面前沿(同 X 判定线平面、同 z 链上)。旧 ChainPointAtOutsideDist(走钉死的 nodeTransforms)保留可回退。
+    /// d 超出链范围时取最外侧(首)节点。</summary>
+    private Vector3 ChainPointAtRawDist(float d)
+    {
+        if (nodeCount <= 0) return transform.position;
+        float odSign = (spawnPositions.Length > 0 && spawnPositions[0].x > judgeLineX) ? 1f : -1f;
+        for (int s = 0; s < nodeCount - 1; s++)
+        {
+            float od0 = odSign * (NodeRawPos(s).x - judgeLineX);
+            float od1 = odSign * (NodeRawPos(s + 1).x - judgeLineX);
+            float lo = Mathf.Min(od0, od1), hi = Mathf.Max(od0, od1);
+            if (d >= lo && d <= hi && Mathf.Abs(od1 - od0) > 1e-5f)
+            {
+                float u = (d - od0) / (od1 - od0);
+                return Vector3.Lerp(NodeRawPos(s), NodeRawPos(s + 1), u);
+            }
+        }
+        return NodeRawPos(0); // 超出链范围：取最外侧(首)节点
     }
 
     /// <summary>
-    /// 按住期间：已完成段保持白色，当前进行中的段按"子片世界坐标是否已越过判定线"逐片点亮（发白前沿严格落在判定线上），未到达段保持黑色。
+    /// P0 把一个被附魔节点整体替换成技能皮肤贴图（普通节点=Note_Tap / 跨轨节点=Note_Wide，含命中 Select 版）。
+    /// 若 owner 的技能没有皮肤集，回退（原节点材质无可见发光，保持原样）。
+    /// 连接带换皮(P3)已随节点附魔一并处理，见 RefreshCharmedBands（连续附魔区间整体点亮）。
     /// </summary>
-    private void UpdateSegmentColors(float songTime)
-    {
-        if (state != HoldState.Holding) return;
-
-        for (int s = 0; s < segmentGroups.Count; s++)
-        {
-            if (s < completedSegments)        // 已完成段：全白
-            {
-                var mc = segmentMatGroups[s];
-                for (int k = 0; k < mc.Count; k++) if (mc[k] != null) mc[k].color = Color.white;
-                continue;
-            }
-            if (s > completedSegments)        // 未来段：全黑
-            {
-                var mf = segmentMatGroups[s];
-                for (int k = 0; k < mf.Count; k++) if (mf[k] != null) mf[k].color = Color.black;
-                continue;
-            }
-            // 当前段：按子片世界坐标是否已越过判定线逐片点亮，白边严格落在判定线上
-            // （复用与可见性一致的 IsBeyondLine，方向语义正确；不再用时间比例导致超前发白）
-            var segs = segmentGroups[s];
-            var mats = segmentMatGroups[s];
-            for (int k = 0; k < segs.Count; k++)
-            {
-                if (mats[k] == null) continue;
-                bool passed = IsBeyondLine(segs[k].position.x, judgeLineX);
-                mats[k].color = passed ? Color.white : Color.black;
-            }
-        }
-    }
-
-    private void UpdateSegmentVisibility(float revealLineX, float hideLineX)
-    {
-        // 链接线小片的消失边界统一用"玩家判定线 hideLineX"（与 UpdateSegmentColors 的变白线一致），
-        // 不再用段中点 segJudgeX，从而链接线能保持到判定线位置才"变白 → 放大 → 淡出"消失。
-        for (int s = 0; s < segmentGroups.Count; s++)
-        {
-            int spanA = NodeSpan(s);
-            int spanB = NodeSpan(s + 1);
-            bool hasWide = spanA > 1 || spanB > 1;
-
-            var segs = segmentGroups[s];
-            var rends = segmentRendGroups[s];
-            var mats = segmentMatGroups[s];
-            Vector3 a = nodeTransforms[s].position;
-            Vector3 b = nodeTransforms[s + 1].position;
-            Vector3 dir = b - a;
-            float totalLen = dir.magnitude;
-            Vector3 normDir = totalLen < 0.001f ? Vector3.right : dir.normalized;
-
-            // 已命中的整条链：段带过判定线后保留一小段可见，逐片发白反馈被看到（2b）。
-            float glowLineX = hideLineX + (hasLit ? glowBufferDist : 0f);
-            float disappearSpan = 1.2f;   // 越线后放大淡出的行程（本地坐标单位）[PLACEHOLDER 可微调]
-
-            for (int k = 0; k < segs.Count; k++)
-            {
-                if (rends[k] == null) continue;
-                // 清屏整条清除：连接线应在原地逐段变大变白消失（与玩家手动完成一致），
-                // 覆盖正常的"漏击黑消失"路径——技能清掉的长按节点还在带区内、未越判定线，否则会发黑消失。
-                if (skillCleared)
-                {
-                    rends[k].enabled = true;
-                    segs[k].localScale = segs[k].localScale * 1.6f;
-                    if (mats[k] != null) mats[k].color = Color.white;
-                    float fa = 1f - Mathf.Clamp01(fadeTimer / fadeDuration);
-                    SetMatAlpha(mats[k], fa);
-                    continue;
-                }
-                if (totalLen < 0.001f)
-                {
-                    bool collapsedRevealed = IsBeyondLine(segs[k].position.x, revealLineX);
-                    bool collapsedBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, noteRadius, glowLineX);
-                    rends[k].enabled = collapsedRevealed && collapsedBeforeJudge;
-                    continue;
-                }
-                float halfLenX;
-                if (hasWide)
-                {
-                    float halfAlong = segs[k].localScale.x * 0.5f * Mathf.Abs(normDir.x);
-                    float halfAcross = segs[k].localScale.z * 0.5f * Mathf.Abs(normDir.z);
-                    halfLenX = halfAlong + halfAcross;
-                }
-                else
-                {
-                    halfLenX = segs[k].localScale.y * 0.5f * Mathf.Abs(normDir.x);
-                }
-                bool revealed = IsBeyondLine(segs[k].position.x, revealLineX);
-                if (!revealed) { rends[k].enabled = false; continue; }
-
-                bool stillBeforeJudge = !IsFullyBeyondLine(segs[k].position.x, halfLenX, glowLineX);
-                if (stillBeforeJudge)
-                {
-                    rends[k].enabled = true;   // 判定线之前：正常显示（颜色由 UpdateSegmentColors 控制）
-                }
-                else
-                {
-                    // 已越过判定线：放大 ×1.6 + 变白 + alpha 淡出，最后才禁用（完成态连接线"逐段变大变白消失"）
-                    float past = side == 0 ? (glowLineX - segs[k].position.x) : (segs[k].position.x - glowLineX);
-                    float f = Mathf.Clamp01(past / disappearSpan);
-                    segs[k].localScale = segs[k].localScale * Mathf.Lerp(1f, 1.6f, f);
-                    if (!missMode && mats[k] != null) mats[k].color = Color.white;   // 完成态确保变白（放大淡出前先变白）
-                    SetMatAlpha(mats[k], 1f - f);
-                    rends[k].enabled = f < 0.98f;
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// 漏击消失：每个节点与每个段小片在“越过判定线后”各自缩小并淡出，
-    /// 表现与普通点击音符一致（先变小后消失），而不是整条链统一缩小。
-    /// 越过判定线的距离越远（最多 missShrinkSpan），收缩越彻底，缩没即隐藏。
-    /// </summary>
-    private void ApplyMissDisappear(float revealLineX, float judgeX)
-    {
-        // 节点缩没已由 MoveAndFade 的 UpdateNodeVisual 统一处理（按时间逐节点缩小消失），
-        // 这里不再对节点做距离缩放，避免与缩没动画冲突或硬切。
-
-        // 段带：每个细分小片在“越过各自段中点的判定线后”缩小消失（漏击/断连时逐段滑走消失）
-        for (int s = 0; s < segmentGroups.Count; s++)
-        {
-            var segs = segmentGroups[s];
-            var rends = segmentRendGroups[s];
-            var mats = segmentMatGroups[s];
-            // 修复（2026-08-26 Issue 4）：每段用自己的中点判定线（两端节点判定线中点），
-            // 而非统一的 head 判定线，避免整条段带过早/过晚被裁切。
-            float segJudgeX = (hitPositions[s].x + hitPositions[s + 1].x) * 0.5f;
-            for (int k = 0; k < segs.Count; k++)
-            {
-                if (rends[k] == null) continue;
-                bool revealed = IsBeyondLine(segs[k].position.x, revealLineX);
-                if (!revealed) { rends[k].enabled = false; continue; }
-
-                float past = side == 0
-                    ? (segJudgeX - segs[k].position.x)
-                    : (segs[k].position.x - segJudgeX);
-                float shrink = past <= 0f ? 1f : 1f - Mathf.Clamp01(past / missShrinkSpan);
-
-                // 段缩放每帧由 UpdateAllSegments 重新写回基准值，这里直接乘以收缩系数即可
-                segs[k].localScale = segs[k].localScale * shrink;
-                SetMatAlpha(mats[k], shrink);
-                rends[k].enabled = shrink > 0.02f;
-            }
-        }
-    }
-
-    /// <summary>把一个被附魔节点及通向它的连接段染成黄色发光。</summary>
     private void TintCharmedNode(int nodeIndex)
     {
-        // 附魔颜色取释放方自身颜色（charmOwnersByNode 已登记 owner）；无 owner 时回退黄
-        Color col = (charmOwnersByNode != null && nodeIndex >= 0 && nodeIndex < charmOwnersByNode.Length && charmOwnersByNode[nodeIndex] != null)
-            ? charmOwnersByNode[nodeIndex].charmColor : new Color(1f, 0.85f, 0.1f);
-        if (nodeIndex >= 0 && nodeIndex < nodeMats.Count && nodeMats[nodeIndex] != null)
+        if (nodeIndex < 0 || nodeIndex >= nodeMats.Count || nodeMats[nodeIndex] == null) return;
+        ActiveSkillRuntime owner = (charmOwnersByNode != null && nodeIndex < charmOwnersByNode.Length) ? charmOwnersByNode[nodeIndex] : null;
+        string skillId = (owner != null && owner.SkillRef != null) ? owner.SkillRef.skillId : null;
+        if (!string.IsNullOrEmpty(skillId))
         {
-            nodeMats[nodeIndex].EnableKeyword("_EMISSION");
-            nodeMats[nodeIndex].SetColor("_EmissionColor", col);
-        }
-
-        int segmentIndex = nodeIndex - 1;
-        if (segmentIndex >= 0 && segmentIndex < segmentMatGroups.Count)
-        {
-            for (int k = 0; k < segmentMatGroups[segmentIndex].Count; k++)
+            int span = NodeSpan(nodeIndex);
+            string kind = span > 1 ? "Note_Wide" : "Note_Tap";
+            Texture2D skin = NoteSpriteLibrary.GetEnchantSkin(skillId, kind);
+            if (skin != null)
             {
-                var m = segmentMatGroups[segmentIndex][k];
-                if (m == null) continue;
-                m.EnableKeyword("_EMISSION");
-                m.SetColor("_EmissionColor", col);
+                nodeMats[nodeIndex].mainTexture = skin;
+                nodeMats[nodeIndex].color = Color.white;
+                if (nodeBaseTex.Count > nodeIndex) nodeBaseTex[nodeIndex] = skin;
+                Texture2D sel = NoteSpriteLibrary.GetEnchantSkin(skillId, kind + "_Select");
+                if (nodeSelectTex.Count > nodeIndex) nodeSelectTex[nodeIndex] = (sel != null) ? sel : skin;
+                return; // 换皮成功，不再发光染色
             }
         }
+        // 回退：无皮肤集（如炸弹雨的链接音符）——节点材质用 Sprites/Default，无可见发光，保持原样即可
+    }
+
+    /// <summary>P3 链接带换皮（连续附魔区间整体点亮）：算出首个/末个被附魔节点，二者之间（含相邻外延）的所有链接带整段换皮肤。
+    /// 规则：段 s（连接节点 s 与 s+1）若 (s+1 ≥ firstCharmed) 且 (s ≤ lastCharmed) 即落入区间内 → 点亮。
+    /// 这样头尾都附魔时中间不再留暗缺口；未拿到名额的节点只不触发效果、链接仍亮。每帧 UpdateBands 读覆盖表生效。</summary>
+    private void RefreshCharmedBands()
+    {
+        int first = -1, last = -1;
+        if (charmOwnersByNode != null)
+            for (int i = 0; i < charmOwnersByNode.Length; i++)
+                if (charmOwnersByNode[i] != null) { if (first < 0) first = i; last = i; }
+
+        string skillId = null;
+        if (first >= 0 && charmOwnersByNode[first] != null && charmOwnersByNode[first].SkillRef != null)
+            skillId = charmOwnersByNode[first].SkillRef.skillId;
+
+        Texture2D link = (skillId != null) ? NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Slide_Link") : null;
+        Texture2D linkSel = (skillId != null) ? NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Slide_Link_Select") : null;
+        if (link != null) link.wrapMode = TextureWrapMode.Repeat;
+        if (linkSel != null) linkSel.wrapMode = TextureWrapMode.Repeat;
+        Texture2D j = (skillId != null) ? NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Slide_Judgment") : null;
+        if (j != null) j.wrapMode = TextureWrapMode.Repeat;
+
+        for (int s = 0; s < bandTexOverrides.Count; s++)
+        {
+            bool completed = (s < bandCompletedOverlay.Count) && bandCompletedOverlay[s];
+            bool inSpan = first >= 0 && (s + 1) >= first && s <= last;
+            // base 带：附魔区间段 或 已完成段 都显示技能皮肤（链接线在附魔/完成时整条亮，无暗缺口）
+            bandTexOverrides[s] = (inSpan || completed) ? link : null;
+            // select 覆盖带：已完成段优先 Slide_Judgment；未完成的附魔区间段用 Link_Select（充能液皮肤）；其余 null
+            Texture2D ov = null;
+            if (s < bandOverlayTexOverrides.Count)
+            {
+                if (completed && j != null) ov = j;
+                else if (inSpan) ov = linkSel;
+                bandOverlayTexOverrides[s] = ov;
+            }
+        }
+
+        if (skillId != null && progressTexOverride == null && j != null)
+            progressTexOverride = j;
     }
 
     private void SetMatAlpha(Material mat, float a)
@@ -829,12 +1120,9 @@ public class HoldNote : MonoBehaviour
 
     private void SetBarEnabledAll(bool enabled)
     {
-        for (int s = 0; s < segmentRendGroups.Count; s++)
+        for (int s = 0; s < bandRends.Count; s++)
         {
-            for (int k = 0; k < segmentRendGroups[s].Count; k++)
-            {
-                if (segmentRendGroups[s][k] != null) segmentRendGroups[s][k].enabled = enabled;
-            }
+            if (bandRends[s] != null) bandRends[s].enabled = enabled;
         }
     }
 
@@ -853,7 +1141,7 @@ public class HoldNote : MonoBehaviour
     {
         if (index < 0 || index >= NodeCount || nodeTransforms == null || index >= nodeTransforms.Count || nodeTransforms[index] == null) return false;
         float cx = centerLine != null ? centerLine.currentX : 0f;
-        return IsBeyondLine(nodeTransforms[index].position.x, cx);
+        return IsBeyondLine(NodeRawPos(index).x, cx);  // ③ 与带子统一坐标源
     }
 
     /// <summary>清屏技能：把整条长按视为命中清除。
@@ -863,13 +1151,13 @@ public class HoldNote : MonoBehaviour
     public void SkillClearWhole(float xMin, float xMax, ActiveSkillRuntime caster)
     {
         if (caster == null || nodeTransforms == null) return;
-        if (state == HoldState.Done) return;   // 已完成/已漏击的长按不再重复计分（避免与正常完成重复记账）
+        if (state == HoldState.Done && !missMode) return;   // ① 正常完成收尾中不再重复计分；漏击/断连(missMode)链接也应被技能整条清除（不留尾单体）
 
-        // 是否至少有一个已显现且在带区内的节点
+        // 断弦高压/清屏：整条长按只要存在任一节点的判定线位置落在带区内即清除（不再要求"已显现"）。
+        // 链接音符"整条都要命中"——早链接（节点尚未过粉杠）也应被整条清除，避免残留未显现音节。
         bool anyInBand = false;
         for (int i = 0; i < NodeCount; i++)
         {
-            if (!IsNodeRevealed(i)) continue;
             float x = (hitPositions != null && i < hitPositions.Length) ? hitPositions[i].x : 0f;
             if (x >= xMin && x <= xMax) { anyInBand = true; break; }
         }
@@ -883,15 +1171,13 @@ public class HoldNote : MonoBehaviour
         {
             bool headVis = IsNodeRevealed(0) && (hitPositions == null || (hitPositions[0].x >= xMin && hitPositions[0].x <= xMax));
             if (headVis) PlayHitPop(0);
-            caster.OnSkillClearedNode(this, 0, "PERFECT");
-            ResolveCharmedNode(0, true);
+            if (!missMode) { caster.OnSkillClearedNode(this, 0, "PERFECT"); ResolveCharmedNode(0, true); }  // ① 漏击态已漏击不补分
         }
         for (int i = completedSegments + 1; i < NodeCount; i++)
         {
             bool vis = IsNodeRevealed(i) && (hitPositions == null || (hitPositions[i].x >= xMin && hitPositions[i].x <= xMax));
             if (vis) PlayHitPop(i);
-            caster.OnSkillClearedNode(this, i, "CLEAR");
-            ResolveCharmedNode(i, true);
+            if (!missMode) { caster.OnSkillClearedNode(this, i, "CLEAR"); ResolveCharmedNode(i, true); }  // ① 漏击态已漏击不补分
         }
 
         // 进入完成淡出：整条连接线 + 全部节点原地变白放大消失（命中反馈，与玩家手动完成一致）。
@@ -933,33 +1219,34 @@ public class HoldNote : MonoBehaviour
     /// <summary>当前 songTime 所处"应被按住"的轨道判定。</summary>
     /// <param name="songTime">当前歌曲时间（秒），用于判断连轨滑动段所处的阶段与中点窗口。</param>
     /// <param name="reqLaneF">当前插值轨道（来自 SampleLaneAtTime，保留滑动过渡，仅普通单轨 Hold 使用）。</param>
+    /// <summary>
+    /// ① 按压位置判定精准到"链接线相交音轨"：以当前进度所在的链段（节点 seg → seg+1）为准，
+    /// 该段链接线在 Z 方向实际经过的轨道集合即合法轨道；玩家按住集合中任一轨即视为跟随成功。
+    /// 两轨相交（跨轨节点 / 斜向链接）两者皆可。普通单轨链接线只经过自身 1 轨，故只接受该轨
+    /// （不再用 laneTolerance 放宽到相邻轨，修正"判定不够准"）。
+    /// 注：本工程 lane 沿 Z 轴分布（laneOffsets[i].z），故"相交轨"由 fromLane/toLane 宽度的并集 +
+    /// 路径扫描决定，与 X（判定线）无关。
+    /// </summary>
     private bool AreRequiredLanesHeld(float songTime, float reqLaneF)
     {
         if (spawner == null) return false;
 
-        // 普通单轨 Hold：沿用浮点容差跟随（laneTolerance）
-        if (laneSpan <= 1) return IsAnyHeldLaneClose(reqLaneF);
-
-        // 连轨 Hold：以"合法轨道集合"判定——玩家按住集合中任一轨道即视为跟随成功。
-        // 集合 = 起点节点覆盖轨道 ∪ 终点节点覆盖轨道 ∪ 路径扫过的整数轨道。
-        // 与静止宽音符语义一致（按覆盖的任一条轨都合法），消除"必须按时序从 from 滑到 to"的反直觉约束。
+        // 以当前进度链段（按时间推进，与 completedSegments 同一基准）为准
         int seg = CurrentSegmentIndex(songTime);
         int fromLane = lanes[seg];
         int toLane = lanes[seg + 1];
         int fromSpan = NodeSpan(seg);     // 节点 seg 宽度：1=单轨，2=连轨覆盖相邻两轨
         int toSpan = NodeSpan(seg + 1);   // 节点 seg+1 宽度
 
+        // 合法轨道集合 = 起点节点覆盖轨道 ∪ 终点节点覆盖轨道 ∪ 路径扫过的整数轨道
+        // （即"链接线与哪条音轨相交"：跨轨节点/斜向链接会同时覆盖两轨，两者皆可）
         System.Collections.Generic.HashSet<int> validSet = new System.Collections.Generic.HashSet<int>();
-        // 起点节点覆盖：[fromLane, fromLane + fromSpan - 1]
         for (int x = fromLane; x < fromLane + fromSpan; x++) validSet.Add(x);
-        // 终点节点覆盖：[toLane, toLane + toSpan - 1]
         for (int x = toLane; x < toLane + toSpan; x++) validSet.Add(x);
-        // 路径上扫过的整数轨道（含两端 + 中间跨越）
         int lo = Mathf.Min(fromLane, toLane);
         int hi = Mathf.Max(fromLane, toLane);
         for (int x = lo; x <= hi; x++) validSet.Add(x);
 
-        // 玩家按住的任一轨道在集合内即合法
         foreach (int held in spawner.heldLanes)
             if (validSet.Contains(held)) return true;
         return false;
@@ -1010,19 +1297,16 @@ public class HoldNote : MonoBehaviour
             // 当前进度位置：在节点链上插值出的浮点轨道（保留滑动过渡手感）
             float reqLaneF = SampleLaneAtTime(songTime);
 
-            // 按住检测（AI 跳过，由 isAI 标志控制）
-            if (!isAI)
-            {
-                bool held = AreRequiredLanesHeld(songTime, reqLaneF);
-                if (!held) breakTimer += Time.deltaTime;
-                else breakTimer = 0f;
-
-                if (breakTimer > breakThreshold)
-                {
-                    Break();
-                    return;
-                }
-            }
+            // 进度线 markerDist 速度模型 v2（世界距判定线距离，+为线外/spawn 侧）：稳定位=判定线(0)。
+            // 正确按住→1× 恢复并钉在判定线；松手→vDecay 固定衰退（负向，进度线退入判定线内）；衰退到线内 markerMissDist(0.5)→Break Miss。保底不因命中重置。
+            bool held = isAI ? true : AreRequiredLanesHeld(songTime, reqLaneF);
+            bool inGrace = (songTime - holdStartTime) < holdStartGrace;
+            if (inGrace) held = true; // 起手宽限视作按住：立刻建进度、不误断
+            float vDecay = 0.5f / Mathf.Max(breakThreshold, 0.0001f); // 衰减速率：0.5u（判定线→线内0.5）/ 保底时长
+            float dt = Time.deltaTime;
+            if (held) markerDist = Mathf.Min(markerDist + normalSpeed * dt, 0f); // 按住：1× 恢复，钉在判定线
+            else      markerDist -= vDecay * dt;                                  // 松手：固定速率衰退
+            if (markerDist < -markerMissDist) { Break(); return; } // 衰退到判定线内 0.5 → 断连 Miss
 
             // 每跨越一个节点时刻，完成一段（节点 i -> i+1）=> 触发 CLEAR
             while (completedSegments < nodeCount - 1 && songTime >= times[completedSegments + 1])
@@ -1074,6 +1358,8 @@ public class HoldNote : MonoBehaviour
         if (state != HoldState.Waiting) return;
         state = HoldState.Holding;
         if (fromAI) isAI = true;
+        holdStartTime = songTime;   // 记录起手时刻，供起手宽限
+        markerDist = 0f;            // 进度线从判定线起（=稳定位 v2），按住即钉在线上；松手才衰退
 
         float dt = songTime - times[0];
         float absDt = Mathf.Abs(dt);
@@ -1094,8 +1380,7 @@ public class HoldNote : MonoBehaviour
         broken = true;
         fadeTimer = -1f;
         ResetAllToBlack();
-        // 首节点漏击后整条链接立即失效。改为“逐段越过判定线缩小消失”，
-        // 由 MoveAndFade 每帧调用 ApplyMissDisappear 处理，而不是整条统一缩小。
+        // 首节点漏击后整条链接立即失效。漏击/断连消失改由 UpdateBandVisibility（整体 α=0.75 + 越判定线软边）处理。
         missMode = true;
 
         ResolveCharmedNode(0, false);
@@ -1105,8 +1390,8 @@ public class HoldNote : MonoBehaviour
     {
         state = HoldState.Done;
         broken = true;
-        fadeTimer = -1f;     // 走漏击"逐段滑过判定线缩小"路径（与 MissHead 一致）
-        missMode = true;     // 同上：由 MoveAndFade 的 ApplyMissDisappear 处理滑走消失
+        fadeTimer = -1f;     // 走漏击"整体 α=0.75 + 越判定线软边"路径（与 MissHead 一致）
+        missMode = true;     // 同上：由 UpdateBandVisibility 处理滑走消失
         missReported = true; // 关键：阻止 MoveAndFade 的 missMode 分支重复上报 MISS（避免一次断连两个 MISS）
         // 唯一一次评价：在最后成功节点处报 BREAK（非 MISS）。
         // BREAK 与 MISS 的区别：MISS 会清零连击（普通漏击），BREAK 表示「已命中若干节点后中途断连」，
@@ -1121,12 +1406,12 @@ public class HoldNote : MonoBehaviour
         state = HoldState.Done;
         broken = false;
         fadeTimer = 0f;
+        // ① 技能清屏时，命中反馈(变大+停留≈0.42s)播完前整体 alpha 钉 1，避免"直接消失"吞掉命中反馈
+        skillClearFeedbackGuard = skillCleared ? (hitPopDuration + nodeCompleteLinger) : 0f;
         // 尾节点变白 + 放大弹跳；全部段白色
         PlayHitPop(nodeCount - 1);
-        for (int s = 0; s < segmentMatGroups.Count; s++)
-            for (int k = 0; k < segmentMatGroups[s].Count; k++)
-                if (segmentMatGroups[s][k] != null) segmentMatGroups[s][k].color = Color.white;
         // 最后一段 CLEAR 已在 Judge 循环中于尾节点处上报，这里不再重复上报
+        // 连接带完成态的"变白"由 UpdateBandAll 依据 completedSegments 切换 Select 贴图 + select 覆盖带实现
 
     }
 }

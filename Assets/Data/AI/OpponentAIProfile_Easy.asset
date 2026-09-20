@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   difficultyName: Easy
   noteHitRate: 0.6
-  offsetMinMul: 0
-  offsetMaxMul: 1
+  offsetMinMul: 0.4
+  offsetMaxMul: 1.5
   evaluateInterval: 5
   releaseProbability: 0.4
   inputSpeed: 1

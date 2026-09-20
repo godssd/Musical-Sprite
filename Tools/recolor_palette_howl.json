@@ -1,0 +1,12 @@
+{
+  "name": "howl (skill_3)",
+  "base_dir": "Assets/Art/UI/sprites",
+  "output_dir": "Tools/_gen_recolor/howl",
+  "suffix": "_skill_3_howl",
+  "anchors": {
+    "tap_normal_outer": [115, 77, 34],
+    "tap_normal_inner": [219, 186, 124],
+    "completed_outer":  [251, 179, 91],
+    "completed_inner":  [255, 246, 98]
+  }
+}

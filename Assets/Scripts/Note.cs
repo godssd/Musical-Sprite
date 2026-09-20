@@ -26,6 +26,10 @@ public class Note : MonoBehaviour
     /// 供 BattleVisualsController 判断"命中时该音轨角色是否应闪烁"：被附魔的音符命中由施法大狗闪，而非该 lane 角色。</summary>
     [HideInInspector] public bool wasCharmed = false;
 
+    /// <summary>连点音符被附魔的数字个数（= 本次分配时消费的名额；≤ chainTapRequired）。
+    /// 每个数字命中消耗 1 个：触发 1 次技能效果；耗尽后该音符恢复原色、后续数字不再触发效果（见附魔规则.md P2）。</summary>
+    [HideInInspector] public int enchantedHitCount = 0;
+
     public bool CoversLane(int targetLane)
     {
         return targetLane >= lane && targetLane < lane + laneSpan;
@@ -113,31 +117,66 @@ public class Note : MonoBehaviour
     }
 
     /// <summary>
-    /// 连点音符的一次有效命中。未到 0 时保留在 activeNotes 中，归零时才结束。
+    /// 连点音符的一次有效命中。
+    /// 递减时机已挪到「撤退最远点」（由 NoteMover.Update 回调 OnChainRetreatFarthest），
+    /// 这里只负责：显示当前数 + 命中切 Select（D，非最后），或最后一下（当前数=1）走普通命中反馈（E，CLEAR 完成）。
+    /// 评分用 rank 仍由 NoteSpawner 按「当前未递减数」计算，故本方法不改分。
     /// </summary>
     public bool RegisterChainTapHit(float songTime, string rank)
     {
         if (!isChainTap || isHit || chainTapRemaining <= 0) return false;
 
-        chainTapWaiting = true;
-        chainTapRemaining = Mathf.Max(0, chainTapRemaining - 1);
-        finalRank = rank;
+        NoteMover mover = GetComponent<NoteMover>();   // 方法内只声明一次，E/D 两个分支共用
+        int displayR = chainTapRemaining;   // 本次命中显示的当前数（递减在此处不做）
 
-        NoteMover mover = GetComponent<NoteMover>();
-        if (mover != null)
-            mover.RegisterChainTapHit(chainTapRemaining, chainTapRequired, songTime);
-
-        if (chainTapRemaining <= 0)
+        // E：最后一下（当前数 == 1）命中 → 不后退，走普通命中反馈（CLEAR 完成：Select 显 + 放大淡出销毁）
+        if (displayR == 1)
         {
             isHit = true;
+            finalRank = rank;
             if (charmOwner != null)
             {
-                charmOwner.OnCharmedNoteResolved(this, true);
+                // 这最后一击若仍属附魔（enchantedHitCount>0），先单独计一次效果
+                if (wasCharmed && enchantedHitCount > 0)
+                {
+                    charmOwner.OnCharmedNoteDigitHit(this);
+                    enchantedHitCount = 0;
+                }
+                // 连点效果已全部由逐数字 OnCharmedNoteDigitHit 处理，这里只结算（移除+结算技能），不再重复计效果
+                charmOwner.OnCharmedNoteResolved(this, true, false);
                 charmOwner = null;
             }
-            if (mover != null) mover.CompleteChainTap();
+            if (mover != null) mover.PlayHitAnimation(rank);
+            else Destroy(gameObject);
             return true;
         }
+
+        // D：非最后命中 → 记录等待、显示当前数 + 切 Select，开始撤退；最远点由 mover 回调递减并切回非命中态
+        chainTapWaiting = true;
+        finalRank = rank;
+        if (mover != null)
+            mover.RegisterChainTapHit(displayR, chainTapRequired, songTime);
+        // P2：逐附魔数字触发效果 + 换皮数字递减；附魔次数耗尽则恢复原色（后续数字不再触发效果）
+        if (charmOwner != null && wasCharmed && enchantedHitCount > 0)
+        {
+            charmOwner.OnCharmedNoteDigitHit(this);
+            enchantedHitCount--;
+            if (mover != null)
+            {
+                mover.UpdateChainEnchantDigit(displayR);   // 显示当前数皮肤
+                if (enchantedHitCount <= 0) mover.RestoreChainBase();
+            }
+        }
         return false;
+    }
+
+    /// <summary>
+    /// 连点音符撤退到最远点（1 单位）时由 NoteMover 回调：数字 -1，返回新的剩余次数。
+    /// 仅在此处递减，保证「命中显示当前数 → 撤退 → 最远点显示-1 → 回来」的循环节奏。
+    /// </summary>
+    public int OnChainRetreatFarthest()
+    {
+        chainTapRemaining = Mathf.Max(0, chainTapRemaining - 1);
+        return chainTapRemaining;
     }
 }

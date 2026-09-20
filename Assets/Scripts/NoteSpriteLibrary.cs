@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -36,5 +37,28 @@ public class NoteSpriteLibrary : ScriptableObject
                 _instance = Resources.Load<NoteSpriteLibrary>("NoteSpriteLibrary");
             return _instance;
         }
+    }
+
+    // ---- 附魔皮肤查找（P0：skillId -> 皮肤贴图集） ----
+    // 皮肤按 Resources/EnchantSkins/{skillId}/{kind}_{skillId}.png 存放；
+    // kind ∈ {Note_Tap, Note_Tap_Small, Note_Wide, Note_Repeat0..9, Note_Slide_Link, Note_Slide_Judgment}。
+    // 取不到（该技能没有皮肤集）返回 null —— 调用方回退到原发光染色，保证其它技能不受影响、改动可逆。
+    // 注意：皮肤 PNG 以 textureType=0(Default) 导入，故直接 Resources.Load<Texture2D>；
+    //       若某个皮肤被改以 Sprite(2D/UI) 导入导致 Load<Texture2D> 为 null，则回退试 Load<Sprite>.texture。
+    private static Dictionary<string, Texture2D> _enchantCache = new Dictionary<string, Texture2D>();
+    public static Texture2D GetEnchantSkin(string skillId, string kind)
+    {
+        if (string.IsNullOrEmpty(skillId) || string.IsNullOrEmpty(kind)) return null;
+        string key = skillId + "|" + kind;
+        if (_enchantCache.TryGetValue(key, out var cached)) return cached;
+        string path = $"EnchantSkins/{skillId}/{kind}_{skillId}";
+        Texture2D tex = Resources.Load<Texture2D>(path);
+        if (tex == null)
+        {
+            Sprite sp = Resources.Load<Sprite>(path);   // 兼容以 Sprite 导入的皮肤
+            tex = sp != null ? sp.texture : null;
+        }
+        _enchantCache[key] = tex; // 可能为 null，缓存避免重复 IO
+        return tex;
     }
 }

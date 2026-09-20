@@ -66,11 +66,22 @@ public class NoteMover : MonoBehaviour
     private Texture2D _selectTex;                  // 命中时切换到的"完成"贴图（Select），按类型取自 NoteSpriteLibrary
     private Color visibleBaseColor = Color.black; // 可见态基础色：换皮=白（显贴图），否则=黑
     private float visibleAlpha = 1f;               // 可见态不透明度（换皮时 = tapAlpha）
+    // P0：记录本音符类型，供附魔换皮时选定对应皮肤 kind（非连点）
+    private bool _isPlainTapType = false;
+    private bool _isSmallTapType = false;
+    private bool _isWideTapType = false;
     [Header("连点音符运动")]
     [Tooltip("后退减速时长（秒）：命中后以极快初速后退，期间匀减速，到该时长速度降为 0、退到 chainRetreatDist 处。")]
     public float chainTapHoldDuration = 1f;
     [Tooltip("后退距离（世界单位）：命中后从判定线后退多远，再以前进速度回到判定线。Inspector 可调。")]
     public float chainRetreatDist = 1f;
+
+    // P2：连点音符附魔换皮（覆盖层 quad 显示 Repeat{剩余}_skill，本体圆柱藏在后面）
+    private bool _chainEnchanted = false;
+    private string _enchantSkillId = null;
+    private GameObject _enchantQuad = null;
+    private MeshRenderer _enchantQuadRend = null;
+    private static Mesh _chainEnchantQuadMesh;
 
     private float chainTapDeadline = -1f;        // 可点击截止时间 = nextContactTime + goodWindow
     private float chainHitTime = -999f;           // 本次命中时刻
@@ -191,6 +202,71 @@ public class NoteMover : MonoBehaviour
         return mesh;
     }
 
+    /// <summary>P2 连点附魔换皮用的平铺 quad（XZ 平面、法线朝上，俯视可见），覆盖在圆柱本体上方显示 Repeat 数字皮肤。</summary>
+    private static Mesh CreateChainEnchantQuadMesh()
+    {
+        if (_chainEnchantQuadMesh != null) return _chainEnchantQuadMesh;
+        var m = new Mesh { name = "ChainEnchantQuad" };
+        m.vertices = new Vector3[]
+        {
+            new Vector3(-0.5f, 0f, -0.5f),
+            new Vector3(0.5f, 0f, -0.5f),
+            new Vector3(0.5f, 0f, 0.5f),
+            new Vector3(-0.5f, 0f, 0.5f),
+        };
+        m.uv = new Vector2[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f) };
+        m.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
+        m.RecalculateNormals();
+        _chainEnchantQuadMesh = m;
+        return m;
+    }
+
+    private void EnsureChainEnchantQuad()
+    {
+        if (_enchantQuad != null) return;
+        _enchantQuad = new GameObject("ChainEnchantQuad");
+        _enchantQuad.transform.SetParent(transform, false);
+        _enchantQuad.transform.localPosition = new Vector3(0f, 0.06f, 0f);
+        _enchantQuad.transform.localRotation = Quaternion.identity;   // 法线 +Y，俯视可见
+        var mf = _enchantQuad.AddComponent<MeshFilter>();
+        mf.sharedMesh = CreateChainEnchantQuadMesh();
+        _enchantQuadRend = _enchantQuad.AddComponent<MeshRenderer>();
+        _enchantQuadRend.material = new Material(Shader.Find("Sprites/Default"));
+        _enchantQuadRend.material.color = Color.white;
+        _enchantQuadRend.transform.localScale = new Vector3(noteRadius * 2f, 1f, noteRadius * 2f);
+        _enchantQuad.SetActive(false);
+    }
+
+    /// <summary>P2 连点附魔换皮：用 quad 显示 Repeat{chainTapRequired}_skill 皮肤，隐藏原数字 TextMesh（皮肤已含数字）。</summary>
+    private void ShowChainEnchantSkin(string skillId, int remaining)
+    {
+        int req = (note != null) ? note.chainTapRequired : remaining;
+        Texture2D skin = NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Repeat" + req);
+        if (skin == null) return;
+        EnsureChainEnchantQuad();
+        _enchantSkillId = skillId;
+        _enchantQuadRend.material.mainTexture = skin;
+        _enchantQuad.SetActive(true);
+        if (chainCountRenderer != null) chainCountRenderer.enabled = false;
+        _chainEnchanted = true;
+    }
+
+    /// <summary>P2 连点逐数字更新：把 quad 贴图换成 Repeat{remaining}_skill。</summary>
+    public void UpdateChainEnchantDigit(int remaining)
+    {
+        if (!_chainEnchanted || _enchantQuadRend == null || string.IsNullOrEmpty(_enchantSkillId)) return;
+        Texture2D skin = NoteSpriteLibrary.GetEnchantSkin(_enchantSkillId, "Note_Repeat" + remaining);
+        if (skin != null) _enchantQuadRend.material.mainTexture = skin;
+    }
+
+    /// <summary>P2 附魔次数耗尽：隐藏皮肤 quad、复原原数字 TextMesh（继续显示剩余数字直到完成）。</summary>
+    public void RestoreChainBase()
+    {
+        _chainEnchanted = false;
+        if (_enchantQuad != null) _enchantQuad.SetActive(false);
+        if (chainCountRenderer != null) chainCountRenderer.enabled = true;
+    }
+
     /// <summary>音符是否已经完整穿过判定线。</summary>
     public bool hasFullyPassed { get; private set; }
 
@@ -243,6 +319,9 @@ public class NoteMover : MonoBehaviour
         // 普通点击换皮判定：仅「普通点击」(非小点击 / 非连点 / 单轨) 且能取到贴图时启用卡通贴图。
         bool isPlainTap = !isSmallTap && !isChainTap && laneSpan <= 1;
         bool isWideTap = !isSmallTap && !isChainTap && laneSpan > 1;   // 跨轨点击
+        _isPlainTapType = isPlainTap;
+        _isSmallTapType = isSmallTap;
+        _isWideTapType = isWideTap;
 
         Texture2D tapTex = tapTexture;
         Sprite tapSpriteRef = null;
@@ -626,6 +705,36 @@ public class NoteMover : MonoBehaviour
         if (noteMaterial == null || _selectTex == null) return;
         string texProp = noteMaterial.HasProperty("_BaseMap") ? "_BaseMap" : (noteMaterial.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
         noteMaterial.SetTexture(texProp, _selectTex);
+    }
+
+    /// <summary>
+    /// P0 附魔换皮：把本音符整体替换成 skillId 对应皮肤集里的贴图（普通=Note_Tap / 小型=Note_Tap_Small / 跨轨=Note_Wide，
+    /// 含命中 Select 版）。成功返回 true；该技能没有皮肤集（如炸弹雨）返回 false，调用方回退到原发光染色。
+    /// 连点音符（isChainTap）P0 不换皮，返回 false（皮肤/逐数字恢复在 P2 处理）。
+    /// </summary>
+    public bool ApplyEnchantSkin(string skillId)
+    {
+        if (noteMaterial == null) return false;
+        // P2：连点音符整条换皮（显示 Repeat{剩余}_skill 的 quad 覆盖层）
+        if (isChainTap)
+        {
+            int req = (note != null) ? note.chainTapRequired : 0;
+            if (req <= 0) return false;
+            Texture2D skin = NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Repeat" + req);
+            if (skin == null) return false; // 无皮肤集：回退发光染色
+            ShowChainEnchantSkin(skillId, req);
+            return true;
+        }
+        string kind = _isWideTapType ? "Note_Wide" : (_isSmallTapType ? "Note_Tap_Small" : "Note_Tap");
+        Texture2D skin2 = NoteSpriteLibrary.GetEnchantSkin(skillId, kind);
+        if (skin2 == null) return false; // 无皮肤集：回退发光染色
+        Texture2D skinSelect = NoteSpriteLibrary.GetEnchantSkin(skillId, kind + "_Select");
+        string texProp = noteMaterial.HasProperty("_BaseMap") ? "_BaseMap" : (noteMaterial.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
+        noteMaterial.SetTexture(texProp, skin2);
+        if (skinSelect != null) _selectTex = skinSelect;   // 命中后切到皮肤 Select 版
+        textured = true;                                   // 命中走 Select（完成）贴图路径
+        SetNoteTint(Color.white);                          // 以贴图原色显示
+        return true;
     }
 
     private IEnumerator HitCoroutine(string rank)
