@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 
 /// <summary>
 /// 控制点击音符从生成点沿轨道移动到判定线并穿过判定线，越过中线后变为可见。
@@ -77,24 +76,12 @@ public class NoteMover : MonoBehaviour
     [Tooltip("后退距离（世界单位）：命中后从判定线后退多远，再以前进速度回到判定线。Inspector 可调。")]
     public float chainRetreatDist = 1f;
 
-    // P8：连点音符附魔换皮（本体=圆角板+Note_Repeat_N 贴图，附魔直接换整张贴图，无覆盖层）
+    // P2：连点音符附魔换皮（覆盖层 quad 显示 Repeat{剩余}_skill，本体圆柱藏在后面）
     private bool _chainEnchanted = false;
     private string _enchantSkillId = null;
-
-    // ---- 连点数字精灵系统（09-17 块B，P9 恢复：果冻底座卡面 + 独立数字精灵叠上面）----
-    [Header("连点数字精灵(09-17)")]
-    [Tooltip("数字相对卡面局部高度（Inspector 所见局部值，默认 1.63，非世界坐标）。")]
-    public float digitYOffset = 1.63f;
-    [Tooltip("数字整体缩放（抵消父级非均匀缩放后生效）。")]
-    public float digitScaleMul = 1f;
-    [Tooltip("双数字两精灵沿 X 间距（世界单位）。")]
-    public float digitSpacing = 0.06f;
-    private GameObject digitRoot = null;
-    private SpriteRenderer[] digitRenders = new SpriteRenderer[2];
-    private int digitFigures = 0;
-    private Dictionary<string, Sprite> _enchantDigitSpriteCache = new Dictionary<string, Sprite>();
-    private bool chainFarthestDone = false;   // D+E：本次命中是否已到撤退最远点（触发递减+回退Select）
-    private bool _isChainTextured = false;   // 连点是否为圆角板贴图形态（通用 repeatDigits 可用时 true，否则回退旧圆柱+程序数字）
+    private GameObject _enchantQuad = null;
+    private MeshRenderer _enchantQuadRend = null;
+    private static Mesh _chainEnchantQuadMesh;
 
     private float chainTapDeadline = -1f;        // 可点击截止时间 = nextContactTime + goodWindow
     private float chainHitTime = -999f;           // 本次命中时刻
@@ -215,155 +202,69 @@ public class NoteMover : MonoBehaviour
         return mesh;
     }
 
-    /// <summary>P8：取通用连点数字贴图 Note_Repeat{N}（圆角板+数字成品，n 夹取 0..9；取不到返回 null）。</summary>
-    private static Texture2D GetChainRepeatTex(int n)
+    /// <summary>P2 连点附魔换皮用的平铺 quad（XZ 平面、法线朝上，俯视可见），覆盖在圆柱本体上方显示 Repeat 数字皮肤。</summary>
+    private static Mesh CreateChainEnchantQuadMesh()
     {
-        if (NoteSpriteLibrary.Instance == null) return null;
-        var arr = NoteSpriteLibrary.Instance.repeatDigits;
-        int i = Mathf.Clamp(n, 0, 9);
-        return (arr != null && i < arr.Length && arr[i] != null) ? arr[i].texture : null;
+        if (_chainEnchantQuadMesh != null) return _chainEnchantQuadMesh;
+        var m = new Mesh { name = "ChainEnchantQuad" };
+        m.vertices = new Vector3[]
+        {
+            new Vector3(-0.5f, 0f, -0.5f),
+            new Vector3(0.5f, 0f, -0.5f),
+            new Vector3(0.5f, 0f, 0.5f),
+            new Vector3(-0.5f, 0f, 0.5f),
+        };
+        m.uv = new Vector2[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f) };
+        m.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
+        m.RecalculateNormals();
+        _chainEnchantQuadMesh = m;
+        return m;
     }
 
-    /// <summary>把主体材质贴图换成 t（兼容 URP _BaseMap 与旧 _MainTex）。</summary>
-    private void SetNoteTexture(Texture2D t)
+    private void EnsureChainEnchantQuad()
     {
-        if (noteMaterial == null || t == null) return;
-        string p = noteMaterial.HasProperty("_BaseMap") ? "_BaseMap" : (noteMaterial.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
-        noteMaterial.SetTexture(p, t);
+        if (_enchantQuad != null) return;
+        _enchantQuad = new GameObject("ChainEnchantQuad");
+        _enchantQuad.transform.SetParent(transform, false);
+        _enchantQuad.transform.localPosition = new Vector3(0f, 0.06f, 0f);
+        _enchantQuad.transform.localRotation = Quaternion.identity;   // 法线 +Y，俯视可见
+        var mf = _enchantQuad.AddComponent<MeshFilter>();
+        mf.sharedMesh = CreateChainEnchantQuadMesh();
+        _enchantQuadRend = _enchantQuad.AddComponent<MeshRenderer>();
+        _enchantQuadRend.material = new Material(Shader.Find("Sprites/Default"));
+        _enchantQuadRend.material.color = Color.white;
+        _enchantQuadRend.transform.localScale = new Vector3(noteRadius * 2f, 1f, noteRadius * 2f);
+        _enchantQuad.SetActive(false);
     }
 
-    /// <summary>P9(恢复09-17) 连点逐数字更新（附魔态）：只换数字精灵为技能数字剩余值，本体保持技能底座。</summary>
+    /// <summary>P2 连点附魔换皮：用 quad 显示 Repeat{chainTapRequired}_skill 皮肤，隐藏原数字 TextMesh（皮肤已含数字）。</summary>
+    private void ShowChainEnchantSkin(string skillId, int remaining)
+    {
+        int req = (note != null) ? note.chainTapRequired : remaining;
+        Texture2D skin = NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Repeat_" + req);
+        if (skin == null) return;
+        EnsureChainEnchantQuad();
+        _enchantSkillId = skillId;
+        _enchantQuadRend.material.mainTexture = skin;
+        _enchantQuad.SetActive(true);
+        if (chainCountRenderer != null) chainCountRenderer.enabled = false;
+        _chainEnchanted = true;
+    }
+
+    /// <summary>P2 连点逐数字更新：把 quad 贴图换成 Repeat{remaining}_skill。</summary>
     public void UpdateChainEnchantDigit(int remaining)
     {
-        if (!_chainEnchanted || string.IsNullOrEmpty(_enchantSkillId)) return;
-        SetDigitSprite(remaining, false, true);
+        if (!_chainEnchanted || _enchantQuadRend == null || string.IsNullOrEmpty(_enchantSkillId)) return;
+        Texture2D skin = NoteSpriteLibrary.GetEnchantSkin(_enchantSkillId, "Note_Repeat_" + remaining);
+        if (skin != null) _enchantQuadRend.material.mainTexture = skin;
     }
 
-    /// <summary>P9(恢复09-17) 附魔次数耗尽：本体与数字复原为通用底座 + 通用数字，继续普通结算。</summary>
+    /// <summary>P2 附魔次数耗尽：隐藏皮肤 quad、复原原数字 TextMesh（继续显示剩余数字直到完成）。</summary>
     public void RestoreChainBase()
     {
         _chainEnchanted = false;
-        if (_isChainTextured && digitRenders[0] != null)
-        {
-            int rem = (note != null) ? Mathf.Max(1, note.chainTapRemaining) : 1;
-            RefreshChainVisual(rem, false, false);
-        }
-    }
-
-    // ---------------------------------------------------------------------------
-    // P9(恢复09-17 块A/B/C)：连点音符 = 果冻底座卡面(Repeat) + 独立数字精灵(repeatDigits[N])
-    // ---------------------------------------------------------------------------
-
-    /// <summary>按模式刷新连点本体贴图 + 数字精灵。enchant=附魔态(技能皮肤)；select=命中完成态。</summary>
-    private void RefreshChainVisual(int n, bool select, bool enchant)
-    {
-        if (!_isChainTextured) return;
-        // 本体：附魔→技能底座(Note_Repeat_skill)；命中→通用 Select(repeatSelect)；否则通用底座(repeat)
-        if (enchant && !string.IsNullOrEmpty(_enchantSkillId))
-            SetNoteTexture(NoteSpriteLibrary.GetEnchantSkin(_enchantSkillId, "Note_Repeat"));
-        else if (select && NoteSpriteLibrary.Instance != null && NoteSpriteLibrary.Instance.repeatSelect != null)
-            SetNoteTexture(NoteSpriteLibrary.Instance.repeatSelect.texture);
-        else if (NoteSpriteLibrary.Instance != null && NoteSpriteLibrary.Instance.repeat != null)
-            SetNoteTexture(NoteSpriteLibrary.Instance.repeat.texture);
-        SetDigitSprite(n, select, enchant);
-    }
-
-    /// <summary>设置数字精灵。单数字放 slot1；双数字(≥10) slot0=十位左 / slot1=个位右。</summary>
-    private void SetDigitSprite(int n, bool select, bool enchant)
-    {
-        if (digitRenders[0] == null) return;
-        Sprite dig = null;
-        if (enchant && !string.IsNullOrEmpty(_enchantSkillId))
-            dig = GetEnchantDigitSprite(_enchantSkillId, n, select);
-        else if (NoteSpriteLibrary.Instance != null)
-        {
-            Sprite[] src = (select && NoteSpriteLibrary.Instance.repeatDigitsSelect != null) ? NoteSpriteLibrary.Instance.repeatDigitsSelect
-                        : (NoteSpriteLibrary.Instance.repeatDigits);
-            if (src != null && n >= 0 && n < src.Length) dig = src[n];
-        }
-        if (n >= 10)
-        {
-            // 双数字：十位 / 个位 沿 X 并排
-            int tens = n / 10, ones = n % 10;
-            Sprite digT = null, digO = null;
-            if (enchant && !string.IsNullOrEmpty(_enchantSkillId))
-            {
-                digT = GetEnchantDigitSprite(_enchantSkillId, tens, select);
-                digO = GetEnchantDigitSprite(_enchantSkillId, ones, select);
-            }
-            else if (NoteSpriteLibrary.Instance != null)
-            {
-                Sprite[] src = (select && NoteSpriteLibrary.Instance.repeatDigitsSelect != null) ? NoteSpriteLibrary.Instance.repeatDigitsSelect
-                            : (NoteSpriteLibrary.Instance.repeatDigits);
-                if (src != null)
-                {
-                    if (tens >= 0 && tens < src.Length) digT = src[tens];
-                    if (ones >= 0 && ones < src.Length) digO = src[ones];
-                }
-            }
-            digitRenders[0].sprite = digT;
-            digitRenders[1].sprite = digO;
-            float off = (digitSpacing > 0f) ? digitSpacing / Mathf.Max(0.001f, digitScaleMul) : 0f;
-            digitRenders[0].transform.localPosition = new Vector3(-off, 0f, 0f);
-            digitRenders[1].transform.localPosition = new Vector3(off, 0f, 0f);
-            digitFigures = 2;
-        }
-        else
-        {
-            digitRenders[0].sprite = null;
-            digitRenders[1].sprite = dig;
-            digitRenders[1].transform.localPosition = Vector3.zero;
-            digitFigures = 1;
-        }
-    }
-
-    /// <summary>附魔数字贴图(Texture2D)转 Sprite 并缓存（PPU 取对应通用数字精灵，保持一致尺寸）。select=取 _Select 变体。</summary>
-    private Sprite GetEnchantDigitSprite(string skillId, int n, bool select = false)
-    {
-        string key = skillId + "|" + n + (select ? "|S" : "");
-        if (_enchantDigitSpriteCache.TryGetValue(key, out var sp) && sp != null) return sp;
-        string kind = "Note_Repeat_" + n + (select ? "_Select" : "");
-        Texture2D tex = NoteSpriteLibrary.GetEnchantSkin(skillId, kind);
-        if (tex == null) return null;
-        float ppu = 100f;
-        if (NoteSpriteLibrary.Instance != null && NoteSpriteLibrary.Instance.repeatDigits != null
-            && n >= 0 && n < NoteSpriteLibrary.Instance.repeatDigits.Length
-            && NoteSpriteLibrary.Instance.repeatDigits[n] != null)
-            ppu = NoteSpriteLibrary.Instance.repeatDigits[n].pixelsPerUnit;
-        Sprite s = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), ppu);
-        s.name = "EnchantDigit_" + key;
-        _enchantDigitSpriteCache[key] = s;
-        return s;
-    }
-
-    /// <summary>创建连点数字精灵（独立 SpriteRenderer，躺平印在卡面中央）。回退态不调用。</summary>
-    private void CreateDigitSprites(int n)
-    {
-        if (digitRoot != null) return;
-        digitRoot = new GameObject("ChainDigits");
-        digitRoot.transform.SetParent(transform, false);
-        digitRoot.transform.localPosition = new Vector3(0f, digitYOffset, 0f);   // 局部高度（Inspector 所见）
-        digitRoot.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);       // 躺平朝上（面朝相机下方世界 +Y）
-        Vector3 ps = transform.localScale;
-        float sx = ps.x > 0.0001f ? ps.x : 1f;
-        float sy = ps.y > 0.0001f ? ps.y : 1f;
-        float sz = ps.z > 0.0001f ? ps.z : 1f;
-        // 抵消父级非均匀缩放。注意：digitRoot 已绕 X 转 90°（躺平），
-        // 其 local Y 轴映射到父级 Z（轨道方向）、local Z 映射到父级 Y（厚度，对平躺精灵无视觉影响）。
-        // 因此 X 补偿 1/sx、Y（→轨道向）补偿 1/sz；绝不能除以 sy（厚度 0.12），否则数字沿轨道被拉长 ~8 倍成"火苗"。
-        digitRoot.transform.localScale = new Vector3(1f / sx, 1f / sz, 1f) * digitScaleMul;
-
-        for (int i = 0; i < 2; i++)
-        {
-            var go = new GameObject("Digit" + i);
-            go.transform.SetParent(digitRoot.transform, false);
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = null;
-            sr.sortingOrder = 10;   // 压在卡面之上
-            sr.enabled = false;      // 初始隐藏，过粉杠后由可见性逻辑打开
-            digitRenders[i] = sr;
-        }
-        SetDigitSprite(n, false, false);
+        if (_enchantQuad != null) _enchantQuad.SetActive(false);
+        if (chainCountRenderer != null) chainCountRenderer.enabled = true;
     }
 
     /// <summary>音符是否已经完整穿过判定线。</summary>
@@ -422,13 +323,6 @@ public class NoteMover : MonoBehaviour
         _isSmallTapType = isSmallTap;
         _isWideTapType = isWideTap;
 
-        // P9(恢复09-17)：连点音符主体 = 果冻底座卡面（NoteSpriteLibrary.repeat，无数字）；
-        // 数字由独立数字精灵(repeatDigits[N])叠在卡面上。取不到 repeat 则保持旧圆柱+程序数字形态，改动可回退。
-        Texture2D chainBaseTex = (NoteSpriteLibrary.Instance != null && NoteSpriteLibrary.Instance.repeat != null)
-            ? NoteSpriteLibrary.Instance.repeat.texture : null;
-        bool isChainTextured = isChainTap && chainBaseTex != null;
-        _isChainTextured = isChainTextured;
-
         Texture2D tapTex = tapTexture;
         Sprite tapSpriteRef = null;
         if (tapTex == null && NoteSpriteLibrary.Instance != null && NoteSpriteLibrary.Instance.tap != null)
@@ -457,16 +351,15 @@ public class NoteMover : MonoBehaviour
         _selectTex = null;
         if (NoteSpriteLibrary.Instance != null)
         {
-            Sprite sel = isChainTap ? NoteSpriteLibrary.Instance.repeatSelect
-                        : (isWideTap ? NoteSpriteLibrary.Instance.wideSelect
+            Sprite sel = isWideTap ? NoteSpriteLibrary.Instance.wideSelect
                         : (isSmallTap ? NoteSpriteLibrary.Instance.smallTapSelect
-                                      : NoteSpriteLibrary.Instance.tapSelect));
+                                      : NoteSpriteLibrary.Instance.tapSelect);
             if (sel != null) _selectTex = sel.texture;
         }
 
         bool isSmallTextured = isSmallTap && smallTex != null;
-        textured = (isPlainTap && tapTex != null) || (isWideTap && wideTex != null) || isSmallTextured || isChainTextured;
-        Texture2D activeTex = isChainTap ? chainBaseTex : (isWideTap ? wideTex : (isSmallTap ? smallTex : tapTex));   // 实际用于渲染的贴图
+        textured = (isPlainTap && tapTex != null) || (isWideTap && wideTex != null) || isSmallTextured;
+        Texture2D activeTex = isWideTap ? wideTex : (isSmallTap ? smallTex : tapTex);          // 实际用于渲染的贴图
 
         note = GetComponent<Note>();
         note.hitTime = hitTime;
@@ -507,16 +400,7 @@ public class NoteMover : MonoBehaviour
         // 美术改贴图像素即改大小，PPU 由贴图导入设置决定；关闭则回退手调绝对尺寸(可回退)。
         if (useTextureNativeSize)
         {
-            if (isChainTap && chainBaseTex != null)
-            {
-                // P9(恢复09-17)：连点底座卡面按贴图原生尺寸 1:1（repeat 精灵 PPU）
-                Sprite baseSpr = (NoteSpriteLibrary.Instance != null) ? NoteSpriteLibrary.Instance.repeat : null;
-                float chainPPU = (baseSpr != null) ? baseSpr.pixelsPerUnit : 100f;
-                xDiameter = chainBaseTex.width / chainPPU;
-                zDiameter = chainBaseTex.height / chainPPU;
-                transform.localScale = new Vector3(xDiameter * tapVisualScaleMul, 0.12f, zDiameter * tapVisualScaleMul);
-            }
-            else if (isWideTap && wideTex != null)
+            if (isWideTap && wideTex != null)
             {
                 float w = (wideSpriteRef != null) ? wideSpriteRef.rect.width : wideTex.width;
                 float h = (wideSpriteRef != null) ? wideSpriteRef.rect.height : wideTex.height;
@@ -587,8 +471,6 @@ public class NoteMover : MonoBehaviour
                 // 卡通换皮：用成品材质或运行时生成的 URP Unlit 透明材质贴爪印；副本互不影响。
                 if (isSmallTap)
                     noteMaterial = smallTapNoteMaterial != null ? new Material(smallTapNoteMaterial) : MakeTapMaterial(smallTex);
-                else if (isChainTap)
-                    noteMaterial = MakeTapMaterial(activeTex);   // P8 连点：强制用通用 Repeat 贴图建材质，不复用 tap 模板（其自带 Note_Tap 贴图）
                 else
                     noteMaterial = tapNoteMaterial != null ? new Material(tapNoteMaterial) : MakeTapMaterial(activeTex);
                 visibleBaseColor = Color.white;
@@ -608,10 +490,8 @@ public class NoteMover : MonoBehaviour
             rend.enabled = false;
         }
 
-        if (isChainTap && isChainTextured)
-            CreateDigitSprites(Mathf.Max(1, chainTapCount));   // P9(恢复09-17)：底座卡面 + 独立数字精灵
-        else if (isChainTap && !isChainTextured)
-            CreateChainCountText(Mathf.Max(1, chainTapCount));  // 回退态：旧圆柱+程序数字（repeat 未配置时）
+        if (isChainTap)
+            CreateChainCountText(Mathf.Max(1, chainTapCount));
     }
 
     void Update()
@@ -635,13 +515,6 @@ public class NoteMover : MonoBehaviour
                 d = chainRetreatDist - normalSpeed * (te - chainTapHoldDuration);  // 正常速前进，d<0=已越过判定线
             }
             transform.position = new Vector3(hitPos.x - dirX * d, rideY, hitPos.z);
-            // D+E(恢复09-17)：首次越过撤退最远点 → 递减剩余 + 本体/数字回退 Select 态（显示新剩余数）
-            if (!chainFarthestDone && te >= chainTapHoldDuration && note != null)
-            {
-                chainFarthestDone = true;
-                int rem = note.OnChainRetreatFarthest();
-                RefreshChainVisual(rem, false, _chainEnchanted);
-            }
             return;
         }
 
@@ -670,7 +543,6 @@ public class NoteMover : MonoBehaviour
             note.isVisible = true;
             if (rend != null) rend.enabled = true;
             if (chainCountRenderer != null) chainCountRenderer.enabled = true;
-            if (digitRenders[0] != null) { digitRenders[0].enabled = true; digitRenders[1].enabled = true; }
             SetAlpha(1f);
         }
 
@@ -722,20 +594,9 @@ public class NoteMover : MonoBehaviour
         chainNextContactTime = songTime + chainTapHoldDuration + chainRetreatDist / v;
         chainTapDeadline = chainNextContactTime + goodWindow;
 
-        if (_isChainTextured)
-        {
-            // P9(恢复09-17 块C)：命中 → 本体切 Select（完成）态、数字切 Select 数字；保留 pop 弹跳反馈。
-            // 附魔态：本体/数字都走技能 Select 皮肤；非附魔态：走通用 repeatSelect + repeatDigitsSelect。
-            chainFarthestDone = false;   // D+E：本次命中重置最远点标记
-            RefreshChainVisual(remaining, true, _chainEnchanted);
-        }
-        else
-        {
-            // 旧圆柱回退形态：进度染色 + 程序数字
-            float progress = 1f - Mathf.Clamp01(remaining / (float)Mathf.Max(1, required));
-            SetChainBodyColor(Color.Lerp(Color.black, Color.white, progress));
-            if (chainCountText != null) chainCountText.text = remaining.ToString();
-        }
+        float progress = 1f - Mathf.Clamp01(remaining / (float)Mathf.Max(1, required));
+        SetChainBodyColor(Color.Lerp(Color.black, Color.white, progress));
+        if (chainCountText != null) chainCountText.text = remaining.ToString();
         // 不再钉死位置：下一帧 Update 按 te 平滑接管（te≈0 即在判定线，无跳变）。
         // 每次命中叠加一次「白闪 + 放大缩小」反馈（不破坏进度色，淡出后回归原进度色）。
         StartCoroutine(ChainTapHitPopCo());
@@ -838,40 +699,30 @@ public class NoteMover : MonoBehaviour
         SetNoteTint(color);
     }
 
-    /// <summary>命中时把材质贴图切换到"完成"版（Select）。贴图属性名兼容 URP Unlit(_BaseMap) 与旧(_MainTex)。
-    /// 连点音符同时把数字精灵切到 Select 版（附魔则技能 Select 数字）。</summary>
+    /// <summary>命中时把材质贴图切换到"完成"版（Select）。贴图属性名兼容 URP Unlit(_BaseMap) 与旧(_MainTex)。</summary>
     private void ApplySelectTexture()
     {
         if (noteMaterial == null || _selectTex == null) return;
         string texProp = noteMaterial.HasProperty("_BaseMap") ? "_BaseMap" : (noteMaterial.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
         noteMaterial.SetTexture(texProp, _selectTex);
-        if (isChainTap && _isChainTextured && digitRenders[0] != null)
-        {
-            int rem = (note != null) ? Mathf.Max(0, note.chainTapRemaining) : 0;
-            SetDigitSprite(rem, true, _chainEnchanted);
-        }
     }
 
     /// <summary>
     /// P0 附魔换皮：把本音符整体替换成 skillId 对应皮肤集里的贴图（普通=Note_Tap / 小型=Note_Tap_Small / 跨轨=Note_Wide，
     /// 含命中 Select 版）。成功返回 true；该技能没有皮肤集（如炸弹雨）返回 false，调用方回退到原发光染色。
-    /// 连点音符（isChainTap）：本体=圆角板+Note_Repeat{N} 通用贴图；附魔直接换 Note_Repeat{N}_skill 整图，逐数字更新（P8）。
+    /// 连点音符（isChainTap）P0 不换皮，返回 false（皮肤/逐数字恢复在 P2 处理）。
     /// </summary>
     public bool ApplyEnchantSkin(string skillId)
     {
         if (noteMaterial == null) return false;
-        // P9(恢复09-17)：连点音符 = 底座卡面 + 数字精灵。附魔：本体换技能底座(Note_Repeat_skill)、数字换技能数字(req)。
-        // 回退态（无通用贴图的旧圆柱）不支持贴图换皮，返回 false 走发光染色。
+        // P2：连点音符整条换皮（显示 Repeat{剩余}_skill 的 quad 覆盖层）
         if (isChainTap)
         {
-            if (!_isChainTextured) return false;
             int req = (note != null) ? note.chainTapRequired : 0;
             if (req <= 0) return false;
-            Texture2D skinBase = NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Repeat");   // 通用底座(技能色，无数字)
-            if (skinBase == null) return false; // 无皮肤集：回退发光染色
-            _enchantSkillId = skillId;
-            _chainEnchanted = true;
-            RefreshChainVisual(req, false, true);   // 本体=技能底座、数字=技能数字 req
+            Texture2D skin = NoteSpriteLibrary.GetEnchantSkin(skillId, "Note_Repeat_" + req);
+            if (skin == null) return false; // 无皮肤集：回退发光染色
+            ShowChainEnchantSkin(skillId, req);
             return true;
         }
         string kind = _isWideTapType ? "Note_Wide" : (_isSmallTapType ? "Note_Tap_Small" : "Note_Tap");
@@ -1027,15 +878,6 @@ public class NoteMover : MonoBehaviour
             chainCountText.color = textColor;
             if (chainCountRenderer != null && note.isVisible)
                 chainCountRenderer.enabled = alpha > 0.01f;
-        }
-        // 连点数字精灵（09-17）：与卡面同步淡入淡出
-        if (digitRenders[0] != null && note.isVisible)
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                if (digitRenders[i] != null && digitRenders[i].sprite != null)
-                    digitRenders[i].enabled = alpha > 0.01f;
-            }
         }
     }
 

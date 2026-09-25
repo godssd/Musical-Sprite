@@ -348,10 +348,8 @@ public class NoteMover : MonoBehaviour
         float sx = ps.x > 0.0001f ? ps.x : 1f;
         float sy = ps.y > 0.0001f ? ps.y : 1f;
         float sz = ps.z > 0.0001f ? ps.z : 1f;
-        // 抵消父级非均匀缩放。注意：digitRoot 已绕 X 转 90°（躺平），
-        // 其 local Y 轴映射到父级 Z（轨道方向）、local Z 映射到父级 Y（厚度，对平躺精灵无视觉影响）。
-        // 因此 X 补偿 1/sx、Y（→轨道向）补偿 1/sz；绝不能除以 sy（厚度 0.12），否则数字沿轨道被拉长 ~8 倍成"火苗"。
-        digitRoot.transform.localScale = new Vector3(1f / sx, 1f / sz, 1f) * digitScaleMul;
+        // 抵消父级非均匀缩放（XZ 直径 / Y 厚度），使数字精灵以原生尺寸 1:1 显示、不被拉长
+        digitRoot.transform.localScale = new Vector3(1f / sx, 1f / sy, 1f / sz) * digitScaleMul;
 
         for (int i = 0; i < 2; i++)
         {

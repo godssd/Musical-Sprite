@@ -72,7 +72,9 @@ public class GameManager : MonoBehaviour
                 if (bgm != null && bgm.audioClip != null)
                 {
                     conductor.musicSource.clip = bgm.audioClip;
-                    conductor.Play(); // 重新锚定 dspStartTime 并播放，使 BGM 与判定时钟从 0 对齐
+                    // lead-in 延迟起播：时钟锚点与真实出声时刻预定到同一 DSP 时刻，
+                    // 启动卡顿被导入期吸收，避免 songPosition 跳到歌曲中间（不同步修复 P1）
+                    conductor.StartPlaybackWithLeadIn(conductor.leadIn);
                 }
             }
         }
@@ -210,7 +212,7 @@ public class GameManager : MonoBehaviour
         if (centerLine != null) centerLine.ResetBattle();
         if (opponentInput != null) opponentInput.ResetInput();
         if (scoreManager != null) scoreManager.ResetScores();
-        if (conductor != null) conductor.Play();
+        if (conductor != null) conductor.StartPlaybackWithLeadIn(conductor.leadIn);
 
         if (winnerDisplayRoot != null) Destroy(winnerDisplayRoot);
         winnerShown = false;
