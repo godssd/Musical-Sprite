@@ -21,15 +21,14 @@ MonoBehaviour:
   charmedNoteCount: 6
   enchantTarget: 0
   onlyCountNonMiss: 1
-  reduceComboPerCharmedNote: 3
-  comboHpDamageRate: 0.01
+  reduceComboPerCharmedNote: 2
+  comboHpDamageRate: 0.04
   feverExtraDelay: 3
   releaseGlow: {r: 1, g: 0.85, b: 0.2, a: 1}
   shockwavePrefab: {fileID: 0}
   releaseSfxClip: {fileID: 0}
   screenShakeAmp: 0.3
   effectType: DogHowl
-  effectParamsJSON: '{}'
   charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
   charmBonusFever: 0
   charmBonusSuperFever: 0
@@ -37,6 +36,7 @@ MonoBehaviour:
   healHpRate: 0.005
   healCombatRate: 0.015
   regenPerTickHpRate: 0.002
+  regenInterval: 3
   buffSlot: 0
   buffSubType: 0
   buffCombatMult: 1.4
@@ -45,3 +45,9 @@ MonoBehaviour:
   clearBandRangeMult: 1
   clearSleepSeconds: 3
   clearBuffAsB: 0
+  clearOverheatRangeMult: 1.2
+  clearOverheatCombatMult: 1.3
+  clearOverheatBuffDuration: 30
+  clearSuperRangeMult: 1.5
+  clearSuperCombatMult: 1.8
+  clearSuperBuffDuration: 30

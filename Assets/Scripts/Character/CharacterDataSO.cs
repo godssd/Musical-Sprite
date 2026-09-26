@@ -47,10 +47,10 @@ public class SkillSlot
 
     /// <summary>是否存在该能力。空列组（技能ID/输入方式/描述全空）= 不存在该技能。</summary>
     public bool Exists => HasContent;
-    /// <summary>被动技能判定（按角色文档规则，三条件全空）：能量需求(energyCost≤0) + 输入方式(空) + 技能冷却(cooldown≤0) 同时为空/无。
-    /// 仅当三者全空才视为被动；任一填写（含能量需求填了数值、或填了输入方式、或填了冷却）都不算被动。
-    /// 注：能量需求="无"/空 解析为 energyCost=0，未填冷却解析为 cooldown=0，故"全空"等价于 energyCost≤0 && inputMethod 空 && cooldown≤0。</summary>
-    public bool IsPassive => Exists && energyCost <= 0 && string.IsNullOrWhiteSpace(inputMethod) && cooldown <= 0;
+    /// <summary>被动技能判定（按角色文档规则 2026-09-26 修正）：主动技能 = 输入方式 和 能量需求 都不为空；
+    /// 故被动 = 输入方式 为空。能量需求 空/无 在导入时均解析为 energyCost=0（无哨兵区分），可靠判别信号是 输入方式 是否为空；被动技能按定义无输入方式、满足条件持续生效。
+    /// 判定不再依赖 技能冷却(cooldown) —— 修正前 cooldown≤0 的写法会与「被动技能冷却」规则冲突（被动也可带冷却，冷却内完全失效）。</summary>
+    public bool IsPassive => Exists && string.IsNullOrWhiteSpace(inputMethod);
     /// <summary>主动技能且能量需求>0 → 需要能量门槛（满能量才能释放、释放清空）。能量需求=无/0 → 跳过充能/能量满/清空流程。</summary>
     public bool NeedsEnergy => Exists && !IsPassive && energyCost > 0;
 }

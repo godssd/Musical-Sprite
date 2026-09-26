@@ -30,7 +30,6 @@ MonoBehaviour:
   releaseSfxClip: {fileID: 0}
   screenShakeAmp: 0.3
   effectType: Buff
-  effectParamsJSON: '{}'
   charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
   charmBonusFever: 0
   charmBonusSuperFever: 0
@@ -41,7 +40,7 @@ MonoBehaviour:
   regenInterval: 3
   buffSlot: 1
   buffSubType: 0
-  buffCombatMult: 1.4
+  buffCombatMult: 1.8
   buffDamageReduce: 0
   buffDuration: 10
   clearBandRangeMult: 1

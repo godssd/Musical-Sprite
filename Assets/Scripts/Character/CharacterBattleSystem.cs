@@ -390,7 +390,7 @@ public class CharacterBattleSystem : MonoBehaviour
         var skill = c.activeSkill;
         c.ConsumeEnergy(c.maxEnergy);
         Debug.Log($"[Skill] side {side} lane {laneIndex} 释放 {skill.displayName} ({skill.effectType})");
-        // P2 末：在 ScoreManager 对对侧玩家造成 effectParamsJSON 里的 damage
+        // P2 末：在 ScoreManager 对对侧玩家造成技能效果伤害（按 effectType 路由；effectParamsJSON 字段已弃用移除）
         return true;
     }
 

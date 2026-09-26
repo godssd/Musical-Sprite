@@ -31,7 +31,6 @@ MonoBehaviour:
   releaseSfxClip: {fileID: 0}
   screenShakeAmp: 0.3
   effectType: ClearScreen
-  effectParamsJSON: '{}'
   charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
   charmBonusFever: 0
   charmBonusSuperFever: 0

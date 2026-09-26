@@ -82,22 +82,22 @@ public static class SkillLibraryGenerator
         created += Make("skill_3_howl", "大狗叫",
             "（3）大狗叫（将即将出现的音符附魔，每成功完成一个音符，增加分贝，结算完后发出狗叫按照分贝惊吓对手降低对方连击数）（必杀）",
             300f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Left, SkillInputStep.Left },   // AAA → ←←←
-            6, 3, "DogHowl", "{}", dir);
+            6, 3, "DogHowl", dir);
 
         created += Make("skill_4_croissant_heal", "美味牛角包",
             "（4）将即将出现的音符（6 个）附魔，每成功完成一个音符，就对自己进行一点生命治愈（3 点生命）（必杀）",
             200f, new SkillInputStep[] { SkillInputStep.Right, SkillInputStep.Down, SkillInputStep.Right }, // CBC → →↓→
-            6, 3, "Heal", "{\"healPerNote\":3,\"slowRegenSeconds\":9}", dir);
+            6, 3, "Heal", dir);
 
         created += Make("skill_5_bomb_rain", "炸弹雨",
             "（5）炸弹雨（将即将出现的音符（3 个）附魔，每完成一个音符就朝对手随机投射一颗小型炸弹（10 点伤害），造成直接生命伤害直到结算完毕）（必杀）",
             280f, new SkillInputStep[] { SkillInputStep.Left, SkillInputStep.Down, SkillInputStep.Left },    // ABA → ←↓←
-            3, 3, "Bomb", "{\"bombDamage\":10}", dir);
+            3, 3, "Bomb", dir);
 
         created += Make("skill_6_power_surge", "断弦高压",
             "（6）将身前区域的所有音符全部电没（视为完成最佳命中，按各音符最高判定计分/充能）之后释放者小黑自身陷入 N 秒沉睡；过热 / 超级过热释放时额外激活自身 b 类战力 buff（橙黄）",
             330f, new SkillInputStep[] { SkillInputStep.Down, SkillInputStep.Right, SkillInputStep.Left },   // BCA → ↓→←
-            0, 0, "ClearScreen", "{}", dir,
+            0, 0, "ClearScreen", dir,
             buffSlot: BuffSlot.B, buffCombatMult: 1.5f, clearSleepSeconds: 3f, clearBuffAsB: true,
             clearOverheatRangeMult: 1.2f, clearOverheatCombatMult: 1.3f, clearOverheatBuffDuration: 30f,
             clearSuperRangeMult: 1.5f, clearSuperCombatMult: 1.8f, clearSuperBuffDuration: 30f);
@@ -106,13 +106,13 @@ public static class SkillLibraryGenerator
         created += Make("skill_1_team_defense", "全体防御",
             "（1）全体防御：减少 20% 受到的伤害，持续 10s（同属 a 类 buff 不可共存）",
             0f, new SkillInputStep[0],
-            0, 0, "Buff", "{}", dir,
+            0, 0, "Buff", dir,
             buffSlot: BuffSlot.A, buffSubType: BuffSubType.Defense, buffCombatMult: 1f, buffDamageReduce: 0.2f, buffDuration: 10f);
 
         created += Make("skill_2_team_offense", "全体进攻",
             "（2）全体进攻：整个队伍战斗力上升 40%，持续 10s（同属 a 类 buff 不可共存）",
             0f, new SkillInputStep[0],
-            0, 0, "Buff", "{}", dir,
+            0, 0, "Buff", dir,
             buffSlot: BuffSlot.A, buffSubType: BuffSubType.Offense, buffCombatMult: 1.4f, buffDamageReduce: 0f, buffDuration: 10f);
 
         if (!silent)
@@ -151,7 +151,7 @@ public static class SkillLibraryGenerator
     }
 
     static int Make(string skillId, string displayName, string desc, float energyCost,
-        SkillInputStep[] seq, int charmed, int reducePer, string effectType, string effectParams, string dir,
+        SkillInputStep[] seq, int charmed, int reducePer, string effectType, string dir,
         BuffSlot buffSlot = BuffSlot.None, BuffSubType buffSubType = BuffSubType.Offense,
         float buffCombatMult = 1.4f, float buffDamageReduce = 0.2f, float buffDuration = 10f,
         float clearBandRangeMult = 1f, float clearSleepSeconds = 3f, bool clearBuffAsB = false,
@@ -191,7 +191,6 @@ public static class SkillLibraryGenerator
         so.reduceComboPerCharmedNote = reducePer;
         so.releaseGlow = new Color(1f, 0.85f, 0.2f);
         so.effectType = effectType;
-        so.effectParamsJSON = effectParams;
         // 同步 buff / 清屏 / 附魔 参数（新建时一次性写入全部可调默认值）
         so.enchantTarget = enchantTarget;
         so.buffSlot = buffSlot;

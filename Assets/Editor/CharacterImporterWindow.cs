@@ -220,7 +220,8 @@ public class CharacterImporterWindow : EditorWindow
                     superOverheatDesc = super,
                 };
                 // 反查 SkillSO（仅当有 skillId；被动/玩家主动可能无 skillId → skill=null，由文案/玩家指令驱动）
-                slot.skill = string.IsNullOrEmpty(skillId) ? null : FindSkill(skillId);
+                SkillSO resolvedSkill = string.IsNullOrEmpty(skillId) ? null : FindSkill(skillId);
+                slot.skill = resolvedSkill;
                 skills[a] = slot;
 
                 if (!slot.Exists) continue;

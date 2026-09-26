@@ -67,9 +67,6 @@ public class SkillSO : ScriptableObject
     [Header("效果（P3 实现）")]
     [Tooltip("效果路由键，例如 Heal / Buff / Shield / Bomb / DogHowl")]
     public string effectType = "None";
-    [TextArea(2, 6)]
-    [Tooltip("自由 JSON 参数，P3 解析")]
-    public string effectParamsJSON = "{}";
 
     [Header("附魔外观 / 过热 / 各效果参数")]
     [Tooltip("附魔时音符显示的颜色；默认黑色(Color.black)表示回退到释放方角色自身颜色")]
@@ -88,10 +85,8 @@ public class SkillSO : ScriptableObject
     public float healHpRate = 0.005f;       // 生命值总和 × 0.5%
     [Tooltip("美味牛角包：战斗力部分系数（战斗力总和 × 1.5%）")]
     public float healCombatRate = 0.015f;   // 战斗力总和 × 1.5%
-    [Tooltip("过热/超级过热缓慢恢复每跳回血 = ceil(本次命中附魔音符数 × 生命值总和 × 本系数)。0.002 = 生命值总和的 0.2%（已弃用：Regen 现改用 regenPerNote 整数系数）")]
+    [Tooltip("过热/超级过热缓慢恢复每跳回血 = ceil(释放方全队生命值总和 × 本系数)。0.002 = 生命值总和的 0.2%。当前生效：Regen 每跳按此系数对全队 HP 总和结算（向上取整）")]
     public float regenPerTickHpRate = 0.002f; // 生命值总和 × 0.2%
-    [Tooltip("过热/超级过热缓慢恢复：每命中一个附魔音符、每跳回复的生命数（整数，向上取整）。默认1，可在 Inspector / 技能库调参面板调整。对应设计『收集音符数量 ×1』")]
-    public int regenPerNote = 1;
     [Tooltip("过热/超级过热缓慢恢复间隔（秒）；替换原硬编码 3s。可在 Inspector / 技能库调参面板调整。")]
     public float regenInterval = 3f;
 

@@ -90,7 +90,7 @@ public static class DefaultSkillBootstrap
     }
 
 
-    public static SkillSO MakeDefaultActiveSkill(string display, string desc, int energyCost, string effectType, string paramsJson, string skillId = "")
+    public static SkillSO MakeDefaultActiveSkill(string display, string desc, int energyCost, string effectType, string skillId = "")
     {
         var s = ScriptableObject.CreateInstance<SkillSO>();
         s.skillId = string.IsNullOrEmpty(skillId) ? ("default_active_" + display.Replace(" ", "_")) : skillId;
@@ -98,11 +98,10 @@ public static class DefaultSkillBootstrap
         s.description = desc;
         s.energyCost = energyCost;
         s.effectType = effectType;
-        s.effectParamsJSON = paramsJson;
         return s;
     }
 
-    public static SkillSO MakeDefaultPassiveSkill(string display, string desc, string effectType, string paramsJson, string skillId = "")
+    public static SkillSO MakeDefaultPassiveSkill(string display, string desc, string effectType, string skillId = "")
     {
         var s = ScriptableObject.CreateInstance<SkillSO>();
         s.skillId = string.IsNullOrEmpty(skillId) ? ("default_passive_" + display.Replace(" ", "_")) : skillId;
@@ -110,7 +109,6 @@ public static class DefaultSkillBootstrap
         s.description = desc;
         s.energyCost = 0f;
         s.effectType = effectType;
-        s.effectParamsJSON = paramsJson;
         return s;
     }
 
@@ -157,7 +155,7 @@ public static class DefaultSkillBootstrap
         c.passiveSkillDescription = row.passiveDesc;
         c.activeSkill = null; // 玩家走 PlayerCommand 类走另一条路（暂未实现）
         // 玩家减伤被动：保留 ReduceIncomingDamagePercent 效果，但不挂技能库条目（xiaoxiong_damage_reduce 已从库移除）。skillId 留空 → 纯被动，不进技能库聚合。
-        c.passiveSkill = MakeDefaultPassiveSkill("damage_reduce_5", "过热时获得 5% 伤害减少", "ReduceIncomingDamagePercent", "{\"percent\":0.05}", "");
+        c.passiveSkill = MakeDefaultPassiveSkill("damage_reduce_5", "过热时获得 5% 伤害减少", "ReduceIncomingDamagePercent", "");
         // 多技能槽：玩家（小熊）有两个无能量主动（能力1=↓↓← 全体防御；能力2=AAB 全体进攻），无被动。
         c.skills = new SkillSlot[5];
         c.skills[0] = MakeSlot("", 0, 0f, "↓↓←", row.activeDesc, row.passiveDesc, "", null);
@@ -185,8 +183,8 @@ public static class DefaultSkillBootstrap
         c.activeSkillDescription = row.activeDesc;
         c.activeEnergyCost = row.activeCost;
         c.passiveSkillDescription = row.passiveDesc;
-        c.activeSkill = MakeDefaultActiveSkill(row.name, row.activeDesc, row.activeCost, "PendingP3Routing", "{}", row.activeSkillId);
-        c.passiveSkill = MakeDefaultPassiveSkill(row.name, row.passiveDesc, "PendingP3Routing", "{}", "default_passive_" + row.name);
+        c.activeSkill = MakeDefaultActiveSkill(row.name, row.activeDesc, row.activeCost, "PendingP3Routing", row.activeSkillId);
+        c.passiveSkill = MakeDefaultPassiveSkill(row.name, row.passiveDesc, "PendingP3Routing", "default_passive_" + row.name);
         // 队伍技能统一参数（占位；正式技能由 Skill Maker 建 SkillSO 经 skillId 引用覆盖）
         if (c.activeSkill != null)
         {

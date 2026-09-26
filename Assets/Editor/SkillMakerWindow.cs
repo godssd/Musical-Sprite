@@ -96,10 +96,11 @@ public class SkillMakerWindow : EditorWindow
                     lst = new List<RefInfo>();
                     _refCache[slot.skillId] = lst;
                 }
-                // 类型判定严格按角色文档规则（CharacterDataSO.IsPassive）：
-                //   技能冷却 / 能量需求 / 输入方式 三者全空 → 被动；否则为主动。
+                // 类型判定严格按角色文档规则（CharacterDataSO.IsPassive，2026-09-26 修正）：
+                //   主动技能 = 输入方式 和 能量需求 都不为空；被动 = 输入方式 为空。
+                //   能量需求 空/无 在导入时均解析为 energyCost=0，故可靠判别信号是 输入方式 是否为空。
                 //   主动且能量需求=无/0 → 无能量主动技能（如全体防御/全体进攻：有输入+有冷却，无能量流程）。
-                // 注意：不能把"无能量"当成"被动"——这正是此前标记错的根因。
+                //   判定不再依赖 技能冷却；被动技能也可带冷却（冷却内完全失效，详见规则文档 §1.4）。
                 string type = slot.IsPassive ? "被动技能"
                     : (slot.energyCost <= 0 ? "主动技能（无能量）" : "主动技能（能量门槛 " + slot.energyCost + "）");
                 lst.Add(new RefInfo
@@ -159,7 +160,6 @@ public class SkillMakerWindow : EditorWindow
         public float clearSuperRangeMult;
         public float clearSuperCombatMult;
         public float clearSuperBuffDuration;
-        public string effectParamsJSON;
     }
 
     private SkillTmp GetTmp(SkillSO s)
@@ -190,7 +190,6 @@ public class SkillMakerWindow : EditorWindow
                 clearSuperRangeMult = s.clearSuperRangeMult,
                 clearSuperCombatMult = s.clearSuperCombatMult,
                 clearSuperBuffDuration = s.clearSuperBuffDuration,
-                effectParamsJSON = s.effectParamsJSON,
             };
             _tmp[s.skillId] = t;
         }
@@ -212,11 +211,11 @@ public class SkillMakerWindow : EditorWindow
         EditorGUILayout.HelpBox(s.description, MessageType.None);
         EditorGUILayout.LabelField("效果路由", s.effectType);
 
-        // 文档引用聚合（持有人 / 能量需求 / 冷却 / 输入 / 技能介绍 / 过热 / 超级过热）—— 来自角色文档，库只展示
+        // 文档引用聚合（持有人 / 能量需求 / 冷却 / 输入 / 技能介绍 / 过热 / 超级过热）—— 来自角色文档，库只展示，不构成逻辑
         _refCache.TryGetValue(s.skillId, out var refs);
         int refCount = refs != null ? refs.Count : 0;
-        EditorGUILayout.LabelField("被角色文档引用", refCount + " 个角色");
-        if (refs != null)
+        EditorGUILayout.LabelField("被角色文档引用（文档信息·仅供阅读）", refCount + " 个角色");
+        if (refs != null && refCount > 0)
         {
             foreach (var r in refs)
             {
@@ -232,14 +231,27 @@ public class SkillMakerWindow : EditorWindow
                 EditorGUILayout.EndVertical();
             }
         }
-        if (refCount == 0)
-            EditorGUILayout.HelpBox("当前没有任何角色文档引用此 skillId（检查 Characters.xlsx 的「技能引用ID」列）。", MessageType.None);
+        else
+        {
+            // 未被任何角色文档引用 → 这部分文档信息显示为空（非技能数值由 Characters.xlsx 决定，库只展示）
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("    技能类型", "空");
+            EditorGUILayout.LabelField("    能量需求", "空");
+            EditorGUILayout.LabelField("    技能冷却", "空");
+            EditorGUILayout.LabelField("    输入方式", "空");
+            EditorGUILayout.LabelField("    技能介绍", "空");
+            EditorGUILayout.LabelField("    过热状态", "空");
+            EditorGUILayout.LabelField("    超级过热状态", "空");
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.HelpBox("未引用：以上文档信息为空（检查 Characters.xlsx 的「技能引用ID」列）。", MessageType.None);
+        }
 
         // 可调参数面板（按 effectType 分支；编辑后点「应用改动」写回）
         EditorGUILayout.Space(4);
         EditorGUILayout.LabelField("可调参数（按技能效果显示，编辑后点「应用改动」）", EditorStyles.boldLabel);
         var t = GetTmp(s);
         DrawTunables(s, t);
+        DrawNonTunableInfo(s);
         if (GUILayout.Button("应用改动", GUILayout.Width(100)))
         {
             s.charmedNoteCount = t.charmedNoteCount;
@@ -264,7 +276,6 @@ public class SkillMakerWindow : EditorWindow
             s.clearSuperRangeMult = t.clearSuperRangeMult;
             s.clearSuperCombatMult = t.clearSuperCombatMult;
             s.clearSuperBuffDuration = t.clearSuperBuffDuration;
-            s.effectParamsJSON = t.effectParamsJSON;
             EditorUtility.SetDirty(s);
             AssetDatabase.SaveAssets();
             Debug.Log("[SkillLibrary] 已应用改动：" + s.skillId);
@@ -305,7 +316,6 @@ public class SkillMakerWindow : EditorWindow
                 t.buffCombatMult = EditorGUILayout.FloatField("攻击力加成(乘子)", t.buffCombatMult);
                 t.buffDamageReduce = EditorGUILayout.FloatField("减伤数值(0~1)", t.buffDamageReduce);
                 t.buffDuration = EditorGUILayout.FloatField("持续时间(s)", t.buffDuration);
-                EditorGUILayout.LabelField("buff 槽位 / 子类型", s.buffSlot + " / " + s.buffSubType + "（改这两个需脚本或 Inspector）");
                 break;
             case "ClearScreen":
                 t.clearBandRangeMult = EditorGUILayout.FloatField("消灭范围(基础倍率)", t.clearBandRangeMult);
@@ -324,10 +334,26 @@ public class SkillMakerWindow : EditorWindow
                 t.charmedNoteCount = EditorGUILayout.IntField("附魔音符数量", t.charmedNoteCount);
                 t.reduceComboPerCharmedNote = EditorGUILayout.IntField("每完成削减连击", t.reduceComboPerCharmedNote);
                 break;
-            default:
-                EditorGUILayout.LabelField("（该效果类型暂无可调参数面板）");
-                break;
+                default:
+                    EditorGUILayout.LabelField("（该效果类型暂无可调参数面板）");
+                    break;
         }
-        t.effectParamsJSON = EditorGUILayout.TextArea(t.effectParamsJSON, GUILayout.Height(48));
+    }
+
+    /// <summary>可调参数之外、不适合在面板直接编辑的技能逻辑参数（枚举/布尔）。
+    /// 仅作信息提示，让使用者知悉其存在；如需改动请告知开发修改 SkillSO 字段（不要在此擅自做成可编辑控件，避免与「技能库决定逻辑」职责混淆）。</summary>
+    private void DrawNonTunableInfo(SkillSO s)
+    {
+        EditorGUILayout.Space(4);
+        EditorGUILayout.LabelField("逻辑参数（不在面板编辑，需改动时告知开发）", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("  附魔目标(enchantTarget)", s.enchantTarget.ToString());
+        EditorGUILayout.LabelField("  仅未MISS计入(onlyCountNonMiss)", s.onlyCountNonMiss.ToString());
+        EditorGUILayout.LabelField("  buff 槽位(buffSlot)", s.buffSlot.ToString());
+        EditorGUILayout.LabelField("  buff 子类型(buffSubType)", s.buffSubType.ToString());
+        EditorGUILayout.LabelField("  清屏激活b类(clearBuffAsB)", s.clearBuffAsB.ToString());
+        EditorGUILayout.HelpBox(
+            "以上为技能逻辑参数（枚举/布尔），不适合在面板直接编辑。如需改动请告知开发修改 SkillSO 字段。\n" +
+            "非技能数值（能量需求 / 技能冷却 / 输入方式 / 技能引用ID）来自角色文档，见上方「文档引用信息」，不在此处。",
+            MessageType.None);
     }
 }

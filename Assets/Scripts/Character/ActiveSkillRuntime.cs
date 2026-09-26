@@ -596,7 +596,7 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (marker != null) SpawnHealVfx(marker.transform.position);
     }
 
-    /// <summary>牛角包过热/超级过热：技能结束后 9 秒缓慢恢复，每 3 秒一跳共 3 跳，每跳回血 = ceil(本次命中附魔音符数 completedCount × regenPerNote)。regenPerNote 默认1（用户设计『收集音符数量×1』），可在技能库调参面板调整。</summary>
+    /// <summary>牛角包过热/超级过热：技能结束后 9 秒缓慢恢复，每 3 秒一跳共 3 跳，每跳回血 = ceil(释放方全队生命值总和 GetMaxHP(ownerSide) × regenPerTickHpRate)。regenPerTickHpRate 默认0.002（生命值总和的 0.2%）。</summary>
     private System.Collections.IEnumerator Regen()
     {
         float interval = (skill != null) ? skill.regenInterval : 3f;
@@ -612,9 +612,9 @@ public class ActiveSkillRuntime : MonoBehaviour
             if (_battleSys == null) _battleSys = FindFirstObjectByType<CharacterBattleSystem>();
             if (_scoreMgr != null && _battleSys != null)
             {
-                // 牛角包缓慢恢复：每跳回血 = ceil(本次命中附魔音符数 completedCount × regenPerNote)；regenPerNote 默认1，可在技能库调参（用户设计『收集音符数量×1』）
-                int regenPerNote = (skill != null) ? skill.regenPerNote : 1;
-                int heal = Mathf.CeilToInt(completedCount * regenPerNote);
+                // 牛角包缓慢恢复：每跳回血 = ceil(释放方全队生命值总和 GetMaxHP(ownerSide) × regenPerTickHpRate)；0.002 = 生命值总和的 0.2%
+                float hpRate = (skill != null) ? skill.regenPerTickHpRate : 0.002f;
+                int heal = Mathf.CeilToInt(_battleSys.GetMaxHP(ownerSide) * hpRate);
                 _scoreMgr.Heal(ownerSide, heal);
             }
         }
