@@ -45,7 +45,7 @@ public class HoldNote : MonoBehaviour
     public Vector3[] hitPositions;   // 每个节点的判定线处位置
     public Conductor conductor;
     public BattleCenterLine centerLine;
-    public float judgeLineX; // 判定线（hitPoint）的 x，作为"消失边界"
+    public float judgeLineX; // 判定线（hitPoint）的 x，控制越线缩小/淡出；硬裁切使用平台外沿。
     public bool isAI = false;
 
     [Tooltip("普通单轨 Hold 跟随判定容差：按住轨道与\"当前插值轨道\"相差多少条轨道内算命中。1.0 表示允许相邻一轨，越小越严格。")]
@@ -644,8 +644,7 @@ public class HoldNote : MonoBehaviour
             // 正常移动：每个节点按各自时刻插值
             for (int i = 0; i < nodeCount; i++)
             {
-                float t = Mathf.Clamp01((songTime - (times[i] - leadTime)) / exitLeadTimes[i]);
-                Vector3 p = Vector3.Lerp(spawnPositions[i], exitPositions[i], t);
+                Vector3 p = NodeRawPos(i);
                 nodeTransforms[i].position = new Vector3(p.x, rideY, p.z);
             }
 
@@ -712,8 +711,7 @@ public class HoldNote : MonoBehaviour
 
             for (int i = 0; i < nodeCount; i++)
             {
-                float t = Mathf.Clamp01((songTime - (times[i] - leadTime)) / exitLeadTimes[i]);
-                Vector3 p = Vector3.Lerp(spawnPositions[i], exitPositions[i], t);
+                Vector3 p = NodeRawPos(i);
                 nodeTransforms[i].position = new Vector3(p.x, rideY, p.z);
             }
 
@@ -779,24 +777,33 @@ public class HoldNote : MonoBehaviour
 
     private Material CreateBandMaterial(Texture2D tex, int renderQueue)
     {
-        Material m = new Material(Shader.Find("Sprites/Default"));
+        Material m = new Material(Resources.Load<Shader>("HoldNoteClippedSprite"));
+        m.SetFloat("_ClipX", PlatformEdgeX());
+        m.SetFloat("_VisibleSide", side == 0 ? 1f : -1f);
         m.mainTexture = tex;
         m.color = Color.white;
-        m.SetInt("_Cull", 0); // 双面，避免视角下背面被剔除
         m.renderQueue = renderQueue;  // base=2998 / overlay=2999，均低于节点（默认 3000）
         return m;
     }
 
-    /// <summary>节点贴图材质：Sprites/Default 自带 alpha 混合，renderQueue 高于带子（3000），节点盖住带子接头。</summary>
-    private Material CreateNodeTexMaterial(Texture2D tex)
+    // 平台外沿与判定线分开：优先使用场地碰撞体，避免把草边装饰算进平台。
+    private float PlatformEdgeX()
     {
-        Material m = new Material(Shader.Find("Sprites/Default"));
-        m.mainTexture = tex;
-        m.color = Color.white;
-        m.SetInt("_Cull", 0);
-        m.renderQueue = 3000;
-        return m;
+        if (centerLine == null) return side == 0 ? -float.MaxValue : float.MaxValue;
+        Transform ground = centerLine.ground;
+        if (ground != null)
+        {
+            var collider = ground.GetComponent<Collider>();
+            if (collider != null) return side == 0 ? collider.bounds.min.x : collider.bounds.max.x;
+            var renderer = ground.GetComponent<Renderer>();
+            if (renderer != null) return side == 0 ? renderer.bounds.min.x : renderer.bounds.max.x;
+        }
+        float centerX = ground != null ? ground.position.x : 0f;
+        return centerX + (side == 0 ? -0.5f : 0.5f) * centerLine.arenaTotalWidth;
     }
+
+    /// <summary>节点与连接带共用平台外沿裁切，节点的渲染顺序高于带子，盖住接头。</summary>
+    private Material CreateNodeTexMaterial(Texture2D tex) => CreateBandMaterial(tex, 3000);
 
     private static Mesh MakeQuadMesh(float w, float h)
     {
@@ -828,8 +835,7 @@ public class HoldNote : MonoBehaviour
     private void RebuildRibbon(int s, float u0, float u1, Mesh mesh, float judgeX, float cumStart, float totalLen, float yDip, float edgeX0 = float.NaN, float edgeX1 = float.NaN)
     {
         int M = Mathf.Max(2, bandSubdiv);
-        // 端点用"时间外推"位置（节点到终点后被 Clamp01 钉死，用 nodeTransforms 会让跨轨斜向段被压缩畸变）；
-        // 外推后两端以 normalSpeed 持续流动，段方向恒定→保持原形状。
+        // 与节点共用时间外推位置，两端越界后仍匀速移动，保持段方向。
         Vector3 a = NodeRawPos(s);
         Vector3 b = NodeRawPos(s + 1);
         Vector3 dir = b - a;
@@ -861,7 +867,7 @@ public class HoldNote : MonoBehaviour
             float u = u0 + (u1 - u0) * (i / (float)M);
             Vector3 p = Vector3.Lerp(aEdge, bEdge, u);
             float w = Mathf.Lerp(wA, wB, u);
-            // G2：越判定线后带宽缩小（下限 bandShrinkMin）
+            // 判定线后保留原有收窄效果；只有平台外沿才硬裁切。
             float fade = side == 0 ? Smoothstep(judgeX - bandFadeWidth, judgeX, p.x) : Smoothstep(judgeX + bandFadeWidth, judgeX, p.x);
             float widthScale = bandShrinkMin + (1f - bandShrinkMin) * fade;
             float ww = w * widthScale;
@@ -916,7 +922,7 @@ public class HoldNote : MonoBehaviour
         if (mat != null && mat.mainTexture != (Texture)tex) mat.mainTexture = tex;
     }
 
-    /// <summary>逐顶点 alpha：过粉杠 reveal（G1）+ 越判定线 fade（G2）+ 整体 g（漏击/收尾）。保留 RGB 渐变，只写 alpha。</summary>
+    /// <summary>逐顶点 alpha：过粉杠 reveal + 越判定线 fade + 整体 g。平台外沿由 shader 裁切。</summary>
     private void ApplyBandAlpha(Mesh mesh, float revealX, float judgeX, float g)
     {
         if (mesh == null || mesh.vertexCount < 4) return;
@@ -943,14 +949,13 @@ public class HoldNote : MonoBehaviour
     }
 
     /// <summary>按时间线性插值节点位置，不钳制 t：节点越过终点后继续沿原方向(=normalSpeed)外推。
-    /// 供链接带几何使用——节点 transform 在 MoveAndFade 里被 Clamp01 钉死后，跨轨斜向链接段会被压缩畸变；
-    /// 外推后两端仍以 normalSpeed 持续流动，段方向恒定→保持原形状，越判定线部分由软边淡出。节点视觉仍用 nodeTransforms(钉死缩没)。</summary>
+    /// 节点与连接带共用此位置，越界后继续匀速运动以保持折线方向；平台外沿以外由 shader 裁切。</summary>
     private Vector3 NodeRawPos(int i)
     {
         float songTime = conductor != null ? conductor.songPosition : 0f;
         float t = (songTime - (times[i] - leadTime)) / Mathf.Max(exitLeadTimes[i], 1e-4f);
         t = Mathf.Max(0f, t);  // ③ 只钳生成侧：避免尾端未生成节点(t<0)时带子外推伸出节点之外，导致粉杠遮罩与节点错位；保留 t>1 头端外推防畸变
-        return Vector3.Lerp(spawnPositions[i], exitPositions[i], t);
+        return Vector3.LerpUnclamped(spawnPositions[i], exitPositions[i], t);
     }
 
     /// <summary>每帧统一驱动带子：几何(RebuildRibbon) + 完成覆盖(select overlay 跟随进度线) + 逐顶点 alpha。</summary>
@@ -961,8 +966,7 @@ public class HoldNote : MonoBehaviour
         else if (skillCleared) g = 1f;  // 清屏：不再透明淡出，改由整体缩小表现（到 80% 即销毁）
         else if (fadeTimer >= 0f && !broken) { g = 1f - Mathf.Clamp01(fadeTimer / Mathf.Max(fadeDuration, 1e-4f)); }
 
-        // 带子端点位置：用"时间外推"而非节点 transform（节点到终点被 Clamp01 钉死会导致跨轨斜向链接段被压缩畸变）。
-        // 外推后两端都以 normalSpeed 持续流动，段方向恒定→保持原形状，越判定线部分由软边淡出。
+        // 节点与连接带共用时间外推，越界后仍保持折线方向；平台外沿以外由 shader 裁切。
         Vector3[] rawPos = new Vector3[nodeCount];
         for (int i = 0; i < nodeCount; i++) rawPos[i] = NodeRawPos(i);
 
