@@ -15,6 +15,13 @@ public class Note : MonoBehaviour
     [HideInInspector] public int chainTapRequired = 0;
     [HideInInspector] public bool chainTapWaiting = false;
     [HideInInspector] public bool isHit = false;
+    /// <summary>
+    /// ③ 统一守门规则（判定框注销查询）：isHit 覆盖"已命中"与"已 MISS"——评价弹出的瞬间，
+    /// 该音符的判定框即从场上注销，此后任何命中方式（普通点击、技能清屏、日后任何新技能）不得再作用于它。
+    /// 所有命中入口在评估候选前必须先过本检查（现有入口已全部过滤 isHit；链接音符对应 HoldNote.IsJudgmentDead）。
+    /// 连点音符例外：它相当于 N 个音符叠加，每次命中消耗 1 个次数，但整条 miss 后同样整体注销。
+    /// </summary>
+    public bool IsJudgmentDead => isHit;
     [HideInInspector] public bool isVisible = false;
 
     [HideInInspector] public string finalRank = "MISS";
@@ -118,16 +125,21 @@ public class Note : MonoBehaviour
 
     /// <summary>
     /// 连点音符的一次有效命中。
-    /// 递减时机已挪到「撤退最远点」（由 NoteMover.Update 回调 OnChainRetreatFarthest），
-    /// 这里只负责：显示当前数 + 命中切 Select（D，非最后），或最后一下（当前数=1）走普通命中反馈（E，CLEAR 完成）。
-    /// 评分用 rank 仍由 NoteSpawner 按「当前未递减数」计算，故本方法不改分。
+    /// 递减时机（2026-09-25 用户决策）：命中时刻立即 -1，不再等撤退最远点——
+    /// 快速连击每次都能立刻看到倒数；撤退最远点只负责把显示从 Select 切回普通态。
+    /// 命中表现（D，非最后）：显示本次命中数（Select 态）+ 开始撤退；
+    /// 最后一下（当前数=1）走普通命中反馈（E，CLEAR 完成）。
+    /// 评分用 rank 仍由 NoteSpawner 按「命中前剩余数」计算，故本方法不改分。
     /// </summary>
     public bool RegisterChainTapHit(float songTime, string rank)
     {
         if (!isChainTap || isHit || chainTapRemaining <= 0) return false;
 
         NoteMover mover = GetComponent<NoteMover>();   // 方法内只声明一次，E/D 两个分支共用
-        int displayR = chainTapRemaining;   // 本次命中显示的当前数（递减在此处不做）
+        int displayR = chainTapRemaining;   // 本次命中的序号（命中前的剩余数，显示与评分都用它）
+
+        // 命中即刻递减：数字 -1 安排在命中发生的时间点（2026-09-25）
+        chainTapRemaining = Mathf.Max(0, chainTapRemaining - 1);
 
         // E：最后一下（当前数 == 1）命中 → 不后退，走普通命中反馈（CLEAR 完成：Select 显 + 放大淡出销毁）
         if (displayR == 1)
@@ -151,7 +163,7 @@ public class Note : MonoBehaviour
             return true;
         }
 
-        // D：非最后命中 → 记录等待、显示当前数 + 切 Select，开始撤退；最远点由 mover 回调递减并切回非命中态
+        // D：非最后命中 → 记录等待、显示本次命中数 + 切 Select，开始撤退；最远点由 mover 回调切回普通态
         chainTapWaiting = true;
         finalRank = rank;
         if (mover != null)
@@ -171,12 +183,11 @@ public class Note : MonoBehaviour
     }
 
     /// <summary>
-    /// 连点音符撤退到最远点（1 单位）时由 NoteMover 回调：数字 -1，返回新的剩余次数。
-    /// 仅在此处递减，保证「命中显示当前数 → 撤退 → 最远点显示-1 → 回来」的循环节奏。
+    /// 连点音符撤退到最远点时由 NoteMover 回调（2026-09-25 起）：
+    /// 递减已在命中时刻完成，这里只返回当前剩余数供 mover 切回普通显示态。
     /// </summary>
     public int OnChainRetreatFarthest()
     {
-        chainTapRemaining = Mathf.Max(0, chainTapRemaining - 1);
         return chainTapRemaining;
     }
 }

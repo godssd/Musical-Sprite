@@ -126,6 +126,25 @@ public class CharacterAnimator : MonoBehaviour
     /// <summary>供外部（CharacterCubeMarker）快速判断该模型是否已有可正常驱动的 Spine 运行时。</summary>
     public bool HasValidSkeleton() => skel != null && skel.SkeletonDataAsset != null && skel.AnimationState != null;
 
+    /// <summary>开场动画是否已播完（供音乐起播门控用）。
+    /// - 无 Skeleton / 未注册 Opening（方块占位角色、缺失开场资源）→ 视为 0 秒开场，直接 true；
+    /// - 正在播 Opening 且未完成 → false（Spine 走主线程 Update，卡顿时动画同样冻结，因此该事件天然抗卡顿）；
+    /// - Opening 已完成并接回 loop（或被其他动画接替）→ true。
+    /// </summary>
+    public bool IsOpeningDone
+    {
+        get
+        {
+            if (!IsReady || available == null || !available.ContainsKey(CharacterAnimationState.Opening)) return true;
+            var cur = skel.AnimationState.GetTrack(0);
+            if (cur == null) return false; // Opening 尚未起播（Start/PlayOpening 还没跑到）
+            string openingName = ResolveName(CharacterAnimationState.Opening);
+            if (!string.IsNullOrEmpty(openingName) && cur.Animation != null && cur.Animation.Name == openingName)
+                return cur.IsComplete;     // 正在播 Opening：以是否播完为准
+            return true;                   // 已接回 loop 或被其他动画接替 = 开场已结束
+        }
+    }
+
     /// <summary>运行时自动发现：按 prefix + 槽位后缀在 SkeletonData 中查找，存在才注册（缺失动画自动跳过）。
     /// 可由 CharacterCubeMarker 在注入 animationPrefix 后再次调用以重建（换角/框架健壮性）。</summary>
     public void Rebuild()

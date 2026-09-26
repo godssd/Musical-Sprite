@@ -43,6 +43,12 @@ public class NoteSpawner : MonoBehaviour
     [Tooltip("音符从生成到抵达判定线需要多少秒")]
     public float leadTime = 2f;
 
+    [Header("静默期滴灌生成（防起播卡顿）")]
+    [Tooltip("静默期（待命/预滚，songPosition<0）每帧最多生成的音符数。0 = 不限量（退回一帧倾泻旧行为）。音符位置是 songTime 的纯函数，早生成只会停在起点侧等时钟。")]
+    public int dripMaxNotesPerFrame = 4;
+    [Tooltip("静默期每帧生成预算（毫秒）：超过即停，剩余留到下一帧。与数量限制任一触发即让路。")]
+    public float dripBudgetMs = 2f;
+
     [Header("轨道参数")]
     [Tooltip("轨道数量")]
     public int laneCount = 4;
@@ -160,11 +166,22 @@ public class NoteSpawner : MonoBehaviour
         float songTime = conductor.songPosition;
 
         // 1. 到时间就生成音符。Linked 单节点是双轨点击，多节点是双轨长按/跨轨。
+        // 静默期滴灌：songPosition < 0（待命钉 -1 / 预滚 -0.5→0）期间，把生成窗口一次性放宽到
+        // hitTime ≤ leadTime，但每帧只按预算生成少量音符，把 Instantiate/材质/网格构建的成本摊进
+        // 整个静默期——音乐起播帧不再集中生成，消除起播瞬间的小卡顿。
+        // 正确性：音符位置是 songTime 的纯函数，早生成只会停在起点侧等时钟；
+        // 漏击检测（下方步骤 2）用真实 songTime，静默期为负数不会误判早生成的音符。
+        bool dripActive = songTime < 0f && dripMaxNotesPerFrame > 0;
+        float genTime = dripActive ? 0f : songTime;
+        int dripCount = 0;
+        float dripDeadline = Time.realtimeSinceStartup + Mathf.Max(0f, dripBudgetMs) * 0.001f;
+
         while (spawnIndex < beatmap.notes.Length)
         {
             int spawnIdx = spawnIndex;
             NoteData data = beatmap.notes[spawnIdx];
-            if (songTime < data.time - leadTime) break;
+            if (genTime < data.time - leadTime) break;
+            if (dripActive && (dripCount >= dripMaxNotesPerFrame || Time.realtimeSinceStartup > dripDeadline)) break;
 
             if (data.side == side)
             {
@@ -176,6 +193,7 @@ public class NoteSpawner : MonoBehaviour
                     SpawnNote(data, spawnIdx);
             }
             spawnIndex++;
+            dripCount++;
         }
 
         AssignPendingCharms(songTime);
@@ -714,9 +732,18 @@ public class NoteSpawner : MonoBehaviour
                 // （越过后由 Miss 流程处理）。
                 if (note.IsChainTapExpired(songTime)) continue;
                 NoteMover m = note.GetComponent<NoteMover>();
-                float nct = m != null ? m.ChainTapNextContactTime : songTime;
-                absDt = Mathf.Abs(songTime - nct);
-                if (absDt > goodWindow) continue;
+                // 回退中断（2026-09-25）：减速后退期内再次点击立即有效（中断当前撤退、重新触发命中），
+                // 打点够快即可连续命中；递减在命中时刻发生，中断无需任何补偿逻辑。
+                if (m != null && m.IsRetreatInterruptible(songTime))
+                {
+                    absDt = 0f;
+                }
+                else
+                {
+                    float nct = m != null ? m.ChainTapNextContactTime : songTime;
+                    absDt = Mathf.Abs(songTime - nct);
+                    if (absDt > goodWindow) continue;
+                }
             }
             else
             {

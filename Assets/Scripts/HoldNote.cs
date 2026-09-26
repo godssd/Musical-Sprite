@@ -167,8 +167,19 @@ public class HoldNote : MonoBehaviour
     public float bandEndInsetRatio = 0.0f;
     [Tooltip("③ 链接带端锚点向节点内埋入的深度（世界单位）：带子端边落在节点贴图下方被盖住（renderQueue 3000>2998），旋转/接缝时不再露缝、不扫过音符顶部。配合双侧固定侧边锚点用。")]
     public float nodeBandOverlap = 0.12f;
-    [Tooltip("链接带整体宽度系数（乘到 BandWidth 上）：1=与所连节点同宽，<1=更细。带子粗细由几何决定，与贴图尺寸无关。")]
+    [Tooltip("链接带整体宽度系数（乘到 BandWidth 上）。带子粗细由几何决定，与贴图尺寸无关。")]
     public float bandWidthScale = 0.6f;
+
+    [Tooltip("跨轨(span>1)链接带相对普通链接带的宽度倍率。1.3 = 跨轨带是普通带宽的 1.3 倍。")]
+    public float crossBandMul = 1.3f;
+
+    [Header("整体缩放表现（miss 残留 / 断弦高压清屏共用）")]
+    [Tooltip("整体缩小动画时长（秒）：从 100% 缩到 globalShrinkFinal 的过渡时间。指数曲线先慢后快。")]
+    public float globalShrinkDuration = 0.5f;
+    [Tooltip("整体缩小的最终缩放（0.8 = 80%）。miss 残留缩到该值停住；技能清屏缩到该值即销毁。")]
+    public float globalShrinkFinal = 0.8f;
+    [Tooltip("指数收缩曲线陡度：越大「先慢后快」越明显。")]
+    public float globalShrinkExponent = 4f;
     [Tooltip("链拍带越过判定线后软边消失的过渡宽度（世界单位，smoothstep）。")]
     public float bandFadeWidth = 0.8f;
     [Tooltip("链接带每段纵向细分段数，越大曲线越平滑。")]
@@ -205,6 +216,15 @@ public class HoldNote : MonoBehaviour
     private float holdStartTime = -999f;
     private float fadeTimer = -1f;
     private bool missMode = false;        // 漏击后改为逐段越过判定线缩小消失（而非整条统一缩小）
+
+    // ③ 统一守门规则：MISS/BREAK 判定的瞬间，整条链接音符的判定框即从场上注销。
+    // 此后任何命中方式（普通点击、断弦高压清屏、日后任何新技能）都不得再作用于它——场上残留仅为表现。
+    // 所有命中入口在评估候选前必须先过 IsJudgmentDead 检查；点击系音符（Note）对应 isHit。
+    public bool IsJudgmentDead => missMode;
+
+    // 整体缩放系数（miss 残留 / 技能清屏共用）：1 → globalShrinkFinal，指数先慢后快
+    private float shrinkFactor = 1f;
+    private float shrinkStartTime = -1f;  // 收缩开始时刻（Time.time）；<0 = 未开始
     private bool missReported = false;    // MISS 反馈是否已上报（只报一次）
     private bool skillCleared = false;    // 清屏整条清除后置位：连接线应在原地逐段变大变白消失（覆盖漏击黑消失）
     private float missShrinkSpan = 0.5f;  // 越过判定线后多少距离内完成缩小消失
@@ -324,6 +344,20 @@ public class HoldNote : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 推进整体缩放系数：1 → globalShrinkFinal，指数 ease-in（先慢后快）。
+    /// miss 残留：缩到 80% 后停住（shrinkFactor 钉在 globalShrinkFinal）；技能清屏：缩到 80% 即由 MoveAndFade 销毁。
+    /// </summary>
+    private void UpdateGlobalShrink()
+    {
+        if (shrinkStartTime < 0f) { shrinkFactor = 1f; return; }
+        float t = (Time.time - shrinkStartTime) / Mathf.Max(globalShrinkDuration, 1e-4f);
+        if (t <= 0f) { shrinkFactor = 1f; return; }
+        if (t >= 1f) { shrinkFactor = globalShrinkFinal; return; }
+        float p = (Mathf.Exp(globalShrinkExponent * t) - 1f) / (Mathf.Exp(globalShrinkExponent) - 1f);
+        shrinkFactor = Mathf.Lerp(1f, globalShrinkFinal, p);
+    }
+
     /// <summary>每帧推进各节点命中弹跳：放大倍数从峰值随时间回落到 1。漏击/断连时由 UpdateBandVisibility 接管连接带缩放/透明度，此处跳过节点缩放。</summary>
     private void UpdateHitPops()
     {
@@ -333,7 +367,7 @@ public class HoldNote : MonoBehaviour
             if (nodePop[i] <= 0f) continue;
             nodePop[i] = Mathf.Max(0f, nodePop[i] - Time.deltaTime / Mathf.Max(hitPopDuration, 0.0001f));
             float sc = 1f + (hitPopScale - 1f) * nodePop[i]; // 从峰值回落到基础
-            nodeTransforms[i].localScale = nodeBaseScales[i] * sc;
+            nodeTransforms[i].localScale = nodeBaseScales[i] * sc * shrinkFactor;
         }
     }
 
@@ -355,17 +389,19 @@ public class HoldNote : MonoBehaviour
         float glowLineX = nodeJudgeX + (litGlow ? glowBufferDist : 0f);
         bool stillBeforeJudge = !IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, glowLineX);
 
-        // 清屏(skillCleared)：整条长按原地变白放大消失，跳过"未显现隐藏"（解决断弦高压残留未显现音节）
-        if (!revealed && !skillCleared)
+        // 隐藏优先级最高：未抵达粉杠的音节在 miss 残留/技能清屏时也保持不可见（残留与清屏的整体缩小已表达"被消灭"）
+        if (!revealed)
         {
             nodeRends[i].enabled = false;
             return;
         }
 
-        // 已抵达粉杠、但还没完全越过各自判定线：正常显隐，scale 留给 UpdateHitPops
+        // 已抵达粉杠、但还没完全越过各自判定线：正常显隐；无弹跳反馈时应用整体缩放系数（miss 残留/清屏缩小）
         if (stillBeforeJudge)
         {
             nodeRends[i].enabled = true;
+            if (nodePop[i] <= 0f)
+                nodeTransforms[i].localScale = nodeBaseScales[i] * shrinkFactor;
             return;
         }
 
@@ -374,19 +410,28 @@ public class HoldNote : MonoBehaviour
         if (!missMode && Time.time < nodeFeedbackEnd[i])
         {
             nodeRends[i].enabled = true;
+            // 恢复命中后还原音节不透明（此前 missMode 分支可能写过半透）
+            if (nodeMats[i] != null)
+            {
+                Color c = nodeMats[i].color;
+                c.a = 1f;
+                nodeMats[i].color = c;
+            }
             return;
         }
 
-        // 清屏(skillCleared)：整条原地放大淡出，不进入缩没动画（由对象级 SetAlpha 整体淡出），避免"变小消失"
+        // 清屏(skillCleared)：命中反馈（放大+停留）播完后跟随整体收缩（不再透明淡出），缩到 80% 由 MoveAndFade 销毁
         if (skillCleared)
         {
             nodeRends[i].enabled = true;
+            nodeTransforms[i].localScale = nodeBaseScales[i] * shrinkFactor;
             return;
         }
 
-        // 已完全越过各自判定线：启动/推进「按时间」缩没动画（替代硬切隐藏）
-        // ③ 缩没起点对齐反馈结束时刻：若已在反馈结束前写入过 nodeShrinkStart（陈旧起点），
-        // 重设到 nodeFeedbackEnd 起算，确保"变大切图"完整播完后再缩没（修复"命中直接变小消失"）。
+        // 已完全越过各自判定线：
+        // ① miss 残留：整体缩放已由 shrinkFactor 表达（缩到 80% 停住），逐段消失改用「等尺寸快速淡出」——
+        //    不再叠加 (1-t) 缩小，避免残留视觉上远低于 80%（用户反馈"明显小了一半"）。
+        // ② 非 miss（正常完成收尾）：保留原「按时间」缩没动画（变小消失）。
         if (nodeShrinkStart[i] < 0f || nodeShrinkStart[i] < nodeFeedbackEnd[i])
             nodeShrinkStart[i] = Mathf.Max(nodeFeedbackEnd[i], Time.time);
         float t = (Time.time - nodeShrinkStart[i]) / Mathf.Max(holdNodeShrinkDuration, 0.0001f);
@@ -397,6 +442,17 @@ public class HoldNote : MonoBehaviour
             return;
         }
         nodeRends[i].enabled = true;
+        if (missMode)
+        {
+            nodeTransforms[i].localScale = nodeBaseScales[i] * shrinkFactor; // 尺寸钉在整体缩放值（80%），不再逐段缩小
+            if (nodeMats[i] != null)
+            {
+                Color c = nodeMats[i].color;
+                c.a = 1f - t;   // 原地淡出代替缩小消失（时长沿用 holdNodeShrinkDuration）
+                nodeMats[i].color = c;
+            }
+            return;
+        }
         Vector3 baseScale = nodeBaseScales[i] * (1f - t);
         if (nodePop[i] > 0f)
         {
@@ -404,13 +460,6 @@ public class HoldNote : MonoBehaviour
             baseScale = baseScale * sc;
         }
         nodeTransforms[i].localScale = baseScale;
-        // ④ Miss：节点缩没期间恒定半透（missNodeAlpha=0.6），让链接音符漏击"变透"而非硬切消失
-        if (nodeMats[i] != null)
-        {
-            Color c = nodeMats[i].color;
-            c.a = missMode ? missNodeAlpha : 1f;
-            nodeMats[i].color = c;
-        }
     }
 
     void Start()
@@ -587,6 +636,7 @@ public class HoldNote : MonoBehaviour
 
         float songTime = conductor.songPosition;
 
+        UpdateGlobalShrink(); // 推进整体缩放（miss 残留/技能清屏共用曲线，作用于带宽与全部音节）
         UpdateHitPops(); // 推进各节点命中放大弹跳（missMode 时内部跳过，连接带缩放/透明度由 UpdateBandVisibility 接管）
 
         if (fadeTimer < 0f)
@@ -681,10 +731,14 @@ public class HoldNote : MonoBehaviour
             // 完成：整体透明度淡出；断连/漏击：保持不透明，只通过判定线裁剪消失
             if (!broken)
             {
-                // ① 技能清屏：延迟淡出保命中反馈（fadeTimer 在反馈窗口内视为 0，alpha 钉 1）
-                float fd = skillCleared ? skillClearFeedbackGuard : 0f;
-                float alpha = 1f - Mathf.Clamp01((fadeTimer - fd) / Mathf.Max(fadeDuration, 1e-4f));
-                SetAlpha(alpha);
+                if (skillCleared)
+                {
+                    SetAlpha(1f);  // 清屏不再透明淡出：命中反馈后整体缩小到 80% 即销毁
+                }
+                else
+                {
+                    SetAlpha(1f - Mathf.Clamp01(fadeTimer / Mathf.Max(fadeDuration, 1e-4f)));
+                }
             }
 
             // 结束条件：整根越过判定线（以尾节点或最前节点为准），或超过最大存活时间
@@ -697,7 +751,11 @@ public class HoldNote : MonoBehaviour
                 if (!IsFullyBeyondLine(nodeTransforms[i].position.x, noteRadius, nodeJudgeX)) { allGone = false; break; }
                 if (nodeShrinkStart[i] < 0f || (Time.time - nodeShrinkStart[i]) < holdNodeShrinkDuration) { allGone = false; break; }
             }
-            if (allGone || fadeTimer > maxFadeLife + (skillCleared ? skillClearFeedbackGuard : 0f))  // ① 技能清屏延长存活，等反馈播完再淡出销毁
+            // 清屏存活上限 = 反馈时长 + 整体收缩时长：缩到 80% 那一刻销毁
+            float lifeCap = skillCleared
+                ? skillClearFeedbackGuard + Mathf.Max(globalShrinkDuration, 0.01f)
+                : maxFadeLife;
+            if (allGone || fadeTimer > lifeCap)
             {
                 finished = true;
                 Destroy(gameObject);
@@ -712,8 +770,11 @@ public class HoldNote : MonoBehaviour
 
     private float BandWidth(int nodeIndex)
     {
+        // 2026-09-25 重构：带宽基准 = 普通节点直径 noteRadius*2；跨轨(span>1)按 crossBandMul 放大。
+        // 旧公式 laneSpacing*(span-1)+noteRadius*2 会让跨轨带≈2.1（约为普通的 2.3 倍），
+        // 且两音节贴近（段变短）时带宽>段长，造成"贴近就膨胀盖住音符"的视觉畸形。
         int span = NodeSpan(nodeIndex);
-        return laneSpacing * (span - 1) + noteRadius * 2f;
+        return noteRadius * 2f * (span > 1 ? crossBandMul : 1f);
     }
 
     private Material CreateBandMaterial(Texture2D tex, int renderQueue)
@@ -788,7 +849,7 @@ public class HoldNote : MonoBehaviour
         float hxA = NodeHalfVec(s).x, hxB = NodeHalfVec(s + 1).x;
         Vector3 aEdge = a + new Vector3(sgnX * (hxA - nodeBandOverlap), 0f, 0f) + dir * halfA;
         Vector3 bEdge = b + new Vector3(-sgnX * (hxB - nodeBandOverlap), 0f, 0f) - dir * halfB;
-        float wA = BandWidth(s) * bandWidthScale, wB = BandWidth(s + 1) * bandWidthScale;
+        float wA = BandWidth(s) * bandWidthScale * shrinkFactor, wB = BandWidth(s + 1) * bandWidthScale * shrinkFactor; // shrinkFactor：miss 残留/清屏整体缩小
         bool flip = b.x >= a.x;
         float tileWorld = Mathf.Max(0.0001f, (wA + wB) * 0.5f); // G5：每"一格带宽"平铺一次，保持纵横比不变形
         int vCount = (M + 1) * 2;
@@ -897,7 +958,8 @@ public class HoldNote : MonoBehaviour
     {
         float g = 1f;
         if (missMode) g = 0.6f;   // ④ Miss 时连接带整体降到 0.6 半透（原为 0.75，更明显"变透"）
-        else if (fadeTimer >= 0f && !broken) { float fd = skillCleared ? skillClearFeedbackGuard : 0f; g = 1f - Mathf.Clamp01((fadeTimer - fd) / Mathf.Max(fadeDuration, 1e-4f)); }  // ① 技能清屏延迟淡出保命中反馈
+        else if (skillCleared) g = 1f;  // 清屏：不再透明淡出，改由整体缩小表现（到 80% 即销毁）
+        else if (fadeTimer >= 0f && !broken) { g = 1f - Mathf.Clamp01(fadeTimer / Mathf.Max(fadeDuration, 1e-4f)); }
 
         // 带子端点位置：用"时间外推"而非节点 transform（节点到终点被 Clamp01 钉死会导致跨轨斜向链接段被压缩畸变）。
         // 外推后两端都以 normalSpeed 持续流动，段方向恒定→保持原形状，越判定线部分由软边淡出。
@@ -1151,7 +1213,8 @@ public class HoldNote : MonoBehaviour
     public void SkillClearWhole(float xMin, float xMax, ActiveSkillRuntime caster)
     {
         if (caster == null || nodeTransforms == null) return;
-        if (state == HoldState.Done && !missMode) return;   // ① 正常完成收尾中不再重复计分；漏击/断连(missMode)链接也应被技能整条清除（不留尾单体）
+        if (state == HoldState.Done && !missMode) return;   // 正常完成收尾中不再重复计分
+        if (IsJudgmentDead) return;  // ③ 判定框已注销（MISS/BREAK 判定瞬间）：任何命中方式（含技能清屏）不得再命中，残留仅为表现
 
         // 断弦高压/清屏：整条长按只要存在任一节点的判定线位置落在带区内即清除（不再要求"已显现"）。
         // 链接音符"整条都要命中"——早链接（节点尚未过粉杠）也应被整条清除，避免残留未显现音节。
@@ -1185,8 +1248,9 @@ public class HoldNote : MonoBehaviour
         for (int i = 0; i < nodeCount; i++) PlayHitPop(i);
         completedSegments = NodeCount - 1;
         hasLit = true;
-        skillCleared = true;   // 标记：连接线/节点应原地变白放大消失，而非漏击黑消失
+        skillCleared = true;   // 标记：命中反馈（变白+放大弹跳）播完后整体缩小到 80% 即销毁（不再透明淡出）
         Complete();
+        shrinkStartTime = Time.time + skillClearFeedbackGuard;  // 命中反馈播完（hitPopDuration+nodeCompleteLinger）后开始整体收缩
     }
 
     /// <summary>判断一个带有 X 半宽的视觉元素是否已经完整越过指定判定线。</summary>
@@ -1382,6 +1446,7 @@ public class HoldNote : MonoBehaviour
         ResetAllToBlack();
         // 首节点漏击后整条链接立即失效。漏击/断连消失改由 UpdateBandVisibility（整体 α=0.75 + 越判定线软边）处理。
         missMode = true;
+        shrinkStartTime = Time.time; // miss 残留：判定失效瞬间开始整体缩小到 80% 后停住
 
         ResolveCharmedNode(0, false);
     }
@@ -1392,6 +1457,7 @@ public class HoldNote : MonoBehaviour
         broken = true;
         fadeTimer = -1f;     // 走漏击"整体 α=0.75 + 越判定线软边"路径（与 MissHead 一致）
         missMode = true;     // 同上：由 UpdateBandVisibility 处理滑走消失
+        shrinkStartTime = Time.time; // 断连残留：与漏击一致，整体缩小到 80% 后停住
         missReported = true; // 关键：阻止 MoveAndFade 的 missMode 分支重复上报 MISS（避免一次断连两个 MISS）
         // 唯一一次评价：在最后成功节点处报 BREAK（非 MISS）。
         // BREAK 与 MISS 的区别：MISS 会清零连击（普通漏击），BREAK 表示「已命中若干节点后中途断连」，

@@ -74,8 +74,8 @@ public class NoteMover : MonoBehaviour
     [Header("连点音符运动")]
     [Tooltip("后退减速时长（秒）：命中后以极快初速后退，期间匀减速，到该时长速度降为 0、退到 chainRetreatDist 处。")]
     public float chainTapHoldDuration = 1f;
-    [Tooltip("后退距离（世界单位）：命中后从判定线后退多远，再以前进速度回到判定线。Inspector 可调。")]
-    public float chainRetreatDist = 1f;
+    [Tooltip("后退距离（世界单位）：命中后从判定线后退多远，再以前进速度回到判定线。Inspector 可调。回退时间不变（仍为 chainTapHoldDuration），距离越小越接近原地停留。")]
+    public float chainRetreatDist = 0.1f;
 
     // P8：连点音符附魔换皮（本体=圆角板+Note_Repeat_N 贴图，附魔直接换整张贴图，无覆盖层）
     private bool _chainEnchanted = false;
@@ -127,6 +127,36 @@ public class NoteMover : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 换皮音符统一画布：1×1 纯 quad（XZ 平面、双面、UV 铺满）。
+    /// 圆角外形完全交给贴图 alpha 通道成形——与链接音节（HoldNote.MakeQuadMesh）同一渲染路径、同一精度，
+    /// 修复此前"圆角网格 × 非均匀缩放"造成的边缘坑洼/椭圆畸变（2026-09-25）。
+    /// </summary>
+    private static Mesh _flatQuadMesh;
+    public static Mesh FlatQuadMesh
+    {
+        get
+        {
+            if (_flatQuadMesh == null)
+            {
+                var m = new Mesh { name = "NoteFlatQuad" };
+                m.vertices = new Vector3[]
+                {
+                    new Vector3(-0.5f, 0f, -0.5f), new Vector3(0.5f, 0f, -0.5f),
+                    new Vector3(0.5f, 0f, 0.5f),   new Vector3(-0.5f, 0f, 0.5f)
+                };
+                // UV 约定与圆角平板网格一致：uv = (x+0.5, z+0.5)，贴图完整铺满画布
+                m.uv = new Vector2[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f) };
+                // 双面：正反两套绕序，任意视角可见
+                m.triangles = new int[] { 0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2 };
+                m.RecalculateNormals();
+                m.RecalculateBounds();
+                _flatQuadMesh = m;
+            }
+            return _flatQuadMesh;
+        }
+    }
+
     private static Mesh _roundedRectMesh;
     public static Mesh RoundedRectMesh
     {
@@ -149,6 +179,29 @@ public class NoteMover : MonoBehaviour
             _tapCornerRadiusCache = cornerRadius;
         }
         return _tapRoundedRectMesh;
+    }
+
+    /// <summary>
+    /// 静默期预热（2026-09-25 卡顿优化）：构建全部静态音符网格，
+    /// 避免音乐起播帧首批音符集中生成时一次性建网格。由 NotePrewarmer 调用。
+    /// </summary>
+    public static void PrewarmMeshes()
+    {
+        _ = FlatQuadMesh;
+        _ = RoundedRectMesh;
+        _ = TapRoundedRectMesh(0.18f);
+        _ = CylinderMesh;
+    }
+
+    /// <summary>
+    /// 预热用采样材质：与 MakeTapMaterial 同一路径，但 alpha=0（不可见）。
+    /// 供 NotePrewarmer 用临时物体真渲染两帧，触发 shader 变体编译与纹理 GPU 上传。
+    /// </summary>
+    public static Material BuildPrewarmMaterial(Texture2D tex)
+    {
+        Material mat = MakeTapMaterial(tex);
+        mat.color = new Color(1f, 1f, 1f, 0f);
+        return mat;
     }
 
     private static Mesh CreateRoundedRectMesh(float radius, int cornerSegments)
@@ -487,9 +540,11 @@ public class NoteMover : MonoBehaviour
         // 正常前进速度（音符飞向判定线的速度），连点音符前进段用它回到判定线
         normalSpeed = hitDistance > 0.001f ? hitDistance / Mathf.Max(0.001f, leadTime) : 1f;
 
-        // 运行时替换预制体网格：普通点击且换皮时用大圆角平板当画布，连轨点击也用圆角平板；其余用圆柱。
+        // 运行时替换预制体网格（2026-09-25 重构）：换皮音符统一用 1×1 纯 quad 当画布，
+        // 圆角外形完全交给贴图 alpha 成形（与链接音节同一精度，修复边缘坑洼/圆弧畸变）；
+        // 无贴图兜底：跨轨沿用圆角平板，普通点击沿用圆柱。
         MeshFilter mf = GetComponent<MeshFilter>();
-        if (mf != null) mf.sharedMesh = (laneSpan > 1 || textured) ? (isPlainTap || isSmallTap ? TapRoundedRectMesh(tapCornerRadius) : RoundedRectMesh) : CylinderMesh;
+        if (mf != null) mf.sharedMesh = textured ? FlatQuadMesh : (laneSpan > 1 ? RoundedRectMesh : CylinderMesh);
 
         // 移除可能存在的碰撞体，音符不需要物理
         Collider col = GetComponent<Collider>();
@@ -575,7 +630,9 @@ public class NoteMover : MonoBehaviour
                 transform.localScale = new Vector3(xDiameter * s, 0.12f, zDiameter * s);
             }
         }
-        noteHalfSize = noteRadius; // 圆柱 X 方向半长即半径
+        // 判定半宽跟随视觉（2026-09-25）：换皮后为 1×1 quad，世界 X 半宽 = localScale.x/2
+        // （已含贴图原生尺寸与 tapVisualScaleMul）；无贴图兜底（圆柱/圆角平板）沿用 noteRadius。
+        noteHalfSize = textured ? transform.localScale.x * 0.5f : noteRadius;
         // hitPoint 表示音符中心高度；音符底面贴地时中心应为自身高度的一半。
         rideY = hitPos.y;
 
@@ -635,7 +692,8 @@ public class NoteMover : MonoBehaviour
                 d = chainRetreatDist - normalSpeed * (te - chainTapHoldDuration);  // 正常速前进，d<0=已越过判定线
             }
             transform.position = new Vector3(hitPos.x - dirX * d, rideY, hitPos.z);
-            // D+E(恢复09-17)：首次越过撤退最远点 → 递减剩余 + 本体/数字回退 Select 态（显示新剩余数）
+            // D+E(恢复09-17)：首次越过撤退最远点 → 本体/数字从 Select 态切回普通态。
+            // （递减已在命中时刻完成——2026-09-25 用户决策，此处只做显示切换）
             if (!chainFarthestDone && te >= chainTapHoldDuration && note != null)
             {
                 chainFarthestDone = true;
@@ -722,11 +780,13 @@ public class NoteMover : MonoBehaviour
         chainNextContactTime = songTime + chainTapHoldDuration + chainRetreatDist / v;
         chainTapDeadline = chainNextContactTime + goodWindow;
 
+        // 本次命中重置最远点标记（贴图/回退两形态都需要；原先只重置贴图形态是隐患）
+        chainFarthestDone = false;
+
         if (_isChainTextured)
         {
             // P9(恢复09-17 块C)：命中 → 本体切 Select（完成）态、数字切 Select 数字；保留 pop 弹跳反馈。
             // 附魔态：本体/数字都走技能 Select 皮肤；非附魔态：走通用 repeatSelect + repeatDigitsSelect。
-            chainFarthestDone = false;   // D+E：本次命中重置最远点标记
             RefreshChainVisual(remaining, true, _chainEnchanted);
         }
         else
@@ -739,6 +799,16 @@ public class NoteMover : MonoBehaviour
         // 不再钉死位置：下一帧 Update 按 te 平滑接管（te≈0 即在判定线，无跳变）。
         // 每次命中叠加一次「白闪 + 放大缩小」反馈（不破坏进度色，淡出后回归原进度色）。
         StartCoroutine(ChainTapHitPopCo());
+    }
+
+    /// <summary>
+    /// 回退中断窗口（2026-09-25）：命中后的减速后退期内（chainTapHoldDuration 内）再次点击可立即重新命中。
+    /// 命中表现/行为与正常连点命中完全一致（递减在命中时刻发生，中断无需任何补偿），
+    /// 打点够快即可连续触发，缩短连点完成时间。
+    /// </summary>
+    public bool IsRetreatInterruptible(float songTime)
+    {
+        return chainTapDeadline >= 0f && (songTime - chainHitTime) < chainTapHoldDuration;
     }
 
     /// <summary>连点命中反馈：scale 1x→1.3x→1x + 颜色短暂提亮，回落到 SetChainBodyColor 设的进度色。</summary>
@@ -1054,26 +1124,23 @@ public class NoteMover : MonoBehaviour
     }
 
     /// <summary>运行时生成普通点击的卡通材质：URP Unlit + Transparent + 贴图（绕开自定义 shader 在 URP 下加载失败的根因）。</summary>
-    private Material MakeTapMaterial(Texture2D tex)
+    private static Material MakeTapMaterial(Texture2D tex)
     {
-        Shader sh = Shader.Find("Universal Render Pipeline/Unlit");
+        // 2026-09-25 修复：改用 Sprites/Default——与链接音节（HoldNote）完全同一渲染路径。
+        // 根因：URP/Unlit 是不透明 shader，其无 _Surface/_Blend 属性（那是 URP/Lit 的），
+        // 旧的"强制透明"设置对它无效；换纯 quad 画布后，贴图 alpha=0 的区域被渲染成
+        // 不透明 RGB 底色（"本该透明的地方不透明"）。Sprites/Default 自带 alpha 混合，
+        // 且 material.color 可直接调 tint/alpha（SetNoteTint/SetAlpha 依赖此路径）。
+        Shader sh = Shader.Find("Sprites/Default");
         if (sh == null)
         {
-            Debug.LogWarning("[NoteMover] URP Unlit shader not found, falling back to Unlit/Transparent");
+            Debug.LogWarning("[NoteMover] Sprites/Default shader not found, falling back to Unlit/Transparent");
             sh = Shader.Find("Unlit/Transparent");
         }
         var mat = new Material(sh);
-        string texProp = mat.HasProperty("_BaseMap") ? "_BaseMap" : (mat.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
-        mat.SetTexture(texProp, tex);
-        string colProp = mat.HasProperty("_BaseColor") ? "_BaseColor" : (mat.HasProperty("_Color") ? "_Color" : "_BaseColor");
-        mat.SetColor(colProp, Color.white);
-        // 强制透明渲染：贴图已有 Alpha 时，材质必须声明为 Transparent 才会正确混合。
-        if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
-        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 1f); // 1 = Alpha
-        if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 0f);
-        mat.DisableKeyword("_ALPHATEST_ON");
-        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        mat.mainTexture = tex;
+        mat.color = Color.white;
+        mat.SetInt("_Cull", 0); // 双面，任意视角可见
         return mat;
     }
 }

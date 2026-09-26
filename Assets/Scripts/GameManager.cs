@@ -30,6 +30,9 @@ public class GameManager : MonoBehaviour
 
     private bool winnerShown = false;
 
+    /// <summary>场景内全部角色动画驱动器缓存（懒刷新），用于开场动画就绪判定与重播。</summary>
+    private CharacterAnimator[] introAnimators = new CharacterAnimator[0];
+
     /// <summary>战斗结果事件：(winnerSide, loserSide)；-1 表示平局无胜者。订阅方用于播放 Victory/Fail 终态动画。</summary>
     public event System.Action<int, int> OnBattleResult;
 
@@ -72,9 +75,15 @@ public class GameManager : MonoBehaviour
                 if (bgm != null && bgm.audioClip != null)
                 {
                     conductor.musicSource.clip = bgm.audioClip;
-                    // lead-in 延迟起播：时钟锚点与真实出声时刻预定到同一 DSP 时刻，
-                    // 启动卡顿被导入期吸收，避免 songPosition 跳到歌曲中间（不同步修复 P1）
-                    conductor.StartPlaybackWithLeadIn(conductor.leadIn);
+                    // 开场动画兜底起播：待命直到全员开场动画播完（最长的角色成为静默期标准）+ leadIn 保底，
+                    // 再 PlayScheduled 精确起播。卡顿会冻结开场动画从而自动推迟起播，结构上不可能吞掉歌曲开头。
+                    conductor.introReadyProvider = AllIntroAnimationsDone;
+                    conductor.ArmPlayback();
+
+                    // 静默期预热：在开场动画+保底静默期间逐帧消化音符系统首开成本
+                    // （纹理加载/网格构建/shader 变体编译/GPU 上传），避免音乐起播帧
+                    // 第一批音符集中生成时卡顿。幂等，RestartGame 重复调用安全。
+                    StartCoroutine(NotePrewarmer.Run());
                 }
             }
         }
@@ -212,12 +221,47 @@ public class GameManager : MonoBehaviour
         if (centerLine != null) centerLine.ResetBattle();
         if (opponentInput != null) opponentInput.ResetInput();
         if (scoreManager != null) scoreManager.ResetScores();
-        if (conductor != null) conductor.StartPlaybackWithLeadIn(conductor.leadIn);
+
+        // 重播全员开场动画，并重新走"待命-起播"流程（方块占位角色无 Spine，瞬时完成=0 秒开场）
+        ReplayAllIntroAnimations();
+        if (conductor != null)
+        {
+            conductor.introReadyProvider = AllIntroAnimationsDone;
+            conductor.ArmPlayback();
+        }
 
         if (winnerDisplayRoot != null) Destroy(winnerDisplayRoot);
         winnerShown = false;
         isGameOver = false;
 
         Debug.Log("游戏已重置");
+    }
+
+    /// <summary>刷新场景内全部 CharacterAnimator（含运行时生成的角色；方块占位角色的该组件自禁用、开场视为瞬时完成）。</summary>
+    private void RefreshIntroAnimators()
+    {
+        introAnimators = FindObjectsOfType<CharacterAnimator>(true);
+    }
+
+    /// <summary>就绪条件：全员开场动画播完（无开场资源的角色视为 0 秒，立即就绪）。</summary>
+    private bool AllIntroAnimationsDone()
+    {
+        if (introAnimators == null || introAnimators.Length == 0) RefreshIntroAnimators();
+        for (int i = 0; i < introAnimators.Length; i++)
+        {
+            var a = introAnimators[i];
+            if (a != null && !a.IsOpeningDone) return false;
+        }
+        return true;
+    }
+
+    /// <summary>重播场景内全部角色的开场动画（RestartGame 用；无 Spine 的占位角色为 no-op）。</summary>
+    private void ReplayAllIntroAnimations()
+    {
+        RefreshIntroAnimators();
+        for (int i = 0; i < introAnimators.Length; i++)
+        {
+            if (introAnimators[i] != null) introAnimators[i].PlayOpening();
+        }
     }
 }
