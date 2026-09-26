@@ -924,7 +924,7 @@ public class NoteMover : MonoBehaviour
 
     /// <summary>
     /// P0 附魔换皮：把本音符整体替换成 skillId 对应皮肤集里的贴图（普通=Note_Tap / 小型=Note_Tap_Small / 跨轨=Note_Wide，
-    /// 含命中 Select 版）。成功返回 true；该技能没有皮肤集（如炸弹雨）返回 false，调用方回退到原发光染色。
+    /// 含命中 Select 版）。成功返回 true；该技能没有皮肤集（如未生成皮肤的技能）返回 false，调用方回退到原发光染色。
     /// 连点音符（isChainTap）：本体=圆角板+Note_Repeat{N} 通用贴图；附魔直接换 Note_Repeat{N}_skill 整图，逐数字更新（P8）。
     /// </summary>
     public bool ApplyEnchantSkin(string skillId)
