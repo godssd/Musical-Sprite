@@ -419,6 +419,12 @@ public class ActiveSkillRuntime : MonoBehaviour
             ownerSpawner.SkillClearBand(xMin, xMax, this);
         }
 
+        // ③ 释放技能攻击 oneshot（射出电流＝攻击行为＝清屏效果释放），播完动画器自动接回 SkillLoop(④)。
+        // 短守卫：让 ③ 真正起播，避免同帧被 ⑤ SkillEnd（优先级11 < ③ 优先级12）抢占而整段跳过。
+        // 注：②/④ 是同一个 SkillLoop 资源——清屏无附魔，②→③→④ 中 ④ 在 ③ 播完由 CharacterAnimator.Update 自动接回，无需手写。
+        if (marker != null) marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillAttak);
+        yield return new WaitForSeconds(0.12f);
+
         // 释放者（小黑）自身沉睡：作为清屏的代价（控制免疫可抵抗）。
         // 沉睡期间该角色禁命中/禁主动技能/被动失效；队友不受影响。解除方式：驱散 / 时长到 / 队伍扣血。
         float sleepSec = (skill != null && skill.clearSleepSeconds > 0f) ? skill.clearSleepSeconds : 3f;
@@ -440,7 +446,7 @@ public class ActiveSkillRuntime : MonoBehaviour
             float dur = skill.buffDuration;
             if (releaseFever == FeverState.SuperFever) { mult = skill.clearSuperCombatMult; dur = skill.clearSuperBuffDuration; }
             else if (releaseFever == FeverState.Fever) { mult = skill.clearOverheatCombatMult; dur = skill.clearOverheatBuffDuration; }
-            BuffController.Instance.SetBBuff(ownerSide, mult > 0f ? mult : 1.5f);
+            BuffController.Instance.SetBBuff(ownerSide, mult > 0f ? mult : 1.5f, owner.characterId);
             BuffController.Instance.SetBuffDuration(ownerSide, BuffSlot.B, dur > 0f ? dur : 10f);
         }
 
@@ -461,11 +467,15 @@ public class ActiveSkillRuntime : MonoBehaviour
             if (skill.buffSlot == BuffSlot.A)
                 BuffController.Instance.SetABuff(ownerSide, skill.buffSubType, skill.buffCombatMult, skill.buffDamageReduce);
             else
-                BuffController.Instance.SetBBuff(ownerSide, skill.buffCombatMult);
+                BuffController.Instance.SetBBuff(ownerSide, skill.buffCombatMult, owner.characterId);
             float dur = skill.buffDuration > 0f ? skill.buffDuration : 0f;
             BuffController.Instance.SetBuffDuration(ownerSide, skill.buffSlot, dur);
             Debug.Log($"[Buff] side{ownerSide} 施加 {skill.buffSlot}（{(skill.buffSlot == BuffSlot.A ? skill.buffSubType.ToString() : "b战力")}），持续 {dur}s");
         }
+        // ③ 释放技能攻击 oneshot（施加 buff＝行动行为），播完动画器自动接回 SkillLoop(④)。
+        // 短守卫：让 ③ 真正起播，避免同帧被 ⑤ SkillEnd（优先级11 < ③ 优先级12）抢占而整段跳过。
+        if (marker != null) marker.PlaySkillStep(CharacterAnimator.CharacterAnimationState.SkillAttak);
+        yield return new WaitForSeconds(0.12f);
         if (marker != null) marker.PulseGlow();
         yield return new WaitForSeconds(0.1f);
         if (marker != null) marker.ShrinkUnglow();
@@ -596,18 +606,19 @@ public class ActiveSkillRuntime : MonoBehaviour
         if (marker != null) SpawnHealVfx(marker.transform.position);
     }
 
-    /// <summary>牛角包过热/超级过热：技能结束后 9 秒缓慢恢复，每 3 秒一跳共 3 跳，每跳回血 = ceil(释放方全队生命值总和 GetMaxHP(ownerSide) × regenPerTickHpRate)。regenPerTickHpRate 默认0.002（生命值总和的 0.2%）。</summary>
+    /// <summary>牛角包过热/超级过热：技能结束后缓慢恢复，按 regenTicks（默认 3）次生效，每 regenInterval（默认 3s）一跳。
+    /// 实际总时长 = regenTicks × regenInterval（默认 9s）；技能描述文案按「持续时间」书写（= 次数 × 间隔）。
+    /// 每跳回血 = ceil(释放方全队生命值总和 GetMaxHP(ownerSide) × regenPerTickHpRate)。regenPerTickHpRate 默认0.002（生命值总和的 0.2%）。</summary>
     private System.Collections.IEnumerator Regen()
     {
         float interval = (skill != null) ? skill.regenInterval : 3f;
-        // 缓慢回复视觉（暂时占位）：围着释放者旋转的绿色方块，持续 = 间隔×跳数（默认 9s）。
+        int ticks = (skill != null) ? skill.regenTicks : 3;
+        // 缓慢回复视觉（暂时占位）：围着释放者旋转的绿色方块，持续 = 次数 × 间隔。
         // 复用小黑 b 类攻击增益的方块旋转样式（RegenAuraFx），颜色改绿；待专门制作特效时替换。
-        if (marker != null) RegenAuraFx.Spawn(marker.transform, interval * 3f);
-        int ticks = 0;
-        while (ticks < 3)
+        if (marker != null) RegenAuraFx.Spawn(marker.transform, interval * ticks);
+        for (int i = 0; i < ticks; i++)
         {
             yield return new WaitForSeconds(interval);
-            ticks++;
             if (_scoreMgr == null) _scoreMgr = FindFirstObjectByType<ScoreManager>();
             if (_battleSys == null) _battleSys = FindFirstObjectByType<CharacterBattleSystem>();
             if (_scoreMgr != null && _battleSys != null)

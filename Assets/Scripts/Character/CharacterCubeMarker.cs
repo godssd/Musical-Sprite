@@ -373,11 +373,25 @@ public class CharacterCubeMarker : MonoBehaviour
         else Jump();   // 未接入 Spine 的 cube 角色保留命中跳跃
     }
 
-    /// <summary>受击：全队播 Hit（Spine 角色）；cube 角色无受击动画，暂不做额外反馈（避免与命中跳跃混淆）。</summary>
+    /// <summary>受击动画实际播放时抛出的事件（仅当真正播放受击动画时触发，天然已满足「单次伤害 ≥ 门槛」条件）。
+    /// 被动技能（如真是条好狗）订阅此事件，在所属角色的受击动画播放时触发效果。</summary>
+    public static event System.Action<CharacterCubeMarker> OnHitAnimPlayed;
+
+    /// <summary>受击：全队播 Hit（Spine 角色）；cube 角色无受击动画，暂不做额外反馈（避免与命中跳跃混淆）。
+    /// 仅当真正播放受击动画时抛出 OnHitAnimPlayed（被动技能触发点）。</summary>
     public void PlayHit()
     {
         var a = GetAnimator();
         if (a != null) a.PlayOnce(CharacterAnimator.CharacterAnimationState.Hit);
+        // 抛出事件（无论 Spine 是否真正播：占位 cube 无动画也视为「受击动画表现已发生」，被动照常触发）
+        OnHitAnimPlayed?.Invoke(this);
+    }
+
+    /// <summary>受击特效钩子：单次伤害低于门槛时调用（不播受击动画、只播特效）。
+    /// 当前无受击特效，空实现占位；接入特效后在此 Spawn/播放即可，无需改调用方。</summary>
+    public void PlayHitVfx()
+    {
+        // TODO: 受击特效（当前无）。受击动画门槛低于阈值时只走这里。
     }
 
     /// <summary>进入过热：Spine 角色播 Special 后切到过热 loop（PlayFever）。</summary>

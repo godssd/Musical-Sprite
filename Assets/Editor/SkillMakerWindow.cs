@@ -149,6 +149,8 @@ public class SkillMakerWindow : EditorWindow
         public float healCombatRate;
         public float regenPerTickHpRate;
         public float regenInterval;
+        public int regenTicks;
+        public float goodDogCombatRate;
         public float buffCombatMult;
         public float buffDamageReduce;
         public float buffDuration;
@@ -179,6 +181,8 @@ public class SkillMakerWindow : EditorWindow
                 healCombatRate = s.healCombatRate,
                 regenPerTickHpRate = s.regenPerTickHpRate,
                 regenInterval = s.regenInterval,
+                regenTicks = s.regenTicks,
+                goodDogCombatRate = s.goodDogCombatRate,
                 buffCombatMult = s.buffCombatMult,
                 buffDamageReduce = s.buffDamageReduce,
                 buffDuration = s.buffDuration,
@@ -225,9 +229,9 @@ public class SkillMakerWindow : EditorWindow
                 EditorGUILayout.LabelField("    能量需求", r.energy);
                 EditorGUILayout.LabelField("    技能冷却", r.cooldown);
                 EditorGUILayout.LabelField("    输入方式", r.input);
-                if (!string.IsNullOrEmpty(r.intro)) EditorGUILayout.LabelField("    技能介绍", r.intro);
-                if (!string.IsNullOrEmpty(r.overheat)) EditorGUILayout.LabelField("    过热状态", r.overheat);
-                if (!string.IsNullOrEmpty(r.super)) EditorGUILayout.LabelField("    超级过热状态", r.super);
+                if (!string.IsNullOrEmpty(r.intro)) EditorGUILayout.LabelField("    技能介绍", r.intro, EditorStyles.wordWrappedLabel);
+                if (!string.IsNullOrEmpty(r.overheat)) EditorGUILayout.LabelField("    过热状态", r.overheat, EditorStyles.wordWrappedLabel);
+                if (!string.IsNullOrEmpty(r.super)) EditorGUILayout.LabelField("    超级过热状态", r.super, EditorStyles.wordWrappedLabel);
                 EditorGUILayout.EndVertical();
             }
         }
@@ -265,6 +269,8 @@ public class SkillMakerWindow : EditorWindow
             s.healCombatRate = t.healCombatRate;
             s.regenPerTickHpRate = t.regenPerTickHpRate;
             s.regenInterval = t.regenInterval;
+            s.regenTicks = t.regenTicks;
+            s.goodDogCombatRate = t.goodDogCombatRate;
             s.buffCombatMult = t.buffCombatMult;
             s.buffDamageReduce = t.buffDamageReduce;
             s.buffDuration = t.buffDuration;
@@ -311,6 +317,10 @@ public class SkillMakerWindow : EditorWindow
                 t.charmedNoteCount = EditorGUILayout.IntField("附魔音符数量", t.charmedNoteCount);
                 t.regenInterval = EditorGUILayout.FloatField("过热恢复间隔(s)", t.regenInterval);
                 t.regenPerTickHpRate = EditorGUILayout.FloatField("缓慢恢复量系数(每跳)", t.regenPerTickHpRate);
+                t.regenTicks = EditorGUILayout.IntField("持续治疗生效次数", t.regenTicks);
+                break;
+            case "GoodDog":
+                t.goodDogCombatRate = EditorGUILayout.FloatField("充能系数(自身战斗力%)", t.goodDogCombatRate);
                 break;
             case "Buff":
                 t.buffCombatMult = EditorGUILayout.FloatField("攻击力加成(乘子)", t.buffCombatMult);

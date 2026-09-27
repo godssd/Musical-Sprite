@@ -27,8 +27,9 @@ public class ScoreManager : MonoBehaviour
     [Header("过热系统（可选，会自动查找/补建）")]
     public FeverManager feverManager;
 
-    /// <summary>团队伤害事件（side 实际掉血，damage>0 时触发）；订阅方用于全队播受击动画。</summary>
-    public event System.Action<int> OnSideDamaged;
+    /// <summary>团队伤害事件（side 实际掉血，damage>0 时触发）；订阅方用于全队播受击动画。
+    /// 第二参数 damage 为本次实际伤害值（减伤后），供受击动画门槛（≥10 才播）判定使用。</summary>
+    public event System.Action<int, int> OnSideDamaged;
 
     [Header("战斗系统（可选，会自动查找/补建）")]
     public CharacterBattleSystem battleSystem;
@@ -398,7 +399,7 @@ public class ScoreManager : MonoBehaviour
             rightHP = Mathf.Max(0, rightHP - damage);
 
         OnHPChanged?.Invoke(leftHP, rightHP);
-        if (damage > 0) OnSideDamaged?.Invoke(side);   // 实际受伤才播受击动画（全队）
+        if (damage > 0) OnSideDamaged?.Invoke(side, damage);   // 实际受伤才播受击动画（全队）；透传伤害值供门槛判定
 
         if (side == 0 && leftHP <= 0)
             OnPlayerDefeated?.Invoke(0);

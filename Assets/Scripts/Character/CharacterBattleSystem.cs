@@ -25,6 +25,10 @@ public class CharacterBattleSystem : MonoBehaviour
     [Tooltip("开启后，游戏开始时为所有需要能量的队伍角色充满一次能量；释放后仍按正常规则清空")]
     public bool startWithFullSkillEnergy = true;
 
+    [Header("受击动画门槛")]
+    [Tooltip("单次实际伤害 ≥ 此值时，该侧全队播受击动画（Spine Hit / 占位反馈）；低于则只触发受击特效钩子、不播受击动画。默认 10。")]
+    public int hitAnimDamageThreshold = 10;
+
     public int[] MaxHPBySide { get; private set; } = new int[2];
     public float[] CombatSumBySide { get; private set; } = new float[2];
 
@@ -430,11 +434,20 @@ public class CharacterBattleSystem : MonoBehaviour
         }
     }
 
-    private void OnSideDamaged(int side)
+    private void OnSideDamaged(int side, int damage)
     {
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None)
             .Where(m => m != null && m.side == side);
-        foreach (var m in markers) m.PlayHit();
+        if (damage >= hitAnimDamageThreshold)
+        {
+            // 达到门槛：全队播受击动画（Spine Hit / 占位反馈）；内部会抛出 OnHitAnimPlayed（被动技能触发点）
+            foreach (var m in markers) m.PlayHit();
+        }
+        else
+        {
+            // 低于门槛：不播受击动画，仅触发受击特效钩子（当前无受击特效，空实现占位）
+            foreach (var m in markers) m.PlayHitVfx();
+        }
     }
 
     private void OnBattleResult(int winnerSide, int loserSide)

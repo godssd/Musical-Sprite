@@ -102,6 +102,13 @@ public static class SkillLibraryGenerator
             clearOverheatRangeMult: 1.2f, clearOverheatCombatMult: 1.3f, clearOverheatBuffDuration: 30f,
             clearSuperRangeMult: 1.5f, clearSuperCombatMult: 1.8f, clearSuperBuffDuration: 30f);
 
+        // 真是条好狗（被动，设计归属大狗；大狗无 Spine 资源前暂挂载测试于屎屎，逻辑层与角色完全解耦）
+        created += Make("skill_7_good_dog", "真是条好狗",
+            "（7）每次自身触发受击动画时，获得一次能量充能（自身战斗力 × 40%）；每次触发后进入冷却（冷却由角色文档「技能冷却」列决定，技能库不持有冷却值）",
+            0f, new SkillInputStep[0],
+            0, 0, "GoodDog", dir,
+            goodDogCombatRate: 0.4f);
+
         // 小熊双 buff（a 类，互斥顶替）
         created += Make("skill_1_team_defense", "全体防御",
             "（1）全体防御：减少 20% 受到的伤害，持续 10s（同属 a 类 buff 不可共存）",
@@ -158,7 +165,8 @@ public static class SkillLibraryGenerator
         EnchantTarget enchantTarget = EnchantTarget.Self,
         float regenInterval = 3f,
         float clearOverheatRangeMult = 1.2f, float clearOverheatCombatMult = 1.3f, float clearOverheatBuffDuration = 30f,
-        float clearSuperRangeMult = 1.5f, float clearSuperCombatMult = 1.8f, float clearSuperBuffDuration = 30f)
+        float clearSuperRangeMult = 1.5f, float clearSuperCombatMult = 1.8f, float clearSuperBuffDuration = 30f,
+        float goodDogCombatRate = 0.4f)
     {
         string path = dir + "/" + skillId + ".asset";
         var existing = File.Exists(path) ? AssetDatabase.LoadAssetAtPath<SkillSO>(path) : null;
@@ -208,6 +216,7 @@ public static class SkillLibraryGenerator
         so.clearSuperRangeMult = clearSuperRangeMult;
         so.clearSuperCombatMult = clearSuperCombatMult;
         so.clearSuperBuffDuration = clearSuperBuffDuration;
+        so.goodDogCombatRate = goodDogCombatRate;
         AssetDatabase.CreateAsset(so, path);
         return 1;
     }

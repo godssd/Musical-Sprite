@@ -20,7 +20,7 @@ MonoBehaviour:
   energyCost: 280
   inputSequence: 000000000100000000000000
   inputWindow: 1.5
-  charmedNoteCount: 3
+  charmedNoteCount: 5
   enchantTarget: 0
   onlyCountNonMiss: 1
   reduceComboPerCharmedNote: 3
@@ -32,13 +32,14 @@ MonoBehaviour:
   screenShakeAmp: 0.3
   effectType: Bomb
   charmColorOverride: {r: 0, g: 0, b: 0, a: 1}
-  charmBonusFever: 2
-  charmBonusSuperFever: 5
+  charmBonusFever: 3
+  charmBonusSuperFever: 7
   bombDamageRate: 0.1
   healHpRate: 0.005
   healCombatRate: 0.015
   regenPerTickHpRate: 0.002
   regenInterval: 3
+  regenTicks: 3
   buffSlot: 0
   buffSubType: 0
   buffCombatMult: 1.4

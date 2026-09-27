@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// a/b 双槽 Buff 控制器（每侧各一 a 槽、一 b 槽）。
 /// - a 类（进攻 / 防御）互斥顶替：新 a 覆盖旧 a。
-/// - b 类互斥顶替：新 b 覆盖旧 b（仅小黑个人战力生效）。
+/// - b 类互斥顶替：新 b 覆盖旧 b（对释放者自身生效）。
 /// - a 与 b 互不冲突，战力上相乘叠加（见 GetCombatSum）。
 /// 挂载：由 CharacterBattleSystem 自动补建；通过 Instance 访问。
 /// </summary>
@@ -14,7 +14,8 @@ public class BuffController : MonoBehaviour
 {
     public static BuffController Instance { get; private set; }
 
-    private const int XiaoHeiId = 5; // 小黑 characterId（小黑_5.asset）
+    // 每侧 b 槽的释放者 characterId（b 类 buff 仅作用于释放者自身，不再是硬编码小黑）
+    private int[] bCasterId = new int[2] { -1, -1 };
 
     // 每侧 a 槽状态
     private BuffSlot[] aSlot = new BuffSlot[2] { BuffSlot.None, BuffSlot.None };
@@ -23,7 +24,7 @@ public class BuffController : MonoBehaviour
     private float[] aDmgReduce = new float[2] { 0f, 0f };
     private float[] aTimer = new float[2] { 0f, 0f };
 
-    // 每侧 b 槽状态（仅小黑个人战力）
+    // 每侧 b 槽状态（对释放者自身生效）
     private BuffSlot[] bSlot = new BuffSlot[2] { BuffSlot.None, BuffSlot.None };
     private float[] bCombatMult = new float[2] { 1f, 1f };
     private float[] bTimer = new float[2] { 0f, 0f };
@@ -73,12 +74,13 @@ public class BuffController : MonoBehaviour
         ApplyAurasForSide(side);   // 立刻挂对应视觉（互斥顶替 = 旧 aura 会被覆盖）
     }
 
-    /// <summary>应用 b 类 buff（仅小黑个人战力×mult）。互斥顶替旧 b。</summary>
-    public void SetBBuff(int side, float combatMult)
+    /// <summary>应用 b 类 buff（释放者个人战力×mult）。互斥顶替旧 b。casterId 记录释放者 characterId，使增幅只作用于释放者自身。</summary>
+    public void SetBBuff(int side, float combatMult, int casterId)
     {
         if (side < 0 || side > 1) return;
         bSlot[side] = BuffSlot.B;
         bCombatMult[side] = combatMult > 0f ? combatMult : 1f;
+        bCasterId[side] = casterId;
         ApplyAurasForSide(side);
     }
 
@@ -106,6 +108,7 @@ public class BuffController : MonoBehaviour
         {
             bSlot[side] = BuffSlot.None;
             bCombatMult[side] = 1f;
+            bCasterId[side] = -1;
             bTimer[side] = 0f;
             DestroyAura(ref powerAuraB[side]);
         }
@@ -122,7 +125,7 @@ public class BuffController : MonoBehaviour
         return aSlot[side] == BuffSlot.A && aSub[side] == BuffSubType.Defense ? aDmgReduce[side] : 0f;
     }
 
-    /// <summary>实时战力总和（含 a/b buff）：Σ_c[ base(c) × (a进攻?×aMult:1) × (c==小黑 && b激活?×bMult:1) ]。</summary>
+    /// <summary>实时战力总和（含 a/b buff）：Σ_c[ base(c) × (a进攻?×aMult:1) × (c==释放者 && b激活?×bMult:1) ]。</summary>
     public float GetCombatSum(int side)
     {
         if (side < 0 || side > 1) return 0f;
@@ -142,7 +145,7 @@ public class BuffController : MonoBehaviour
         if (c == null) return 0f;
         float v = c.combatPower;
         if (aSlot[side] == BuffSlot.A && aSub[side] == BuffSubType.Offense) v *= aCombatMult[side];
-        if (bSlot[side] == BuffSlot.B && c.characterId == XiaoHeiId) v *= bCombatMult[side];
+        if (bSlot[side] == BuffSlot.B && c.characterId == bCasterId[side]) v *= bCombatMult[side];
         return v;
     }
 
@@ -166,11 +169,11 @@ public class BuffController : MonoBehaviour
                 offenseAuraA[side] = OffenseAuraFx.Spawn(teamCenter);
         }
 
-        // b 类：仅在对应侧存在小黑时 spawn 旋转方块
+        // b 类：在释放者自身 marker 上 spawn 旋转方块（不再是固定小黑）
         if (bSlot[side] == BuffSlot.B)
         {
-            var xhMarker = FindXiaoHeiMarker(side);
-            if (xhMarker != null) powerAuraB[side] = SelfPowerAuraFx.Spawn(xhMarker.transform);
+            var casterMarker = FindMarkerByCharacterId(side, bCasterId[side]);
+            if (casterMarker != null) powerAuraB[side] = SelfPowerAuraFx.Spawn(casterMarker.transform);
         }
         else
         {
@@ -207,8 +210,8 @@ public class BuffController : MonoBehaviour
         return side == 0 ? Vector3.right : Vector3.left;
     }
 
-    /// <summary>在该侧查找小黑（characterId=5）的 CharacterCubeMarker。玩家自身的小黑也支持。</summary>
-    private CharacterCubeMarker FindXiaoHeiMarker(int side)
+    /// <summary>在该侧查找指定 characterId 的 CharacterCubeMarker（用于把 b 类 aura 挂到释放者自身）。</summary>
+    private CharacterCubeMarker FindMarkerByCharacterId(int side, int characterId)
     {
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
         foreach (var m in markers)
@@ -217,7 +220,7 @@ public class BuffController : MonoBehaviour
             var c = m.IsPlayer
                 ? CharacterRoster.GetPlayer(side)
                 : CharacterRoster.GetTeam(side, m.laneIndex);
-            if (c != null && c.characterId == XiaoHeiId) return m;
+            if (c != null && c.characterId == characterId) return m;
         }
         return null;
     }

@@ -39,6 +39,7 @@ MonoBehaviour:
   healCombatRate: 0.015
   regenPerTickHpRate: 0.002
   regenInterval: 3
+  regenTicks: 3
   buffSlot: 2
   buffSubType: 0
   buffCombatMult: 1.5
@@ -49,7 +50,7 @@ MonoBehaviour:
   clearBuffAsB: 1
   clearOverheatRangeMult: 1.2
   clearOverheatCombatMult: 1.3
-  clearOverheatBuffDuration: 15
+  clearOverheatBuffDuration: 20
   clearSuperRangeMult: 1.5
   clearSuperCombatMult: 1.8
-  clearSuperBuffDuration: 15
+  clearSuperBuffDuration: 40

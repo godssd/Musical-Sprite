@@ -35,10 +35,11 @@ MonoBehaviour:
   charmBonusFever: 0
   charmBonusSuperFever: 4
   bombDamageRate: 0.1
-  healHpRate: 0.005
-  healCombatRate: 0.015
-  regenPerTickHpRate: 0.002
+  healHpRate: 0.02
+  healCombatRate: 0.05
+  regenPerTickHpRate: 0.03
   regenInterval: 3
+  regenTicks: 5
   buffSlot: 0
   buffSubType: 0
   buffCombatMult: 1.4

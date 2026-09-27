@@ -89,13 +89,19 @@ public class SkillSO : ScriptableObject
     public float regenPerTickHpRate = 0.002f; // 生命值总和 × 0.2%
     [Tooltip("过热/超级过热缓慢恢复间隔（秒）；替换原硬编码 3s。可在 Inspector / 技能库调参面板调整。")]
     public float regenInterval = 3f;
+    [Tooltip("过热/超级过热缓慢恢复生效次数（每 regenInterval 秒跳一次；总时长 = 次数 × 间隔）。默认 3 = 每 3s 一跳共 3 跳（9s）。可在 Inspector / 技能库调参面板调整。技能描述文案按「持续时间」书写，实际持续 = 本值 × regenInterval。")]
+    public int regenTicks = 3;
+
+    [Header("真是条好狗（effectType=GoodDog，被动）")]
+    [Tooltip("触发受击动画时，给自身充能 = ceil(自身战斗力 × 本系数)。默认 0.4 = 自身战斗力 40%。仅 effectType=GoodDog 生效。")]
+    public float goodDogCombatRate = 0.4f;
 
     [Header("a/b 双槽 Buff（2026-08-27）")]
-    [Tooltip("buff 槽位：None=无 / A=同类互斥（进攻或防御） / B=小黑个人战力（与 a 互不冲突、相乘）")]
+    [Tooltip("buff 槽位：None=无 / A=同类互斥（进攻或防御） / B=释放者个人战力（与 a 互不冲突、相乘）")]
     public BuffSlot buffSlot = BuffSlot.None;
     [Tooltip("a 类子类型：Offense=全队战力×buffCombatMult；Defense=受到伤害×buffDamageReduce（仅 a 类生效）")]
     public BuffSubType buffSubType = BuffSubType.Offense;
-    [Tooltip("a 进攻 / b 类：战力乘子（1.4 = 全队战力 +40%；1.5 = 小黑个人战力 +50%）")]
+    [Tooltip("a 进攻 / b 类：战力乘子（1.4 = 全队战力 +40%；1.5 = 释放者个人战力 +50%）")]
     public float buffCombatMult = 1.4f;
     [Tooltip("a 防御：受到伤害减少比例（0.2 = 减伤 20%）。buffSlot=A 且 buffSubType=Defense 时生效")]
     public float buffDamageReduce = 0.2f;
@@ -107,19 +113,19 @@ public class SkillSO : ScriptableObject
     public float clearBandRangeMult = 1f;
     [Tooltip("清屏后释放者自身沉睡秒数（即「沉睡技能系数」）；可在 Inspector / 技能库调参面板细调。睡眠效果见 SleepController。")]
     public float clearSleepSeconds = 3f;
-    [Tooltip("清屏同时激活释放者自身 b 类 buff（小黑个人战力）")]
+    [Tooltip("清屏同时激活释放者自身 b 类 buff（释放者个人战力）")]
     public bool clearBuffAsB = true;
 
     [Header("断弦高压 · 过热/超级过热档（effectType=ClearScreen）")]
     [Tooltip("过热档清屏范围倍率（普通1 / 过热1.2 / 超级过热1.5）")]
     public float clearOverheatRangeMult = 1.2f;
-    [Tooltip("过热档：释放后自身 b 类战力乘子（1.3 = 全队战力 +30%）")]
+    [Tooltip("过热档：释放后自身 b 类战力乘子（1.3 = 释放者个人战力 +30%）")]
     public float clearOverheatCombatMult = 1.3f;
     [Tooltip("过热档：战力提升持续时间（秒）")]
     public float clearOverheatBuffDuration = 30f;
     [Tooltip("超级过热档清屏范围倍率")]
     public float clearSuperRangeMult = 1.5f;
-    [Tooltip("超级过热档：释放后自身 b 类战力乘子（1.8 = 全队战力 +80%）")]
+    [Tooltip("超级过热档：释放后自身 b 类战力乘子（1.8 = 释放者个人战力 +80%）")]
     public float clearSuperCombatMult = 1.8f;
     [Tooltip("超级过热档：战力提升持续时间（秒）")]
     public float clearSuperBuffDuration = 30f;

@@ -57,7 +57,7 @@ Player_01_Bear_12_Skill_Start
 | `SkillSelect` | oneshot | `11_Skill_Select` | 9 | 呼号选中 |
 | `SkillStart` | oneshot | `12_Skill_Start` | 10 | 释放技能起手 |
 | `SkillLoop` | loop | `13_Skill_Loop` | 10 | 技能准备攻击循环 |
-| `SkillAttak` | oneshot | `14_Skill_Attak` | 12 | 附魔音符命中结算 |
+| `SkillAttak` | oneshot | `14_Skill_Attak` | 12 | 释放技能攻击（行动行为，见 §3.2） |
 | `SkillEnd` | oneshot | `15_Skill_End` | 11 | 释放技能结束 |
 | `Victory` | loop | `16_Victory01` | 20 | 胜利终态 |
 | `Fail` | loop | `17_Fail` | 20 | 失败终态 |
@@ -70,6 +70,40 @@ Player_01_Bear_12_Skill_Start
 - oneshot 播放期间会**打断**低优先级 loop/oneshot；等 oneshot 播完后 `Update` 自动接回当前 loop。
 - 若当前动画优先级 **≥** 新请求，则新请求**本次作废**（不播）。
 - `SkillLoop` 期间通过 `SetSkillLoopLock(true)` 锁定，普通/过热 loop 无法切走。
+
+### 3.2 技能释放通用流程（12345 状态机）【底层规则 · 所有技能必须遵循】
+
+> **一句话**：任何主动技能，无论带不带附魔、什么效果，统一走同一套
+> `① SkillStart → ② SkillLoop → ③ SkillAttak → ④ SkillLoop → ⑤ SkillEnd` 状态机。
+
+| 步 | 状态 | 类型 / 优先级 | 含义 | 播放时机 |
+|----|------|---------------|------|----------|
+| ① | `SkillStart` | oneshot / 10 | 释放启动（呼喊式起手） | 进入释放即刻播一次（强制，高优先级） |
+| ② | `SkillLoop` | loop / 10 | 技能准备攻击循环（**底环**） | 进入释放即 `SetLoopState(SkillLoop)` + `SetSkillLoopLock(true)` |
+| ③ | `SkillAttak` | oneshot / 12 | **释放技能攻击＝行动行为**（投弹 / 回血 / 射电流 / 施加 buff…） | 攻击 / 效果释放那一刻播一次 |
+| ④ | `SkillLoop` | loop / 10 | **与 ② 完全相同**的状态（③ 播完自动回此） | ③ 播完由 `CharacterAnimator.Update` 自动接回，**无需手写** |
+| ⑤ | `SkillEnd` | oneshot / 11 | 释放收尾 | 技能彻底结束播一次，后切回过热 / 普通 loop |
+
+**★ 之前最易理解错、必须刻进脑子的点（逐条）：**
+
+1. **② 和 ④ 是同一个 `SkillLoop` 资源 / 状态，不是两个不同的「准备段」**。它们只是同一条循环在「攻击前」与「攻击后」两个时刻的称呼。**绝不要为 ②、④ 准备两套动画。**
+2. **③ `SkillAttak` 才是真正的「攻击 / 行动行为」**，是技能效果释放的视觉代表——投弹、回血、射出电流、施加 buff 等「行动」都应当与 ③ 的播放对齐（代码在触发效果处调用 `PlaySkillStep(SkillAttak)`）。
+3. **「播放 0s 也算播放」**：即便某技能逻辑上「没有攻击动作」（如纯 buff、纯清屏），② / ④ 依然存在（`SkillLoop` 一直在播，0s 的攻击也视为流程成立），**不得「跳过」② 或 ④**。即**所有技能统一走完整 12345 流程**，不存在「无附魔技能省掉某步」的特例。
+4. **优先级链**：`SkillAttak(12) > SkillEnd(11) > SkillStart/SkillLoop(10) > SkillSelect(9)`。因为 ③(12) 高于 ⑤(11)，所以 **③ 必须在 ⑤ 之前播放，且二者之间必须有 `yield` 间隔**（至少让 ③ 起播），否则同帧 ⑤ 会被 ③ 压制而**整段跳过不播**。
+5. **oneshot 自动回环**：③、⑤ 播完由 `CharacterAnimator.Update` 自动接回 `currentLoopState`（技能进行中始终 = `SkillLoop`）。**无需、也不应在代码里写「显式回 SkillLoop」的逻辑**——这正是 ④ 自动产生的机制。
+6. **无附魔类（断弦高压 / 纯 buff 技能等）视觉只见 1→3→5**：因为 ② / ④ 是同一条底环、看不出切换；但 ② / ④ 在流程上依旧存在（0s 合法）。代码上这些技能走 `ClearScreenSequence` / `PureBuffSequence`，**必须补 `PlaySkillStep(SkillAttak)`（③）后才能进 `EndSkillAnim`（⑤）**——缺 ③ 属于流程不完整的 bug（2026-09-27 已修正）。
+
+**代码落点对照（实现者按此自查）：**
+
+| 步 | 代码位置 | 说明 |
+|----|----------|------|
+| ① | `ActiveSkillRuntime.BeginCast` | 进入释放即播；若被更高优先级动画（Opening/Victory/Fail=20）挡住没播出来，视为「技能未释放」并撤销 |
+| ② | `BeginCast`（`SetLoopState(SkillLoop)` + `SetSkillLoopLock(true)`） | 底环，锁定期间不吃控制 / 状态切换 |
+| ③ | 附魔类：`Settle`（最终效果释放）+ `OnPerCharmSuccess`（逐音符命中各播一次）；无附魔类：`ClearScreenSequence` / `PureBuffSequence`（在行动行为处补播） | **所有路径都必须有这一行**，否则流程缺 ③ |
+| ④ | `CharacterAnimator.Update`（`if (cur.IsComplete) PlayLoop(currentLoopState)`） | 自动接回，无需手写 |
+| ⑤ | `EndSkillAnim`（被 `ClearScreenSequence` / `PureBuffSequence` / `EndCastSequence` / `FireSequence` 末尾调用） | 收尾后切回过热 / 普通 loop |
+
+**设计意图**：统一状态机让所有技能（带 / 不带附魔、任何效果）共用同一套动画驱动；新技能只需提供对应的 ③ 攻击动作资源（或复用 `SkillLoop`），框架自动串起 12345，杜绝「缺状态 / 流程错位 / 无附魔类省步骤」等问题。屎屎（首个验证角色）即凭此一套流程驱动当前所有主动技能。
 
 ---
 

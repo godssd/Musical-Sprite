@@ -47,6 +47,9 @@ using System.Collections.Generic;
 /// </summary>
 public class CharacterImporterWindow : EditorWindow
 {
+    // 跨会话记忆上次导入的 xlsx 路径（存入 EditorPrefs，重新打开 Unity / 重开窗口都会保留）
+    private const string PrefsKeyXlsxPath = "MusicalSprite.CharacterImporter.xlsxPath";
+
     private string xlsxPath = "";
     private Vector2 scroll;
     private List<List<string>> preview;
@@ -55,6 +58,19 @@ public class CharacterImporterWindow : EditorWindow
     public static void ShowWindow()
     {
         GetWindow<CharacterImporterWindow>("Character Importer");
+    }
+
+    // 窗口打开时回填上次记录的路径，避免每次重新找地址
+    private void OnEnable()
+    {
+        xlsxPath = EditorPrefs.GetString(PrefsKeyXlsxPath, "");
+    }
+
+    // 把当前路径记录到 EditorPrefs（选中文件 / 导入成功 时调用）
+    private void RememberPath()
+    {
+        if (!string.IsNullOrEmpty(xlsxPath))
+            EditorPrefs.SetString(PrefsKeyXlsxPath, xlsxPath);
     }
 
     private void OnGUI()
@@ -72,8 +88,10 @@ public class CharacterImporterWindow : EditorWindow
         xlsxPath = EditorGUILayout.TextField("xlsx 路径", xlsxPath);
         if (GUILayout.Button("选择", GUILayout.Width(60)))
         {
-            string p = EditorUtility.OpenFilePanel("选择 Characters.xlsx", "", "xlsx");
-            if (!string.IsNullOrEmpty(p)) xlsxPath = p;
+            // 默认打开到上次所在目录（若有），少走一步找地址
+            string startDir = string.IsNullOrEmpty(xlsxPath) ? "" : Path.GetDirectoryName(xlsxPath);
+            string p = EditorUtility.OpenFilePanel("选择 Characters.xlsx", startDir, "xlsx");
+            if (!string.IsNullOrEmpty(p)) { xlsxPath = p; RememberPath(); }
         }
         EditorGUILayout.EndHorizontal();
 
@@ -109,6 +127,7 @@ public class CharacterImporterWindow : EditorWindow
     private void Import()
     {
         if (!File.Exists(xlsxPath)) { Debug.LogError("[CharacterImporter] 文件不存在"); return; }
+        RememberPath(); // 路径有效即记录，下次重开窗口直接回填
         List<List<string>> rows;
         try { rows = SimpleXlsx.ReadSheet(xlsxPath, 0); }
         catch (System.Exception e) { Debug.LogError("[CharacterImporter] 解析失败: " + e); return; }
