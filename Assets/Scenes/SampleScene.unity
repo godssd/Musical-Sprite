@@ -14308,3 +14308,57 @@ SceneRoots:
   - {fileID: 9120000004}
   - {fileID: 9120000005}
   - {fileID: 516342145}
+--- !u!1 &9120000100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9120000101}
+  - component: {fileID: 9120000102}
+  m_Layer: 0
+  m_Name: ShockwavePreview
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9120000101
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9120000100}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9120000102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9120000100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77b4955d4587300028a56e951b956c06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  leftEdge: -6
+  rightEdge: 6
+  centerX: 0
+  wallHeight: 2
+  wallDepth: 7.5
+  autoClash: 0
+  clashDuration: 1.5
+  clashProgress: 0
+  redWall: {fileID: 0}
+  blueWall: {fileID: 0}
+

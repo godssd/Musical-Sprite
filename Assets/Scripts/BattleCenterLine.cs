@@ -7,6 +7,10 @@ using UnityEngine;
 /// </summary>
 public class BattleCenterLine : MonoBehaviour
 {
+    [Header("显示")]
+    [Tooltip("P0 起粉杠由双冲击波取代，默认隐藏；冲击波落地后此开关可删")]
+    public bool showCenterLine = false;
+
     [Header("移动范围")]
     [Tooltip("中线最左能到的 X 坐标")]
     public float minX = -3f;
@@ -64,7 +68,20 @@ public class BattleCenterLine : MonoBehaviour
         _currentX = 0f;
         _leftScore = 0f;
         _rightScore = 0f;
+        // P0：粉杠由双冲击波取代，默认隐藏；冲击波落地后此开关可删
+        Renderer r = GetComponent<Renderer>();
+        if (r != null) r.enabled = showCenterLine;
     }
+
+#if UNITY_EDITOR
+    // 编辑模式下即时响应 showCenterLine 开关，便于验收
+    void OnValidate()
+    {
+        if (Application.isPlaying) return;
+        Renderer r = GetComponent<Renderer>();
+        if (r != null) r.enabled = showCenterLine;
+    }
+#endif
 
     void Update()
     {
