@@ -35,25 +35,24 @@ public class CharacterStaticPreviewWindow : EditorWindow
     private static readonly Dictionary<CharacterAnimator.CharacterAnimationState, (string suffix, bool loop)> StateSuffix =
         new Dictionary<CharacterAnimator.CharacterAnimationState, (string suffix, bool loop)>
     {
-        { CharacterAnimator.CharacterAnimationState.Opening,        ("01_Opening",     false) },
-        { CharacterAnimator.CharacterAnimationState.PlayNormal,     ("02_Play_Normal",  true)  },
-        { CharacterAnimator.CharacterAnimationState.PlayFever,      ("03_Play_Fever",   true)  },
-        { CharacterAnimator.CharacterAnimationState.PlaySuperFever, ("03_Play_Fever",   true)  }, // 暂复用过热资源
-        { CharacterAnimator.CharacterAnimationState.SkillLoop,      ("13_Skill_Loop",   true)  },
-        { CharacterAnimator.CharacterAnimationState.Victory,        ("16_Victory01",    true)  },
-        { CharacterAnimator.CharacterAnimationState.Fail,           ("17_Fail",         true)  },
-        { CharacterAnimator.CharacterAnimationState.Special,        ("05_Special",      false) },
-        { CharacterAnimator.CharacterAnimationState.TargetNormal,   ("06_Target_Normal", false) },
-        { CharacterAnimator.CharacterAnimationState.TargetFever,    ("07_Target_Fever",  false) },
-        { CharacterAnimator.CharacterAnimationState.Hit,            ("08_Hit",          false) },
-        { CharacterAnimator.CharacterAnimationState.Dizziness,      ("09_Dizziness",    false) },
-        { CharacterAnimator.CharacterAnimationState.Decadent,       ("10_Decadent",     false) },
-        { CharacterAnimator.CharacterAnimationState.SkillSelect,     ("11_Skill_Select",  false) },
-        { CharacterAnimator.CharacterAnimationState.SkillStart,      ("12_Skill_Start",  false) },
-        { CharacterAnimator.CharacterAnimationState.SkillAttak,      ("14_Skill_Attak",  false) },
-        { CharacterAnimator.CharacterAnimationState.SkillEnd,        ("15_Skill_End",    false) },
-        { CharacterAnimator.CharacterAnimationState.Select,          ("04_Select",       false) }, // 暂不用
-        { CharacterAnimator.CharacterAnimationState.Idle,            ("00_Idle",         false) }, // 暂不用
+        { CharacterAnimator.CharacterAnimationState.Opening,          ("01_Opening",           false) },
+        { CharacterAnimator.CharacterAnimationState.PlayNormal,       ("02_Play_Normal",        true)  },
+        { CharacterAnimator.CharacterAnimationState.PlayFever,        ("03_Play_Fever",         true)  },
+        { CharacterAnimator.CharacterAnimationState.PlaySuperFever,   ("04_Play_Superfever",    true)  },
+        { CharacterAnimator.CharacterAnimationState.SkillLoop,        ("13_Skill_Loop",         true)  },
+        { CharacterAnimator.CharacterAnimationState.Victory,          ("16_Victory",            true)  },
+        { CharacterAnimator.CharacterAnimationState.Fail,             ("17_Fail",               true)  },
+        { CharacterAnimator.CharacterAnimationState.TargetNormal,     ("06_Target_Normal",      false) },
+        { CharacterAnimator.CharacterAnimationState.TargetFever,      ("07_Target_Fever",       false) },
+        { CharacterAnimator.CharacterAnimationState.TargetSuperFever, ("08_Target_Superfever",  false) },
+        { CharacterAnimator.CharacterAnimationState.Hit,              ("09_Hit",                false) },
+        { CharacterAnimator.CharacterAnimationState.Dizziness,       ("10_Dizziness",          true)  },
+        { CharacterAnimator.CharacterAnimationState.SkillSelect,       ("11_Skill_Select",       false) },
+        { CharacterAnimator.CharacterAnimationState.SkillStart,        ("12_Skill_Start",        false) },
+        { CharacterAnimator.CharacterAnimationState.SkillAttak,        ("14_Skill_Attak",        false) },
+        { CharacterAnimator.CharacterAnimationState.SkillEnd,         ("15_Skill_End",          false) },
+        { CharacterAnimator.CharacterAnimationState.Select,            ("04_Select",             false) }, // 暂不用
+        { CharacterAnimator.CharacterAnimationState.Idle,              ("00_Idle",               false) }, // 暂不用
     };
 
     // ------------------------------------------------------------------ 状态

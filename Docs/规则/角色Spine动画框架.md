@@ -1,8 +1,9 @@
 # Musical-Sprite 角色动画框架文档
 
-> 版本：2026-09-13  
+> 版本：2026-10-04  
 > 适用：Unity 6000 + URP + Spine 4.3  
-> 目的：把「接新角色」变成只填数据、零角色专属代码。
+> 目的：把「接新角色」变成只填数据、零角色专属代码。  
+> **动画编号标准以 Aibo_1_Bigdog（大狗）导出为唯一事实源，所有新角色 Spine 资源必须遵循此后缀。**
 
 ---
 
@@ -47,19 +48,18 @@ Player_01_Bear_12_Skill_Start
 | `Opening` | oneshot | `01_Opening` | 20 | 角色生成时强制播放一次，结束后自动接回 loop |
 | `PlayNormal` | loop | `02_Play_Normal` | 1 | 正常演奏循环 |
 | `PlayFever` | loop | `03_Play_Fever` | 3 | 过热演奏循环 |
-| `PlaySuperFever` | loop | `03_Play_Fever` | 3 | 超级过热（暂复用过热资源） |
-| `Special` | oneshot | `05_Special` | 4 | 进入过热/超级过热时爆发 |
+| `PlaySuperFever` | loop | `04_Play_Superfever` | 6 | 超级过热演奏循环 |
 | `TargetNormal` | oneshot | `06_Target_Normal` | 2 | 普通命中 |
 | `TargetFever` | oneshot | `07_Target_Fever` | 5 | 过热命中 |
-| `Hit` | oneshot | `08_Hit` | 8 | 受击 |
-| `Dizziness` | oneshot | `09_Dizziness` | 8 | 晕眩（暂不用） |
-| `Decadent` | oneshot | `10_Decadent` | 2 | 过热断连颓废 |
+| `TargetSuperFever` | oneshot | `08_Target_Superfever` | 7 | 超级过热命中 |
+| `Hit` | oneshot | `09_Hit` | 8 | 受击 |
+| `Dizziness` | **loop（受控时长）** | `10_Dizziness` | 8 | 晕眩/睡眠：循环播放，停留时长由**控制时间**决定（如小黑睡眠 3 秒）；到时自动回退触发前的 loop |
 | `SkillSelect` | oneshot | `11_Skill_Select` | 9 | 呼号选中 |
 | `SkillStart` | oneshot | `12_Skill_Start` | 10 | 释放技能起手 |
 | `SkillLoop` | loop | `13_Skill_Loop` | 10 | 技能准备攻击循环 |
 | `SkillAttak` | oneshot | `14_Skill_Attak` | 12 | 释放技能攻击（行动行为，见 §3.2） |
 | `SkillEnd` | oneshot | `15_Skill_End` | 11 | 释放技能结束 |
-| `Victory` | loop | `16_Victory01` | 20 | 胜利终态 |
+| `Victory` | loop | `16_Victory` | 20 | 胜利终态 |
 | `Fail` | loop | `17_Fail` | 20 | 失败终态 |
 | `Select` | oneshot | `04_Select` | 0 | 暂不用 |
 | `Idle` | oneshot | `00_Idle` | 0 | 暂不用 |
@@ -70,6 +70,15 @@ Player_01_Bear_12_Skill_Start
 - oneshot 播放期间会**打断**低优先级 loop/oneshot；等 oneshot 播完后 `Update` 自动接回当前 loop。
 - 若当前动画优先级 **≥** 新请求，则新请求**本次作废**（不播）。
 - `SkillLoop` 期间通过 `SetSkillLoopLock(true)` 锁定，普通/过热 loop 无法切走。
+
+#### 3.1.1 受控时长循环（Dizziness 类）
+
+`Dizziness` 是 **loop** 状态，但它的停留时长不是常驻，而是**由外部控制时间决定**（如眩晕 buff 持续 3 秒、小黑睡眠 3 秒）。机制：
+
+- 触发：调用 `PlayTimedLoop(Dizziness, duration)`（CharacterCubeMarker 封装为 `PlayDizziness(duration)`），**duration 秒后自动回退到触发前的 loop 状态**（如 PlayNormal）。
+- 不要走 `PlayOnce(Dizziness)` / `SetLoopState(Dizziness)`：二者对 loop 状态会直接**常驻**，不会回退（这是旧版"东倒西歪/卡死在晕眩"类 bug 的根因）。
+- `duration <= 0` 视为常驻（由外部显式 `CancelTimedLoop` / `SetLoopState` 结束），便于"提前唤醒"场景。
+- 受控时长循环进行中若被更高优先级 oneshot（如 Hit）打断，oneshot 播完仍会自动接回 Dizziness loop，倒计时继续；到时回退。
 
 ### 3.2 技能释放通用流程（12345 状态机）【底层规则 · 所有技能必须遵循】
 
@@ -165,7 +174,9 @@ Spine 动画驱动器，数据驱动：
 
 - `Rebuild()`：按 `animationPrefix + SlotTable 后缀` 在 SkeletonData 中自动发现动画，存在才注册。
 - `PlayOnce(state)`：触发 oneshot，按优先级打断；返回 bool 表示是否实际播放。
-- `SetLoopState(state)`：切换持续循环状态。
+- `SetLoopState(state)`：切换持续循环状态（常驻）。
+- `PlayTimedLoop(state, duration)`：播放**受控时长**循环（如 Dizziness），duration 秒后自动回退触发前的 loop；duration<=0 常驻。
+- `CancelTimedLoop(fallback)`：立即取消受控时长循环并回退到指定 loop。
 - `SetSkillLoopLock(bool)`：技能期间锁定 loop。
 
 ### 5.3 CharacterBattleSystem
@@ -245,5 +256,6 @@ Spine 动画驱动器，数据驱动：
 ## 10. 备忘
 
 - 所有战斗数值（伤害 / 回血 / HP）一律**向上取整为整数**，不保留小数。
-- 当前已验证的动画：屎屎的 19 个 Spine 动画均与 SlotTable 后缀匹配。
+- 2026-10-04 动画标准迁移：删除 `Special`、`Decadent`；新增 `TargetSuperFever`；以 Aibo_1_Bigdog（大狗）导出编号为新标准（`04_Play_Superfever`、`08_Target_Superfever`、`09_Hit`、`10_Dizziness`、`16_Victory`）。屎屎旧命名需同步调整。
+- 2026-10-04 修正：`Dizziness` 实为 **loop（受控时长）**，非 oneshot——停留时长由控制时间决定（如小黑睡眠 3 秒）。新增 `PlayTimedLoop` / `CancelTimedLoop`（CharacterAnimator）+ `PlayDizziness(duration)`（CharacterCubeMarker）。触发必须用 `PlayDizziness`/`PlayTimedLoop`，禁止 `PlayOnce`/`SetLoopState`（会常驻不回退）。
 - 后续角色接入时，建议先跑一局战斗，确认 `Opening → PlayNormal → 命中 → 技能起手 → SkillLoop → SkillAttak → SkillEnd` 全链路正常。

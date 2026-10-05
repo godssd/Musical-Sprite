@@ -17,8 +17,8 @@ MonoBehaviour:
   isPlayer: 0
   profession: 
   blockColor: {r: 1, g: 0.55, b: 0.05, a: 1}
-  modelPrefab: {fileID: 0}
-  animationPrefix: 
+  modelPrefab: {fileID: 8164667267146075247, guid: 00477fc0e4c02ef44b8f8d7bbf270b30, type: 3}
+  animationPrefix: Aibo_1_Bigdog
   laneIndex: 0
   maxHP: 25
   combatPower: 35

@@ -36,7 +36,15 @@ public class FeverVFXPlaceholder : MonoBehaviour
 
     void Start()
     {
-        fever = FindFirstObjectByType<FeverManager>();
+        // 用单例订阅，规避与 ScoreManager 运行时补建 FeverManager 的 Start 顺序竞争；
+        // Instance 未就绪时延迟兜底（同 CharacterBattleSystem）
+        if (FeverManager.Instance != null) SubscribeFever();
+        else StartCoroutine(SubscribeFeverDelayed());
+    }
+
+    private void SubscribeFever()
+    {
+        fever = FeverManager.Instance;
         if (fever == null)
         {
             Debug.LogWarning("[FeverVFXPlaceholder] 未找到 FeverManager");
@@ -46,6 +54,12 @@ public class FeverVFXPlaceholder : MonoBehaviour
             AutoFindCubes();
         BuildOverlays();
         fever.OnStateChanged += OnFeverChanged;
+    }
+
+    private System.Collections.IEnumerator SubscribeFeverDelayed()
+    {
+        yield return new WaitForSeconds(0.1f);
+        SubscribeFever();
     }
 
     void OnDestroy()

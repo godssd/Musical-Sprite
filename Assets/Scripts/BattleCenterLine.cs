@@ -58,10 +58,14 @@ public class BattleCenterLine : MonoBehaviour
 
     [Header("只读状态")]
     [SerializeField] private float _currentX;
+
+    [SerializeField] private float _targetX;     // 由分差决定的终点 X（冲击波放大倍率依据）
     [SerializeField] private float _leftScore;   // 左玩家累计命中优势
     [SerializeField] private float _rightScore;  // 右玩家累计命中优势
 
     public float currentX => _currentX;
+    /// <summary>分差决定的目标位置（= diff * pushPerHit）。冲击波用 |currentX - targetX| 作为"剩余距离"驱动放大。</summary>
+    public float targetX => _targetX;
 
     void Start()
     {
@@ -100,6 +104,7 @@ public class BattleCenterLine : MonoBehaviour
 
         // 分差 5000 时移动 5 个单位；允许超过原 minX/maxX，让粉杠随分差继续推进
         float targetX = diff * pushPerHit;
+        _targetX = targetX;
 
         _currentX = Mathf.Lerp(_currentX, targetX, Time.deltaTime * smoothSpeed);
 

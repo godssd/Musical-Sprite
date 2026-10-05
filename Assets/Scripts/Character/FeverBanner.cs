@@ -78,17 +78,29 @@ public class FeverBanner : MonoBehaviour
 
     void Start()
     {
-        var fever = FindFirstObjectByType<FeverManager>();
+        // 用单例订阅，规避与 ScoreManager 运行时补建 FeverManager 的 Start 顺序竞争
+        if (FeverManager.Instance != null) SubscribeFever();
+        else StartCoroutine(SubscribeFeverDelayed());
+    }
+
+    private void SubscribeFever()
+    {
+        var fever = FeverManager.Instance;
         if (fever == null) return;
         fever.OnStateChanged += OnFeverStateChanged;
         // 立即对齐一次当前状态
         OnFeverStateChanged(FeverState.None, fever.GetState(side), side);
     }
 
+    private System.Collections.IEnumerator SubscribeFeverDelayed()
+    {
+        yield return new WaitForSeconds(0.1f);
+        SubscribeFever();
+    }
+
     void OnDestroy()
     {
-        var fever = FindFirstObjectByType<FeverManager>();
-        if (fever != null) fever.OnStateChanged -= OnFeverStateChanged;
+        if (FeverManager.Instance != null) FeverManager.Instance.OnStateChanged -= OnFeverStateChanged;
     }
 
     private void OnFeverStateChanged(FeverState oldState, FeverState cur, int eventSide)

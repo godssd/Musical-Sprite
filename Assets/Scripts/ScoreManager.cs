@@ -35,12 +35,16 @@ public class ScoreManager : MonoBehaviour
     public CharacterBattleSystem battleSystem;
     public SkillInputUI skillInputUI;
 
+    [Header("冲击波（可选，会自动查找）")]
+    [Tooltip("ShockwavePreview 引用；保底追分给劣势方补分时直接通知它，让该侧冲击波闪白+冻结（直呼，不依赖事件中转）")]
+    public ShockwavePreview shockwave;
+
     [Header("血量与追分机制")]
     [Tooltip("每侧玩家血量上限兜底值（仅当 battleSystem.GetMaxHP 无效时使用）")]
     public int maxHP = 300;
     [Tooltip("每侧血量上限（运行时由 CharacterBattleSystem.GetMaxHP 注入）。P2 起左侧/右侧可不同。")]
     public int[] maxHPBySide = new int[2] { 300, 300 };
-    [Tooltip("分差超过多少时触发保底（给劣势方补救加分）。粉杠在分差=此值时已移动到 3 单位处（BattleCenterLine.pushPerHit=0.001），此处不另动粉杠。")]
+    [Tooltip("分差超过多少时触发保底（给劣势方补救加分）。粉杠位移峰值 = 此值 × BattleCenterLine.pushPerHit（当前 1500×0.001=1.5 单位），此处不另动粉杠。")]
     public int catchUpDiffThreshold = 3000;
     [Tooltip("保底判定间隔（秒），每秒检查一次")]
     public float catchUpInterval = 1f;
@@ -110,6 +114,10 @@ public class ScoreManager : MonoBehaviour
                 Debug.Log("[ScoreManager] 自动创建 SkillInputUI");
             }
         }
+
+        // 冲击波：自动查找（保底追分直呼用）
+        if (shockwave == null)
+            shockwave = FindFirstObjectByType<ShockwavePreview>();
 
         if (leftScoreDisplay == null)
             leftScoreDisplay = FindScoreDisplay("ScoreLeft");
@@ -356,6 +364,10 @@ public class ScoreManager : MonoBehaviour
         float combatSum = (battleSystem != null) ? battleSystem.GetCombatSum(higherSide) : 100f;
         int damage = Mathf.RoundToInt(extra * combatSum * catchUpDrainRate);
         TakeDamage(lowerSide, damage);
+
+        // 扣血/补分机制触发 -> 直呼冲击波：劣势方（被推入侧）闪白一次 + 冻结放大（"把冻结加到保底扣血机制中"）
+        if (shockwave == null) shockwave = FindFirstObjectByType<ShockwavePreview>();
+        shockwave?.OnScoreAdjustPush(lowerSide);
 
         Debug.Log($"[ScoreManager] 保底：diff={diff} 优势方side{higherSide}不动，劣势方side{lowerSide} +{extra}分，扣血 {damage}（优势方combatSum={combatSum}, drain={catchUpDrainRate}）");
     }

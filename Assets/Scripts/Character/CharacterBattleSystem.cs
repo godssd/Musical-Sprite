@@ -16,7 +16,14 @@ using UnityEditor;
 public class CharacterBattleSystem : MonoBehaviour
 {
     [Header("角色数据（P2 手动或经 Character Importer 导入）")]
+    [Tooltip("旧版镜像阵容：红蓝双方共用同一套角色。若 leftCharacters / rightCharacters 为空，则回退到此数组。")]
     public CharacterDataSO[] allCharacters;
+
+    [Header("新版：红蓝双方独立阵容（索引 0=玩家，1~4=lane0~3）")]
+    [Tooltip("红方（左）阵容。长度建议为 5：索引 0 放玩家(isPlayer=true)，索引 1~4 放 lane0~3 的 Aibo。")]
+    public CharacterDataSO[] leftCharacters;
+    [Tooltip("蓝方（右）阵容。长度建议为 5：索引 0 放玩家(isPlayer=true)，索引 1~4 放 lane0~3 的 Aibo。蓝方不再镜像红方，必须由工具/场景独立配置。")]
+    public CharacterDataSO[] rightCharacters;
 
     [Header("旧场景兼容：自动补全角色 Marker")]
     public bool autoFillMarkersOnStart = true;
@@ -71,7 +78,7 @@ public class CharacterBattleSystem : MonoBehaviour
         var spawners = FindObjectsByType<NoteSpawner>(FindObjectsSortMode.None);
         var combos = FindObjectsByType<ComboDisplay>(FindObjectsSortMode.None);
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None);
-        var fever = FindFirstObjectByType<FeverManager>();
+        var fever = FeverManager.Instance ?? FindFirstObjectByType<FeverManager>();
 
         for (int side = 0; side < 2; side++)
         {
@@ -145,85 +152,104 @@ public class CharacterBattleSystem : MonoBehaviour
         CharacterRoster.Clear();
 
         bool usedDefault = false;
-        if (allCharacters == null || allCharacters.Length == 0)
+
+        // 若未配置独立阵容，则回退到 allCharacters（旧版兼容）。
+        if ((leftCharacters == null || leftCharacters.Length == 0) &&
+            (rightCharacters == null || rightCharacters.Length == 0) &&
+            (allCharacters == null || allCharacters.Length == 0))
         {
 #if UNITY_EDITOR
-            // 场景未手动配置 allCharacters：优先加载「角色导入器」的输出目录（Assets/Data/Characters），
-            // 让用户在表格里改的 hp / 战斗力 / 技能冷却 等真正生效，而不是被写死的默认数据覆盖。
             var imported = LoadImportedCharacters();
             if (imported != null && imported.Length > 0)
             {
                 allCharacters = imported;
-                Debug.Log($"[CharacterBattleSystem] 未手动配置 allCharacters，已从 Assets/Data/Characters 加载 {imported.Length} 个已导入角色（表格改动生效）。");
+                Debug.Log($"[CharacterBattleSystem] 未手动配置阵容，已从 Assets/Data/Characters 加载 {imported.Length} 个已导入角色（表格改动生效）。");
             }
             else
 #endif
             {
-                // 临时默认数据（飞书 1:1：小熊 + 大狗 + 屎屎 + 布姆 + 小黑），让系统可启动
                 allCharacters = BuildDefaultCharacterArray();
                 usedDefault = true;
             }
         }
 
-        // 不变量：同一 side 内，一个 characterId 不能被两个 lane 重复上场（两侧互不影响，镜像阵容合法）。
-        for (int side = 0; side < 2; side++)
-        {
-            var seen = new System.Collections.Generic.HashSet<int>();
-            int maxHP = 0;
-            float combat = 0f;
-            var sides = allCharacters.Where(c => c != null);
-            // 玩家自身
-            CharacterClass playerC = null;
-            foreach (var d in sides.Where(c => c.isPlayer))
-            {
-                if (!seen.Add(d.characterId))
-                {
-                    Debug.LogWarning($"[CharacterBattleSystem] characterId={d.characterId} ({d.displayName}) 重复，跳过玩家自身 side={side}");
-                    continue;
-                }
-                var inst = CharacterClass.FromData(d);
-                if (inst == null) continue;
-                playerC = inst;
-                CharacterRoster.RegisterPlayer(side, inst);
-                maxHP += inst.maxHP;
-                combat += inst.combatPower;
-                break;
-            }
-            // 4 个队伍角色（lane 0..3）
-            for (int lane = 0; lane < 4; lane++)
-            {
-                CharacterDataSO pick = null;
-                foreach (var d in sides.Where(c => !c.isPlayer && c.laneIndex == lane))
-                {
-                    pick = d; break;
-                }
-                if (pick == null) continue;
-                if (!seen.Add(pick.characterId))
-                {
-                    Debug.LogWarning($"[CharacterBattleSystem] characterId={pick.characterId} ({pick.displayName}) 重复，跳过 side={side} lane={lane}");
-                    continue;
-                }
-                var inst = CharacterClass.FromData(pick);
-                CharacterRoster.RegisterTeam(side, lane, inst);
-                maxHP += inst.maxHP;
-                combat += inst.combatPower;
+        // 红蓝两侧独立装载；right 为空时回退到 allCharacters（旧版镜像），否则不镜像。
+        LoadSide(0, leftCharacters);
+        LoadSide(1, rightCharacters);
 
-                // 订阅能量事件 -> EnergyVFXPlaceholder 自动收得到
-                if (inst.HasActiveSkill)
+        Debug.Log($"[CharacterBattleSystem] 已装载角色：leftMaxHP={MaxHPBySide[0]} L_combat={CombatSumBySide[0]} | rightMaxHP={MaxHPBySide[1]} R_combat={CombatSumBySide[1]} | default={usedDefault}");
+    }
+
+    /// <summary>
+    /// 装载单侧阵容。
+    /// source 数组约定：索引 0 = 玩家（isPlayer=true），索引 1~4 = lane0~3 的 Aibo。
+    /// source 为空时回退到 allCharacters（旧版镜像兼容）。
+    /// 测试需要：同一 side 的 Aibo 允许重复（同角色多登场），仅玩家位保留唯一性。
+    /// </summary>
+    private void LoadSide(int side, CharacterDataSO[] source)
+    {
+        var pool = (source != null && source.Length > 0) ? source : allCharacters;
+        if (pool == null) pool = System.Array.Empty<CharacterDataSO>();
+
+        int maxHP = 0;
+        float combat = 0f;
+        bool playerRegistered = false;
+
+        // 索引 0 = 玩家
+        if (pool.Length > 0 && pool[0] != null)
+        {
+            var d = pool[0];
+            if (d.isPlayer)
+            {
+                var inst = CharacterClass.FromData(d);
+                if (inst != null)
                 {
-                    int capturedSide = side;
-                    int capturedLane = lane;
-                    int capturedId = inst.characterId;
-                    inst.OnEnergyFull += (id, slot) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} slot={slot} 能量已满");
-                    inst.OnEnergyDepleted += (id, slot) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} slot={slot} 能量耗尽");
+                    CharacterRoster.RegisterPlayer(side, inst);
+                    maxHP += inst.maxHP;
+                    combat += inst.combatPower;
+                    playerRegistered = true;
                 }
             }
-            MaxHPBySide[side] = maxHP;
-            CombatSumBySide[side] = combat;
+            else
+            {
+                Debug.LogWarning($"[CharacterBattleSystem] side={side} 索引 0 的角色 {d.displayName} 不是玩家(isPlayer=false)，已跳过玩家位。");
+            }
         }
 
-        Debug.Log($"[CharacterBattleSystem] 已装载角色：leftMaxHP={MaxHPBySide[0]} L_combat={CombatSumBySide[0]} | rightMaxHP={MaxHPBySide[1]} R_combat={CombatSumBySide[1]} | default={usedDefault} | 双方阵容均为 characterId 1..5（玩家=小熊，队伍=大狗/屎屎/布姆/小黑，镜像布置）");
-        // 注：AutoFillMarkers 放到 Start 执行，避免 Awake 太早拿不到 NoteSpawner。
+        // 索引 1~4 = lane 0~3 的 Aibo
+        for (int i = 1; i < pool.Length && i <= 4; i++)
+        {
+            var pick = pool[i];
+            if (pick == null) continue;
+            if (pick.isPlayer)
+            {
+                Debug.LogWarning($"[CharacterBattleSystem] side={side} 索引 {i} 的角色 {pick.displayName} 是玩家(isPlayer=true)，已跳过 Aibo 位 lane={i - 1}。");
+                continue;
+            }
+
+            var inst = CharacterClass.FromData(pick);
+            if (inst == null) continue;
+
+            int lane = i - 1;
+            CharacterRoster.RegisterTeam(side, lane, inst);
+            maxHP += inst.maxHP;
+            combat += inst.combatPower;
+
+            if (inst.HasActiveSkill)
+            {
+                int capturedSide = side;
+                int capturedLane = lane;
+                int capturedId = inst.characterId;
+                inst.OnEnergyFull += (id, slot) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} slot={slot} 能量已满");
+                inst.OnEnergyDepleted += (id, slot) => Debug.Log($"[Battle] side={capturedSide} lane={capturedLane} charId={id} slot={slot} 能量耗尽");
+            }
+        }
+
+        MaxHPBySide[side] = maxHP;
+        CombatSumBySide[side] = combat;
+
+        if (!playerRegistered)
+            Debug.LogWarning($"[CharacterBattleSystem] side={side} 未配置玩家角色（索引 0 为空或 isPlayer=false）。");
     }
 
     /// <summary>旧场景兼容：新场景在创建角色时已经直接挂 Marker；仅在完全没有 Marker 时从乐队根节点迁移。</summary>
@@ -309,8 +335,17 @@ public class CharacterBattleSystem : MonoBehaviour
 
         CharacterClass c = m.IsPlayer ? CharacterRoster.GetPlayer(m.side) : CharacterRoster.GetTeam(m.side, m.laneIndex);
         Color col = (c != null) ? c.blockColor : Color.yellow;
+        Debug.Log($"[CharacterBattleSystem] ColorMarker {m.gameObject.name}(side={m.side},lane={m.laneIndex}) c={(c == null ? "NULL" : c.displayName)} modelPrefab={(c == null || c.modelPrefab == null ? "NULL" : c.modelPrefab.name)}", m);
         // 美术接入：注入角色外观预制体（空=维持原 cube）。多网格模型由 CharacterCubeMarker 统一上色。
-        if (c != null && c.modelPrefab != null) m.SetModelPrefab(c.modelPrefab, c.animationPrefix);
+        if (c != null && c.modelPrefab != null)
+        {
+            Debug.Log($"[CharacterBattleSystem] {m.gameObject.name}(side={m.side},lane={m.laneIndex}) 调用 SetModelPrefab prefab={c.modelPrefab.name}", m);
+            m.SetModelPrefab(c.modelPrefab, c.animationPrefix);
+        }
+        else
+        {
+            Debug.LogWarning($"[CharacterBattleSystem] {m.gameObject.name}(side={m.side},lane={m.laneIndex}) 无 modelPrefab(c={c?.displayName}), 保留 cube", m);
+        }
         m.ColorAll(col);
     }
 
@@ -402,17 +437,30 @@ public class CharacterBattleSystem : MonoBehaviour
 
     private void SubscribeBattleEvents()
     {
-        var fever = FindFirstObjectByType<FeverManager>();
-        if (fever != null) fever.OnStateChanged += OnFeverStateChanged;
+        // 订阅过热状态变化：直接用单例，避免与 ScoreManager 运行时补建 FeverManager 的 Start 顺序竞争
+        // （场景未预置 FeverManager，ScoreManager 在 Start 里动态创建；若本脚本 Start 先于它，
+        //  FindFirstObjectByType 会返回 null 导致漏订）。Instance 尚未就绪时延迟一帧兜底订阅。
+        if (FeverManager.Instance != null)
+            FeverManager.Instance.OnStateChanged += OnFeverStateChanged;
+        else
+            StartCoroutine(SubscribeFeverDelayed());
+
         var sm = FindFirstObjectByType<ScoreManager>();
         if (sm != null) sm.OnSideDamaged += OnSideDamaged;
         if (GameManager.Instance != null) GameManager.Instance.OnBattleResult += OnBattleResult;
     }
 
+    private System.Collections.IEnumerator SubscribeFeverDelayed()
+    {
+        // 等 FeverManager 单例就绪（最迟下一帧），再补订阅；避免漏订导致过热动画不切换
+        yield return new WaitForSeconds(0.1f);
+        if (FeverManager.Instance != null)
+            FeverManager.Instance.OnStateChanged += OnFeverStateChanged;
+    }
+
     private void OnDestroy()
     {
-        var fever = FindFirstObjectByType<FeverManager>();
-        if (fever != null) fever.OnStateChanged -= OnFeverStateChanged;
+        if (FeverManager.Instance != null) FeverManager.Instance.OnStateChanged -= OnFeverStateChanged;
         var sm = FindFirstObjectByType<ScoreManager>();
         if (sm != null) sm.OnSideDamaged -= OnSideDamaged;
         if (GameManager.Instance != null) GameManager.Instance.OnBattleResult -= OnBattleResult;
@@ -422,15 +470,20 @@ public class CharacterBattleSystem : MonoBehaviour
     {
         var markers = FindObjectsByType<CharacterCubeMarker>(FindObjectsSortMode.None)
             .Where(m => m != null && m.side == side);
-        if (newState == FeverState.Fever || newState == FeverState.SuperFever)
+        if (newState == FeverState.SuperFever)
         {
-            // 进入过热：全队 Special + 过热 loop
+            // 进入超级过热：全队切到超级过热 loop
+            foreach (var m in markers) m.EnterSuperFever();
+        }
+        else if (newState == FeverState.Fever)
+        {
+            // 进入过热：全队切到过热 loop
             foreach (var m in markers) m.EnterFever();
         }
         else if (newState == FeverState.None && (oldState == FeverState.Fever || oldState == FeverState.SuperFever))
         {
-            // 断连退出过热：先切普通 loop（ExitFever 立即切），再播颓废（Decadent 优先级2 打断刚切回的普通 loop 1）
-            foreach (var m in markers) { m.ExitFever(); m.PlayDecadent(); }
+            // 断连退出过热/超级过热：直接切回普通 loop
+            foreach (var m in markers) m.ExitFever();
         }
     }
 

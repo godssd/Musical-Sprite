@@ -131,8 +131,8 @@ public class BattleVisualsController : MonoBehaviour
                             .FirstOrDefault(x => x.side == side && x.laneIndex == lane);
                 if (m != null)
                 {
-                    bool fever = FeverManager.Instance != null && FeverManager.Instance.GetState(side) >= FeverState.Fever;
-                    m.PlayTarget(fever);   // 命中有专门动画（Spine 角色）；cube 角色走 Jump 兜底
+                    var fs = (FeverManager.Instance != null) ? FeverManager.Instance.GetState(side) : FeverState.None;
+                    m.PlayTarget(fs);   // 命中有专门动画（Spine 角色）；cube 角色走 Jump 兜底
                 }
                 else
                 {

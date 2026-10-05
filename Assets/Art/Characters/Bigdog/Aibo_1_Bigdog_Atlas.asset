@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6b194f808b1af6499c93410e504af42, type: 3}
+  m_Name: Aibo_1_Bigdog_Atlas
+  m_EditorClassIdentifier: 
+  serializedMaterialOverrides: []
+  textureLoadingMode: 0
+  onDemandTextureLoader: {fileID: 0}
+  atlasFile: {fileID: 4900000, guid: 8dfb2159cb2492a418ef75211c726060, type: 3}
+  materials:
+  - {fileID: 2100000, guid: 28cb0954cce03954d8994186ed251c48, type: 2}
+  - {fileID: 2100000, guid: 1529c6278d2ab1c448f13c76a4694857, type: 2}
+  - {fileID: 2100000, guid: d18480f2d0c65ee468ceb38024d41015, type: 2}

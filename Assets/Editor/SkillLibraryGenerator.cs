@@ -4,8 +4,9 @@ using System.IO;
 
     /// <summary>
     /// 技能库生成器（技能定义唯一数据源，仅决定 技能ID + 功能(effectType) + 全部可调参数默认值）。
-    /// 菜单：Tools > Musical Sprite > Generate Skill Library（缺时建）；
-    ///       Tools > Musical Sprite > Force Regenerate Skill Library（全量重置，会覆盖手调值）。
+    /// 菜单：Tools > Musical Sprite > Generate Skill Library（缺时建）。
+    /// （原 Force Regenerate 全量重置菜单已按用户要求移除：危险且无用——技能系数在 Skill Library
+    ///  窗口「应用改动」后即 SetDirty+SaveAssets 落盘为 .asset 默认值，无需"恢复出厂"。）
     /// 编辑器加载时也会自动跑一次（create-if-missing）。
     ///
     /// 在 Assets/Resources/Skills/ 生成 SkillSO 资源：
@@ -24,7 +25,7 @@ using System.IO;
     /// 由 Characters.xlsx 经 Character Importer 导入，技能库工具 Rescan 时聚合显示（不写回 SkillSO）。
     ///
     /// 缺时建（create-if-missing）：已存在的 .asset 只同步「身份」字段（skillId/名称/描述/效果），
-    /// 绝不动可调参数——保住你在技能库工具里「应用改动」手调的值。全量重置用上面菜单。
+    /// 绝不动可调参数——保住你在技能库工具里「应用改动」手调的值（该操作本身即落盘：SetDirty+SaveAssets）。
     /// </summary>
 public static class SkillLibraryGenerator
 {
@@ -44,27 +45,6 @@ public static class SkillLibraryGenerator
         {
             Debug.Log("[SkillLibrary] 技能库已就绪（无新增）。");
         }
-    }
-
-    /// <summary>全量重置：删除全部 Skills/*.asset 后按代码默认值重建（会覆盖你在技能库工具里手调的数值）。
-    /// 用于「恢复出厂默认」。日常改名/补技能用上面的 Generate（缺时建，不碰手调值）。</summary>
-    [MenuItem("Tools/Musical Sprite/Force Regenerate Skill Library")]
-    public static void ForceGenerate()
-    {
-        if (!EditorUtility.DisplayDialog("全量重置技能库",
-            "这将删除 Assets/Resources/Skills/ 下全部 SkillSO 并按代码默认值重建（你在技能库工具里手调的数值会被覆盖）。\n确定继续？",
-            "确定重置", "取消"))
-            return;
-        string dir = "Assets/Resources/Skills";
-        if (Directory.Exists(dir))
-        {
-            foreach (var f in Directory.GetFiles(dir, "*.asset"))
-                AssetDatabase.DeleteAsset(f);
-        }
-        int created = GenerateAssets(silent: false);
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-        Debug.Log("[SkillLibrary] 全量重置完成：重建 " + created + " 个 SkillSO。");
     }
 
     /// <summary>静默版（不弹窗），给 InitializeOnLoad 自动调用。</summary>

@@ -111,6 +111,11 @@ public class NoteMover : MonoBehaviour
     private bool missing = false;     // 已进入漏击缩小状态
     private bool missComplete = false; // 缩小动画结束，可出 MISS
 
+    [Header("显形渐变")]
+    [Tooltip("音符越过中线后从完全透明到完全显示所需时间（秒）。0=瞬间显示。")]
+    public float fadeInDuration = 0.15f;
+    private float fadeInStartTime = -1f; // <0 表示未在淡入
+
     // 普通点击沿用圆柱；连轨点击使用带圆角的扁平矩形网格。
     private static Mesh _cylinderMesh;
     private static Mesh CylinderMesh
@@ -729,7 +734,17 @@ public class NoteMover : MonoBehaviour
             if (rend != null) rend.enabled = true;
             if (chainCountRenderer != null) chainCountRenderer.enabled = true;
             if (digitRenders[0] != null) { digitRenders[0].enabled = true; digitRenders[1].enabled = true; }
-            SetAlpha(1f);
+            fadeInStartTime = Time.time;
+            SetAlpha(0f);
+        }
+
+        // 显形淡入：alpha 从 0 渐变到 1，避免音符越过中线时瞬间弹出
+        if (note.isVisible && fadeInStartTime >= 0f)
+        {
+            float fadeT = (Time.time - fadeInStartTime) / Mathf.Max(0.0001f, fadeInDuration);
+            fadeT = Mathf.Clamp01(fadeT);
+            SetAlpha(fadeT);
+            if (fadeT >= 1f) fadeInStartTime = -1f;
         }
 
         // 检测是否已完全穿过判定线：必须后缘也越过判定线，才算“彻底穿过”
@@ -1088,7 +1103,8 @@ public class NoteMover : MonoBehaviour
 
         if (rend != null && note.isVisible)
         {
-            rend.enabled = alpha > 0.01f;
+            // 淡入期间即使 alpha≈0 也保持 renderer 开启，避免第一帧被 SetAlpha(0) 关闭造成闪烁
+            rend.enabled = alpha > 0.01f || fadeInStartTime >= 0f;
         }
         if (chainCountText != null)
         {
@@ -1096,7 +1112,7 @@ public class NoteMover : MonoBehaviour
             textColor.a = alpha;
             chainCountText.color = textColor;
             if (chainCountRenderer != null && note.isVisible)
-                chainCountRenderer.enabled = alpha > 0.01f;
+                chainCountRenderer.enabled = alpha > 0.01f || fadeInStartTime >= 0f;
         }
         // 连点数字精灵（09-17）：与卡面同步淡入淡出
         if (digitRenders[0] != null && note.isVisible)
@@ -1104,7 +1120,7 @@ public class NoteMover : MonoBehaviour
             for (int i = 0; i < 2; i++)
             {
                 if (digitRenders[i] != null && digitRenders[i].sprite != null)
-                    digitRenders[i].enabled = alpha > 0.01f;
+                    digitRenders[i].enabled = alpha > 0.01f || fadeInStartTime >= 0f;
             }
         }
     }

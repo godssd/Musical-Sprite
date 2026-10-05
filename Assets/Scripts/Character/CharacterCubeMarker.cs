@@ -60,9 +60,20 @@ public class CharacterCubeMarker : MonoBehaviour
     public GameObject modelPrefab;
 
     private GameObject spawnedModel;
+    private CharacterSlotPose cachedSlotPose;
+
+    [Header("位姿保持")]
+    [Tooltip("运行时强制每帧重新应用 CharacterSlotPose offset，防止其他脚本覆盖 Transform。验证稳定后可关闭。")]
+    public bool forceKeepPose = true;
+
+    [Header("位姿 Fallback（冗余备份）")]
+    [Tooltip("当同物体上的 CharacterSlotPose 丢失或读取为 0 时，使用这里的偏移作为兜底。工具同步红蓝位姿时会自动把 SlotPose 值复制到这里。")]
+    public Vector3 fallbackPositionOffset;
+    public Vector3 fallbackRotationOffset;
+    public Vector3 fallbackScaleOffset = Vector3.one;
 
     [Header("朝向调试")]
-    [Tooltip("true=右侧(side=1)角色自动水平镜像，面向左侧中心（仅翻转 Spine 子模型 localScale.x，不动根节点/占位方块）")]
+    [Tooltip("true=右侧(side=1)角色自动水平镜像，面向左侧中心。通过 Spine 骨骼级 FlipX 实现（非 GameObject 负缩放，避免骨架扭歪）")]
     public bool flipFacing = true;
 
     /// <summary>按 (side, lane) 索引的全局角色标记表，供普通命中时按音轨查找对应角色跳跃。</summary>
@@ -99,7 +110,31 @@ public class CharacterCubeMarker : MonoBehaviour
         var blob = GetComponent<BlobShadow>();
         if (blob == null) blob = gameObject.AddComponent<BlobShadow>();
 
-        if (modelPrefab != null) SetModelPrefab(modelPrefab, null);
+        // 不再在 Awake 里自动添加 CharacterSlotPose：
+        // 场景里每个 lane 槽位已经预挂了 CharacterSlotPose，Awake 阶段如果执行顺序导致 GetComponent 读到 null，
+        // 新增的组件会覆盖/干扰场景序列化值，导致运行时读到 offset=0。
+        // 缺少组件时由工具/CharacterBattleSystem 处理。
+
+        // 不再在 Awake 自行实例化 modelPrefab：
+        // 1) 此时 CharacterBattleSystem 的角色数据可能还没装好；
+        // 2) 自行实例化后 Start() 的 SetModelPrefab 会因 spawnedModel!=null 跳过，
+        //    若此时 slotPose 尚未就绪或 modelPrefab 字段是旧值，offset 就永远不会被应用。
+        // 统一由 CharacterBattleSystem.Start() 注入，或由本脚本的 Start() 自初始化兜底。
+    }
+
+    void Start()
+    {
+        // 自初始化兜底：如果 CharacterBattleSystem 因执行顺序或数据问题没注入 modelPrefab，
+        // 自己从 CharacterRoster 查出对应角色并实例化，确保 offset 能应用。
+        if (spawnedModel == null && modelPrefab == null)
+        {
+            CharacterClass c = IsPlayer ? CharacterRoster.GetPlayer(side) : CharacterRoster.GetTeam(side, laneIndex);
+            Debug.Log($"[CharacterCubeMarker] Start 自初始化 {gameObject.name}(side={side},lane={laneIndex}) c={(c == null ? "NULL" : c.displayName)} prefab={(c == null || c.modelPrefab == null ? "NULL" : c.modelPrefab.name)}", this);
+            if (c != null && c.modelPrefab != null)
+            {
+                SetModelPrefab(c.modelPrefab, c.animationPrefix);
+            }
+        }
     }
 
     void OnDestroy()
@@ -253,26 +288,84 @@ public class CharacterCubeMarker : MonoBehaviour
     /// <summary>由 CharacterBattleSystem 在装配 marker 时调用：注入角色外观预制体（数据驱动，非破坏式）。
     /// 非空时实例化到自身子节点；Spine 有效时隐藏默认占位 cube，Spine 无效（SkeletonDataAsset 缺失/导入失败）时保留 cube 可见并打 Warning。
     /// 重复调用只实例化一次。同时幂等地挂载 CharacterAnimator 并把动画前缀（animationPrefix）注入，供 Spine 动画自动发现。</summary>
+    // 记录当前实例化所用的 prefab，用于判断是否需要重新实例化（换角色时）。
+    private GameObject spawnedPrefab;
+
+    /// <summary>获取当前物体上最有效的 CharacterSlotPose：
+    /// 优先返回 offset 非 0 的那个；找不到则返回第一个；一个都没有返回 null。
+    /// 防御 Awake 阶段误添加空组件导致读到默认值。</summary>
+    private CharacterSlotPose GetEffectiveSlotPose()
+    {
+        var poses = GetComponents<CharacterSlotPose>();
+        if (poses == null || poses.Length == 0) return null;
+        foreach (var p in poses)
+        {
+            if (p.positionOffset != Vector3.zero || p.rotationOffset != Vector3.zero || p.scaleOffset != Vector3.one)
+                return p;
+        }
+        return poses[0];
+    }
+
+    /// <summary>构造最终使用的 offset：优先用 CharacterSlotPose；如果 SlotPose 为空或全 0，则使用本 Marker 上的 fallback 字段。</summary>
+    private void GetFinalOffsets(out Vector3 pos, out Vector3 rot, out Vector3 scale)
+    {
+        var slotPose = GetEffectiveSlotPose();
+        if (slotPose != null && (slotPose.positionOffset != Vector3.zero || slotPose.rotationOffset != Vector3.zero || slotPose.scaleOffset != Vector3.one))
+        {
+            pos = slotPose.positionOffset;
+            rot = slotPose.rotationOffset;
+            scale = slotPose.scaleOffset;
+            return;
+        }
+        pos = fallbackPositionOffset;
+        rot = fallbackRotationOffset;
+        scale = fallbackScaleOffset;
+    }
+
     public void SetModelPrefab(GameObject prefab, string animationPrefix = null)
     {
-        if (prefab == null) return;
+        if (prefab == null)
+        {
+            Debug.Log($"[CharacterCubeMarker] {gameObject.name} SetModelPrefab 收到空 prefab，跳过", this);
+            return;
+        }
+
+        // 每次重新读取同物体的 CharacterSlotPose（不缓存），避免首次调用时组件尚未就绪或场景改动后读不到。
+        var slotPose = GetEffectiveSlotPose();
+        var allPoses = GetComponents<CharacterSlotPose>();
+        GetFinalOffsets(out Vector3 finalPos, out Vector3 finalRot, out Vector3 finalScale);
+        Debug.Log($"[CharacterCubeMarker] {gameObject.name} SetModelPrefab 开始：prefab={prefab.name} slotPoseCount={allPoses.Length} slotPose={(slotPose == null ? "NULL" : "有")} side={side} lane={laneIndex} fallback=pos{fallbackPositionOffset:F3} rot{fallbackRotationOffset:F3} scale{fallbackScaleOffset:F3} -> 最终使用 pos{finalPos:F3} rot{finalRot:F3} scale{finalScale:F3}", this);
+        for (int i = 0; i < allPoses.Length; i++)
+        {
+            Debug.Log($"[CharacterCubeMarker] {gameObject.name} SlotPose[{i}] pos={allPoses[i].positionOffset:F3} rot={allPoses[i].rotationOffset:F3} scale={allPoses[i].scaleOffset:F3}", this);
+        }
+
+        // 换角色：销毁旧模型，重新实例化。
+        if (spawnedModel != null && spawnedPrefab != prefab)
+        {
+            Debug.Log($"[CharacterCubeMarker] {gameObject.name} prefab 由 {spawnedPrefab?.name} 切换为 {prefab.name}，销毁旧模型", this);
+            if (Application.isPlaying) Destroy(spawnedModel);
+            else DestroyImmediate(spawnedModel);
+            spawnedModel = null;
+            spawnedPrefab = null;
+        }
+
         if (spawnedModel == null)
         {
             spawnedModel = Instantiate(prefab, transform);
-            // 保留 prefab 自身的本地 Transform，允许不同 Spine 角色在 prefab 里预先对位
-            // （pivot 不在视觉中心的角色需要本地偏移/旋转/缩放）。
-            spawnedModel.transform.SetLocalPositionAndRotation(prefab.transform.localPosition, prefab.transform.localRotation);
-            spawnedModel.transform.localScale = prefab.transform.localScale;
-            // 右侧(side=1)角色自动水平镜像，面向左侧中心（仅翻 Spine 子模型，不影响根节点/占位方块）
-            if (side == 1 && flipFacing)
-            {
-                var fs = spawnedModel.transform.localScale;
-                spawnedModel.transform.localScale = new Vector3(-Mathf.Abs(fs.x), fs.y, fs.z);
-            }
+            spawnedPrefab = prefab;
+            Debug.Log($"[CharacterCubeMarker] {gameObject.name} 实例化模型 {prefab.name}", this);
         }
 
+        // 保留 prefab 自身的本地 Transform，允许不同 Spine 角色在 prefab 里预先对位
+        // （pivot 不在视觉中心的角色需要本地偏移/旋转/缩放）。
+        // 再叠加同物体上 CharacterSlotPose 的偏移（或 fallback），位姿跟着 lane 槽位走，换角色/换位置时不重置。
+        ApplySlotPose(prefab);
+
+        Debug.Log($"[CharacterCubeMarker] {gameObject.name} 应用位姿：slotPose={(slotPose ? slotPose.name : "null")} "
+            + $"offset=pos{finalPos:F3} rot{finalRot:F3} scale{finalScale:F3} -> final pos{spawnedModel.transform.localPosition:F3} rot{spawnedModel.transform.localRotation.eulerAngles:F3} scale{spawnedModel.transform.localScale:F3}", this);
+
         // 自动挂载动画驱动器（幂等）：从 CharacterDataSO.animationPrefix 注入命名前缀。
-        // 已实例化时仍刷新前缀并重建可用动画表（修复 Awake 用默认前缀 → ColorMarker 带正确前缀被 spawnedModel!=null 守卫跳过的隐患）。
         var anim = spawnedModel.GetComponent<CharacterAnimator>();
         if (anim == null) anim = spawnedModel.AddComponent<CharacterAnimator>();
         if (!string.IsNullOrEmpty(animationPrefix))
@@ -291,16 +384,88 @@ public class CharacterCubeMarker : MonoBehaviour
         }
     }
 
-    /// <summary>调试用：按当前 flipFacing 重新应用 / 撤销朝向翻转（运行时或编辑模式点右键菜单即可）。
-    /// 先恢复为正向，再按 (side==1 &amp;&amp; flipFacing) 决定镜像，避免多次调用叠加负负得正。</summary>
+    /// <summary>把最终 offset（SlotPose 或 fallback）应用到已实例化的模型。抽出来供 SetModelPrefab 和 LateUpdate 复用。</summary>
+    private void ApplySlotPose(GameObject prefab)
+    {
+        if (spawnedModel == null || prefab == null) return;
+
+        GetFinalOffsets(out Vector3 posOffset, out Vector3 rotOffset, out Vector3 scaleMult);
+
+        Vector3 basePos = prefab.transform.localPosition;
+        Quaternion baseRot = prefab.transform.localRotation;
+        Vector3 baseScale = prefab.transform.localScale;
+
+        spawnedModel.transform.SetLocalPositionAndRotation(
+            basePos + posOffset,
+            baseRot * Quaternion.Euler(rotOffset));
+        spawnedModel.transform.localScale = new Vector3(
+            baseScale.x * scaleMult.x,
+            baseScale.y * scaleMult.y,
+            baseScale.z * scaleMult.z);
+
+        // 右侧(side=1)角色水平镜像改为「骨骼级 FlipX」（在 SetModelPrefab / LateUpdate 中经 EnsureFacing 应用），
+        // 不再用 GameObject 负缩放，避免 Spine 骨架在负 scale 下扭歪（东倒西歪）。
+        EnsureFacing();
+    }
+
+    void LateUpdate()
+    {
+        if (!forceKeepPose) return;
+        if (spawnedModel == null || spawnedPrefab == null) return;
+        ApplySlotPose(spawnedPrefab);
+    }
+
+    /// <summary>
+    /// 确保蓝方(side==1)角色的 Spine 骨骼水平镜像（FlipX）状态与 flipFacing 一致。
+    /// 用骨骼级 FlipX（Spine 官方推荐），而非 GameObject 负缩放，避免负 scale 破坏 Spine 网格渲染。
+    /// 每帧调用零成本：仅当与目标不一致时才赋值（FlipX 是持久状态，不每帧重置）。
+    /// </summary>
+    private void EnsureFacing()
+    {
+        if (spawnedModel == null) return;
+        var anim = spawnedModel.GetComponent<CharacterAnimator>();
+        if (anim == null) return;
+        bool want = (side == 1 && flipFacing);
+        anim.SetFlipX(want);
+    }
+
+    /// <summary>调试用：按当前 flipFacing 重新应用 / 撤销朝向翻转（运行时或编辑模式点右键菜单即可）。</summary>
     [ContextMenu("Musical-Sprite/刷新朝向 Flip Facing")]
     public void RefreshFlip()
     {
-        if (spawnedModel == null) return;
-        var s = spawnedModel.transform.localScale;
-        float ax = Mathf.Abs(s.x);
-        spawnedModel.transform.localScale = new Vector3((side == 1 && flipFacing) ? -ax : ax, s.y, s.z);
+        EnsureFacing();
     }
+
+    /// <summary>调试用：强制重新读取 CharacterSlotPose 并应用到已实例化模型上。
+    /// 用于运行时调整 offset 后即时刷新，或排查 offset 未生效问题。</summary>
+    [ContextMenu("Musical-Sprite/重新应用槽位位姿 Reapply Slot Pose")]
+    public void ReapplySlotPose()
+    {
+        var slotPose = GetComponent<CharacterSlotPose>();
+        if (slotPose == null)
+        {
+            Debug.LogWarning($"[CharacterCubeMarker] {gameObject.name} 没有 CharacterSlotPose，无法重新应用", this);
+            return;
+        }
+        if (spawnedPrefab == null && spawnedModel != null)
+        {
+            // 没有记录 prefab 时，尝试从已实例化模型的根节点反推（运行时实例名通常带 "(Clone)"）
+            string sourceName = spawnedModel.name.Replace("(Clone)", "");
+            Debug.Log($"[CharacterCubeMarker] {gameObject.name} 尝试根据实例名反推 prefab：{sourceName}", this);
+        }
+        if (spawnedPrefab != null)
+        {
+            SetModelPrefab(spawnedPrefab, null);
+            Debug.Log($"[CharacterCubeMarker] {gameObject.name} 已重新应用槽位位姿", this);
+        }
+        else
+        {
+            Debug.LogWarning($"[CharacterCubeMarker] {gameObject.name} 无法确定 spawnedPrefab，请在 CharacterBattleSystem 注入后使用，或手动赋值 modelPrefab 字段", this);
+        }
+    }
+
+    /// <summary>供 Editor 工具读取当前已实例化的 Spine 模型 Transform（运行时有效）。</summary>
+    public Transform GetSpawnedModelTransform() => spawnedModel != null ? spawnedModel.transform : null;
 
     /// <summary>
     /// 主动技能"附魔音符命中"时的高亮脉冲：仅短暂提亮发光（emission），不动 scale。
@@ -325,10 +490,23 @@ public class CharacterCubeMarker : MonoBehaviour
     /// <summary>
     /// 普通音符命中时，对应音轨角色向上跳一下（仅本地位移 hop，不影响 scale）。
     /// 释放主动技能期间由 BattleVisualsController 屏蔽调用。
+    /// 已接入 Spine 模型的角色不再执行 cube 跳跃，避免 Spine 子物体被连带跳起。
     /// </summary>
     public void Jump()
     {
         if (!isActiveAndEnabled) return;
+
+        // Spine 模型已接入：跳过 cube 物理跳跃，可选由 CharacterAnimator 播命中动画。
+        if (spawnedModel != null)
+        {
+            var anim = spawnedModel.GetComponent<CharacterAnimator>();
+            if (anim != null && anim.HasValidSkeleton())
+            {
+                // 命中动画钩子（当前未接入具体动画，留空不破坏现有逻辑）
+                return;
+            }
+        }
+
         if (jumpCo != null) StopCoroutine(jumpCo);
         jumpCo = StartCoroutine(JumpCo());
     }
@@ -360,14 +538,19 @@ public class CharacterCubeMarker : MonoBehaviour
     /// <summary>开场：Spine 角色播 Opening 一次，结束后自动接回当前 loop。</summary>
     public void PlayOpening() => GetAnimator()?.PlayOpening();
 
-    /// <summary>普通/过热命中：Spine 角色播对应命中动画；若 Spine 命中动画名缺失（available 未注册）则回退 cube 跳跃兜底，
+    /// <summary>命中：Spine 角色按 FeverState 播普通/过热/超级过热命中动画；
+    /// 若 Spine 命中动画名缺失（available 未注册）则回退 cube 跳跃兜底，
     /// 避免"既没 Spine 动画、也没 cube 反馈"的静默无反应（双轨：未接入 Spine 的角色 + Spine 动画未就位的过渡期都仍有反馈）。</summary>
-    public void PlayTarget(bool fever)
+    public void PlayTarget(FeverState fs)
     {
         var a = GetAnimator();
         if (a != null)
         {
-            bool played = a.PlayOnce(fever ? CharacterAnimator.CharacterAnimationState.TargetFever : CharacterAnimator.CharacterAnimationState.TargetNormal);
+            CharacterAnimator.CharacterAnimationState state;
+            if (fs == FeverState.SuperFever) state = CharacterAnimator.CharacterAnimationState.TargetSuperFever;
+            else if (fs == FeverState.Fever) state = CharacterAnimator.CharacterAnimationState.TargetFever;
+            else state = CharacterAnimator.CharacterAnimationState.TargetNormal;
+            bool played = a.PlayOnce(state);
             if (!played) Jump();   // Spine 命中动画缺失/被高优先级打断 → 回退 cube 跳跃
         }
         else Jump();   // 未接入 Spine 的 cube 角色保留命中跳跃
@@ -394,29 +577,25 @@ public class CharacterCubeMarker : MonoBehaviour
         // TODO: 受击特效（当前无）。受击动画门槛低于阈值时只走这里。
     }
 
-    /// <summary>进入过热：Spine 角色播 Special 后切到过热 loop（PlayFever）。</summary>
+    /// <summary>进入过热：直接切到过热演奏 loop。</summary>
     public void EnterFever()
     {
         var a = GetAnimator();
-        if (a != null)
-        {
-            a.PlayOnce(CharacterAnimator.CharacterAnimationState.Special);
-            a.SetLoopState(CharacterAnimator.CharacterAnimationState.PlayFever);
-        }
+        if (a != null) a.SetLoopState(CharacterAnimator.CharacterAnimationState.PlayFever);
     }
 
-    /// <summary>退出过热（未断连，正常冷却结束）：切回普通 loop。</summary>
+    /// <summary>进入超级过热：直接切到超级过热演奏 loop。</summary>
+    public void EnterSuperFever()
+    {
+        var a = GetAnimator();
+        if (a != null) a.SetLoopState(CharacterAnimator.CharacterAnimationState.PlaySuperFever);
+    }
+
+    /// <summary>退出过热/超级过热（未断连，正常冷却结束）：切回普通 loop。</summary>
     public void ExitFever()
     {
         var a = GetAnimator();
         if (a != null) a.SetLoopState(CharacterAnimator.CharacterAnimationState.PlayNormal);
-    }
-
-    /// <summary>过热断连颓废：Spine 角色播 Decadent（当前已是普通 loop）。</summary>
-    public void PlayDecadent()
-    {
-        var a = GetAnimator();
-        if (a != null) a.PlayOnce(CharacterAnimator.CharacterAnimationState.Decadent);
     }
 
     /// <summary>技能段播放：Select / Start / Attak / End / Loop 等，按优先级路由（Spine 角色）；cube 角色无对应动画。
@@ -459,6 +638,15 @@ public class CharacterCubeMarker : MonoBehaviour
     {
         var a = GetAnimator();
         if (a != null) a.SetLoopState(CharacterAnimator.CharacterAnimationState.Fail);
+    }
+
+    /// <summary>晕眩/睡眠：受控时长循环（Dizziness）。duration 秒后自动回退到触发前的演奏 loop。
+    /// 持续时间由外部控制时间决定（如小黑睡眠 3 秒 = PlayDizziness(3f)）。
+    /// 必须由控制/状态系统（睡眠、眩晕 buff 等）调用本方法触发；不要直接 SetLoopState(Dizziness)（会常驻不回退）。</summary>
+    public void PlayDizziness(float duration)
+    {
+        var a = GetAnimator();
+        if (a != null) a.PlayTimedLoop(CharacterAnimator.CharacterAnimationState.Dizziness, duration);
     }
 
     /// <summary>技能期间锁定 loop 状态（转发给 Spine 动画驱动器；cube 角色无动画，no-op）。</summary>
