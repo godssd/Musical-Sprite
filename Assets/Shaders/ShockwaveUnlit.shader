@@ -22,6 +22,13 @@ Shader "MusicalSprite/ShockwaveUnlit"
         _EdgeGlow         ("Edge Glow", Float) = 0.18
         _Opacity        ("Opacity", Range(0,1)) = 0.40
         _Flash          ("Flash Intensity", Range(0,1)) = 0
+
+        // ---- P1 发光层（独立 Additive Pass 专用）----
+        _GlowColor      ("Glow Color", Color) = (1.00, 0.55, 0.62, 1)
+        _GlowIntensity  ("Glow Intensity", Float) = 1.6
+        _GlowArch       ("Glow Arch Focus", Float) = 2.0
+        _GlowFront      ("Glow Front Focus", Float) = 1.6
+        _GlowTailCut    ("Glow Tail Cut", Range(0,1)) = 0.15
     }
     SubShader
     {
@@ -118,6 +125,66 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 }
 
                 return half4(col, alpha);
+            }
+            ENDHLSL
+        }
+
+        // ============================================================================
+        // P1 发光层：独立 Additive Pass（Blend One One），只在拱顶 / 前沿叠加超过 1 的高亮，
+        // 由 Bloom 泛出光晕。主体 Pass 的表现完全不受影响；把 _GlowIntensity 设为 0 即等于关闭。
+        // 坐标空间与主体 Pass 严格一致（positionOS），请勿改成世界坐标。
+        // ============================================================================
+        Pass
+        {
+            Name "GlowAdditive"
+            Tags { "LightMode" = "UniversalForward" }
+            Blend One One
+            Cull Off
+            ZWrite Off
+
+            HLSLPROGRAM
+            #pragma vertex vertGlow
+            #pragma fragment fragGlow
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct AttributesGlow
+            {
+                float3 positionOS : POSITION;
+            };
+
+            struct VaryingsGlow
+            {
+                float4 positionHCS : SV_POSITION;
+                float  t           : TEXCOORD0;   // 0=判定线 1=中缝（与主体 Pass 同定义）
+                float  vy          : TEXCOORD1;   // 0=接地   1=拱顶
+            };
+
+            half4 _GlowColor;
+            float  _GlowIntensity, _GlowArch, _GlowFront, _GlowTailCut;
+            float  _BackX, _FrontX, _ArchHeight, _Flash;
+
+            VaryingsGlow vertGlow(AttributesGlow IN)
+            {
+                VaryingsGlow o;
+                o.positionHCS = TransformObjectToHClip(IN.positionOS);
+                float span = max(0.0001, abs(_FrontX - _BackX));
+                o.t  = clamp((IN.positionOS.x - _BackX) / span, 0.0, 1.0);
+                o.vy = clamp(IN.positionOS.y / max(0.0001, _ArchHeight), 0.0, 1.0);
+                return o;
+            }
+
+            half4 fragGlow(VaryingsGlow IN) : SV_Target
+            {
+                if (_GlowIntensity <= 0.001 && _Flash <= 0.001) discard;
+
+                // 身后（判定线侧）渐隐，避免整条墙糊满光
+                float tail  = smoothstep(_GlowTailCut, min(1.0, _GlowTailCut + 0.35), IN.t);
+                float crest = pow(IN.vy, max(0.01, _GlowArch));    // 拱顶聚拢
+                float front = pow(IN.t,  max(0.01, _GlowFront));   // 前沿聚拢
+                float mask  = saturate(crest * 0.75 + front) * tail + _Flash * 0.8;
+
+                half3 g = _GlowColor.rgb * _GlowIntensity * mask;
+                return half4(g, 1.0);
             }
             ENDHLSL
         }

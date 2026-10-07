@@ -56,10 +56,21 @@ public class ScoreManager : MonoBehaviour
     private int leftHP;
     private int rightHP;
     private float catchUpTimer = 0f;
+    // 保底补分期间置 true：这段加分【不派发 OnScoreGained】。
+    // 冲击波的前进累积只认"己方靠命中拉开的分差"，保底补分是系统救济，不能算作推进。
+    private bool _catchUpScoring = false;
 
     public event Action<int, int> OnScoreChanged;
     public event Action<int, int> OnHPChanged;
     public event Action<int> OnPlayerDefeated; // 参数：战败方 side
+
+    /// <summary>
+    /// 【P4A 事件驱动累积】某侧靠【自身命中】拿到加分时派发。
+    /// 参数：(side, deltaScore)。side 0=左/红，1=右/蓝；deltaScore 为本次加分（恒为正）。
+    /// ⛔ 保底（ApplyCatchUp）给劣势方的补分【不派发】——它不是"拉开分差产生的移动"，不计入冲击波前进累积。
+    /// ShockwavePreview 订阅后自行换算成世界位移（deltaScore × BattleCenterLine.pushPerHit）。
+    /// </summary>
+    public event Action<int, int> OnScoreGained;
 
     /// <summary>外部读取某侧血量上限（HPBarDisplay 用）。</summary>
     public int GetMaxHP(int side) => maxHPBySide[Mathf.Clamp(side, 0, 1)];
@@ -357,7 +368,10 @@ public class ScoreManager : MonoBehaviour
         int overflow = diff - catchUpDiffThreshold;
         int multiple = Mathf.CeilToInt(overflow / 100f); // 让分差≤阈值的最小整数倍
         int extra = 100 * multiple;
+        // ⛔ 保底补分期间屏蔽 OnScoreGained：这不是"拉开分差"，不计入冲击波前进累积
+        _catchUpScoring = true;
         AddScore(lowerSide, +extra);
+        _catchUpScoring = false;
 
         // 劣势方代价：damage = extra × (优势方全队+玩家自身战斗力总和) × 0.1%
         // 注意：combatSum 取【优势方】的战斗力总和，不是劣势方
@@ -379,6 +393,10 @@ public class ScoreManager : MonoBehaviour
     {
         if (side == 0) leftScore = Mathf.Max(0, leftScore + amount);
         else rightScore = Mathf.Max(0, rightScore + amount);
+
+        // 【P4A】只有"自身命中拉开的分数"才派发前进事件；保底补分（_catchUpScoring）不派发。
+        if (!_catchUpScoring && amount > 0)
+            OnScoreGained?.Invoke(side, amount);
 
         UpdateDisplays();
         OnScoreChanged?.Invoke(leftScore, rightScore);
@@ -478,6 +496,11 @@ public class ScoreManager : MonoBehaviour
         CharacterClass tc = CharacterRoster.GetTeam(side, lane);
         if (tc != null)
             tc.AddEnergy(actual / 10f);
+
+        // 【P4A】己方靠命中拉开分差 -> 派发前进累积事件（冲击波用它累积前进距离）
+        // ⛔ 注意：HandleJudge 不走 AddScore，必须在这里派发；
+        //    保底补分（ApplyCatchUp）走的是 AddScore 且被 _catchUpScoring 屏蔽，不会污染这里。
+        if (actual > 0) OnScoreGained?.Invoke(side, actual);
 
         UpdateDisplays();
         OnScoreChanged?.Invoke(leftScore, rightScore);

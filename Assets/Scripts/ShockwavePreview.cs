@@ -43,14 +43,56 @@ public class ShockwavePreview : MonoBehaviour
     [Tooltip("未接 centerLine 时，用于编辑器内测试放大效果的模拟终点 X（运行时无需管）")]
     public float previewTargetX = 0f;
 
-    [Header("放大/缩小时间模型（按时间缓动，不再按距离算速度）")]
-    [Tooltip("变大总时间（秒）：在该时间内从当前倍率涨到目标倍率（加速曲线，越来越快）")]
+    [Header("P2 缩放节奏：弹簧阻尼（惯性肉体感）")]
+    [Tooltip("总开关：开启=弹簧阻尼；关闭=回退到下面的固定时间缓动（等于没做 P2）")]
+    public bool useSpringModel = true;
+    [Tooltip("弹簧刚度：越大越硬、追得越快；越小越软、越有惯性")]
+    public float springStiffness = 80f;
+    [Tooltip("阻尼比：0=来回震荡，1=临界阻尼（最快且不过冲），>1=迟缓")]
+    [Range(0f, 2f)] public float springDampingRatio = 0.9f;
+    [Tooltip("速度上限（倍/秒），防止低帧率下弹簧过激")]
+    public float springMaxVelocity = 8f;
+
+    [Header("P2b 前进预备（得分前进时：先向后弹开蓄力，再向前冲）")]
+    [Tooltip("总开关：开启后『得分前进』瞬间先给一个反向预备动作（弹开 + 回缩蓄力），再释放向前冲；关闭=直接冲（等于只做 P2 弹簧）")]
+    public bool forwardAnticipationEnable = true;
+    [Tooltip("预备时长（秒）：这段时间内墙向后弹开再回位，之后才真正向前冲。太短会看不出蓄力")]
+    public float forwardAnticipationTime = 0.18f;
+    [Tooltip("向后弹开距离（世界单位）：前进侧墙沿『前进的反方向』弹开该距离，拉开与对手的间距。\n这是『后扯』幅度主旋钮，觉得不够明显就加大。\n【注意】弹开只改位置，不改大小 —— 大小只由累积距离决定")]
+    public float forwardAnticipationPullback = 0.45f;
+
+    [Header("P2c 前进状态（3 秒窗口：连续推进合并为一次持续放大）")]
+    [Tooltip("总开关：开启后按『前进状态』判定放大（3 秒窗口 + 累积距离）；关闭=回退到旧的『每帧剩余距离』判定")]
+    public bool advanceStateEnable = true;
+    [Tooltip("前进窗口时长（秒）：第一次推进进入前进状态后，窗口内继续推进只累积距离、不重复后弹；\n每次推进都会把该计时刷新回该值，直到『没能维持住』（窗口内无推进）才退出")]
+    public float advanceWindowTime = 3f;
+    [Tooltip("起跑判定阈值（世界单位）：单帧内 currentX 沿前进方向变化超过该值才算『开始推进』，用于 Idle/Decay 起步防抖。\n【注意】只在起跑那一下生效；进入 Advancing 后累积距离改为每帧无条件跟踪，不受此阈值限制。\n调大会漏掉小幅度得分，调小易被抖动误触发")]
+    public float advanceAccumThreshold = 0.003f;
+    [Tooltip("每降一个【倍率档位】所需时间（秒）。\n五个档位就是倍率表本身：1.5 / 1.3 / 1.2 / 1.1 / 1.05。\n每档耗时相同，但档位之间的倍率差越来越小（0.2 / 0.1 / 0.1 / 0.05 / 0.05）\n-> 倍率下降速度自然【先快后慢】，不需要额外曲线。\n由此：1.5->1.0 = 5s、1.3->1.0 = 4s、1.2->1.0 = 3s、1.1->1.0 = 2s、1.05->1.0 = 1s。\n【衰退快慢的唯一旋钮】调大=整体更慢，调小=更快")]
+    public float advanceDecayStepTime = 1.0f;
+    [Tooltip("扣血补分位移的忽略时长（秒）：保底触发后这段时间内，劣势方的 currentX 位移【不被认定为前进】。\n它拿不到前进状态、也累积不到距离，因此根本不会变大，只保留闪白。\n必须 > ScoreManager.catchUpInterval（默认 1s），否则连续保底的间隙里 Lerp 残余位移仍会被计入。\n默认 1.2s：连续保底期间计时被不断刷新 -> 整段位移一滴不漏地忽略")]
+    public float ignoreAdvanceDuration = 1.2f;
+
+    [Header("P4A 累积来源：得分事件驱动（推荐；关掉则回退到『读 currentX 位移』）")]
+    [Tooltip("总开关：开启后，前进累积距离只来自【己方靠命中拿到的加分】（ScoreManager.OnScoreGained），\n按『分数 × pushPerHit』换算成世界位移，再按 rate 平滑分摊进 accum。\n⛔ 这样 accum 完全不受 currentX 共享、对手得分、保底补分反向推回的污染 —— 顶到阈值后仍能继续累积并维持。\n关闭=回退到旧的『读 currentX 每帧位移』判定（会被 catchUp 锁死，不推荐）")]
+    public bool scoreEventDriven = true;
+    [Tooltip("分摊速率（1/秒）：得分换算出的世界位移不会瞬间灌进 accum，而是按该速率指数分摊，与中线 Lerp 观感同步。\n建议与 BattleCenterLine.smoothSpeed（默认 5）一致；调小=变大更慢更绵，调大=更跟手")]
+    public float scoreEventApplyRate = 5f;
+
+    [Header("P2b 回弹是否影响大小（用户铁律：回弹只做位移，不得改大小）")]
+    [Tooltip("⛔ 默认关闭。关闭后『前进预备』只产生弹开位移，绝不修改目标倍率。\n开启=回到旧行为（预备期把目标倍率压到 当前×该比例 蓄力）—— 已确认会造成『切出变大又缩回』，不要开")]
+    public bool anticipAffectsScale = false;
+    [Tooltip("（仅在 anticipAffectsScale 开启时生效）预备期回缩比例：目标倍率临时压到『当前倍率 × 该值』")]
+    [Range(0.8f, 1f)] public float forwardAnticipationScaleRatio = 0.92f;
+
+    [Header("放大/缩小时间模型（useSpringModel 关闭时生效；与对峙循环同一条曲线：远离减速 / 接近加速）")]
+    [Tooltip("变大总时间（秒）：在该时间内从当前倍率涨到目标倍率（减速曲线：起步最快，越接近目标越慢）")]
     public float enlargeTime = 0.35f;
-    [Tooltip("变大起始速度（倍/秒）：起步速度，之后越来越快")]
+    [Tooltip("变大收尾速度（倍/秒）：结尾仅剩这么慢（起步速度由『时长』与『收尾速度』反推，恒为最快）")]
     public float enlargeMinSpeed = 0.6f;
-    [Tooltip("变小总时间（秒）：在该时间内从当前倍率缩回 1.0（减速曲线，越来越慢）")]
+    [Tooltip("变小总时间（秒）：在该时间内从当前倍率缩回 1.0（加速曲线：起步最慢，越接近静止越快）")]
     public float shrinkTime = 0.5f;
-    [Tooltip("变小收尾速度（倍/秒）：结尾仅剩这么快")]
+    [Tooltip("变小起步速度（倍/秒）：起步仅这么慢，之后越来越快（撞击回位瞬间最快）")]
     public float shrinkMinSpeed = 0.3f;
 
     [Header("补分闪烁（仅 ApplyCatchUp 给劣势方补分时触发，非命中加分）")]
@@ -59,21 +101,44 @@ public class ShockwavePreview : MonoBehaviour
     [Tooltip("闪白一次的总时长（秒）：触发瞬间最亮，平方衰减到 0（单次白闪，不连续眨）")]
     public float flashDuration = 0.3f;
 
-    [Header("越界禁放大（扣血/反弹位移，用户方案）")]
-    [Tooltip("自动模式（推荐）：禁放大边界 = ScoreManager.catchUpDiffThreshold × BattleCenterLine.pushPerHit，\n即『触发扣血机制时中线所在位置』。改分差阈值或推进系数后自动跟随，永远不会滞后。")]
-    public bool autoSuppressEdge = true;
-    [Tooltip("手动兜底边界：仅在自动模式取不到 ScoreManager / BattleCenterLine 时使用（默认 1.5 = 1500 分差 × 0.001）")]
-    public float enlargeSuppressEdge = 1.5f;
-    [Tooltip("边界判定容差：中线位置 >= 边界-容差 即视为越界。避免中心线正好停在边界值（1.5）时严格大于判定不命中。")]
-    public float edgeEpsilon = 1e-3f;
+    [Header("对峙循环（P4 ④.1：僵持时的互顶开合呼吸）")]
+    [Tooltip("静止多久才开始播（秒）：双方都不再移动后需静止这么久才起播对峙呼吸。\n【判定只看中线是否在动】，与前进状态 / 衰退完全无关 —— 衰退期间中线静止照样播呼吸")]
+    public float idleBreathDelay = 1.0f;
+    [Tooltip("总开关：开启后两墙内侧边做周期性开合，僵持不动时也有呼吸感；关闭则完全静止（等于改动前）")]
+    public bool idleBreath = true;
+    [Tooltip("开合幅度（世界单位）：缝隙在『centerGap』到『centerGap + 幅度』之间变化，两墙各退让一半")]
+    public float breathGapAmplitude = 0.12f;
+    [Tooltip("一个完整开合循环的时长（秒）")]
+    public float breathPeriod = 2.4f;
+    [Tooltip("远离（张开）阶段占整周期的比例；其余为接近（合拢）阶段。调大=慢慢拉开的时间更长")]
+    [Range(0.1f, 0.9f)] public float breathOutRatio = 0.6f;
+    [Tooltip("撞击加亮幅度：对峙循环合拢到最紧（撞击瞬间）最亮，张开时回落")]
+    [Range(0f, 0.4f)] public float breathOpacityAmp = 0.05f;
 
-    [Header("放大倍率表（按剩余距离 dist = |currentX - targetX|）")]
-    public float scaleAtRest = 1.0f;     // 不动
-    public float scaleTiny = 1.05f;      // 0 < dist < 0.2
-    public float scaleAbove0_2 = 1.1f;   // >= 0.2
-    public float scaleAbove0_3 = 1.2f;   // >= 0.3
-    public float scaleAbove0_5 = 1.3f;   // >= 0.5
-    public float scaleAbove1_0 = 1.5f;   // >= 1.0
+    [Header("亮度：前进 / 撞击加亮（写材质 _Opacity）")]
+    [Tooltip("总开关：关闭后只保留基础亮度，【前进加亮】与【撞击加亮】都不生效。\nP1 自发光分层方案落地前先关闭，避免过曝与层次混乱。\n【注意】扣血闪白是机制反馈不是发光，不受此开关影响")]
+    public bool enableBrightnessFx = false;
+    [Tooltip("前进加亮系数：优势方被放大时亮度随倍率提升（倍率 1.0→1.5 时亮度 +0.5×该值）")]
+    public float glowPerEnlarge = 0.3f;
+    [Tooltip("亮度上限：基础 Opacity + 前进加亮 + 撞击加亮 封顶值，防过曝")]
+    [Range(0f, 1f)] public float opacityMax = 0.85f;
+
+    [Header("放大倍率表（按【累积距离 accum】分档；档间线性插值，平滑无硬边）")]
+    [Tooltip("⚠ 唯一事实源：下面 6 个倍率就是『档位』本身。衰退时每降一档固定耗时 advanceDecayStepTime 秒。\n因为高档位之间的倍率差更大（1.5→1.3 是 0.2；1.1→1.05 只有 0.05），每档耗时相同 ⇒ 下降速度自然先快后慢")]
+    public float scaleAtRest = 1.0f;     // accum = 0
+    public float scaleTiny = 1.05f;      // accum >= accumTiny
+    public float scaleAbove0_2 = 1.1f;   // accum >= accumAbove0_2
+    public float scaleAbove0_3 = 1.2f;   // accum >= accumAbove0_3
+    public float scaleAbove0_5 = 1.3f;   // accum >= accumAbove0_5
+    public float scaleAbove1_0 = 1.5f;   // accum >= accumAbove1_0（封顶）
+
+    [Header("累积距离档位（与上面倍率表一一对应的『每档下界』，世界单位）")]
+    [Tooltip("【大小 = f(累积距离) 的另一半】倍率表给出每档的『倍率』，这里给出升到该档所需的『累积距离下界』。\n两者一起构成分段线性映射：accum -> 档位进度 p -> 倍率。\n⛔ accum 在 accumAbove1_0 处封顶（默认 1.0），保证衰退起点可控：1.5→1.0 恰好 5 档 = 5 秒")]
+    public float accumTiny = 0.05f;      // 升到 1.05 倍
+    public float accumAbove0_2 = 0.2f;   // 升到 1.1 倍
+    public float accumAbove0_3 = 0.3f;   // 升到 1.2 倍
+    public float accumAbove0_5 = 0.5f;   // 升到 1.3 倍
+    public float accumAbove1_0 = 1.0f;   // 升到 1.5 倍（同时是 accum 上限）
 
     [Header("（只读/自动维护）真实墙引用")]
     public Transform redWall;
@@ -99,20 +164,73 @@ public class ShockwavePreview : MonoBehaviour
     private float _redAcc, _blueAcc;          // 相位加速度（enlarge 为正；shrink 为减速度大小）
 
     // 扣血/补分机制（ApplyCatchUp）触发时：劣势方冲击波"闪白一次"（由 ScoreManager 直呼 OnScoreAdjustPush 触发）。
-    // 该侧"不放大"由下面的【越界禁放大】规则负责（enlargeSuppressEdge），不再用计时冻结。
+    // 该侧"不放大"由【忽略前进】计时负责（见 _redIgnoreT）：这段时间的位移不被认定为前进，
+    // 拿不到前进状态也累积不到距离 —— 不是"冻结"，而是压根不计入。
     private bool _redFlashing = false, _blueFlashing = false;
     private float _redFlashT = 0f, _blueFlashT = 0f;     // 单次闪白衰减计时
 
-    private ScoreManager _scoreManager;                     // 自动边界用（读 catchUpDiffThreshold）
+    // 忽略前进计时（秒）：>0 表示该侧当前位移是"扣血补分"造成的，不计入前进状态与累积距离
+    private float _redIgnoreT = 0f, _blueIgnoreT = 0f;
 
-    // 越界禁放大：按"本次位移"（起点=旧targetX，终点=新targetX）判定。只要起点或终点越过边界，
-    // 本次位移全程直接压回 1.0；下一帧若 targetX 变化产生新位移，重新判定。无 latch、无超时、不残留。
-    private bool _redSuppress = false, _blueSuppress = false;
+    // P2 弹簧阻尼速度状态
+    private float _redVel = 0f, _blueVel = 0f;
 
-    // 位移起点跟踪：targetX 只在分数事件时变化；一旦变化就记录本次位移起点 curX。
-    // 用途：越界判定（起点或终点任一越界 = 扣血/反弹位移 -> 整段禁放大），起点一锤定音贯穿整段位移。
-    private float _prevTargetX;
-    private float _dispStartX;
+    // P2b 前进预备状态：anticipT=剩余预备时间；anticipOff=当前弹开偏移（世界单位，sin 曲线 0→max→0）
+    //   fromDecay：本次预备是"衰退中途重新前进"触发的 —— 这种情况【只弹开、不回缩蓄力】。
+    //   （回缩会把 target 压到 curScale×0.92，与"立刻停止变小、维持当前大小"的期望相反）
+    private float _redAnticipT = 0f, _blueAnticipT = 0f;
+    private float _redAnticipOff = 0f, _blueAnticipOff = 0f;
+    private bool _redAnticipFromDecay = false, _blueAnticipFromDecay = false;
+
+    // P4A：待分摊的「己方得分 → 世界位移」队列（红蓝各自独立）。
+    // 只由 ScoreManager.OnScoreGained 灌入；每帧按 scoreEventApplyRate 指数释放进 accum。
+    // ⛔ 保底补分（ApplyCatchUp）不会灌入；ignoreAdvance 期间会直接丢弃。
+    private float _redPending = 0f, _bluePending = 0f;
+    private ScoreManager _scoreManagerRef;
+
+    // P2c 前进状态（红蓝各自独立，互不干扰）：
+    //   state  = Idle（无前进）/ Advancing（3 秒窗口内，累积距离决定倍率）/ Decay（窗口结束，按档位衰退）
+    //   timer  = 窗口剩余时间；accum = 累积的前进距离（【只增不减】：只累加正向增量，被推回不倒扣）；
+    //   lastX  = 上一帧 currentX（仅 scoreEventDriven=false 的回退路径使用）
+    private enum AdvanceState { Idle, Advancing, Decay }
+    private AdvanceState _redAdvState = AdvanceState.Idle, _blueAdvState = AdvanceState.Idle;
+    private float _redAdvTimer = 0f, _blueAdvTimer = 0f;
+    private float _redAdvAccum = 0f, _blueAdvAccum = 0f;
+    private float _redAdvLastX = 0f, _blueAdvLastX = 0f;
+    // 衰退状态：decayT=衰退已过时间；decayStartProgress=进入衰退瞬间的【档位进度】（由 accum 换算，不是由 scale 换算）。
+    // 衰退按【倍率档位】计时（每档 advanceDecayStepTime 秒）：p 匀速下降，accum = AccumFromProgress(p)，
+    // 倍率再由 accum 换算 —— 全程只有 accum 一个变量决定大小，不需要任何 shape 曲线：
+    // 档位之间的倍率差越来越小，每档耗时相同 -> 下降速度自然先快后慢。
+    private float _redDecayT = 0f, _blueDecayT = 0f;
+    private float _redDecayStartProgress = 0f, _blueDecayStartProgress = 0f;
+
+    // 对峙循环（P4 ④.1）呼吸状态：_breathT 相位计时、_breathK 当前开合量(0=合拢最紧,1=张开最大)、
+    // _breathFade 淡入淡出系数（开关切换 / 移动中抑制时平滑过渡，避免突跳）
+    private float _breathT = 0f;
+    private float _breathK = 0f;
+    private float _breathFade = 0f;
+    private float _redBaseOpacity = 0f, _blueBaseOpacity = 0f;
+
+    // 对峙循环判定：中线静止累计时长 + 上一帧中线位置（只看中线，与前进状态 / 衰退无关）
+    private float _idleTimer = 0f;
+    private float _lastCenterX = 0f;
+    // 上一帧已写入 Transform 的倍率：用于判断"本帧视觉是否有变化"。
+    // ⚠ 必须做 —— 呼吸判定与衰退解耦后，若沿用旧的 `if (!moving && _breathFade<=0) return;`，
+    //   衰退期间（中线静止、呼吸关闭或淡出）会把缩放写操作整个跳过，墙会卡在原地不动。
+    private float _lastAppliedRedScale = 1f, _lastAppliedBlueScale = 1f;
+    // 倍率档位表缓存（= 倍率表本身，随 Inspector 值刷新；预分配避免每帧 GC）
+    private readonly float[] _decayLevels = new float[6];
+    // 累积距离档位表缓存（与 _decayLevels 一一对应的『每档下界』）
+    private readonly float[] _accumLevels = new float[6];
+
+#if UNITY_EDITOR
+    [Header("运行时诊断（只读）")]
+    [SerializeField] private float _dbgRedAccum, _dbgBlueAccum;
+    [SerializeField] private float _dbgRedPending, _dbgBluePending;
+    [SerializeField] private float _dbgRedTarget, _dbgBlueTarget;
+    [SerializeField] private string _dbgRedState, _dbgBlueState;
+    [SerializeField] private float _dbgRedIgnoreT, _dbgBlueIgnoreT;
+#endif
 
 #if UNITY_EDITOR
     [ContextMenu("Reset & Force Refresh")]
@@ -129,7 +247,14 @@ public class ShockwavePreview : MonoBehaviour
     void RecaptureBaseMenu() { CaptureBase(); Debug.Log("[ShockwavePreview] 已重新捕获 RedWall/BlueWall 与根节点的手动 Transform 作为 base", this); }
 #endif
 
-    void OnValidate() { EnsureWalls(); ApplyToWalls(); }
+    void OnValidate()
+    {
+        EnsureWalls();
+        ApplyToWalls();
+        // ⛔ Play 模式下禁止 OnValidate 调用 CaptureBase：用户在 Inspector 调参时会触发 OnValidate，
+        //    此时墙可能已被 ApplyScale 放大 / 或被 autoFit 污染，CaptureBase 会把异常值锁成新的 base。
+        if (!Application.isPlaying) CaptureBase();
+    }
     void Awake() { EnsureWalls(); ApplyToWalls(); CaptureBase(); }
 
     void Start()
@@ -138,17 +263,63 @@ public class ShockwavePreview : MonoBehaviour
         if (centerLine == null)
             centerLine = FindFirstObjectByType<BattleCenterLine>();
 
+        // P4A：订阅『己方命中得分』事件，作为前进累积距离的唯一来源
+        BindScoreEvents();
+
+        // ⛔ 必须先关掉 ShockwaveMeshGenerator.autoFit，再 CaptureBase。
+        //    autoFit 每帧按 (frontX - backX) 重算 localScale，而 frontX 跟着中缝走 ——
+        //    被推入侧会被算到腰斩（实测 156 → 76，≈0.49 倍），与本品『大小只由累积距离决定』互斥。
+        EnsureWallAutoFitDisabled();
+
         EnsureWalls();
         ApplyToWalls();
         CaptureBase();
-
-        // 初始化位移起点跟踪：起点 = 位移前的目标位置；初始无位移，起点与终点同为当前 targetX
-        float t0 = (centerLine != null) ? centerLine.targetX : previewTargetX;
-        _prevTargetX = t0;
-        _dispStartX = t0;
     }
 
-    void OnDestroy() { }
+    /// <summary>墙的 ShockwaveMeshGenerator.autoFit 若开启，与本品 Transform 控制冲突，强制关闭并继续运行。</summary>
+    private void EnsureWallAutoFitDisabled()
+    {
+        var rg = redWall  != null ? redWall.GetComponent<ShockwaveMeshGenerator>()  : null;
+        var bg = blueWall != null ? blueWall.GetComponent<ShockwaveMeshGenerator>() : null;
+        bool changed = false;
+        if (rg != null && rg.autoFit) { rg.autoFit = false; changed = true; }
+        if (bg != null && bg.autoFit) { bg.autoFit = false; changed = true; }
+        if (changed)
+        {
+            Debug.LogWarning("[ShockwavePreview] 检测到墙的 ShockwaveMeshGenerator.autoFit 为开启状态，已自动关闭。"
+                + "autoFit 与本品 Transform 控制互斥（它会按 frontX-backX 每帧覆盖 localScale，导致推进到底时冲击波被腰斩）。"
+                + "如需要旧行为，请改由 ShockwavePreview 关闭或删除。", this);
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (_scoreManagerRef != null)
+        {
+            _scoreManagerRef.OnScoreGained -= HandleScoreGained;
+            _scoreManagerRef = null;
+        }
+    }
+
+    /// <summary>P4A：绑定得分事件（运行时兜底查找，ScoreManager 后于本脚本创建也能接上）。</summary>
+    private void BindScoreEvents()
+    {
+        if (_scoreManagerRef != null) return;
+        _scoreManagerRef = FindFirstObjectByType<ScoreManager>();
+        if (_scoreManagerRef != null) _scoreManagerRef.OnScoreGained += HandleScoreGained;
+    }
+
+    /// <summary>P4A：己方靠命中拿到加分 -> 换算成世界位移，灌进待分摊队列。
+    /// 换算用 BattleCenterLine.pushPerHit（与中线移动同一把尺子）：分数 × pushPerHit = 这次得分把中线推进了多少世界单位。
+    /// ⚠ 保底补分不会走到这里（ScoreManager.ApplyCatchUp 里已屏蔽派发）。</summary>
+    private void HandleScoreGained(int side, int deltaScore)
+    {
+        if (!scoreEventDriven || deltaScore <= 0) return;
+        float per = (centerLine != null) ? centerLine.pushPerHit : 0.001f;
+        float world = deltaScore * per;
+        if (side == 0) _redPending += world;
+        else _bluePending += world;
+    }
 
     void Update()
     {
@@ -157,6 +328,8 @@ public class ShockwavePreview : MonoBehaviour
             _elapsed += Time.deltaTime;
             clashProgress = Mathf.PingPong(_elapsed / clashDuration, 1f);
         }
+        // P4A：如果 Start 时 ScoreManager 尚未创建（如动态生成），每帧尝试一次重新订阅。
+        if (scoreEventDriven && _scoreManagerRef == null) BindScoreEvents();
         EnsureWalls();
         ApplyToWalls();
         DriveRuntime();
@@ -169,21 +342,15 @@ public class ShockwavePreview : MonoBehaviour
         // 运行时兜底：centerLine 若此前未解析到，这里持续尝试
         if (centerLine == null) centerLine = FindFirstObjectByType<BattleCenterLine>();
 
+        // P4A 兜底：ScoreManager 若晚于本脚本创建（或 Start 时还没生成），这里持续尝试订阅
+        BindScoreEvents();
+
         // 编辑器静止（未接 centerLine 且未设 previewTargetX）时，保留你手动 Transform，不驱动。
         bool previewing = (centerLine != null) || (previewTargetX != 0f);
         if (!Application.isPlaying && !previewing) return;
 
         float curX = (centerLine != null) ? centerLine.currentX : centerX;
         float tgtX = (centerLine != null) ? centerLine.targetX : previewTargetX;
-
-        // ① 检测新位移：targetX 只在分数事件时变化；一旦变化就记录本次位移的起点。
-        //    起点定义（用户明确）：= 本次位移开始前的【目标位置】（分数决定的位置），不是屏幕上 lerp 滞后的视觉位置 curX。
-        //    例：扣血触发时中线在 -3.3（界外）-> 加分后目标变 -3.0 -> 本次位移起点即 -3.3（越界，判定命中）。
-        if (Mathf.Abs(tgtX - _prevTargetX) > 1e-4f)
-        {
-            _dispStartX = _prevTargetX;   // 起点 = 位移前的目标位置（旧 targetX）
-            _prevTargetX = tgtX;
-        }
 
         // 1) 整组随 currentX 平移（仅运行时接管根的 X，编辑器里保留你手动根位置）
         if (centerLine != null && Application.isPlaying)
@@ -193,65 +360,156 @@ public class ShockwavePreview : MonoBehaviour
 
         float dt = Time.deltaTime;
 
-        // 2) 距离决定目标倍率与方向；放大/缩小按时间缓动（加速变大 / 减速变小）
-        float dist = Mathf.Abs(curX - tgtX);
-        float targetMag = LookupScale(dist);
+        // 2) P2c 前进状态：目标倍率由【3 秒窗口内累积的前进距离】决定，不再是『每帧的剩余距离』。
+        //    红方前进方向 = currentX 增大（向蓝/+x 推进）；蓝方前进方向 = currentX 减小（向红/-x 推进）。
+        //    ⛔ P4A 起，累积距离的【唯一来源】是己方得分事件（scoreEventDriven），
+        //       不再读 currentX 的每帧位移 —— 彻底摆脱 currentX 共享 / 对手得分 / 保底补分反向推回的污染。
+        float redTarget, blueTarget;
+        if (advanceStateEnable)
+        {
+            UpdateAdvanceState(ref _redAdvState, ref _redAdvTimer, ref _redAdvAccum, ref _redAdvLastX,
+                               ref _redIgnoreT, ref _redAnticipT, ref _redAnticipFromDecay,
+                               ref _redDecayT, ref _redDecayStartProgress, ref _redPending,
+                               curX, +1, dt);
+            UpdateAdvanceState(ref _blueAdvState, ref _blueAdvTimer, ref _blueAdvAccum, ref _blueAdvLastX,
+                               ref _blueIgnoreT, ref _blueAnticipT, ref _blueAnticipFromDecay,
+                               ref _blueDecayT, ref _blueDecayStartProgress, ref _bluePending,
+                               curX, -1, dt);
 
-        // 方向：向蓝(+x) -> 红放大；向红(-x) -> 蓝放大；不动 -> 都 1.0
-        float redTarget = (tgtX > curX + 1e-4f) ? targetMag : 1f;
-        float blueTarget = (tgtX < curX - 1e-4f) ? targetMag : 1f;
+            redTarget  = GetAdvanceTarget(_redAdvState, _redAdvAccum);
+            blueTarget = GetAdvanceTarget(_blueAdvState, _blueAdvAccum);
+        }
+        else
+        {
+            // 回退路径（advanceStateEnable=false）：旧的『每帧剩余距离』判定，保留便于 A/B 对比
+            float distOld = Mathf.Abs(curX - tgtX);
+            float targetMag = LookupScale(distOld);
+            redTarget  = (tgtX > curX + 1e-4f) ? targetMag : 1f;
+            blueTarget = (tgtX < curX - 1e-4f) ? targetMag : 1f;
+        }
 
-        // ② 越界禁放大（用户方案）：本次位移的【起点】或【终点】越过 ±edge
-        //    -> 该位移必是扣血/反弹位移（正常博弈位移都在范围内，因为超过就触发扣血被弹回）-> 禁止放大。
-        //    边界自动跟随扣血触发位置：edge = 分差阈值 × 中线推进系数（改阈值/系数不再滞后）。
-        //    判定按"本次位移"实时覆盖（无 latch、无超时）：targetX 每变化一次即刷新 _dispStartX，
-        //    全程只取决于当前位移的起点/终点是否越界；一旦产生新位移就重新判定，不会被旧 latch 拖住。
-        //    被推入侧 = 移动方向指向的那一侧：向 +x 推 -> 红；向 -x 推 -> 蓝。
-        float edge = GetSuppressEdge();
-        bool startOut = BeyondEdge(_dispStartX, edge);
-        bool endOut   = BeyondEdge(tgtX, edge);
-        bool dispOutOfRange = startOut || endOut;
+        // ②e P2b 预备推进：推进预备计时并算出当前弹开偏移（sin 曲线：弹开到最大再回位，无突跳）
+        //     后弹触发点已改由 P2c 前进状态机负责：只在 Idle→Advancing / Decay→Advancing 转换时弹一次，
+        //     窗口内连续推进不重复弹 —— 这就是"合并高频低数值推进、消除抽搐感"的关键。
+        //     ⛔ 弹开【只改位置】，绝不改大小（用户铁律）。
+        UpdateAnticip(ref _redAnticipT, ref _redAnticipOff, dt);
+        UpdateAnticip(ref _blueAnticipT, ref _blueAnticipOff, dt);
 
-        _redSuppress  = dispOutOfRange && (tgtX > curX + 1e-4f);
-        _blueSuppress = dispOutOfRange && (tgtX < curX - 1e-4f);
+        // ②f P2b 预备期回缩蓄力 —— ⛔【默认已关闭】（anticipAffectsScale=false）。
+        //     用户铁律：回弹不得影响大小。旧行为会把目标倍率压到『当前倍率 × 0.92』，
+        //     造成"切出变大又缩回"的抽搐；只有显式开启 anticipAffectsScale 才启用（不推荐）。
+        if (anticipAffectsScale)
+        {
+            ApplyAnticipSqueeze(ref _redAnticipT, ref redTarget, _redScale, _redAnticipFromDecay);
+            ApplyAnticipSqueeze(ref _blueAnticipT, ref blueTarget, _blueScale, _blueAnticipFromDecay);
+        }
 
-        if (_redSuppress) redTarget = 1f;
-        if (_blueSuppress) blueTarget = 1f;
-
-
-        // ③ 闪白：仅由扣血/补分机制（ScoreManager.ApplyCatchUp 直呼）触发，单次衰减到 0
+        // ③ 闪白：仅由扣血/补分机制（ScoreManager.ApplyCatchUp 直呼）触发，单次衰减到 0。
+        //    与"变大"完全解耦：扣血补分那次位移根本不被认定为前进（见 _redIgnoreT），自然不会变大。
         UpdateFlash(ref _redFlashing, ref _redFlashT, redWall, dt);
         UpdateFlash(ref _blueFlashing, ref _blueFlashT, blueWall, dt);
 
-        // ④ 放大/缩小：正常博弈照常；越界位移因 redTarget/blueTarget 已压回 1.0 而不会放大
-        AnimateScale(ref _redScale, ref _redPhase, ref _redPT, ref _redPStart, ref _redPTarget, ref _redV0, ref _redAcc,
-                     redTarget, enlargeTime, enlargeMinSpeed, shrinkTime, shrinkMinSpeed, dt);
-        AnimateScale(ref _blueScale, ref _bluePhase, ref _bluePT, ref _bluePStart, ref _bluePTarget, ref _blueV0, ref _blueAcc,
-                     blueTarget, enlargeTime, enlargeMinSpeed, shrinkTime, shrinkMinSpeed, dt);
+        // ③b 对峙循环呼吸（P4 ④.1）：僵持时两墙内侧边周期性开合，速度=远离减速 / 接近加速。
+        //     判定【只看"双方是否都没发生移动"】，与前进状态 / 衰退 / 后弹完全无关（用户铁律）：
+        //     currentX 对红蓝是共享的 —— 中线不动 == 双方都没移动。
+        //     ⚠ 不再叠加 `|curX - tgtX|` 条件：那个条件语义是"已追上目标"，不等价于"没在移动"。
+        bool noMove = Mathf.Abs(curX - _lastCenterX) < 1e-4f;
+        _idleTimer = noMove ? _idleTimer + dt : 0f;
+        _lastCenterX = curX;
+        bool moving = _idleTimer < idleBreathDelay;
+        UpdateBreath(dt, moving);
 
-        // 仅在"正在过渡或放大中"才写墙 Transform，静止（f=1 且 dist=0）时不动，避免覆盖手动编辑
-        bool active = dist > 1e-4f
-            || Mathf.Abs(_redScale - 1f) > 1e-3f
-            || Mathf.Abs(_blueScale - 1f) > 1e-3f;
-        if (!active) return;
+        // ④ 衰退：先推进【档位进度 p】，再由 p 反算 accum 与目标倍率。
+        //    ⛔ 不再直接给 scale 赋值、也不再清零弹簧速度（旧实现 `_redVel = 0f` 会把正在上涨的趋势一刀切断，
+        //       观感就是"瞬间被切小 / 被冻结锁住"）。现在 Decay 与其他状态统一走弹簧平滑跟随 target，
+        //       且 target 全程只由 accum（经 p）决定 —— 大小与位移彻底无关。
+        if (advanceStateEnable && _redAdvState == AdvanceState.Decay)
+        {
+            float p = AdvanceDecay(ref _redAdvState, ref _redAdvAccum, ref _redDecayT, _redDecayStartProgress, dt);
+            redTarget = (p >= 0f) ? ScaleFromProgress(p) : scaleAtRest;
+        }
+        if (advanceStateEnable && _blueAdvState == AdvanceState.Decay)
+        {
+            float p = AdvanceDecay(ref _blueAdvState, ref _blueAdvAccum, ref _blueDecayT, _blueDecayStartProgress, dt);
+            blueTarget = (p >= 0f) ? ScaleFromProgress(p) : scaleAtRest;
+        }
 
-        ApplyScale(redWall, _redBasePos, _redBaseRot, _redBaseScale, _redPivot, _redScale);
-        ApplyScale(blueWall, _blueBasePos, _blueBaseRot, _blueBaseScale, _bluePivot, _blueScale);
+        // ⑤ 放大/缩小：弹簧阻尼（默认）或时间缓动（useSpringModel=false 回退）。
+        //    所有状态（含 Decay）统一走这一条通道，保证不存在"硬切"。
+        if (useSpringModel)
+        {
+            SpringScale(ref _redScale, ref _redVel, redTarget, dt);
+        }
+        else
+        {
+            AnimateScale(ref _redScale, ref _redPhase, ref _redPT, ref _redPStart, ref _redPTarget, ref _redV0, ref _redAcc,
+                         redTarget, enlargeTime, enlargeMinSpeed, shrinkTime, shrinkMinSpeed, dt);
+        }
+
+        if (useSpringModel)
+        {
+            SpringScale(ref _blueScale, ref _blueVel, blueTarget, dt);
+        }
+        else
+        {
+            AnimateScale(ref _blueScale, ref _bluePhase, ref _bluePT, ref _bluePStart, ref _bluePTarget, ref _blueV0, ref _blueAcc,
+                         blueTarget, enlargeTime, enlargeMinSpeed, shrinkTime, shrinkMinSpeed, dt);
+        }
+
+        // 运行时诊断：把内部状态同步到 Inspector，方便用户验证大小/累积/状态是否匹配。
+#if UNITY_EDITOR
+        _dbgRedAccum = _redAdvAccum; _dbgBlueAccum = _blueAdvAccum;
+        _dbgRedPending = _redPending; _dbgBluePending = _bluePending;
+        _dbgRedTarget = redTarget; _dbgBlueTarget = blueTarget;
+        _dbgRedState = _redAdvState.ToString(); _dbgBlueState = _blueAdvState.ToString();
+        _dbgRedIgnoreT = _redIgnoreT; _dbgBlueIgnoreT = _blueIgnoreT;
+#endif
+
+        // 仅在"本帧视觉确实有变化"时才写墙 Transform，完全静止时不动，避免覆盖手动编辑。
+        // ⚠ 不能再沿用旧的 `if (!moving && _breathFade <= 1e-3f) return;` —— 呼吸判定已与衰退解耦，
+        //   那样会在"中线静止 + 呼吸关闭/已淡出"时把【衰退的缩放】整个跳过，墙会卡在原地不动。
+        bool needWrite = _breathFade > 1e-3f
+            || Mathf.Abs(_redScale  - _lastAppliedRedScale)  > 1e-5f
+            || Mathf.Abs(_blueScale - _lastAppliedBlueScale) > 1e-5f
+            || _redAnticipOff != 0f || _blueAnticipOff != 0f;
+        if (!needWrite) return;
+
+        // 呼吸位移：红墙内侧边向 -x 退、蓝墙向 +x 退 -> 缝隙变大（张开）；k=0 时两墙回到 base 位置（合拢最紧）
+        float breathOff = breathGapAmplitude * _breathK * _breathFade * 0.5f;
+        // P2b 预备偏移：红墙向 -x 弹开 / 蓝墙向 +x 弹开 —— 都是"远离对手"，视觉上先拉开中缝间距再前冲
+        ApplyScale(redWall, _redBasePos, _redBaseRot, _redBaseScale, _redPivot, _redScale,
+                   new Vector3(-breathOff - _redAnticipOff, 0f, 0f));
+        ApplyScale(blueWall, _blueBasePos, _blueBaseRot, _blueBaseScale, _bluePivot, _blueScale,
+                   new Vector3(breathOff + _blueAnticipOff, 0f, 0f));
+        _lastAppliedRedScale = _redScale;
+        _lastAppliedBlueScale = _blueScale;
+
+        // 呼吸亮度 + 前进加亮（优势方随放大倍率变亮）—— 受 enableBrightnessFx 总开关控制
+        ApplyWallGlow();
     }
 
-    /// <summary>扣血/补分机制触发：让被补分那一侧（side 0=红墙，1=蓝墙）冲击波"闪白一次"。
-    /// 由 ScoreManager.ApplyCatchUp 直呼。该侧"不放大"由 DriveRuntime 的越界禁放大规则负责（按位移起点/终点判定）。</summary>
+    /// <summary>扣血/补分机制触发（阈值态）。由 ScoreManager.ApplyCatchUp 直呼；side 0=红墙，1=蓝墙（=被补分/扣血的劣势方）。
+    /// 阈值态规则（用户明确）：
+    ///   1) 扣血方【不变大、只闪白】—— 给劣势方挂 `ignoreAdvanceDuration` 的"忽略前进"计时：
+    ///      这段时间内它的 currentX 位移【不被认定为前进】，拿不到前进状态、也累积不到距离，
+    ///      因此根本不可能变大。注意这不是"冻结"（不会把状态卡住），计时结束后一切恢复正常判定。
+    ///   2) 进攻方【不做任何特殊处理】—— 只要"被推回会倒扣累积距离"已修（`accum` 只增不减），
+    ///      优势方的累积值就不会被这次补分影响；它若还在推进，窗口计时照常被自己的推进刷新。</summary>
     public void OnScoreAdjustPush(int side)
     {
         if (side == 0)
         {
             if (!_redFlashing) _redFlashT = 0f;   // 上一次闪完后再触发才重置，避免中途打断重来
-            _redFlashing = true;
+            _redFlashing = true;                  // 劣势方（红）：只闪白
+            _redIgnoreT = ignoreAdvanceDuration;  // 这段位移不算前进 -> 不进前进状态、不累积 -> 不会变大
+            _redPending = 0f;                     // P4A：丢弃待分摊队列（双保险）
         }
         else
         {
             if (!_blueFlashing) _blueFlashT = 0f;
             _blueFlashing = true;
+            _blueIgnoreT = ignoreAdvanceDuration;
+            _bluePending = 0f;
         }
     }
 
@@ -270,28 +528,16 @@ public class ShockwavePreview : MonoBehaviour
     {
         if (wall == null) return;
         var mr = wall.GetComponent<MeshRenderer>();
-        if (mr != null && mr.sharedMaterial != null) mr.sharedMaterial.SetFloat("_Flash", v);
+        if (mr == null) return;
+        var m = Application.isPlaying ? mr.material : mr.sharedMaterial;   // 同 SetWallFloat：运行时用实例，防串台/落盘
+        if (m != null) m.SetFloat("_Flash", v);
     }
-
-    /// <summary>禁放大边界：自动模式 = 分差阈值 × 中线推进系数（= 触发扣血机制时中线所在位置），改阈值/系数自动跟随。</summary>
-    private float GetSuppressEdge()
-    {
-        if (!autoSuppressEdge) return enlargeSuppressEdge;
-        if (_scoreManager == null) _scoreManager = FindFirstObjectByType<ScoreManager>();
-        if (centerLine == null) centerLine = FindFirstObjectByType<BattleCenterLine>();
-        if (_scoreManager != null && centerLine != null)
-            return Mathf.Max(0.01f, _scoreManager.catchUpDiffThreshold * centerLine.pushPerHit);
-        return enlargeSuppressEdge;
-    }
-
-    /// <summary>是否达到/越过边界（含容差，避免正好停在边界值时不命中）。</summary>
-    private bool BeyondEdge(float x, float edge) { return Mathf.Abs(x) >= edge - edgeEpsilon; }
 
     /// <summary>
-    /// 单墙缩放缓动（红蓝各自独立调用）。
-    /// - 需要变大（desiredTarget &gt; 当前）：加速曲线（起步 enlargeMinSpeed，越来越快），约 enlargeTime 内涨到目标；
-    ///   期间若 desiredTarget 进一步增大（距离继续拉大跨过阈值），以当前大小为起点重新加速续接。
-    /// - 需要变小（desiredTarget &lt; 当前）：减速曲线（起步快，收尾到 shrinkMinSpeed），约 shrinkTime 内缩回 1.0。
+    /// 单墙缩放缓动（红蓝各自独立调用）。与对峙循环同一条曲线：远离减速 / 接近加速。
+    /// - 需要变大（远离基准，desiredTarget &gt; 当前）：减速曲线（起步最快，越接近目标越慢，收尾到 enlargeMinSpeed）；
+    ///   期间若 desiredTarget 进一步增大（距离继续拉大跨过阈值），以当前大小为起点重新起跑续接。
+    /// - 需要变小（接近基准，desiredTarget &lt; 当前）：加速曲线（起步最慢 = shrinkMinSpeed，越接近静止越快，回位瞬间最快）。
     /// - 相等：保持。
     /// </summary>
     private void AnimateScale(ref float scale, ref ScalePhase phase, ref float pt, ref float pStart, ref float pTarget,
@@ -300,7 +546,7 @@ public class ShockwavePreview : MonoBehaviour
     {
         if (desiredTarget > scale + 1e-4f)
         {
-            // 进入/续接变大：以当前大小为起点重启加速 ease
+            // 进入/续接变大：以当前大小为起点重启减速 ease（远离减速）
             if (phase != ScalePhase.Enlarge || desiredTarget > pTarget + 1e-4f)
             {
                 phase = ScalePhase.Enlarge;
@@ -308,9 +554,11 @@ public class ShockwavePreview : MonoBehaviour
                 pStart = scale;
                 pTarget = desiredTarget;
                 float D = Mathf.Max(1e-5f, desiredTarget - scale);
-                float a = 2f * (D - enlMin * enlTime) / (enlTime * enlTime);
-                acc = Mathf.Max(0f, a);   // 起步即 enlMin，之后越来越快；若 enlMin 已够快则夹 0（恒速）
-                v0 = enlMin;
+                float T = Mathf.Max(1e-3f, enlTime);
+                // 收尾速度 = enlMin（越接近目标越慢）；位移过小则退化为匀速，恒不倒退
+                float vEnd = Mathf.Min(enlMin, D / T);
+                v0 = 2f * D / T - vEnd;   // 起步速度（最快）
+                acc = (vEnd - v0) / T;    // 负 = 减速
             }
             pt += dt;
             float v = v0 + acc * pt;
@@ -319,7 +567,7 @@ public class ShockwavePreview : MonoBehaviour
         }
         else if (desiredTarget < scale - 1e-4f)
         {
-            // 进入变小：减速曲线，从当前大小缩回 1.0
+            // 进入变小：加速曲线（接近加速），从当前大小缩回 1.0
             if (phase != ScalePhase.Shrink)
             {
                 phase = ScalePhase.Shrink;
@@ -327,12 +575,13 @@ public class ShockwavePreview : MonoBehaviour
                 pStart = scale;
                 pTarget = 1f;
                 float D = Mathf.Max(1e-5f, scale - 1f);
-                float d = 2f * (D - shrMin * shrTime) / (shrTime * shrTime);
-                acc = Mathf.Max(0f, d);             // 减速度大小
-                v0 = shrMin + acc * shrTime;        // 起步快，结尾收到 shrMin
+                float T = Mathf.Max(1e-3f, shrTime);
+                v0 = shrMin;                                   // 起步最慢
+                float vEnd = Mathf.Max(v0, 2f * D / T - v0);   // 收尾最快（位移过小则退化为匀速）
+                acc = (vEnd - v0) / T;                         // 正 = 加速
             }
             pt += dt;
-            float v = Mathf.Max(0f, v0 - acc * pt);
+            float v = v0 + acc * pt;
             scale -= v * dt;
             if (scale <= 1f) { scale = 1f; phase = ScalePhase.Idle; }
         }
@@ -342,13 +591,371 @@ public class ShockwavePreview : MonoBehaviour
         }
     }
 
-    /// <summary>绕墙 mesh 局部内侧边 pivot 缩放：保持中缝侧边不动，向外扩，间隙不变。</summary>
-    private void ApplyScale(Transform wall, Vector3 basePos, Quaternion baseRot, Vector3 baseScale, Vector3 meshPivot, float f)
+    /// <summary>
+    /// P3 放大保持已【整体删除】：P2c 的 3 秒前进窗口本身就是"维持住就不缩小"的机制（timer 只在自己推进时刷新），
+    /// 旧的 enlargeHoldTime 冻结与之职责重叠，且会在 Decay 时额外挡一道（曾导致窗口结束后还要多等 2s 才开始衰减）。
+    /// 扣血补分的"优势方不掉回 1.0"改由 OnScoreAdjustPush 直接刷新优势方的前进窗口计时实现。
+    /// </summary>
+
+    /// <summary>
+    /// P2c 前进状态机：更新单侧前进窗口状态。
+    /// directionSign：红=+1（前进方向为 currentX 增大 / 向蓝方推进）；蓝=-1（前进方向为 currentX 减小 / 向红方推进）。
+    /// 规则（用户明确）：
+    ///   1) 第一次推进进入 Advancing，触发一次 P2b 后弹，记录窗口起点 baseX；
+    ///   2) 窗口内继续推进：累积 |currentX - baseX| 作为前进距离（按 LookupScale 查表得倍率），
+    ///      并把计时刷新回 advanceWindowTime —— 不重复后弹；
+    ///   3) 窗口内无推进：计时递减，归零才退出（Decay）。期间保持当前累积值，小抖动不会导致缩回；
+    ///   4) Decay 期间 / 之后再次推进：重新进入 Advancing 并再次后弹，以【衰退后的当前累积值】为起点继续累积。
+    /// 两侧完全独立、互不干扰（用户明确："衰退期间或者之后对方移动都不会影响自己这边"）。
+    ///
+    /// ⚠ 关键实现约束（踩过坑）：BattleCenterLine 的 currentX 是 Lerp 指数逼近 targetX 的，
+    ///    单次推进的【每帧位移会迅速衰减】（每帧只吃掉剩余距离的 dt*smoothSpeed ≈ 8%）。
+    ///    若沿用"单帧位移 > 阈值才算推进、才更新 accum"，累积距离会在推进尚未完成时就【永久冻结在起步那一小段】，
+    ///    表现就是"进了前进状态却再也长不大"。因此：
+    ///      - 单帧阈值 advanceAccumThreshold 只用于【起跑判定】（Idle / Decay → Advancing 那一瞬的防抖）；
+    ///      - 进入 Advancing 后，accum 改为【每帧无条件累加正向增量】，不看单帧阈值。
+    ///
+    /// ignoreT：扣血补分触发后的"忽略前进"剩余时间（秒）。>0 时本侧位移【不被认定为前进】
+    ///          —— 不计累积、不刷新计时、不触发后弹、不起跑。这是"扣血方不变大"的唯一手段，
+    ///          比旧的越界禁放大更直接：压根不让它拿到前进状态，而不是拿到之后再压回去。
+    /// </summary>
+    private void UpdateAdvanceState(ref AdvanceState state, ref float timer, ref float accum, ref float lastX,
+                                    ref float ignoreT, ref float anticipT, ref bool fromDecay,
+                                    ref float decayT, ref float decayStartProgress, ref float pending,
+                                    float curX, int directionSign, float dt)
+    {
+        float delta = curX - lastX;
+
+        // 忽略前进计时递减（扣血补分期间）
+        if (ignoreT > 0f) ignoreT = Mathf.Max(0f, ignoreT - dt);
+        bool ignoring = ignoreT > 0f;
+
+        // ---- 本帧的「前进量 stepFwd」：来源由 scoreEventDriven 决定 ----
+        float stepFwd;
+        if (scoreEventDriven)
+        {
+            // A 方案（推荐）：只认己方得分事件。扣血补分期间直接丢弃待分摊量（双保险）。
+            if (ignoring) pending = 0f;
+            float rate = Mathf.Max(0.01f, scoreEventApplyRate);
+            float release = pending * (1f - Mathf.Exp(-rate * dt));   // 指数分摊，与中线 Lerp 观感同步
+            pending = Mathf.Max(0f, pending - release);
+            stepFwd = release;
+        }
+        else
+        {
+            // 回退路径：读 currentX 每帧位移（会被 currentX 共享与 catchUp 污染，仅作 A/B 对比）
+            stepFwd = ignoring ? 0f : Mathf.Max(0f, directionSign * delta);
+        }
+
+        // 累积距离上限：到 accumAbove1_0（默认 1.0）即封顶，对应最大倍率。
+        // ⛔ 必须封顶 —— 否则衰退起点 progress 会远超 5，导致"先空转很久才开始变小"。
+        float maxAccum = Mathf.Max(1e-4f, accumAbove1_0);
+
+        switch (state)
+        {
+            case AdvanceState.Idle:
+                if (!ignoring && stepFwd > advanceAccumThreshold)
+                {
+                    state = AdvanceState.Advancing;
+                    accum = Mathf.Min(stepFwd, maxAccum);   // 从本次起跑位移开始累积（双方各自独立、封顶）
+                    timer = advanceWindowTime;
+                    decayT = 0f;
+                    fromDecay = false;               // 对峙（Idle）后第一次前进
+                    if (forwardAnticipationEnable) anticipT = Mathf.Max(0.01f, forwardAnticipationTime);
+                }
+                break;
+
+            case AdvanceState.Advancing:
+                if (!ignoring && stepFwd > 1e-6f)
+                {
+                    accum = Mathf.Min(accum + stepFwd, maxAccum);   // 只累加正向增量：被推回不倒扣
+                    timer = advanceWindowTime;                      // 刷新窗口计时（维持住就一直续期）
+                }
+                else
+                {
+                    timer -= dt;
+                    if (timer <= 0f)
+                    {
+                        // 进入衰退：记录当前【档位进度】作为衰退起点（由 accum 换算，不是由 scale 换算）。
+                        // accum 不再瞬间清零，而是随衰退按档位同步下降（见 AdvanceDecay）。
+                        state = AdvanceState.Decay;
+                        timer = 0f;
+                        decayT = 0f;
+                        decayStartProgress = ProgressFromAccum(accum);
+                    }
+                }
+                break;
+
+            case AdvanceState.Decay:
+                if (!ignoring && stepFwd > advanceAccumThreshold)
+                {
+                    // 衰退中途重新前进：立刻结束衰退、维持当前大小（不再变小）；
+                    // accum 停止下降，并以【衰退后的当前值】为起点继续累积（不再重置为 0）。
+                    state = AdvanceState.Advancing;
+                    accum = Mathf.Min(accum + stepFwd, maxAccum);
+                    timer = advanceWindowTime;
+                    decayT = 0f;
+                    fromDecay = true;                // 只弹开、不回缩蓄力（回缩已默认关闭）
+                    if (forwardAnticipationEnable) anticipT = Mathf.Max(0.01f, forwardAnticipationTime);
+                }
+                break;
+        }
+
+        lastX = curX;
+    }
+
+    /// <summary>
+    /// P2c 衰退：按【倍率档位】计时。五个档位就是倍率表本身 1.5 / 1.3 / 1.2 / 1.1 / 1.05，
+    /// 【每降一档固定耗时 advanceDecayStepTime 秒】。
+    /// 因为高档位之间的倍率差更大（1.5→1.3 差 0.2；1.1→1.05 只差 0.05），每档耗时相同 ⇒
+    /// 倍率下降速度自然【先快后慢】，不需要任何额外 shape 曲线。
+    /// 由此：1.5→1.0 = 5s、1.3→1.0 = 4s、1.2→1.0 = 3s、1.1→1.0 = 2s、1.05→1.0 = 1s。
+    ///
+    /// 实现：把倍率映射为"档位进度"标量（1.0→0, 1.05→1, 1.1→2, 1.2→3, 1.3→4, 1.5→5），档间线性插值；
+    /// 衰退时 progress 匀速递减（每档 1 秒），再反查倍率 —— 起点不是整档（如 1.45）也按同比例计时。
+    /// 累积距离 accum 随进度同步下降到 0（不再瞬间清零）。
+    /// </summary>
+    /// ⛔ P4A 修订：本方法【不再直接写 scale】。旧实现 `scale = ScaleFromProgress(p)` + `_redVel = 0f`
+    ///    会把正在上涨的趋势一刀切断，观感就是"瞬间被切小 / 被冻结锁住"。
+    ///    现在只推进档位进度 p 并同步 accum，返回 p 供调用方换算目标倍率，
+    ///    再统一交给弹簧平滑跟随 —— 全程只有 accum 一个变量决定大小。
+    ///
+    /// 返回：当前档位进度 p；<b>-1</b> 表示衰退已结束（已转 Idle，accum 归零）。
+    /// </summary>
+    private float AdvanceDecay(ref AdvanceState state, ref float accum,
+                               ref float decayT, float decayStartProgress, float dt)
+    {
+        decayT += dt;
+        float step = Mathf.Max(0.01f, advanceDecayStepTime);
+        float p = decayStartProgress - decayT / step;      // 档位进度匀速下降（每档 step 秒）
+
+        if (p <= 0f)
+        {
+            accum = 0f;
+            state = AdvanceState.Idle;                     // 衰退结束 -> 回到 Idle
+            decayT = 0f;
+            return -1f;
+        }
+
+        accum = AccumFromProgress(p);                      // accum 随档位进度同步下降（不瞬间清零）
+        return p;
+    }
+
+    /// <summary>刷新档位表缓存（倍率表 + 对应的累积距离下界，随 Inspector 值变化）。用预分配数组，避免每帧 GC。</summary>
+    private void RefreshDecayLevels()
+    {
+        _decayLevels[0] = scaleAtRest;
+        _decayLevels[1] = scaleTiny;
+        _decayLevels[2] = scaleAbove0_2;
+        _decayLevels[3] = scaleAbove0_3;
+        _decayLevels[4] = scaleAbove0_5;
+        _decayLevels[5] = scaleAbove1_0;
+
+        _accumLevels[0] = 0f;
+        _accumLevels[1] = accumTiny;
+        _accumLevels[2] = accumAbove0_2;
+        _accumLevels[3] = accumAbove0_3;
+        _accumLevels[4] = accumAbove0_5;
+        _accumLevels[5] = accumAbove1_0;
+    }
+
+    /// <summary>累积距离 -> 档位进度（accum=0→0, accumTiny→1, 0.2→2, 0.3→3, 0.5→4, 1.0→5；档间线性插值）。
+    /// ⛔ P4A 起，衰退起点由【accum】换算，不再由 scale 换算 —— 保证"大小只由累积距离决定"单向成立。</summary>
+    private float ProgressFromAccum(float a)
+    {
+        RefreshDecayLevels();
+        if (a <= _accumLevels[0]) return 0f;
+        for (int i = 1; i < _accumLevels.Length; i++)
+        {
+            if (a <= _accumLevels[i])
+            {
+                float lo = _accumLevels[i - 1], hi = _accumLevels[i];
+                float f = Mathf.Clamp01((a - lo) / Mathf.Max(1e-6f, hi - lo));
+                return (i - 1) + f;
+            }
+        }
+        return _accumLevels.Length - 1;
+    }
+
+    /// <summary>档位进度 -> 累积距离（ProgressFromAccum 的逆运算）。衰退时用它让 accum 随档位同步下降。</summary>
+    private float AccumFromProgress(float p)
+    {
+        RefreshDecayLevels();
+        int last = _accumLevels.Length - 1;
+        if (p <= 0f) return _accumLevels[0];
+        if (p >= last) return _accumLevels[last];
+        int i = Mathf.Clamp(Mathf.FloorToInt(p), 0, last - 1);
+        return Mathf.Lerp(_accumLevels[i], _accumLevels[i + 1], p - i);
+    }
+
+    /// <summary>档位进度 -> 倍率。</summary>
+    private float ScaleFromProgress(float p)
+    {
+        RefreshDecayLevels();
+        int last = _decayLevels.Length - 1;
+        if (p <= 0f) return _decayLevels[0];
+        if (p >= last) return _decayLevels[last];
+        int i = Mathf.Clamp(Mathf.FloorToInt(p), 0, last - 1);
+        return Mathf.Lerp(_decayLevels[i], _decayLevels[i + 1], p - i);
+    }
+
+    /// <summary>【大小 = f(累积距离)】累积距离 -> 倍率（档间线性插值，平滑无硬边）。这是决定大小的唯一入口。</summary>
+    private float ScaleFromAccum(float a) => ScaleFromProgress(ProgressFromAccum(a));
+
+    /// <summary>P2c 目标倍率：除 Idle 外都按累积距离放大。
+    /// ⛔ Decay 状态也必须返回 ScaleFromAccum(accum)，因为 accum 由 AdvanceDecay 同步维护；
+    ///    若返回 scaleAtRest，会在 Decay 分支未覆盖的代码路径里把目标压回 1.0，造成"被冻结在 1.0 倍"的观感。</summary>
+    private float GetAdvanceTarget(AdvanceState state, float accum)
+    {
+        if (state == AdvanceState.Idle) return scaleAtRest;
+        return ScaleFromAccum(accum);
+    }
+
+    /// <summary>
+    /// P2b 前进预备触发已【改为由 P2c 前进状态机负责】：只在 Idle→Advancing / Decay→Advancing 转换时弹一次，
+    /// 窗口内连续推进不重复弹 —— 这就是"合并高频低数值推进、消除抽搐感"的关键。
+    /// 旧的"每次目标倍率变大就弹"版本会让连续得分时反复后扯（抽搐），已废弃删除。
+    /// </summary>
+
+    /// <summary>
+    /// P2b 预备推进：推进剩余时间，并按 sin(π·phase) 算出当前弹开偏移。
+    /// 曲线含义：phase 0→1 对应偏移 0→最大→0，即"平滑弹开到最远，再平滑回位"，起步与收尾都无突跳。
+    /// 弹开方向由 ApplyScale 处决定（红墙 -x / 蓝墙 +x，都是远离对手）。
+    /// </summary>
+    private void UpdateAnticip(ref float anticipT, ref float off, float dt)
+    {
+        float T = Mathf.Max(0.01f, forwardAnticipationTime);
+        if (anticipT <= 0f) { off = 0f; return; }
+        anticipT -= dt;
+        if (anticipT <= 0f) { anticipT = 0f; off = 0f; return; }
+        float phase = Mathf.Clamp01(1f - anticipT / T);
+        off = forwardAnticipationPullback * Mathf.Sin(Mathf.PI * phase);
+    }
+
+    /// <summary>
+    /// P2b 预备期回缩蓄力：预备期间把目标倍率压到『当前倍率 × forwardAnticipationScaleRatio』（不低于 1），
+    /// 让弹簧先往回收一点；预备结束目标恢复真实值，弹簧从压缩状态猛冲出去，形成"先拉开再前冲"的冲击感。
+    ///
+    /// ⛔【已默认停用】总开关 anticipAffectsScale = false，只有显式开启才会调用本方法。
+    /// 用户铁律（2026-10-07）：**回弹不得影响大小** —— 预备只产生弹开位移，大小只由累积距离决定。
+    /// 旧行为会在每次起跑把 target 压到 curScale×0.92，高频起跑时表现为"切出变大又缩回"的抽搐。
+    /// fromDecay：本次预备是"衰退中途重新前进"触发的 —— 此时【只弹开、不回缩】。
+    /// </summary>
+    private void ApplyAnticipSqueeze(ref float anticipT, ref float finalTarget, float curScale, bool fromDecay)
+    {
+        if (anticipT <= 0f || forwardAnticipationScaleRatio >= 1f) return;
+        if (fromDecay) return;
+        float squeezed = Mathf.Max(1f, curScale * forwardAnticipationScaleRatio);
+        if (finalTarget > squeezed) finalTarget = squeezed;
+    }
+
+    /// <summary>
+    /// P2 弹簧阻尼缩放：把墙当成有惯性的肉体，被推时先抗拒再顺从。
+    /// a = -k(scale - target) - c·v，c = 2·√k·dampingRatio（1 = 临界阻尼）。
+    /// 用固定小步长子步进积分，保证低帧率下也不发散。
+    /// </summary>
+    private void SpringScale(ref float scale, ref float vel, float target, float dt)
+    {
+        float k = Mathf.Max(1f, springStiffness);
+        float c = 2f * Mathf.Sqrt(k) * Mathf.Max(0f, springDampingRatio);
+        float maxS = Mathf.Max(1.01f, scaleAbove1_0);
+
+        float remain = Mathf.Min(dt, 0.1f);   // 单帧最多推进 0.1s，防卡顿帧炸开
+        while (remain > 0f)
+        {
+            float h = Mathf.Min(remain, 1f / 120f);
+            float a = -k * (scale - target) - c * vel;
+            vel += a * h;
+            vel = Mathf.Clamp(vel, -springMaxVelocity, springMaxVelocity);
+            scale += vel * h;
+            remain -= h;
+        }
+
+        if (scale < 1f) { scale = 1f; if (vel < 0f) vel = 0f; }
+        if (scale > maxS) { scale = maxS; if (vel > 0f) vel = 0f; }
+    }
+
+    /// <summary>
+    /// 对峙循环呼吸（P4 ④.1）：算出当前开合量 _breathK ∈ [0,1]（0=合拢最紧，1=张开最大）。
+    /// 速度曲线（用户指定）：远离=减速（越张开越慢，最开处速度归零）；接近=加速（越合拢越快，撞击瞬间最快）。
+    /// 两段在接缝处速度连续：张开末尾 0 → 合拢起步 0；合拢末尾最快 → 张开起步最快，无速度突变。
+    /// </summary>
+    private void UpdateBreath(float dt, bool moving)
+    {
+        // 移动中（有位移 / 正在放大缩小）：收回并保持【最小缝隙】，相位归零；
+        // 停下后从相位 0（最紧处）重新播放整段对峙循环。收回用 _breathFade 平滑，避免突跳。
+        if (moving)
+        {
+            _breathFade = Mathf.MoveTowards(_breathFade, 0f, dt * 4f);
+            if (_breathFade <= 1e-3f) { _breathFade = 0f; _breathT = 0f; _breathK = 0f; }
+            return;   // 不推进相位
+        }
+
+        // 静止：淡入呼吸并推进相位
+        _breathFade = Mathf.MoveTowards(_breathFade, idleBreath ? 1f : 0f, dt * 3f);
+        if (!idleBreath && _breathFade <= 1e-3f) { _breathK = 0f; return; }
+
+        _breathT += dt;
+        float period = Mathf.Max(0.05f, breathPeriod);
+        float p = Mathf.Repeat(_breathT, period) / period;      // 相位 0..1
+        float outR = Mathf.Clamp(breathOutRatio, 0.05f, 0.95f);
+
+        if (p <= outR)
+        {
+            // 远离（张开）：ease-out，k 由 0 涨到 1，速度 2→0（越张开越慢）
+            float u = p / outR;
+            _breathK = 1f - (1f - u) * (1f - u);
+        }
+        else
+        {
+            // 接近（合拢）：ease-in，k 由 1 落到 0，速度 0→2（越合拢越快）
+            float u = (p - outR) / (1f - outR);
+            _breathK = 1f - u * u;
+        }
+    }
+
+    /// <summary>墙亮度：基础 Opacity + 撞击加亮（对峙循环合拢最紧时最亮）+ 前进加亮（优势方被放大时随倍率变亮），封顶 opacityMax。
+    /// 注意：ShockwaveMeshGenerator.SyncMaterial 每帧会写回基础值，本方法在 DriveRuntime 末尾调用（在它之后），故本帧生效。</summary>
+    private void ApplyWallGlow()
+    {
+        // 总开关关闭（P1 自发光分层方案落地前）：只保留基础亮度，前进加亮与撞击加亮都不生效
+        if (!enableBrightnessFx)
+        {
+            SetWallFloat(redWall, "_Opacity", _redBaseOpacity);
+            SetWallFloat(blueWall, "_Opacity", _blueBaseOpacity);
+            return;
+        }
+        float breath = breathOpacityAmp * _breathFade * (1f - _breathK);   // k=0（合拢最紧）最亮
+        float rGlow = breath + (_redScale - 1f) * glowPerEnlarge;           // 红墙：自己被放大才变亮
+        float bGlow = breath + (_blueScale - 1f) * glowPerEnlarge;
+        SetWallFloat(redWall, "_Opacity", Mathf.Clamp(_redBaseOpacity + rGlow, 0f, opacityMax));
+        SetWallFloat(blueWall, "_Opacity", Mathf.Clamp(_blueBaseOpacity + bGlow, 0f, opacityMax));
+    }
+
+    /// <summary>写墙材质浮点。
+    /// ⚠ 运行时必须用 `.material`（自动取本渲染器的实例），不能用 `.sharedMaterial`：
+    ///   红蓝若共用同一个 .mat 资产会互相串台，且写入会落盘到资源文件、退出 Play 后不恢复。
+    ///   编辑模式仍用 sharedMaterial，避免材质实例泄漏进场景。</summary>
+    private void SetWallFloat(Transform wall, string prop, float v)
+    {
+        if (wall == null) return;
+        var mr = wall.GetComponent<MeshRenderer>();
+        if (mr == null) return;
+        var m = Application.isPlaying ? mr.material : mr.sharedMaterial;
+        if (m != null) m.SetFloat(prop, v);
+    }
+
+    /// <summary>绕墙 mesh 局部内侧边 pivot 缩放：保持中缝侧边不动，向外扩，间隙不变。
+    /// ⛔【通道分离铁律】f 只来自「累积距离 accum」，extra 只来自「呼吸开合 + 回弹弹开」：
+    ///    - f     -> 只写 localScale（大小通道）
+    ///    - extra -> 只写 localPosition（位移通道）
+    /// 两者互不影响、互不叠加 —— 任何把 scale 塞进 extra 来源、或把位移塞进 f 的改动都违反铁律。</summary>
+    private void ApplyScale(Transform wall, Vector3 basePos, Quaternion baseRot, Vector3 baseScale, Vector3 meshPivot, float f, Vector3 extra)
     {
         if (wall == null) return;
         wall.localScale = new Vector3(baseScale.x * f, baseScale.y * f, baseScale.z * f);
         Vector3 offset = baseRot * new Vector3(baseScale.x * meshPivot.x, baseScale.y * meshPivot.y, baseScale.z * meshPivot.z);
-        wall.localPosition = basePos + offset * (1f - f);
+        wall.localPosition = basePos + offset * (1f - f) + extra;
     }
 
     private float LookupScale(float d)
@@ -364,6 +971,17 @@ public class ShockwavePreview : MonoBehaviour
     /// <summary>捕获你手动调好的 Transform 作为 base；并自动算出每堵墙"贴中缝内侧边"在 mesh 局部空间的坐标。</summary>
     private void CaptureBase()
     {
+        var rg = redWall != null ? redWall.GetComponent<ShockwaveMeshGenerator>() : null;
+        var bg = blueWall != null ? blueWall.GetComponent<ShockwaveMeshGenerator>() : null;
+        // ⛔ autoFit 与本品互斥：若仍有开启，强制关闭后再捕获（避免 base 被污染）。
+        if ((rg != null && rg.autoFit) || (bg != null && bg.autoFit))
+        {
+            if (rg != null) rg.autoFit = false;
+            if (bg != null) bg.autoFit = false;
+            Debug.LogWarning("[ShockwavePreview] CaptureBase 检测到 autoFit 仍为开启，已自动关闭并继续捕获 base。"
+                + "autoFit 会每帧覆盖墙的 localScale，base 被污染后推进到底会表现为『被切成 1.0 倍』。", this);
+        }
+
         _baseRootPos = transform.position;
         if (redWall != null)
         {
@@ -381,12 +999,35 @@ public class ShockwavePreview : MonoBehaviour
             _blueBaseScale = blueWall.localScale;
             _bluePivot = (mf != null && mf.sharedMesh != null) ? GetInnerEdgeMeshLocal(mf, false) : Vector3.zero;
         }
+        // 缓存两墙的基础 Opacity（呼吸亮度在其上叠加；SyncMaterial 每帧会写回该值）
+        // rg/bg 已在方法开头取到，用于 autoFit 防护检查。
+        _redBaseOpacity = rg != null ? rg.opacity : 0f;
+        _blueBaseOpacity = bg != null ? bg.opacity : 0f;
         _redScale = 1f; _blueScale = 1f;
+        _redVel = 0f; _blueVel = 0f;
+        // P2b 前进预备状态归零（避免 Recapture 后残留半个预备相位导致墙歪着）
+        _redAnticipT = 0f; _blueAnticipT = 0f;
+        _redAnticipOff = 0f; _blueAnticipOff = 0f;
+        // P2c 前进状态归零；lastX 初始化为当前 currentX（否则首帧 delta 巨大，会被误判为一次前进）
+        _redAdvState = AdvanceState.Idle; _blueAdvState = AdvanceState.Idle;
+        _redAdvTimer = 0f; _blueAdvTimer = 0f;
+        _redAdvAccum = 0f; _blueAdvAccum = 0f;
+        float cx0 = (centerLine != null) ? centerLine.currentX : centerX;
+        _redAdvLastX = cx0; _blueAdvLastX = cx0;
+        // 忽略前进计时归零（扣血补分用）
+        _redIgnoreT = 0f; _blueIgnoreT = 0f;
+        // 衰退状态归零（P4A 起不再需要 decayStartAccum —— accum 由档位进度反算）
+        _redDecayT = 0f; _blueDecayT = 0f;
+        _redDecayStartProgress = 0f; _blueDecayStartProgress = 0f;
+        // P4A 待分摊队列归零
+        _redPending = 0f; _bluePending = 0f;
         _redPhase = ScalePhase.Idle; _bluePhase = ScalePhase.Idle;
         _redFlashing = false; _blueFlashing = false; _redFlashT = 0f; _blueFlashT = 0f;
-        _redSuppress = false; _blueSuppress = false;
-        float t0 = (centerLine != null) ? centerLine.targetX : previewTargetX;
-        _prevTargetX = t0; _dispStartX = t0;
+        _breathT = 0f; _breathK = 0f; _breathFade = 0f;   // 呼吸相位归零，从合拢最紧处平滑起步
+        // 对峙静止判定 / 已应用倍率 / 后弹来源 归零
+        _idleTimer = 0f; _lastCenterX = cx0;
+        _lastAppliedRedScale = 1f; _lastAppliedBlueScale = 1f;
+        _redAnticipFromDecay = false; _blueAnticipFromDecay = false;
     }
 
     /// <summary>自动找墙 mesh 局部坐标里、落在"朝中缝一侧"极值处的顶点（红墙=世界 +X 极值，蓝墙=世界 -X 极值）。</summary>

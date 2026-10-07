@@ -71,6 +71,22 @@ public class ShockwaveMeshGenerator : MonoBehaviour
     [Tooltip("整体乘到 colorDeep/colorTip 上，用于一键纠色而不必分别调 deep/tip")]
     public Color colorTint = Color.white;
 
+    [Header("P1 发光层（独立 Additive Pass，不影响主体透明度）")]
+    [Tooltip("发光总开关强度：0 = 关闭发光层（等于没加这个 Pass）；>1 才能超过 Bloom 阈值泛出光晕")]
+    public float glowIntensity = 1.6f;
+    [Tooltip("发光颜色（默认取 colorTip，可单独调成更暖/更冷）")]
+    public Color glowColor = new Color(1.0f, 0.55f, 0.62f);
+    [Tooltip("拱顶发光聚拢指数：越大越集中在顶部")]
+    public float glowArch = 2.0f;
+    [Tooltip("前沿发光聚拢指数：越大越集中在中缝")]
+    public float glowFront = 1.6f;
+    [Tooltip("身后（判定线侧）裁掉的发光比例，避免发光糊满整条墙")]
+    [Range(0f, 1f)] public float glowTailCut = 0.15f;
+
+    [Header("渲染层级")]
+    [Tooltip("MeshRenderer 的 sortingOrder：调高可让冲击波盖在地面花草等透明装饰之上，不再被怼到后面")]
+    public int sortingOrder = 20;
+
     private Mesh _mesh;
     // 几何脏检查缓存
     private float _cBackX, _cFrontX, _cArch, _cZHalf;
@@ -242,11 +258,13 @@ public class ShockwaveMeshGenerator : MonoBehaviour
         m.SetColor("_ColorDeep", colorDeep * colorTint);
         m.SetColor("_ColorTip", colorTip * colorTint);
 
-        // Shader 用顶点「局部坐标 x」推导渐变。
-        // autoFit=true 时 mesh 被缩放到 [backX, frontX]，用 mesh.bounds 锚定；
-        // autoFit=false 时由你手动摆放，直接用 backX/frontX 作为渐变锚点。
+        // Shader 用顶点「局部坐标 x」推导渐变，所以锚点必须是【mesh 局部空间】的端点。
+        // ⛔ 只要用的是导入模型（useImportedMesh && importedMesh != null），就必须用 mesh.bounds：
+        //    autoFit=false 时墙的 Transform 由 ShockwavePreview 独占控制（整体随中缝平移 + 以内侧边为轴心缩放），
+        //    backX/frontX 是【世界坐标】（±6 ~ seam），拿它当局部锚点会让渐变完全错位（表现为整条墙一个死颜色）。
+        //    （旧代码额外要求 autoFit 才走 bounds，导致关掉 autoFit 后渐变坏掉，已修）
         float bx = backX, fx = frontX, arch = archHeight;
-        if (useImportedMesh && importedMesh != null && autoFit)
+        if (useImportedMesh && importedMesh != null)
         {
             var b = importedMesh.bounds;
             bx = b.min.x;
@@ -262,5 +280,15 @@ public class ShockwaveMeshGenerator : MonoBehaviour
         m.SetFloat("_GradientBalance", gradientBalance);
         m.SetFloat("_EdgeGlow", edgeGlow);
         m.SetFloat("_Opacity", opacity);
+
+        // P1 发光层（第二 Pass 专用）
+        m.SetFloat("_GlowIntensity", glowIntensity);
+        m.SetColor("_GlowColor", glowColor * colorTint);
+        m.SetFloat("_GlowArch", glowArch);
+        m.SetFloat("_GlowFront", glowFront);
+        m.SetFloat("_GlowTailCut", glowTailCut);
+
+        // P1 遮挡：排序层级写进 Renderer（调高即可盖住地面花草）
+        if (mr.sortingOrder != sortingOrder) mr.sortingOrder = sortingOrder;
     }
 }
