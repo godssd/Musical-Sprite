@@ -53,6 +53,14 @@ Shader "MusicalSprite/GroundEdge"
         _ShadowColor("Shadow Tint", Color) = (0.35, 0.32, 0.45, 1)
         _ShadowIntensity("Shadow Intensity", Range(0, 1)) = 0.55
         _ShadowSoftness("Shadow Softness", Range(0, 1)) = 0.35
+
+        // ---- 冲击波辉光染色（P1 受光通道，由 ShockwavePreview 每帧用 Shader.SetGlobal* 写入）----
+        // 本项目场景是「假光照」shader，所以「被冲击波照亮」不走 URP 灯光系统，
+        // 而是由冲击波把自身世界位置 + 颜色写成全局参数，这里按距离衰减做加色。
+        [Toggle] _ShockGlowEnabled("Shock Glow Enabled", Float) = 1
+        [HideInInspector] _ShockGlowColor("Shock Glow Color", Color) = (1, 0.5, 0.5, 1)
+        [HideInInspector] _ShockGlowParams("Shock Glow Params (xyz=pos, w=range)", Vector) = (0, -99, 0, 1)
+        [HideInInspector] _ShockGlowParams2("Shock Glow Params2 (x=strength, y=falloffPow, zw=)", Vector) = (0, 2, 0, 0)
     }
 
     SubShader
@@ -147,6 +155,13 @@ Shader "MusicalSprite/GroundEdge"
                 float4 _StageClipB;
                 float  _DiscTopY;
             CBUFFER_END
+
+            // 冲击波辉光：全局参数（Shader.SetGlobal*），故意放在 CBUFFER 之外。
+            // 放进去会被 Unity 归入 UnityPerMaterial，与 SetGlobal 写入冲突（SRP Batcher 要求逐材质常量）。
+            float  _ShockGlowEnabled;
+            half4  _ShockGlowColor;
+            float4 _ShockGlowParams;   // xyz = 墙世界位置, w = 影响半径
+            float4 _ShockGlowParams2;  // x = 强度, y = 衰减指数（预留）
 
             // Signed-distance function for a rounded rectangle in the XZ plane.
             // The mesh uses OUTWARD rounded corners (the arc bulges outside the rectangle).
@@ -401,6 +416,17 @@ Shader "MusicalSprite/GroundEdge"
                 float fogCoord = ComputeFogFactor(input.positionCS.z);
                 finalCol = MixFog(finalCol, fogCoord);
                 #endif
+
+                // ---- 冲击波辉光染色（P1）----
+                // 放在雾【之后】：地面被墙照亮的效果应该穿透雾，而不是被雾吃掉。
+                // 强度为 0 时整段短路，等于关闭（不影响原有画面）。
+                if (_ShockGlowEnabled > 0.5 && _ShockGlowParams2.x > 0.0001)
+                {
+                    float d = distance(worldPos, _ShockGlowParams.xyz);
+                    float atten = saturate(1.0 - d / max(0.0001, _ShockGlowParams.w));
+                    atten = atten * atten;
+                    finalCol += _ShockGlowColor.rgb * (atten * _ShockGlowParams2.x);
+                }
 
                 return float4(finalCol, 1.0);
             }

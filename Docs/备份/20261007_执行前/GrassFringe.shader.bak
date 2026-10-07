@@ -34,15 +34,6 @@ Shader "MusicalSprite/GrassFringe"
         [Header(Debug)]
         _DebugColor("Debug Tint", Color) = (0.2, 1.0, 0.2, 1)
         _DebugAmount("Debug Amount", Range(0, 1)) = 0.0
-
-        // ---- 冲击波辉光染色（P1 受光通道，由 ShockwavePreview 每帧用 Shader.SetGlobal* 写入）----
-        // 本项目场景全部是 Unlit/假光照，所以「被冲击波照亮」不走 URP 灯光系统，
-        // 而是由冲击波把自身世界位置 + 颜色写成全局参数，这里按距离衰减做加色。
-        // 放在雾之后，保证光晕不会被雾吃掉（光应该"穿透"雾照到草上）。
-        [Toggle] _ShockGlowEnabled("Shock Glow Enabled", Float) = 1
-        [HideInInspector] _ShockGlowColor("Shock Glow Color", Color) = (1, 0.5, 0.5, 1)
-        [HideInInspector] _ShockGlowParams("Shock Glow Params (xyz=pos, w=range)", Vector) = (0, -99, 0, 1)
-        [HideInInspector] _ShockGlowParams2("Shock Glow Params2 (x=strength, y=falloffPow, zw=)", Vector) = (0, 2, 0, 0)
     }
 
     SubShader
@@ -90,7 +81,6 @@ Shader "MusicalSprite/GrassFringe"
                 float2 uv         : TEXCOORD1;
                 float4 color      : TEXCOORD2;
                 float  heightNorm : TEXCOORD3;
-                float3 worldPos   : TEXCOORD4;   // 片元真实世界坐标（冲击波距离衰减用）
             };
 
             TEXTURE2D(_EdgeTex);
@@ -123,13 +113,6 @@ Shader "MusicalSprite/GrassFringe"
                 float4 _DebugColor;
                 float  _DebugAmount;
             CBUFFER_END
-
-            // 冲击波辉光：全局参数（Shader.SetGlobal*），故意放在 CBUFFER 之外。
-            // 放进去会被 Unity 归入 UnityPerMaterial，与 SetGlobal 写入冲突（SRP Batcher 要求逐材质常量）。
-            float  _ShockGlowEnabled;
-            half4  _ShockGlowColor;
-            float4 _ShockGlowParams;   // xyz = 墙世界位置, w = 影响半径
-            float4 _ShockGlowParams2;  // x = 强度, y = 衰减指数（预留）
 
             Varyings vert(Attributes input)
             {
@@ -165,7 +148,6 @@ Shader "MusicalSprite/GrassFringe"
                 output.uv = input.uv;
                 output.color = input.color;
                 output.heightNorm = input.localPos.y;
-                output.worldPos = worldPos;
                 return output;
             }
 
@@ -207,17 +189,6 @@ Shader "MusicalSprite/GrassFringe"
                 float fogCoord = ComputeFogFactor(input.positionCS.z);
                 col = MixFog(col, fogCoord);
                 #endif
-
-                // ---- 冲击波辉光染色（P1）----
-                // 放在雾【之后】：光应该穿透雾照亮草，而不是被雾衰减掉。
-                // 强度为 0 时整段短路，等于关闭（不影响原有画面）。
-                if (_ShockGlowEnabled > 0.5 && _ShockGlowParams2.x > 0.0001)
-                {
-                    float d = distance(input.worldPos, _ShockGlowParams.xyz);
-                    float atten = saturate(1.0 - d / max(0.0001, _ShockGlowParams.w));
-                    atten = atten * atten;
-                    col += _ShockGlowColor.rgb * (atten * _ShockGlowParams2.x);
-                }
 
                 return float4(col, 1.0);
             }
