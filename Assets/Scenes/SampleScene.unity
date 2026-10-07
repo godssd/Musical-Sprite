@@ -1386,70 +1386,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 300, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!21 &236146176
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarLeft
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0.0049
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 1
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 0
-    - _RippleScale: 0.15
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0.4
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 12
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.7075472, g: 0.10702395, b: 0, a: 1}
-    - _CrestColor: {r: 0.18867922, g: 0.057849765, b: 0.094645545, a: 1}
-    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
-    - _TopColor: {r: 1, g: 0.04214135, b: 0.033018887, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &256954785
 GameObject:
   m_ObjectHideFlags: 0
@@ -1654,7 +1590,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &264392927
+--- !u!21 &296377235
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
@@ -2208,7 +2144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1659141392}
+  m_Material: {fileID: 991270632}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -6447,6 +6383,70 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 300, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!21 &991270632
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarLeft_Ghost
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 0
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 0
+    - _RippleScale: 0
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 14
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
+    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
+    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &998732383
 GameObject:
   m_ObjectHideFlags: 0
@@ -8805,7 +8805,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 264392927}
+  m_Material: {fileID: 296377235}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -9858,6 +9858,70 @@ Transform:
   - {fileID: 1411842336}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!21 &1491423580
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_HPBarLiquid_HPBarRight_Ghost
+  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AmbientWave: 0
+    - _BlobFreq: 5.5
+    - _BlobIntensity: 0
+    - _BlobSoftness: 0.22
+    - _BlobThreshold: 0.42
+    - _ColorMask: 15
+    - _CrestIntensity: 0
+    - _CrestWidth: 0.08
+    - _EdgeSoftness: 0.004
+    - _Fill: 0
+    - _Flip: 1
+    - _RippleScale: 0
+    - _SloshFreq: 2.2
+    - _SloshSpeed: 7
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SurfaceDarkenRange: 0
+    - _SurfaceGlow: 0
+    - _TopGlossIntensity: 0
+    - _TopGlossRange: 0.22
+    - _UseUIAlphaClip: 0
+    - _WaveAmp: 0
+    - _WaveFreq: 14
+    - _WaveSpeed: 5
+    m_Colors:
+    - _BottomColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
+    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
+    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
+    - _TopColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &1498289322
 GameObject:
   m_ObjectHideFlags: 0
@@ -10018,70 +10082,6 @@ MonoBehaviour:
   labelGap: 12
   center: 1
   leftPadding: 22
---- !u!21 &1558372729
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarRight_Ghost
-  m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - _AmbientWave: 0
-    - _BlobFreq: 5.5
-    - _BlobIntensity: 0
-    - _BlobSoftness: 0.22
-    - _BlobThreshold: 0.42
-    - _ColorMask: 15
-    - _CrestIntensity: 0
-    - _CrestWidth: 0.08
-    - _EdgeSoftness: 0.004
-    - _Fill: 0
-    - _Flip: 1
-    - _RippleScale: 0
-    - _SloshFreq: 2.2
-    - _SloshSpeed: 7
-    - _Stencil: 0
-    - _StencilComp: 8
-    - _StencilOp: 0
-    - _StencilReadMask: 255
-    - _StencilWriteMask: 255
-    - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0
-    - _TopGlossIntensity: 0
-    - _TopGlossRange: 0.22
-    - _UseUIAlphaClip: 0
-    - _WaveAmp: 0
-    - _WaveFreq: 14
-    - _WaveSpeed: 5
-    m_Colors:
-    - _BottomColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
-    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
-    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
-    - _TopColor: {r: 0.8301887, g: 0.49811324, b: 0, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
-  m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!1 &1562076142
 GameObject:
   m_ObjectHideFlags: 0
@@ -10879,7 +10879,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 236146176}
+  m_Material: {fileID: 1755904202}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -10988,14 +10988,14 @@ RectTransform:
   m_AnchoredPosition: {x: 2.5, y: 0.5}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!21 &1659141392
+--- !u!21 &1755904202
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_HPBarLiquid_HPBarLeft_Ghost
+  m_Name: M_HPBarLiquid_HPBarLeft
   m_Shader: {fileID: 4800000, guid: 6d205192f27ef6a4096724753afdf538, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -11017,18 +11017,18 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AmbientWave: 0
+    - _AmbientWave: 0.0049
     - _BlobFreq: 5.5
     - _BlobIntensity: 0
     - _BlobSoftness: 0.22
     - _BlobThreshold: 0.42
     - _ColorMask: 15
-    - _CrestIntensity: 0
+    - _CrestIntensity: 1
     - _CrestWidth: 0.08
     - _EdgeSoftness: 0.004
     - _Fill: 0
     - _Flip: 0
-    - _RippleScale: 0
+    - _RippleScale: 0.15
     - _SloshFreq: 2.2
     - _SloshSpeed: 7
     - _Stencil: 0
@@ -11037,19 +11037,19 @@ Material:
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
     - _SurfaceDarkenRange: 0
-    - _SurfaceGlow: 0
+    - _SurfaceGlow: 0.4
     - _TopGlossIntensity: 0
     - _TopGlossRange: 0.22
     - _UseUIAlphaClip: 0
     - _WaveAmp: 0
-    - _WaveFreq: 14
+    - _WaveFreq: 12
     - _WaveSpeed: 5
     m_Colors:
-    - _BottomColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
-    - _CrestColor: {r: 1, g: 0.34999996, b: 0.24999997, a: 1}
-    - _SurfaceDarken: {r: 0.937, g: 0.624, b: 0.153, a: 1}
-    - _TopColor: {r: 0.8207547, g: 0.576651, b: 0, a: 1}
-    - _TopGlossColor: {r: 1, g: 0.21999997, b: 0.059999965, a: 1}
+    - _BottomColor: {r: 0.7075472, g: 0.10702395, b: 0, a: 1}
+    - _CrestColor: {r: 0.18867922, g: 0.057849765, b: 0.094645545, a: 1}
+    - _SurfaceDarken: {r: 1, g: 1, b: 1, a: 1}
+    - _TopColor: {r: 1, g: 0.04214135, b: 0.033018887, a: 1}
+    - _TopGlossColor: {r: 1, g: 0.15, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!1 &1761810944
@@ -12834,7 +12834,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 1558372729}
+  m_Material: {fileID: 1491423580}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -13582,66 +13582,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83640150aaa174d478283f958bf6b0e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  preview: {fileID: 9120000102}
-  particleTexture: {fileID: 2800000, guid: c33a968257bb2154e857376f2c830cea, type: 3}
-  autoCreateMaterials: 1
-  enableSpark: 1
-  sparkY: 0.35
-  sparkBaseRate: 6
-  sparkPerScale: 12
-  sparkSideZ: 2.2
-  sparkUp: 1.4
-  sparkSideX: 0.25
-  sparkLifetime: 0.45
-  sparkSize: 0.12
-  sparkBurstInterval: 0.2
-  sparkBurstCount: 6
-  sparkColorRed:
-    r: 1.8
-    g: 0.75
-    b: 0.65
-    a: 1
-  sparkColorBlue:
-    r: 0.65
-    g: 0.95
-    b: 1.9
-    a: 1
-  enableInject: 1
-  injectY: 0.45
-  injectRate: 30
-  injectSpeed: 1.6
-  injectFarBoost: 0.35
-  injectSize: 0.11
-  injectHalfWidthZ: 0.5
-  injectSpreadY: 0.35
-  enableInjectTrail: 1
-  trailLifetime: 0.75
-  trailWidth: 0.85
-  trailMinVertex: 0.03
-  enableDrift: 1
-  driftBaseRate: 12
-  driftPerScale: 10
-  driftSize: 0.09
-  driftLifetime: 1.4
-  driftRise: 0.35
-  driftSpreadZ: 0.8
-  driftBackPortion: 0.45
-  dissolveIdle: 0.06
-  dissolveAdvance: 0.22
-  _sparkRed: {fileID: 0}
-  _sparkBlue: {fileID: 0}
-  _injectRed: {fileID: 0}
-  _injectBlue: {fileID: 0}
-  _driftRed: {fileID: 0}
-  _driftBlue: {fileID: 0}
-  _matSparkR: {fileID: 0}
-  _matSparkB: {fileID: 0}
-  _matInjectR: {fileID: 0}
-  _matInjectB: {fileID: 0}
-  _matDriftR: {fileID: 0}
-  _matDriftB: {fileID: 0}
-  _sparkBurstTR: 0
-  _sparkBurstTB: 0
 --- !u!4 &2076386568
 Transform:
   m_ObjectHideFlags: 0
@@ -14883,6 +14823,11 @@ MonoBehaviour:
   enableBrightnessFx: 0
   glowPerEnlarge: 0.3
   opacityMax: 0.831
+  sceneGlowEnabled: 1
+  sceneGlowStrength: 0.35
+  sceneGlowRange: 12
+  sceneGlowBothSides: 1
+  previewInEditMode: 0
   scaleAtRest: 1
   scaleTiny: 1.05
   scaleAbove0_2: 1.1

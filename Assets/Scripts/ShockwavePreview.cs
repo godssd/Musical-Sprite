@@ -94,6 +94,16 @@ public class ShockwavePreview : MonoBehaviour
     [Tooltip("亮度上限：基础 Opacity + 前进加亮 + 撞击加亮 封顶值，防过曝")]
     [Range(0f, 1f)] public float opacityMax = 0.85f;
 
+    [Header("P1 场景染色：让场景与植被被冲击波的光影响")]
+    [Tooltip("总开关：把两堵墙的世界位置 + 颜色写成全局参数，\n场景 shader（ScenePropSprite / GrassFringe / GroundEdge）按距离衰减做加色。\n⛔ 本项目场景全部是 Unlit / 假光照，URP 灯光系统照不到它们，\n   所以这是唯一能让「光洒到场景上」生效的通路（且零实时光源开销）")]
+    public bool sceneGlowEnabled = true;
+    [Tooltip("染色强度：场景被照亮的加色量。0 = 关闭染色。建议从 0.25~0.5 起步，过高会像加了浓雾")]
+    [Range(0f, 1.5f)] public float sceneGlowStrength = 0.35f;
+    [Tooltip("影响半径（世界单位）：距离墙中心多远处染色衰减到 0。\n墙长约 6、高约 1.2，建议 3~6；太小只染到很近的一小块")]
+    public float sceneGlowRange = 4.5f;
+    [Tooltip("两侧同时开启：红墙与蓝墙都往场景投染色（近距离时叠加得更亮）")]
+    public bool sceneGlowBothSides = true;
+
     [Header("放大倍率表（按【累积距离 accum】分档；档间线性插值，平滑无硬边）")]
     [Tooltip("⚠ 唯一事实源：下面 6 个倍率就是『档位』本身。衰退时每降一档固定耗时 advanceDecayStepTime 秒。\n因为高档位之间的倍率差更大（1.5→1.3 是 0.2；1.1→1.05 只有 0.05），每档耗时相同 ⇒ 下降速度自然先快后慢")]
     public float scaleAtRest = 1.0f;     // accum = 0
@@ -122,6 +132,20 @@ public class ShockwavePreview : MonoBehaviour
     private Vector3 _redBaseScale, _blueBaseScale;
     private Vector3 _redPivot, _bluePivot;   // 墙 mesh 局部空间里的"贴中缝内侧边"点
     private float _redScale = 1f, _blueScale = 1f;
+
+    // 手动重捕获时为 true，跳过 CaptureBase 的洁净性校验（玩家明确表示"就按我现在的摆法"）
+    private bool _forceCapture = false;
+
+    // 启动时把 base / 世界坐标等关键数值打进 Console（排查"编辑器是否读到新场景"用）。
+    // 确认为多余后可关掉，不影响任何逻辑。
+    [SerializeField] private bool _dbgBootLog = true;
+
+    // 编辑器非运行状态下是否驱动预览。
+    // ⛔ 默认【关闭】：本类带 [ExecuteAlways]，开启会让编辑器里每帧写墙的 Transform，
+    //   而编辑器环境与运行时不同步（deltaTime / 呼吸相位 / 弹簧状态都不一样），
+    //   会把墙的位置写坏、在 Game 视图里看到巨大中缝（2026-10-07 连续四次事故的根因）。
+    //   仅在需要"不启动游戏就看冲击波预览"时才勾选，且用完记得关掉。
+    public bool previewInEditMode = false;
 
     // 扣血/补分机制（ApplyCatchUp）触发时：劣势方冲击波"闪白一次"（由 ScoreManager 直呼 OnScoreAdjustPush 触发）。
     // 该侧"不放大"由【忽略前进】计时负责（见 _redIgnoreT）：这段时间的位移不被认定为前进，
@@ -199,16 +223,27 @@ public class ShockwavePreview : MonoBehaviour
     }
 
     [ContextMenu("Recapture Base Transforms")]
-    void RecaptureBaseMenu() { CaptureBase(); Debug.Log("[ShockwavePreview] 已重新捕获 RedWall/BlueWall 与根节点的手动 Transform 作为 base", this); }
+    /// 手动重捕获（Inspector 菜单）。会跳过洁净性校验 —— 玩家的本意就是「我摆好了，照我现在的来」。
+    /// ⚠ 请务必先把两墙摆到【中缝合拢、倍率 1.0】的状态再点，否则会把临时位移锁成 base。
+    [ContextMenu("重新捕获 base（手动 · 跳过洁净校验）")]
+    void RecaptureBaseMenu()
+    {
+        _forceCapture = true;
+        CaptureBase();
+        _forceCapture = false;
+        Debug.Log("[ShockwavePreview] 已重新捕获 RedWall/BlueWall 与根节点的手动 Transform 作为 base", this);
+    }
 #endif
 
+    // ⛔⛔【2026-10-07 事故根因之二】OnValidate 在编辑器里【每次 Inspector 改动、脚本重编译后】都会触发。
+    //   旧实现里 `if (!Application.isPlaying) CaptureBase();` 恰好命中编辑器态 ——
+    //   而此时墙可能已被 ApplyScale 写入临时位移（呼吸/后弹），CaptureBase 把它锁成 base。
+    //   现在编辑器态【完全不执行任何驱动/捕获】，场景里玩家摆好的 Transform 原样保留。
     void OnValidate()
     {
+        if (!Application.isPlaying) return;   // 编辑器态：不动墙
         EnsureWalls();
         ApplyToWalls();
-        // ⛔ Play 模式下禁止 OnValidate 调用 CaptureBase：用户在 Inspector 调参时会触发 OnValidate，
-        //    此时墙可能已被 ApplyScale 放大 / 或被 autoFit 污染，CaptureBase 会把异常值锁成新的 base。
-        if (!Application.isPlaying) CaptureBase();
     }
     // ⛔ autoFit 与本品互斥：它每帧按 (frontX - backX) 覆盖墙的 localScale，而 frontX 跟着中缝走，
     //    会把被推入侧的墙腰斩（实测 156 → 76，≈0.49 倍）。因此必须在 CaptureBase 之前强制关闭。
@@ -218,6 +253,25 @@ public class ShockwavePreview : MonoBehaviour
         EnsureWallAutoFitDisabled();
         ApplyToWalls();
         CaptureBase();
+
+        // ---- 启动自检：把关键数值一次性打进Console，用于确认"编辑器读到的场景"是不是预期值 ----
+        // ⚠ 排查中缝事故时加的诊断：若打印出的 localPosition.x 不是 ±1.98 左右，
+        //   说明 Unity 内存里的场景是旧值（磁盘改动未被重新加载），而不是代码问题。
+        if (Application.isPlaying && _dbgBootLog)
+        {
+            Debug.Log(
+                $"[ShockwavePreview] 启动自检\n" +
+                $"  root localScale = {transform.localScale}\n" +
+                $"  root localPos= {transform.localPosition}\n" +
+                $"  RedWall  localPos = {(_redBasePos - Vector3.zero).ToString()}\n" +
+                $"  BlueWall localPos = {(_blueBasePos - Vector3.zero).ToString()}\n" +
+                $"  RedWall  worldPos  = {(redWall != null ? redWall.position.ToString() : "null")}\n" +
+                $"  BlueWall worldPos  = {(blueWall != null ? blueWall.position.ToString() : "null")}\n" +
+                $"  中线 SeamX= {SeamX}\n" +
+                $"  两墙世界间距= {(redWall != null && blueWall != null) ? Vector3.Distance(redWall.position, blueWall.position).ToString("F4") : "n/a"}\n" +
+                $"  墙世界宽度= {(redWall != null ? (redWall.localScale.x * (redWall.GetComponent<MeshFilter>()?.sharedMesh?.bounds.size.x ?? 0f)).ToString("F3") : "n/a")}",
+                this);
+        }
     }
 
     void Start()
@@ -225,6 +279,8 @@ public class ShockwavePreview : MonoBehaviour
         // 运行时兜底：centerLine / ScoreManager 若忘记拖拽或晚于本脚本创建，这里补上
         if (centerLine == null) centerLine = FindFirstObjectByType<BattleCenterLine>();
         BindScoreEvents();
+        // P1 场景染色：缓存两墙的发光色（用户在 Inspector 改 glowColor 后本帧即可生效）
+        CacheGlowColors();
     }
 
     /// <summary>墙的 ShockwaveMeshGenerator.autoFit 若开启，与本品 Transform 控制冲突，强制关闭并继续运行。</summary>
@@ -250,6 +306,10 @@ public class ShockwavePreview : MonoBehaviour
             _scoreManagerRef.OnScoreGained -= HandleScoreGained;
             _scoreManagerRef = null;
         }
+        // P1 场景染色：Shader.SetGlobal 是【跨对象全局】状态，不随本组件销毁而清除。
+        // 不清的话退出 Play 后场景物件会一直带着最后一次的染色（编辑器里也残留）。
+        Shader.SetGlobalFloat(ShockGlowParams2Id, 0f);
+        Shader.SetGlobalFloat(ShockGlowEnabledId, 0f);
     }
 
     /// <summary>P4A：绑定得分事件（运行时兜底查找，ScoreManager 后于本脚本创建也能接上）。</summary>
@@ -287,9 +347,22 @@ public class ShockwavePreview : MonoBehaviour
 
     private void DriveRuntime()
     {
-        // 编辑器静止（未接 centerLine 且未设 previewTargetX）时保留手动 Transform，不驱动
-        bool previewing = (centerLine != null) || (previewTargetX != 0f);
-        if (!Application.isPlaying && !previewing) return;
+        // ⛔⛔【2026-10-07 事故根因 · 必须保留此守卫的语义】
+        //   本类带 [ExecuteAlways] -> Update() 在【编辑器非运行状态】也会每帧执行。
+        //   旧守卫是 `if (!Application.isPlaying && !previewing) return;`：
+        //   只要 centerLine 连着（场景里就连着），previewing 恒为 true，
+        //   于是编辑器里 DriveRuntime 也【完整跑】，ApplyScale() 每帧写墙的 localPosition。
+        //   而此时 Time.deltaTime / 呼吸相位 / 弹簧状态与运行时不同步，
+        //   墙的位置会被编辑器环境写坏 -> 用户在非运行状态就看到巨大中缝。
+        //   这就是「编辑器里也是坏的」以及「改了文件也没用」的真正原因。
+        //
+        //   现在改为：编辑器非运行状态【一律不驱动】。预览功能请用下面的 previewTargetX，
+        //   它需要在 Inspector 里显式勾选/启用，避免"连着 centerLine 就自动驱动"的隐性行为。
+        if (!Application.isPlaying)
+        {
+            // 编辑器预览：仅当玩家显式开启 previewInEditMode 时才驱动
+            if (!previewInEditMode) return;
+        }
 
         float curX = SeamX;
         float dt = Time.deltaTime;
@@ -358,6 +431,12 @@ public class ShockwavePreview : MonoBehaviour
             || Mathf.Abs(_redScale  - _lastAppliedRedScale)  > 1e-5f
             || Mathf.Abs(_blueScale - _lastAppliedBlueScale) > 1e-5f
             || _redAnticipOff != 0f || _blueAnticipOff != 0f;
+
+        // ⚠ 场景染色必须在 needWrite 提前 return【之前】调用。
+        //   needWrite 为假 = 墙 Transform 本帧不动，但全局染色参数是「状态量」而非「增量」——
+        //   漏写会让场景一直停在上一次的染色值（墙动了、场景没跟着变，且退出 Play 后残留）。
+        ApplySceneGlow();
+
         if (!needWrite) return;
 
         // 呼吸位移：红墙内侧边向 -x 退、蓝墙向 +x 退 -> 缝隙变大（张开）；k=0 时两墙回到 base 位置（合拢最紧）
@@ -707,6 +786,74 @@ public class ShockwavePreview : MonoBehaviour
         if (m != null) m.SetFloat(prop, v);
     }
 
+    // ==================================================================
+    // P1 场景染色：让场景与植被被冲击波的光影响
+    //
+    // ⛔ 为什么不用 URP 灯光：本项目场景的 shader（ScenePropSprite / GrassFringe / GroundEdge）
+    //    全部是 Unlit 或「假光照」（手写常量 lightDir），URP 光照系统照不到它们 ——
+    //    挂真实灯是纯浪费。所以改走全局参数 + shader 内距离衰减：
+    //      - 不产生任何实时光源开销（移动端友好）
+    //      - 形状完全可控（比点光源的球形衰减更适合长条拱形）
+    //      - 墙移动时光效自动跟随（每帧写全局）
+    //
+    // 两墙都在场景里，各自用自己的位置算距离；取【较亮的那一侧】写入全局，
+    // 这样近墙的一侧染色更明显，且不需要在 shader 里循环两次。
+    // ==================================================================
+    private static readonly int ShockGlowColorId = Shader.PropertyToID("_ShockGlowColor");
+    private static readonly int ShockGlowParamsId = Shader.PropertyToID("_ShockGlowParams");
+    private static readonly int ShockGlowParams2Id = Shader.PropertyToID("_ShockGlowParams2");
+    private static readonly int ShockGlowEnabledId = Shader.PropertyToID("_ShockGlowEnabled");
+
+    private void ApplySceneGlow()
+    {
+        if (!sceneGlowEnabled || sceneGlowStrength <= 0.0001f)
+        {
+            // 关闭时把强度写 0（而不是恢复 Enabled=0）—— shader 侧会整段短路，画面完全回到原样
+            Shader.SetGlobalFloat(ShockGlowParams2Id, 0f);
+            Shader.SetGlobalFloat(ShockGlowEnabledId, 0f);
+            return;
+        }
+        Shader.SetGlobalFloat(ShockGlowEnabledId, 1f);
+
+        // ---- 选贡献更强的一侧：放大倍率越大 => 能量越强 => 染色越亮 ----
+        Transform src = redWall;
+        float srcScale = _redScale;
+        Color srcColor = _redGlowColor;
+        if (!sceneGlowBothSides && _blueScale > _redScale)
+        {
+            src = blueWall; srcScale = _blueScale; srcColor = _blueGlowColor;
+        }
+        else if (sceneGlowBothSides && _blueScale > _redScale)
+        {
+            // 两侧都开：取当前倍率更高的一侧作为主光源，另一侧的染色由 range 自然覆盖
+            src = blueWall; srcScale = _blueScale; srcColor = _blueGlowColor;
+        }
+        if (src == null) return;
+
+        // 强度随放大倍率上升：1.0 倍时给 sceneGlowStrength，1.5 倍时约 1.4 倍。
+        // ⛔ 不改变墙自身亮度，只改「照到场景上的量」。
+        float k = Mathf.Clamp(0.6f + 0.8f * srcScale, 0.4f, 1.8f);
+        float strength = sceneGlowStrength * k;
+
+        Vector3 p = src.position;
+        // 用世界位置直接写入（场景 shader 拿的是片元世界坐标）
+        Shader.SetGlobalVector(ShockGlowParamsId, new Vector4(p.x, p.y, p.z, Mathf.Max(0.0001f, sceneGlowRange)));
+        Shader.SetGlobalVector(ShockGlowParams2Id, new Vector4(strength, 2f, 0f, 0f));
+        Shader.SetGlobalColor(ShockGlowColorId, srcColor);
+    }
+
+    /// <summary>墙的发光颜色（取自 ShockwaveMeshGenerator.glowColor），运行时缓存一次每帧取用。</summary>
+    private Color _redGlowColor = new Color(1f, 0.5f, 0.5f, 1f);
+    private Color _blueGlowColor = new Color(0.4f, 0.6f, 1f, 1f);
+
+    private void CacheGlowColors()
+    {
+        var rg = redWall != null ? redWall.GetComponent<ShockwaveMeshGenerator>() : null;
+        var bg = blueWall != null ? blueWall.GetComponent<ShockwaveMeshGenerator>() : null;
+        if (rg != null) _redGlowColor = rg.glowColor;
+        if (bg != null) _blueGlowColor = bg.glowColor;
+    }
+
     /// <summary>绕墙 mesh 局部内侧边 pivot 缩放：保持中缝侧边不动，向外扩，间隙不变。
     /// ⛔【通道分离铁律】f 只来自「累积距离 accum」，extra 只来自「呼吸开合 + 回弹弹开」：
     ///    - f     -> 只写 localScale（大小通道）
@@ -716,14 +863,45 @@ public class ShockwavePreview : MonoBehaviour
     {
         if (wall == null) return;
         wall.localScale = new Vector3(baseScale.x * f, baseScale.y * f, baseScale.z * f);
-        Vector3 offset = baseRot * new Vector3(baseScale.x * meshPivot.x, baseScale.y * meshPivot.y, baseScale.z * meshPivot.z);
-        wall.localPosition = basePos + offset * (1f - f) + extra;
+        // 位移通道：只接受 extra（呼吸开合 + 回弹弹开）。
+        // ⚠【P1 根治】这里原本还有 `+ offset * (1f - f)`，其中 offset = baseRot*(baseScale*meshPivot)。
+        //   因 baseScale.x ≈ 156.84 且 pivot 在端点，offset.x 高达 ±3 —— 倍率 f 每变化一点，
+        //   localPosition 就会跳动数个单位。于是只要 CaptureBase() 恰好在 f != 1（或 extra != 0）
+        //   的那一帧执行，被抬起的 localPosition 就被【永久锁成 base】，之后 f 回到 1.0
+        //   墙也停在抬高处 -> 中缝永久张开（实测 x 由 ±1.984 锁成 ±3.718，缝张开 3.47）。
+        //   该坑连续发生两次（往场景写 haloWidth / 写 sceneGlow* 都会触发重编译 -> Awake 重跑）。
+        // 现在 offset 项【彻底移除】：localPosition 只由 extra 驱动，与倍率完全解耦。
+        wall.localPosition = basePos + extra;
     }
 
 
-    /// <summary>捕获你手动调好的 Transform 作为 base；并自动算出每堵墙"贴中缝内侧边"在 mesh 局部空间的坐标。</summary>
+    /// <summary>捕获你手动调好的 Transform 作为 base；并自动算出每堵墙"贴中缝内侧边"在 mesh 局部空间的坐标。
+    /// ⛔【P1 根治 · 第二道防线】捕获前做【洁净性校验】：
+    ///   base 必须是在「倍率 f = 1、呼吸与后弹偏移都为 0」这个静止态下取得的。
+    ///   否则捕获到的 localPosition 会带着当时的临时位移，之后每帧都被 ApplyScale 原样还原 ->
+    ///   墙永久停在偏移位置（中缝再也合不拢）。
+    ///   两次事故实测：x 从 ±1.984 被锁成 ±3.718，反推 f = 1.578，正是"在放大态下捕获"的结果。
+    /// </summary>
     private void CaptureBase()
     {
+        // ⚠【2026-10-07 修正】这里曾加过「非静止状态则拒绝捕获」的校验，**它本身是 bug，已删除**：
+        //   拒绝捕获时 _redBasePos/_blueBasePos 会保持 Vector3.zero（未初始化），
+        //   ApplyScale 随后把墙写到原点 -> 两墙叠到中线，表现为"墙贴中线 + 中缝异常"。
+        //   更根本的问题是：既然 ApplyScale 已经【不再把倍率写进 localPosition】，
+        //   那么在任意时刻捕获 localPosition 都是安全的 —— 不需要任何"洁净性"校验。
+        //   保留捕获（并在 Play 模式下先归零临时偏移再捕获），确保 base 永远来自真实摆位。
+        if (Application.isPlaying && !_forceCapture)
+        {
+            // Play 模式下场景里的值可能已被临时位移改写（呼吸 / 后弹）。
+            // 先把墙【退回到净位置】（减掉当前实际偏移），再捕获 —— 这样捕获到的 base 是干净的。
+            float breathNow = breathGapAmplitude * _breathK * _breathFade * 0.5f;
+            if (redWall != null)
+                redWall.localPosition -= new Vector3(breathNow + _redAnticipOff, 0f, 0f);
+            if (blueWall != null)
+                blueWall.localPosition -= new Vector3(breathNow - _blueAnticipOff, 0f, 0f);
+            _breathK = 0f; _breathFade = 0f;
+            _redAnticipOff = 0f; _blueAnticipOff = 0f;
+        }
         var rg = redWall != null ? redWall.GetComponent<ShockwaveMeshGenerator>() : null;
         var bg = blueWall != null ? blueWall.GetComponent<ShockwaveMeshGenerator>() : null;
         // ⛔ autoFit 与本品互斥：若仍有开启，强制关闭后再捕获（避免 base 被污染）。
