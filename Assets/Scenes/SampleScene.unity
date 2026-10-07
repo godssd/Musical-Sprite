@@ -14859,31 +14859,19 @@ MonoBehaviour:
   rightEdge: 6
   centerX: 0
   centerGap: 0.05
-  autoClash: 0
-  clashDuration: 1.5
-  clashProgress: 0
   centerLine: {fileID: 217276733}
   previewTargetX: 0
-  useSpringModel: 1
   springStiffness: 80
   springDampingRatio: 0.9
   springMaxVelocity: 8
   forwardAnticipationEnable: 1
   forwardAnticipationTime: 0.5
   forwardAnticipationPullback: 0.8
-  advanceStateEnable: 1
   advanceWindowTime: 3
   advanceAccumThreshold: 0.01
   advanceDecayStepTime: 1
   ignoreAdvanceDuration: 1.2
-  scoreEventDriven: 1
   scoreEventApplyRate: 5
-  anticipAffectsScale: 0
-  forwardAnticipationScaleRatio: 0.92
-  enlargeTime: 0.35
-  enlargeMinSpeed: 0.6
-  shrinkTime: 0.5
-  shrinkMinSpeed: 0.3
   flashIntensity: 1
   flashDuration: 0.3
   idleBreathDelay: 1
