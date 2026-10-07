@@ -136,6 +136,9 @@ public class ShockwavePreview : MonoBehaviour
     // 手动重捕获时为 true，跳过 CaptureBase 的洁净性校验（玩家明确表示"就按我现在的摆法"）
     private bool _forceCapture = false;
 
+    // 是否已经捕获过 base。捕获后不再被运行时自动覆盖（防污染）。
+    private bool _baseCaptured = false;
+
     // 启动时把 base / 世界坐标等关键数值打进 Console（排查"编辑器是否读到新场景"用）。
     // 确认为多余后可关掉，不影响任何逻辑。
     [SerializeField] private bool _dbgBootLog = true;
@@ -252,26 +255,64 @@ public class ShockwavePreview : MonoBehaviour
         EnsureWalls();
         EnsureWallAutoFitDisabled();
         ApplyToWalls();
-        CaptureBase();
 
-        // ---- 启动自检：把关键数值一次性打进Console，用于确认"编辑器读到的场景"是不是预期值 ----
-        // ⚠ 排查中缝事故时加的诊断：若打印出的 localPosition.x 不是 ±1.98 左右，
-        //   说明 Unity 内存里的场景是旧值（磁盘改动未被重新加载），而不是代码问题。
+        // ⛔⛔【2026-10-07 根治 · 关键】运行时【不】重新捕获 base。
+        //   base 必须来自「f = 1、extra = 0、无运行时位移」的静止态。
+        //   旧实现在这里调 CaptureBase()，而此时 ApplyScale 可能已写过墙（呼吸/后弹/倍率），
+        //   于是把这个临时值锁成 base —— 因为 offset.x ≈ ±3.0，误差被放大数个单位，
+        //   表现为中缝永久张开（±1.984 被锁成 ±3.718，实测反推 f = 1.578）。
+        //
+        //   现在：Awake 只在「确实没捕获过 base」时（首次运行/场景未加载）才捕获，
+        //   且必须确认此刻两墙处于静止态；否则保留场景里已被玩家摆好的值。
+        if (!_baseCaptured)
+        {
+            if (IsWallsAtRest(out string why))
+            {
+                CaptureBase();
+            }
+            else
+            {
+                Debug.LogWarning("[ShockwavePreview] Awake 时检测到两墙不在静止态（" + why
+                    + "），已跳过 base 捕获并沿用场景中的值。"
+                    + "若墙位置不对，请在两墙摆好且无呼吸/后弹时，用 Inspector 右键菜单『重新捕获 base』手动触发。", this);
+            }
+        }
+
+        // ---- 启动自检：把关键数值一次性打进 Console（只读，不改任何状态）----
+        // 用于确认"编辑器读到的场景"是不是预期值。若打印的 localPosition.x 不是 +-1.98 左右，
+        // 说明 Unity 内存里存的是旧值（磁盘改动未被重新加载），而不是代码问题。
         if (Application.isPlaying && _dbgBootLog)
         {
-            Debug.Log(
-                $"[ShockwavePreview] 启动自检\n" +
-                $"  root localScale = {transform.localScale}\n" +
-                $"  root localPos= {transform.localPosition}\n" +
-                $"  RedWall  localPos = {(_redBasePos - Vector3.zero).ToString()}\n" +
-                $"  BlueWall localPos = {(_blueBasePos - Vector3.zero).ToString()}\n" +
-                $"  RedWall  worldPos  = {(redWall != null ? redWall.position.ToString() : "null")}\n" +
-                $"  BlueWall worldPos  = {(blueWall != null ? blueWall.position.ToString() : "null")}\n" +
-                $"  中线 SeamX= {SeamX}\n" +
-                $"  两墙世界间距= {(redWall != null && blueWall != null) ? Vector3.Distance(redWall.position, blueWall.position).ToString("F4") : "n/a"}\n" +
-                $"  墙世界宽度= {(redWall != null ? (redWall.localScale.x * (redWall.GetComponent<MeshFilter>()?.sharedMesh?.bounds.size.x ?? 0f)).ToString("F3") : "n/a")}",
-                this);
+            Debug.Log(BuildBootSelfCheckReport(), this);
         }
+    }
+
+    /// <summary>生成启动自检文本。全部走字符串拼接，不用插值表达式 ——
+    /// Unity 的 C# 版本在"插值里嵌三元/字符串字面量"时容易报 CS8076 / CS0361。</summary>
+    private string BuildBootSelfCheckReport()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("[ShockwavePreview] 启动自检");
+        sb.AppendLine("  root localScale = " + transform.localScale);
+        sb.AppendLine("  root localPos   = " + transform.localPosition);
+        sb.AppendLine("  RedWall  localPos = " + _redBasePos);
+        sb.AppendLine("  BlueWall localPos = " + _blueBasePos);
+        sb.AppendLine("  RedWall  worldPos = " + (redWall  != null ? redWall.position.ToString()  : "<null>"));
+        sb.AppendLine("  BlueWall worldPos = " + (blueWall != null ? blueWall.position.ToString() : "<null>"));
+        sb.AppendLine("  中线 SeamX        = " + SeamX);
+
+        if (redWall != null && blueWall != null)
+            sb.AppendLine("  两墙世界间距      = " + Vector3.Distance(redWall.position, blueWall.position).ToString("F4"));
+
+        if (redWall != null)
+        {
+            var mf = redWall.GetComponent<MeshFilter>();
+            float meshW = (mf != null && mf.sharedMesh != null) ? mf.sharedMesh.bounds.size.x : 0f;
+            float worldW = redWall.localScale.x * meshW;
+            sb.AppendLine("  红墙 mesh 局部宽  = " + meshW.ToString("F5"));
+            sb.AppendLine("  红墙 世界宽(估算) = " + worldW.ToString("F3"));
+        }
+        return sb.ToString();
     }
 
     void Start()
@@ -863,15 +904,20 @@ public class ShockwavePreview : MonoBehaviour
     {
         if (wall == null) return;
         wall.localScale = new Vector3(baseScale.x * f, baseScale.y * f, baseScale.z * f);
-        // 位移通道：只接受 extra（呼吸开合 + 回弹弹开）。
-        // ⚠【P1 根治】这里原本还有 `+ offset * (1f - f)`，其中 offset = baseRot*(baseScale*meshPivot)。
-        //   因 baseScale.x ≈ 156.84 且 pivot 在端点，offset.x 高达 ±3 —— 倍率 f 每变化一点，
-        //   localPosition 就会跳动数个单位。于是只要 CaptureBase() 恰好在 f != 1（或 extra != 0）
-        //   的那一帧执行，被抬起的 localPosition 就被【永久锁成 base】，之后 f 回到 1.0
-        //   墙也停在抬高处 -> 中缝永久张开（实测 x 由 ±1.984 锁成 ±3.718，缝张开 3.47）。
-        //   该坑连续发生两次（往场景写 haloWidth / 写 sceneGlow* 都会触发重编译 -> Awake 重跑）。
-        // 现在 offset 项【彻底移除】：localPosition 只由 extra 驱动，与倍率完全解耦。
-        wall.localPosition = basePos + extra;
+        // ---- pivot 缩放补偿（2026-10-07 曾被我误删，已恢复）----
+        //   功能本体：绕「贴中缝的内侧边」缩放 —— offset*(1-f) 让墙放大时内侧边仍钉在中缝上，
+        //   墙只向外扩、不侵入中缝。这是"大小变化不改变中缝宽度"的实现基础，绝不能删。
+        //
+        //   曾被删除的原因（不是该行本身有问题，而是捕获时机有问题）：
+        //   baseScale.x ≈ 156.84 且 pivot 在 mesh 端点 -> offset.x = ±3.0。
+        //   CaptureBase() 若在 f != 1 时执行，会把这个随 f 变化的补偿量锁成 base。
+        //   根治方案【不是删补偿】，而是保证 base 一定在 f = 1、extra = 0 的静止态捕获：
+        //     · 编辑器态：OnValidate / ContextMenu 手动捕获 —— 此时无运行时位移，安全。
+        //     · 运行时Awake：不再捕获 base（直接用场景里已正确的值）。
+        Vector3 offset = baseRot * new Vector3(baseScale.x * meshPivot.x,
+                                               baseScale.y * meshPivot.y,
+                                               baseScale.z * meshPivot.z);
+        wall.localPosition = basePos + offset * (1f - f) + extra;
     }
 
 
@@ -882,6 +928,32 @@ public class ShockwavePreview : MonoBehaviour
     ///   墙永久停在偏移位置（中缝再也合不拢）。
     ///   两次事故实测：x 从 ±1.984 被锁成 ±3.718，反推 f = 1.578，正是"在放大态下捕获"的结果。
     /// </summary>
+    /// <summary>判断两墙此刻是否处于「静止态」：倍率已回到 1、且没有呼吸/后弹的临时位移。
+    /// 只有静止态才能安全捕获 base —— 否则会把随 f 变化的 pivot 补偿量锁死。
+    /// why（out）：不静止的原因，用于日志。</summary>
+    private bool IsWallsAtRest(out string why)
+    {
+        if (Mathf.Abs(_redScale - 1f) > 0.001f || Mathf.Abs(_blueScale - 1f) > 0.001f)
+        {
+            why = "倍率未回到 1（红 " + _redScale.ToString("F3") + " / 蓝 " + _blueScale.ToString("F3") + "）";
+            return false;
+        }
+        float breathOff = breathGapAmplitude * _breathK * _breathFade * 0.5f;
+        if (Mathf.Abs(breathOff) > 1e-4f)
+        {
+            why = "呼吸开合偏移非零（" + breathOff.ToString("F4") + "）";
+            return false;
+        }
+        if (Mathf.Abs(_redAnticipOff) > 1e-4f || Mathf.Abs(_blueAnticipOff) > 1e-4f)
+        {
+            why = "前进预备后弹偏移非零（红 " + _redAnticipOff.ToString("F4")
+                + " / 蓝 " + _blueAnticipOff.ToString("F4") + "）";
+            return false;
+        }
+        why = "";
+        return true;
+    }
+
     private void CaptureBase()
     {
         // ⚠【2026-10-07 修正】这里曾加过「非静止状态则拒绝捕获」的校验，**它本身是 bug，已删除**：
@@ -890,18 +962,8 @@ public class ShockwavePreview : MonoBehaviour
         //   更根本的问题是：既然 ApplyScale 已经【不再把倍率写进 localPosition】，
         //   那么在任意时刻捕获 localPosition 都是安全的 —— 不需要任何"洁净性"校验。
         //   保留捕获（并在 Play 模式下先归零临时偏移再捕获），确保 base 永远来自真实摆位。
-        if (Application.isPlaying && !_forceCapture)
-        {
-            // Play 模式下场景里的值可能已被临时位移改写（呼吸 / 后弹）。
-            // 先把墙【退回到净位置】（减掉当前实际偏移），再捕获 —— 这样捕获到的 base 是干净的。
-            float breathNow = breathGapAmplitude * _breathK * _breathFade * 0.5f;
-            if (redWall != null)
-                redWall.localPosition -= new Vector3(breathNow + _redAnticipOff, 0f, 0f);
-            if (blueWall != null)
-                blueWall.localPosition -= new Vector3(breathNow - _blueAnticipOff, 0f, 0f);
-            _breathK = 0f; _breathFade = 0f;
-            _redAnticipOff = 0f; _blueAnticipOff = 0f;
-        }
+        // ⛔ 不再做任何"先把墙退回到净位置"的操作 —— 那会真的修改场景里的 Transform（副作用）。
+        //   base 的正确性由【调用时机】保证：Awake 只在 IsWallsAtRest() 为真时调用本方法。
         var rg = redWall != null ? redWall.GetComponent<ShockwaveMeshGenerator>() : null;
         var bg = blueWall != null ? blueWall.GetComponent<ShockwaveMeshGenerator>() : null;
         // ⛔ autoFit 与本品互斥：若仍有开启，强制关闭后再捕获（避免 base 被污染）。
@@ -954,6 +1016,9 @@ public class ShockwavePreview : MonoBehaviour
         // 对峙静止判定 / 已应用倍率 归零
         _idleTimer = 0f; _lastCenterX = (centerLine != null) ? centerLine.currentX : centerX;
         _lastAppliedRedScale = 1f; _lastAppliedBlueScale = 1f;
+
+        // 已捕获 —— 运行时不再自动覆盖 base（防污染，见 Awake 注释）
+        _baseCaptured = true;
     }
 
     /// <summary>自动找墙 mesh 局部坐标里、落在"朝中缝一侧"极值处的顶点（红墙=世界 +X 极值，蓝墙=世界 -X 极值）。</summary>
@@ -1016,8 +1081,11 @@ public class ShockwavePreview : MonoBehaviour
 
         if (count > 1)
         {
-            Debug.LogWarning($"[ShockwavePreview] 发现 {count} 个名为 '{name}' 的子物体。"
-                + $"已优先使用 {(withMesh != null ? "带 Mesh" : "第一个")}。"
+            // ⚠ 不用插值 + 内嵌三元/字符串字面量：Unity 的 C# 版本在 "$...{(x ? "a" : "b")}..."
+            //   这种写法下会报 CS8076 / CS0361（插值里嵌字符串字面量会被当成结束插值）。
+            string which = (withMesh != null) ? "带 Mesh" : "第一个";
+            Debug.LogWarning("[ShockwavePreview] 发现 " + count + " 个名为 '" + name + "' 的子物体。"
+                + "已优先使用 " + which + "。"
                 + "建议 Hierarchy 里只保留一个手动调好的墙，删除脚本误创建的空对象。", this);
         }
 
