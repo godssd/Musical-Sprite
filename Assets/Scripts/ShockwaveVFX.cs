@@ -187,8 +187,10 @@ public class ShockwaveVFX : MonoBehaviour
         sh.randomDirectionAmount = 0f;
 
         // 关闭内置速度/受力模块：我们每帧手动写 velocity，避免和内置模拟打架
-        ps.velocityOverLifetime.enabled = false;
-        ps.forceOverLifetime.enabled = false;
+        var vel = ps.velocityOverLifetime;
+        vel.enabled = false;
+        var force = ps.forceOverLifetime;
+        force.enabled = false;
 
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.sharedMaterial = mat;
