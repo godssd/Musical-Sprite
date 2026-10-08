@@ -41,6 +41,12 @@ public class ShockwavePreview : MonoBehaviour
     //   现【已从守卫中移除】：非运行态一律不驱动，详见 DriveRuntime 开头注释。
     [HideInInspector] public float previewTargetX = 0f;   // 保留字段仅为不破坏旧场景序列化
 
+    [Header("编辑器预览（关闭时编辑器绝不改墙的 Transform）")]
+    [Tooltip("勾上后，编辑器（非 Play）里也会驱动冲击波，可以实时调参并【保存到场景】。\n"+
+             "⚠ 关闭时编辑器完全不碰墙，你摆好的 Transform 原样保留 —— 推荐调参时打开、调完关闭。\n"+
+             "⚠ 别在开着它的时候手动拖动两墙（会被脚本覆盖）")]
+    public bool previewInEditMode = false;
+
     [Header("墙形状（同时作用于两堵墙；默认 1 = 完全保持你当前调好的粗细/高度/纵深）")]
     [Tooltip("沿推进方向（X）的粗细倍率。因为缩放是绕『贴中缝的内侧边』pivot 进行的，\n所以调大它，墙会往【两侧外扩】，中缝宽度保持不变。\n1 = 保持当前；1.5 = 比现在粗 50%；0.5 = 变细一半")]
     [Range(0.2f, 3f)] public float wallWidthScaleX = 1f;
@@ -233,9 +239,9 @@ public class ShockwavePreview : MonoBehaviour
     {
         EnsureWalls();
         ApplyToWalls();
-        // 非 Play 态：墙的 Transform 不会被 DriveRuntime 改写，此刻捕获 base 是安全的。
-        // 这也是「墙形状系数」在编辑器里能实时看到效果的原因（它只在 CaptureBase 里生效）。
-        // ⛔ Play 态下【不】捕获：此时墙可能已被 ApplyScale 写入临时位移，捕获会污染 base。
+        // 非 Play 态：墙的 Transform 只由previewInEditMode 驱动，
+        // 此刻捕获 base 是安全的 —— 这让「墙形状系数」在编辑态就能实时看到效果并保存。
+        // ⛔ Play 态下【不】捕获：此时墙已被 ApplyScale 写入临时位移，捕获会污染 base。
         if (!Application.isPlaying) CaptureBase();
     }
     // ⛔ autoFit 与本品互斥：它每帧按 (frontX - backX) 覆盖墙的 localScale，而 frontX 跟着中缝走，
@@ -326,11 +332,10 @@ public class ShockwavePreview : MonoBehaviour
         //   而 previewing 依赖「场景里连着的引用」，在真实场景里几乎恒为 true -> 守卫形同虚设
         //   -> 编辑器里完整驱动 DriveRuntime，墙的 Transform 被写坏且无法自动恢复。
         //
-        //   现在：编辑器非运行状态【一律不驱动】。玩家在编辑器里摆好的 Transform 原样保留。
-        //   如需看动态效果，请进 Play 模式。
-        if (!Application.isPlaying) return;
-        bool previewing = (centerLine != null) || (previewTargetX != 0f);
-        if (!Application.isPlaying && !previewing) return;
+        //
+        //   编辑器预览：改由【显式开关】previewInEditMode 控制（默认关）。
+        //   这样玩家可以主动打开预览、实时调参并【保存到场景】；关闭时编辑器绝不碰墙的 Transform。
+        if (!Application.isPlaying && !previewInEditMode) return;
         float curX = SeamX;
         float dt = Time.deltaTime;
         RefreshDecayLevels();   // 档位表每帧刷新一次；下面的映射函数都依赖它
@@ -417,9 +422,9 @@ public class ShockwavePreview : MonoBehaviour
         float breathOff = breathGapAmplitude * _breathK * _breathFade * 0.5f;
         // P2b 预备偏移：红墙向 -x 弹开 / 蓝墙向 +x 弹开 —— 都是"远离对手"，视觉上先拉开中缝间距再前冲
         ApplyScale(redWall, _redBasePos, _redBaseRot, _redBaseScale, _redPivot, _redScale,
-                   new Vector3(-breathOff - _redAnticipOff, 0f, 0f));
+                   new Vector3(-breathOff - _redAnticipOff, 0f, 0f), wallWidthScaleX);
         ApplyScale(blueWall, _blueBasePos, _blueBaseRot, _blueBaseScale, _bluePivot, _blueScale,
-                   new Vector3(breathOff + _blueAnticipOff, 0f, 0f));
+                   new Vector3(breathOff + _blueAnticipOff, 0f, 0f), wallWidthScaleX);
         _lastAppliedRedScale = _redScale;
         _lastAppliedBlueScale = _blueScale;
         _lastAppliedShapeScale = _redBaseScale;   // 记录已应用的形状基准，供 needWrite 判定
@@ -833,13 +838,41 @@ public class ShockwavePreview : MonoBehaviour
         if (_blueRawScale != Vector3.zero)
             _blueBaseScale = Vector3.Scale(_blueRawScale, WallShapeScale);
     }
+    /// <summary>把「墙形状」系数实时乘进两墙的 baseScale。
+    /// ⚠【为什么不能只在 CaptureBase 里乘】用户会在 Play 模式里调 Inspector，
+    ///   而 CaptureBase 只在 Awake / 非 Play 的 OnValidate 里跑 —— Play 中改参数不会重新捕获，
+    ///   参数看起来"完全没效果"。所以这里改成每帧应用，改完立刻见效。</summary>
+    private void ApplyShapeScale()
+    {
+        if (wallWidthScaleX == 1f && wallWidthScaleY == 1f && wallWidthScaleZ == 1f) return;
+        if (_redRawScale == Vector3.zero) return;   // 还没捕获 base，跳过
+        _redBaseScale = Vector3.Scale(_redRawScale, WallShapeScale);
+        if (_blueRawScale != Vector3.zero)
+            _blueBaseScale = Vector3.Scale(_blueRawScale, WallShapeScale);
+    }
 
-    private void ApplyScale(Transform wall, Vector3 basePos, Quaternion baseRot, Vector3 baseScale, Vector3 meshPivot, float f, Vector3 extra)
+    /// <summary>绕墙 mesh 局部内侧边 pivot 缩放：保持中缝侧边不动，向外扩，间隙不变。
+    /// ⛔【通道分离铁律】f 只来自「累积距离 accum」，extra 只来自「呼吸开合 + 回弹弹开」：
+    ///    - f-> 只写 localScale（大小通道）
+    ///    - extra -> 只写 localPosition（位移通道）
+    /// 两者互不影响、互不叠加 —— 任何把 scale 塞进 extra 来源、或把位移塞进 f 的改动都违反铁律。
+    ///
+    /// ⚠【2026-10-08 修正·用户实测】补偿量必须是 <c>offset * (1 - totalF)</c>，
+    ///   其中 <c>totalF = shapeX * f</c> —— <b>形状系数必须参与补偿</b>。
+    ///   原来只写 (1 - f)：调大形状系数后补偿量为 0，
+    ///   墙的中缝侧跟着变宽、直接压到对面墙（用户截图证实）。
+    /// </summary>
+    private void ApplyScale(Transform wall, Vector3 basePos, Quaternion baseRot, Vector3 baseScale,
+                            Vector3 meshPivot, float f, Vector3 extra, float shapeX)
     {
         if (wall == null) return;
+        float totalF = f * shapeX;   // 形状系数 × 累积倍率
         wall.localScale = new Vector3(baseScale.x * f, baseScale.y * f, baseScale.z * f);
-        Vector3 offset = baseRot * new Vector3(baseScale.x * meshPivot.x, baseScale.y * meshPivot.y, baseScale.z * meshPivot.z);
-        wall.localPosition = basePos + offset * (1f - f) + extra;
+        // offset 用 baseScale（含形状系数）算，与 localScale 保持同一套基准
+        Vector3 offset = baseRot * new Vector3(baseScale.x * meshPivot.x,
+                                               baseScale.y * meshPivot.y,
+                                               baseScale.z * meshPivot.z);
+        wall.localPosition = basePos + offset * (1f - totalF) + extra;
     }
 
 

@@ -35,14 +35,6 @@ Shader "MusicalSprite/GrassFringe"
         _DebugColor("Debug Tint", Color) = (0.2, 1.0, 0.2, 1)
         _DebugAmount("Debug Amount", Range(0, 1)) = 0.0
 
-        // ---- 冲击波辉光染色（P1 受光通道，由 ShockwavePreview 每帧用 Shader.SetGlobal* 写入）----
-        // 本项目场景全部是 Unlit/假光照，所以「被冲击波照亮」不走 URP 灯光系统，
-        // 而是由冲击波把自身世界位置 + 颜色写成全局参数，这里按距离衰减做加色。
-        // 放在雾之后，保证光晕不会被雾吃掉（光应该"穿透"雾照到草上）。
-        [Toggle] _ShockGlowEnabled("Shock Glow Enabled", Float) = 1
-        [HideInInspector] _ShockGlowColor("Shock Glow Color", Color) = (1, 0.5, 0.5, 1)
-        [HideInInspector] _ShockGlowParams("Shock Glow Params (xyz=pos, w=range)", Vector) = (0, -99, 0, 1)
-        [HideInInspector] _ShockGlowParams2("Shock Glow Params2 (x=strength, y=falloffPow, zw=)", Vector) = (0, 2, 0, 0)
     }
 
     SubShader

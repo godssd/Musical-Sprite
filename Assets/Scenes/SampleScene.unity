@@ -14801,6 +14801,7 @@ MonoBehaviour:
   centerGap: 0.05
   centerLine: {fileID: 217276733}
   previewTargetX: 0
+  previewInEditMode: 0
   springStiffness: 80
   springDampingRatio: 0.9
   springMaxVelocity: 8
