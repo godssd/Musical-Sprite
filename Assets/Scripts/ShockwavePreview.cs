@@ -53,9 +53,9 @@ public class ShockwavePreview : MonoBehaviour
     [Tooltip("总开关：把两堵墙的世界位置 + 颜色写成全局参数，\n场景 shader（ScenePropSprite / GrassFringe / GroundEdge）按距离衰减做加色。\n⛔ 本项目场景全部是 Unlit / 假光照，URP 灯光系统照不到它们，\n所以这是唯一能让『光洒到场景上』生效的通路（且零实时光源开销）")]
     public bool sceneGlowEnabled = true;
     [Tooltip("染色强度：场景被照亮的加色量。0 = 关闭染色。建议从 0.3~0.6 起步，过高会像加了浓雾")]
-    [Range(0f, 1.5f)] public float sceneGlowStrength = 0.4f;
+    [Range(0f, 1.5f)] public float sceneGlowStrength = 0.8f;
     [Tooltip("影响半径（世界单位）：距离墙中心多远处染色衰减到 0。\n墙的世界位置约在 z=-3.75、场地约在 z=0，所以半径至少要 4 以上才盖得到")]
-    public float sceneGlowRange = 8f;
+    public float sceneGlowRange = 6f;
     [Tooltip("两侧同时开启：红墙与蓝墙都往场景投染色（近距离时叠加得更亮）")]
     public bool sceneGlowBothSides = true;
 
@@ -143,6 +143,10 @@ public class ShockwavePreview : MonoBehaviour
     private Vector3 _redBasePos, _blueBasePos;
     private Quaternion _redBaseRot, _blueBaseRot;
     private Vector3 _redBaseScale, _blueBaseScale;
+    // 未乘「墙形状」系数的原始缩放（CaptureBase 时捕获），供 ApplyShapeScale 每帧实时换算
+    private Vector3 _redRawScale, _blueRawScale;
+    // 上一次已写入墙 Transform 的 baseScale（用于判断形状系数是否变化 -> 是否需要重写）
+    private Vector3 _lastAppliedShapeScale;
     private Vector3 _redPivot, _bluePivot;   // 墙 mesh 局部空间里的"贴中缝内侧边"点
     private float _redScale = 1f, _blueScale = 1f;
 
@@ -229,8 +233,9 @@ public class ShockwavePreview : MonoBehaviour
     {
         EnsureWalls();
         ApplyToWalls();
-        // ⛔ Play 模式下禁止 OnValidate 调用 CaptureBase：用户在 Inspector 调参时会触发 OnValidate，
-        //    此时墙可能已被 ApplyScale 放大 / 或被 autoFit 污染，CaptureBase 会把异常值锁成新的 base。
+        // 非 Play 态：墙的 Transform 不会被 DriveRuntime 改写，此刻捕获 base 是安全的。
+        // 这也是「墙形状系数」在编辑器里能实时看到效果的原因（它只在 CaptureBase 里生效）。
+        // ⛔ Play 态下【不】捕获：此时墙可能已被 ApplyScale 写入临时位移，捕获会污染 base。
         if (!Application.isPlaying) CaptureBase();
     }
     // ⛔ autoFit 与本品互斥：它每帧按 (frontX - backX) 覆盖墙的 localScale，而 frontX 跟着中缝走，
@@ -392,7 +397,11 @@ public class ShockwavePreview : MonoBehaviour
         bool needWrite = _breathFade > 1e-3f
             || Mathf.Abs(_redScale  - _lastAppliedRedScale)  > 1e-5f
             || Mathf.Abs(_blueScale - _lastAppliedBlueScale) > 1e-5f
-            || _redAnticipOff != 0f || _blueAnticipOff != 0f;
+            || _redAnticipOff != 0f || _blueAnticipOff != 0f
+            // 形状系数是「静态基准的改变」，改完必须重写一次墙Transform，否则看起来没反应
+            || Mathf.Abs(_redBaseScale.x - _lastAppliedShapeScale.x) > 1e-4f
+            || Mathf.Abs(_redBaseScale.y - _lastAppliedShapeScale.y) > 1e-4f
+            || Mathf.Abs(_redBaseScale.z - _lastAppliedShapeScale.z) > 1e-4f;
 
         // ⚠ 场景染色必须放在 needWrite 提前 return【之前】。
         //   needWrite 为假 = 墙 Transform 本帧不动，但全局染色参数是【状态量】而非增量——
@@ -400,6 +409,9 @@ public class ShockwavePreview : MonoBehaviour
         ApplySceneGlow();
 
         if (!needWrite) return;
+
+        // 墙形状系数实时应用（必须在 ApplyScale 之前 —— 它改的是 baseScale）
+        ApplyShapeScale();
 
         // 呼吸位移：红墙内侧边向 -x 退、蓝墙向 +x 退 -> 缝隙变大（张开）；k=0 时两墙回到 base 位置（合拢最紧）
         float breathOff = breathGapAmplitude * _breathK * _breathFade * 0.5f;
@@ -410,6 +422,7 @@ public class ShockwavePreview : MonoBehaviour
                    new Vector3(breathOff + _blueAnticipOff, 0f, 0f));
         _lastAppliedRedScale = _redScale;
         _lastAppliedBlueScale = _blueScale;
+        _lastAppliedShapeScale = _redBaseScale;   // 记录已应用的形状基准，供 needWrite 判定
 
         // 呼吸亮度 + 前进加亮（优势方随放大倍率变亮）—— 受 enableBrightnessFx 总开关控制
         ApplyWallGlow();
@@ -807,6 +820,20 @@ public class ShockwavePreview : MonoBehaviour
     ///    - f     -> 只写 localScale（大小通道）
     ///    - extra -> 只写 localPosition（位移通道）
     /// 两者互不影响、互不叠加 —— 任何把 scale 塞进 extra 来源、或把位移塞进 f 的改动都违反铁律。</summary>
+    /// <summary>把「墙形状」系数实时乘进两墙的 baseScale。
+    /// ⚠【为什么不能只在 CaptureBase 里乘】用户会在 Play 模式里调 Inspector，
+    ///   而 CaptureBase 只在 Awake / 非Play 的 OnValidate 里跑 —— Play 中改参数不会重新捕获，
+    ///   参数看起来"完全没效果"。所以这里改成每帧应用，改完立刻见效。
+    ///   它只改 baseScale（大小通道的基准），不碰 extra（位移通道），也不改中缝位置。</summary>
+    private void ApplyShapeScale()
+    {
+        if (wallWidthScaleX == 1f && wallWidthScaleY == 1f && wallWidthScaleZ == 1f) return;
+        if (_redRawScale == Vector3.zero) return;   // 还没捕获 base，跳过
+        _redBaseScale = Vector3.Scale(_redRawScale, WallShapeScale);
+        if (_blueRawScale != Vector3.zero)
+            _blueBaseScale = Vector3.Scale(_blueRawScale, WallShapeScale);
+    }
+
     private void ApplyScale(Transform wall, Vector3 basePos, Quaternion baseRot, Vector3 baseScale, Vector3 meshPivot, float f, Vector3 extra)
     {
         if (wall == null) return;
@@ -844,7 +871,8 @@ public class ShockwavePreview : MonoBehaviour
             _redBaseRot = redWall.localRotation;
             // 应用「墙形状」倍率（只在捕获 base 时乘一次，运行时 ApplyScale 的逻辑完全不动）。
             // ⚠ 必须用 Vector3.Scale（逐分量），不能用 `*` —— Unity C# 不支持 Vector3 * Vector3（CS0019）。
-            _redBaseScale = Vector3.Scale(redWall.localScale, WallShapeScale);
+            _redRawScale = redWall.localScale;                       // 原始缩放（不含形状系数）
+            _redBaseScale = Vector3.Scale(_redRawScale, WallShapeScale);
             _redPivot = (mf != null && mf.sharedMesh != null) ? GetInnerEdgeMeshLocal(mf, true) : Vector3.zero;
         }
         if (blueWall != null)
@@ -852,7 +880,8 @@ public class ShockwavePreview : MonoBehaviour
             var mf = blueWall.GetComponent<MeshFilter>();
             _blueBasePos = blueWall.localPosition;
             _blueBaseRot = blueWall.localRotation;
-            _blueBaseScale = Vector3.Scale(blueWall.localScale, WallShapeScale);
+            _blueRawScale = blueWall.localScale;
+            _blueBaseScale = Vector3.Scale(_blueRawScale, WallShapeScale);
             _bluePivot = (mf != null && mf.sharedMesh != null) ? GetInnerEdgeMeshLocal(mf, false) : Vector3.zero;
         }
         // 缓存两墙的基础 Opacity（呼吸亮度在其上叠加；SyncMaterial 每帧会写回该值）
@@ -882,6 +911,7 @@ public class ShockwavePreview : MonoBehaviour
         // 对峙静止判定 / 已应用倍率 归零
         _idleTimer = 0f; _lastCenterX = (centerLine != null) ? centerLine.currentX : centerX;
         _lastAppliedRedScale = 1f; _lastAppliedBlueScale = 1f;
+        _lastAppliedShapeScale = _redBaseScale;   // 避免首次因"没变化"而跳过写入
     }
 
     /// <summary>自动找墙 mesh 局部坐标里、落在"朝中缝一侧"极值处的顶点（红墙=世界 +X 极值，蓝墙=世界 -X 极值）。</summary>

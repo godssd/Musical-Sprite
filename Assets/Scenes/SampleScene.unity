@@ -14821,8 +14821,8 @@ MonoBehaviour:
   wallWidthScaleY: 1
   wallWidthScaleZ: 1
   sceneGlowEnabled: 1
-  sceneGlowStrength: 0.4
-  sceneGlowRange: 8
+  sceneGlowStrength: 0.8
+  sceneGlowRange: 6
   sceneGlowBothSides: 1
   breathPeriod: 1
   breathOutRatio: 0.825
