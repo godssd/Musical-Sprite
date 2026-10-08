@@ -842,7 +842,9 @@ public class ShockwavePreview : MonoBehaviour
             var mf = redWall.GetComponent<MeshFilter>();
             _redBasePos = redWall.localPosition;
             _redBaseRot = redWall.localRotation;
-            _redBaseScale = redWall.localScale * WallShapeScale;
+            // 应用「墙形状」倍率（只在捕获 base 时乘一次，运行时 ApplyScale 的逻辑完全不动）。
+            // ⚠ 必须用 Vector3.Scale（逐分量），不能用 `*` —— Unity C# 不支持 Vector3 * Vector3（CS0019）。
+            _redBaseScale = Vector3.Scale(redWall.localScale, WallShapeScale);
             _redPivot = (mf != null && mf.sharedMesh != null) ? GetInnerEdgeMeshLocal(mf, true) : Vector3.zero;
         }
         if (blueWall != null)
@@ -850,7 +852,7 @@ public class ShockwavePreview : MonoBehaviour
             var mf = blueWall.GetComponent<MeshFilter>();
             _blueBasePos = blueWall.localPosition;
             _blueBaseRot = blueWall.localRotation;
-            _blueBaseScale = blueWall.localScale * WallShapeScale;
+            _blueBaseScale = Vector3.Scale(blueWall.localScale, WallShapeScale);
             _bluePivot = (mf != null && mf.sharedMesh != null) ? GetInnerEdgeMeshLocal(mf, false) : Vector3.zero;
         }
         // 缓存两墙的基础 Opacity（呼吸亮度在其上叠加；SyncMaterial 每帧会写回该值）
