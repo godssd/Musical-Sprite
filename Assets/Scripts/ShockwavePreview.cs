@@ -41,18 +41,15 @@ public class ShockwavePreview : MonoBehaviour
     //   现【已从守卫中移除】：非运行态一律不驱动，详见 DriveRuntime 开头注释。
     [HideInInspector] public float previewTargetX = 0f;   // 保留字段仅为不破坏旧场景序列化
 
-    [Header("编辑器预览（关闭时编辑器绝不改墙的 Transform）")]
-    [Tooltip("勾上后，编辑器（非 Play）里也会驱动冲击波，可以实时调参并【保存到场景】。\n"+
-             "⚠ 关闭时编辑器完全不碰墙，你摆好的 Transform 原样保留 —— 推荐调参时打开、调完关闭。\n"+
-             "⚠ 别在开着它的时候手动拖动两墙（会被脚本覆盖）")]
-    public bool previewInEditMode = false;
-
-    [Header("墙形状（同时作用于两堵墙；默认 1 = 完全保持你当前调好的粗细/高度/纵深）")]
-    [Tooltip("沿推进方向（X）的粗细倍率。因为缩放是绕『贴中缝的内侧边』pivot 进行的，\n所以调大它，墙会往【两侧外扩】，中缝宽度保持不变。\n1 = 保持当前；1.5 = 比现在粗 50%；0.5 = 变细一半")]
+    [Header("墙形状（编辑器基础造型修改 · 改完点下方【烘焙】按钮写进场景）")]
+    [Tooltip("沿推进方向（X）的粗细倍率。缩放绕『贴中缝的内侧边』pivot 进行，\n             "所以调大它，墙会往【两侧外扩】，中缝宽度保持不变。\n"
+             "1 = 保持当前；1.5 = 粗 50%；0.5 = 细一半。\n"
+             "⚠ 这是【编辑器造型工具】，不是运行时效果：改完必须点下方『烘焙』按钮，"
+             "倍率会写进场景 Transform 并自动重置为 1。Play 时不参与任何计算。")]
     [Range(0.2f, 3f)] public float wallWidthScaleX = 1f;
-    [Tooltip("墙高（Y）倍率。1 = 保持当前高度")]
+    [Tooltip("墙高（Y）倍率。同上，需烘焙才生效")]
     [Range(0.2f, 3f)] public float wallWidthScaleY = 1f;
-    [Tooltip("纵深（Z，沿场地前后）倍率。1 = 保持当前纵深")]
+    [Tooltip("纵深（Z，沿场地前后）倍率。同上，需烘焙才生效")]
     [Range(0.2f, 3f)] public float wallWidthScaleZ = 1f;
 
     [Header("P1 场景染色：让场景与植被被冲击波的光影响")]
@@ -149,10 +146,8 @@ public class ShockwavePreview : MonoBehaviour
     private Vector3 _redBasePos, _blueBasePos;
     private Quaternion _redBaseRot, _blueBaseRot;
     private Vector3 _redBaseScale, _blueBaseScale;
-    // 未乘「墙形状」系数的原始缩放（CaptureBase 时捕获），供 ApplyShapeScale 每帧实时换算
+    // CaptureBase 时捕获的场景原始缩放（不含任何形状系数），烘焙按钮以它为基准
     private Vector3 _redRawScale, _blueRawScale;
-    // 上一次已写入墙 Transform 的 baseScale（用于判断形状系数是否变化 -> 是否需要重写）
-    private Vector3 _lastAppliedShapeScale;
     private Vector3 _redPivot, _bluePivot;   // 墙 mesh 局部空间里的"贴中缝内侧边"点
     private float _redScale = 1f, _blueScale = 1f;
 
@@ -239,8 +234,8 @@ public class ShockwavePreview : MonoBehaviour
     {
         EnsureWalls();
         ApplyToWalls();
-        // 非 Play 态：墙的 Transform 只由previewInEditMode 驱动，
-        // 此刻捕获 base 是安全的 —— 这让「墙形状系数」在编辑态就能实时看到效果并保存。
+        // 非 Play 态捕获 base 是安全的（编辑器不驱动墙的 Transform），
+        // 这样「烘焙」按钮改完形状后能立刻拿到新的基准。
         // ⛔ Play 态下【不】捕获：此时墙已被 ApplyScale 写入临时位移，捕获会污染 base。
         if (!Application.isPlaying) CaptureBase();
     }
@@ -333,9 +328,11 @@ public class ShockwavePreview : MonoBehaviour
         //   -> 编辑器里完整驱动 DriveRuntime，墙的 Transform 被写坏且无法自动恢复。
         //
         //
-        //   编辑器预览：改由【显式开关】previewInEditMode 控制（默认关）。
-        //   这样玩家可以主动打开预览、实时调参并【保存到场景】；关闭时编辑器绝不碰墙的 Transform。
-        if (!Application.isPlaying && !previewInEditMode) return;
+        //
+        //   【2026-10-08 定稿】编辑器非运行状态【一律不驱动】。
+        //   形状修改改用「烘焙」按钮（见 BakeWallShape）—— 在编辑态直接把倍率写进场景的
+        //   localScale，运行时逻辑完全不参与，避免指数累乘与中缝污染。
+        if (!Application.isPlaying) return;
         float curX = SeamX;
         float dt = Time.deltaTime;
         RefreshDecayLevels();   // 档位表每帧刷新一次；下面的映射函数都依赖它
@@ -402,11 +399,7 @@ public class ShockwavePreview : MonoBehaviour
         bool needWrite = _breathFade > 1e-3f
             || Mathf.Abs(_redScale  - _lastAppliedRedScale)  > 1e-5f
             || Mathf.Abs(_blueScale - _lastAppliedBlueScale) > 1e-5f
-            || _redAnticipOff != 0f || _blueAnticipOff != 0f
-            // 形状系数是「静态基准的改变」，改完必须重写一次墙Transform，否则看起来没反应
-            || Mathf.Abs(_redBaseScale.x - _lastAppliedShapeScale.x) > 1e-4f
-            || Mathf.Abs(_redBaseScale.y - _lastAppliedShapeScale.y) > 1e-4f
-            || Mathf.Abs(_redBaseScale.z - _lastAppliedShapeScale.z) > 1e-4f;
+            || _redAnticipOff != 0f || _blueAnticipOff != 0f;
 
         // ⚠ 场景染色必须放在 needWrite 提前 return【之前】。
         //   needWrite 为假 = 墙 Transform 本帧不动，但全局染色参数是【状态量】而非增量——
@@ -415,19 +408,15 @@ public class ShockwavePreview : MonoBehaviour
 
         if (!needWrite) return;
 
-        // 墙形状系数实时应用（必须在 ApplyScale 之前 —— 它改的是 baseScale）
-        ApplyShapeScale();
-
         // 呼吸位移：红墙内侧边向 -x 退、蓝墙向 +x 退 -> 缝隙变大（张开）；k=0 时两墙回到 base 位置（合拢最紧）
         float breathOff = breathGapAmplitude * _breathK * _breathFade * 0.5f;
         // P2b 预备偏移：红墙向 -x 弹开 / 蓝墙向 +x 弹开 —— 都是"远离对手"，视觉上先拉开中缝间距再前冲
         ApplyScale(redWall, _redBasePos, _redBaseRot, _redBaseScale, _redPivot, _redScale,
-                   new Vector3(-breathOff - _redAnticipOff, 0f, 0f), wallWidthScaleX);
+                   new Vector3(-breathOff - _redAnticipOff, 0f, 0f));
         ApplyScale(blueWall, _blueBasePos, _blueBaseRot, _blueBaseScale, _bluePivot, _blueScale,
-                   new Vector3(breathOff + _blueAnticipOff, 0f, 0f), wallWidthScaleX);
+                   new Vector3(breathOff + _blueAnticipOff, 0f, 0f));
         _lastAppliedRedScale = _redScale;
         _lastAppliedBlueScale = _blueScale;
-        _lastAppliedShapeScale = _redBaseScale;   // 记录已应用的形状基准，供 needWrite 判定
 
         // 呼吸亮度 + 前进加亮（优势方随放大倍率变亮）—— 受 enableBrightnessFx 总开关控制
         ApplyWallGlow();
@@ -820,50 +809,68 @@ public class ShockwavePreview : MonoBehaviour
         Shader.SetGlobalColor(ShockGlowColorId, srcColor);
     }
 
-    /// <summary>把「墙形状」系数实时乘进两墙的 baseScale。
-    /// ⚠【为什么不能只在 CaptureBase 里乘】用户会在 Play 模式里调 Inspector，
-    ///   而 CaptureBase 只在 Awake / 非 Play 的 OnValidate 里跑 —— Play 中改参数不会重新捕获，
-    ///   参数看起来"完全没效果"。所以这里改成每帧应用，改完立刻见效。</summary>
-    private void ApplyShapeScale()
+    /// <summary>【编辑器造型工具】把 wallWidthScaleX/Y/Z 烘焙进两墙的 localScale，然后系数重置为 1。
+    ///
+    /// 语义（用户明确）：墙形状是【编辑器里的基础造型修改】，不是运行时效果。
+    /// Play 时这三个系数完全不参与任何计算 —— 形状已经写死在场景 Transform 里。
+    ///
+    /// ⛔ 为什么不做成"运行时实时生效"（2026-10-08 的事故教训）：
+    ///   1) 实时方案里 _redRawScale 会被 CaptureBase 反复读取，而读到的已是"乘过系数的当前值"
+    ///      -> 每次改参数都在历史值上再乘一次 -> <b>指数发散且不可逆</b>（154→232→348→543…），
+    ///      中缝被撑到巨大，退出 Play 也恢复不了（Unity 不回滚脚本对 Transform 的修改）。
+    ///   2) pivot 补偿量是 offset*(1-f)，静止时恒为 0，形状调大后墙的中缝侧会跟着变宽、压向对面。
+    ///   烘焙方案两个问题都不存在：倍率被"消费"成场景真实值后系数归1，永远不会累乘；
+    ///   而形状属于 base 的一部分，缩放绕内侧边 pivot 进行 —— 中缝宽度天然不变。
+    /// </summary>
+    [ContextMenu("烘焙墙形状到场景（倍率会重置为 1）")]
+    void BakeWallShape()
     {
-        if (wallWidthScaleX == 1f && wallWidthScaleY == 1f && wallWidthScaleZ == 1f) return;
-        if (_redRawScale == Vector3.zero) return;   // 还没捕获 base，跳过
-        _redBaseScale = Vector3.Scale(_redRawScale, WallShapeScale);
-        if (_blueRawScale != Vector3.zero)
-            _blueBaseScale = Vector3.Scale(_blueRawScale, WallShapeScale);
+        EnsureWalls();
+        if (_redRawScale == Vector3.zero) CaptureBase();   // 没捕获过就先捕获一次
+
+        var shape = WallShapeScale;
+        bool isIdentity = shape.x == 1f && shape.y == 1f && shape.z == 1f;
+
+        if (!isIdentity)
+        {
+            // 只改 localScale，不动 localPosition —— 形状进入 base 后由pivot 缩放自动保证中缝不变
+            redWall.localScale  = Vector3.Scale(_redRawScale, shape);
+            blueWall.localScale = Vector3.Scale(_blueRawScale, shape);
+            // 消费掉倍率，避免重复烘焙造成累乘
+            wallWidthScaleX = wallWidthScaleY = wallWidthScaleZ = 1f;
+        }
+
+        // 重新捕获，让新形状立刻成为运行时基准（CaptureBase 内会把 rawScale 更新为烘焙后的值）
+        CaptureBase();
+
+        Debug.Log(isIdentity
+            ? "[ShockwavePreview] 烘焙墙形状：倍率本就是 1，未改动 Transform，只重新捕获了base。"
+            : "[ShockwavePreview] 烘焙墙形状：" + shape.ToString("F3")
+              + " 已写入场景 Transform，倍率已重置为 1。请 Ctrl+S 保存场景。", this);
     }
+
+    /// <summary>墙形状倍率（Inspector 的 wallWidthScaleX/Y/Z），仅供上面的烘焙按钮使用。</summary>
+    private Vector3 WallShapeScale => new Vector3(wallWidthScaleX, wallWidthScaleY, wallWidthScaleZ);
 
     /// <summary>绕墙 mesh 局部内侧边 pivot 缩放：保持中缝侧边不动，向外扩，间隙不变。
     /// ⛔【通道分离铁律】f 只来自「累积距离 accum」，extra 只来自「呼吸开合 + 回弹弹开」：
-    ///    - f-> 只写 localScale（大小通道）
+    ///    - f    -> 只写 localScale（大小通道）
     ///    - extra -> 只写 localPosition（位移通道）
-    /// 两者互不影响、互不叠加 —— 任何把 scale 塞进 extra 来源、或把位移塞进 f 的改动都违反铁律。
+    ///    两者互不影响、互不叠加 —— 任何把 scale 塞进 extra 来源、或把位移塞进 f 的改动都违反铁律。
     ///
-    /// ⚠【2026-10-08 修正·用户实测】补偿量必须是 <c>offset * (1 - totalF)</c>，
-    ///   其中 <c>totalF = shapeX * f</c> —— <b>形状系数必须参与补偿</b>。
-    ///   原来只写 (1 - f)：调大形状系数后补偿量为 0，
-    ///   墙的中缝侧跟着变宽、直接压到对面墙（用户截图证实）。
+    /// ⚠【2026-10-08 修正】墙形状已改为【编辑器烘焙进 baseScale】，运行时不再有 shapeX 参与，
+    ///   因此这里恢复为最简形式 <c>offset * (1 - f)</c> —— 与用户验收过的版本完全一致。
     /// </summary>
     private void ApplyScale(Transform wall, Vector3 basePos, Quaternion baseRot, Vector3 baseScale,
-                            Vector3 meshPivot, float f, Vector3 extra, float shapeX)
+                            Vector3 meshPivot, float f, Vector3 extra)
     {
         if (wall == null) return;
-        float totalF = f * shapeX;   // 形状系数 × 累积倍率
         wall.localScale = new Vector3(baseScale.x * f, baseScale.y * f, baseScale.z * f);
-        // offset 用 baseScale（含形状系数）算，与 localScale 保持同一套基准
         Vector3 offset = baseRot * new Vector3(baseScale.x * meshPivot.x,
                                                baseScale.y * meshPivot.y,
                                                baseScale.z * meshPivot.z);
-        wall.localPosition = basePos + offset * (1f - totalF) + extra;
+        wall.localPosition = basePos + offset * (1f - f) + extra;
     }
-
-
-    /// <summary>捕获你手动调好的 Transform 作为 base；并自动算出每堵墙"贴中缝内侧边"在 mesh 局部空间的坐标。</summary>
-    /// <summary>墙形状倍率（Inspector 的 wallWidthScaleX/Y/Z）。
-    /// ⚠ 只在 CaptureBase 里乘到 baseScale，<b>不改动 ApplyScale 的任何逻辑</b>——
-    ///   ApplyScale 仍绕内侧边 pivot 缩放，所以 X 变大时墙往两侧外扩、中缝不变。
-    ///   默认 (1,1,1) 时行为与改动前完全一致。</summary>
-    private Vector3 WallShapeScale => new Vector3(wallWidthScaleX, wallWidthScaleY, wallWidthScaleZ);
 
     private void CaptureBase()
     {
@@ -926,7 +933,6 @@ public class ShockwavePreview : MonoBehaviour
         // 对峙静止判定 / 已应用倍率 归零
         _idleTimer = 0f; _lastCenterX = (centerLine != null) ? centerLine.currentX : centerX;
         _lastAppliedRedScale = 1f; _lastAppliedBlueScale = 1f;
-        _lastAppliedShapeScale = _redBaseScale;   // 避免首次因"没变化"而跳过写入
     }
 
     /// <summary>自动找墙 mesh 局部坐标里、落在"朝中缝一侧"极值处的顶点（红墙=世界 +X 极值，蓝墙=世界 -X 极值）。</summary>
