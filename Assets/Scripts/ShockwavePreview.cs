@@ -103,6 +103,12 @@ public class ShockwavePreview : MonoBehaviour
     [Tooltip("撞击加亮幅度：对峙循环合拢到最紧（撞击瞬间）最亮，张开时回落")]
     [Range(0f, 0.4f)] public float breathOpacityAmp = 0.05f;
 
+    [Header("表现调试（临时开关：只冻结视觉输出，不动任何系统逻辑）")]
+    [Tooltip("对峙呼吸常驻：开启后不再等『中线静止 idleBreathDelay 秒』，移动/放大/衰退期间也照播。\n用来单独观察对峙循环的观感；关掉即回到原来的『静止满 idleBreathDelay 才起播』。\n⛔ 只改『何时播』，呼吸本身的幅度/周期参数完全不变")]
+    public bool breathAlwaysOn = false;
+    [Tooltip("冻结前进 / 回弹的视觉输出：开启后墙的【大小】恒定为基准（不放大），P2b 起步回弹偏移强制为 0。\n⛔ 只冻结『表现』—— 前进状态机 / accum 累积 / 档位衰退 / 扣血闪白等系统逻辑照常运行，\n关掉即完全恢复，不会丢失任何状态。用来把对峙呼吸单独摘出来看，避免被放大与回弹干扰。\n【注意】大小在冻结期间固定为 1 倍，这【不等于】规则里的 accum 被清零")]
+    public bool freezeAdvanceFx = false;
+
     [Header("亮度：前进 / 撞击加亮（写材质 _Opacity）")]
     [Tooltip("总开关：关闭后只保留基础亮度，【前进加亮】与【撞击加亮】都不生效。\nP1 自发光分层方案落地前先关闭，避免过曝与层次混乱。\n【注意】扣血闪白是机制反馈不是发光，不受此开关影响")]
     public bool enableBrightnessFx = false;
@@ -368,7 +374,8 @@ public class ShockwavePreview : MonoBehaviour
         bool noMove = Mathf.Abs(curX - _lastCenterX) < 1e-4f;
         _idleTimer = noMove ? _idleTimer + dt : 0f;
         _lastCenterX = curX;
-        UpdateBreath(dt, _idleTimer < idleBreathDelay);
+        // breathAlwaysOn：常驻呼吸 —— 无视静止等待与移动判定，永远当作"静止"处理
+        UpdateBreath(dt, !breathAlwaysOn && _idleTimer < idleBreathDelay);
 
         // 7) 弹簧跟随目标倍率：所有状态（含 Decay）统一走这一条通道，保证不存在硬切
         SpringScale(ref _redScale, ref _redVel, redTarget, dt);
@@ -400,11 +407,23 @@ public class ShockwavePreview : MonoBehaviour
 
         // 呼吸位移：红墙内侧边向 -x 退、蓝墙向 +x 退 -> 缝隙变大（张开）；k=0 时两墙回到 base 位置（合拢最紧）
         float breathOff = breathGapAmplitude * _breathK * _breathFade * 0.5f;
+
+        // ---- 表现调试：只替换【写进 Transform 的视觉量】，内部 _redScale/_redAnticipOff 等状态原样保留 ----
+        float visRedScale  = _redScale;
+        float visBlueScale = _blueScale;
+        float visRedAnticip  = _redAnticipOff;
+        float visBlueAnticip = _blueAnticipOff;
+        if (freezeAdvanceFx)
+        {
+            visRedScale = visBlueScale = scaleAtRest;   // 大小恒定为基准（1 倍）
+            visRedAnticip = visBlueAnticip = 0f;        // 取消 P2b 起步回弹位移
+        }
+
         // P2b 预备偏移：红墙向 -x 弹开 / 蓝墙向 +x 弹开 —— 都是"远离对手"，视觉上先拉开中缝间距再前冲
-        ApplyScale(redWall, _redBasePos, _redBaseRot, _redBaseScale, _redPivot, _redScale,
-                   new Vector3(-breathOff - _redAnticipOff, 0f, 0f));
-        ApplyScale(blueWall, _blueBasePos, _blueBaseRot, _blueBaseScale, _bluePivot, _blueScale,
-                   new Vector3(breathOff + _blueAnticipOff, 0f, 0f));
+        ApplyScale(redWall, _redBasePos, _redBaseRot, _redBaseScale, _redPivot, visRedScale,
+                   new Vector3(-breathOff - visRedAnticip, 0f, 0f));
+        ApplyScale(blueWall, _blueBasePos, _blueBaseRot, _blueBaseScale, _bluePivot, visBlueScale,
+                   new Vector3(breathOff + visBlueAnticip, 0f, 0f));
         _lastAppliedRedScale = _redScale;
         _lastAppliedBlueScale = _blueScale;
 
