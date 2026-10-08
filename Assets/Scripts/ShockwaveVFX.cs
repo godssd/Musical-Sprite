@@ -67,11 +67,11 @@ public class ShockwaveVFX : MonoBehaviour
     public float sparkLifetime = 0.55f;
 
     [Header("火花：朝向")]
-    [Tooltip("粒子朝向模式。Billboard=始终面朝相机（像纸片）；StretchedBillboard=沿速度方向拉伸（有轨迹感）")]
-    public ParticleSystemRenderMode sparkRenderMode = ParticleSystemRenderMode.StretchedBillboard;
-    [Tooltip("StretchedBillboard 模式下，速度对拉伸长度的影响")]
+    [Tooltip("粒子朝向模式。Billboard=始终面朝相机（像纸片）；Stretch=沿速度方向拉伸（有轨迹感）")]
+    public ParticleSystemRenderMode sparkRenderMode = ParticleSystemRenderMode.Stretch;
+    [Tooltip("Stretch 模式下，速度对拉伸长度的影响")]
     [Range(0f, 2f)] public float sparkVelocityScale = 0.35f;
-    [Tooltip("StretchedBillboard 模式下，基础拉伸长度")]
+    [Tooltip("Stretch 模式下，基础拉伸长度")]
     [Range(0f, 2f)] public float sparkLengthScale = 0.5f;
 
     [Header("火花：颜色")]
