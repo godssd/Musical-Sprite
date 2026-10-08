@@ -72,13 +72,15 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 float  vz          : TEXCOORD3;   // 0=拱顶中央(z=0) ±1=z边缘
             };
 
-            half4  _ColorDeep, _ColorTip;
+            half4  _ColorDeep, _ColorTip, _ColorTail;
             float4 _MainTex_ST;
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             float2 _ScrollSpeed;
             float  _BackX, _FrontX, _ArchHeight, _ZHalf, _FadePower, _GradientPower, _GradientBalance, _EdgeGlow, _Opacity, _Flash;
             float  _ArchPower, _ArchFocus, _ArchAmount, _ShellIntensity;
+            float  _TailPoint, _TailWidth;
+            float  _VerticalAmount, _VerticalCenter, _VerticalWidth, _VerticalPower;
 
             Varyings vert(Attributes IN)
             {
@@ -110,22 +112,35 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 // 1) alpha 淡入：判定线透明，中缝最浓
                 float alpha = pow(t, _FadePower) * _Opacity;
 
-                // 2) 色相渐变：判定线深 -> 中缝亮
-                //    _GradientBalance 控制 Deep/Tip 的比重：
-                //      0 = Deep 占绝大部分（Tip 只在前沿很小一块）
-                //      1 = Tip 占绝大部分（Deep 只在根部很小一块）
-                //      0.5 = 各占约一半，过渡带在墙中部
+                // 2) 色相渐变：尾端深 -> 判定线深 -> 中缝亮（3 层）
                 float curved_t = pow(t, _GradientPower);
-                float transition_center = 1.0 - _GradientBalance;
-                float half_width = 0.25;
-                float gradient_t = smoothstep(saturate(transition_center - half_width),
-                                                 saturate(transition_center + half_width),
-                                                 curved_t);
-                half3 col = lerp(_ColorDeep.rgb, _ColorTip.rgb, gradient_t);
+
+                // Tail -> Deep：0.._TailPoint 区间
+                float tailToDeep = smoothstep(saturate(_TailPoint - _TailWidth),
+                                               saturate(_TailPoint + _TailWidth),
+                                               curved_t);
+                half3 col = lerp(_ColorTail.rgb, _ColorDeep.rgb, tailToDeep);
+
+                // Deep -> Tip：由 _GradientBalance 控制过渡中心
+                float deepCenter = 1.0 - _GradientBalance;
+                float deepToTip = smoothstep(saturate(deepCenter - 0.25),
+                                             saturate(deepCenter + 0.25),
+                                             curved_t);
+                col = lerp(col, _ColorTip.rgb, deepToTip);
 
                 // A) 拱形结构色：让 Deep/Tip 渐变也顺着 z 弧度走
                 half3 structureColor = lerp(_ColorDeep.rgb, _ColorTip.rgb, structureBlend);
                 col = lerp(col, structureColor, _ArchAmount);
+
+                // C) 纵向渐变（自下而上）：默认中心在地面附近，向上淡出
+                if (_VerticalAmount > 0.001)
+                {
+                    float vDist = abs(vy - _VerticalCenter) / max(0.001, _VerticalWidth);
+                    float vMask = saturate(1.0 - vDist);
+                    vMask = pow(max(vMask, 0.0), max(0.01, _VerticalPower));
+                    // 默认：中心（贴地附近）最亮，向两侧衰减 -> 能量从地面升起
+                    col *= lerp(1.0, vMask * 1.5 + 0.5, _VerticalAmount);
+                }
 
                 // 可选贴图（默认白=无效果）：随时间滚动
                 float2 uvT = IN.uv * _MainTex_ST.xy + _Time.y * _ScrollSpeed;
@@ -192,6 +207,8 @@ Shader "MusicalSprite/ShockwaveUnlit"
             float  _GlowIntensity, _GlowArch, _GlowFront, _GlowTailCut;
             float  _BackX, _FrontX, _ArchHeight, _ZHalf, _Flash;
             float  _ArchPower, _ArchFocus, _ArchAmount, _ShellIntensity;
+            float  _TailPoint, _TailWidth;
+            float  _VerticalAmount, _VerticalCenter, _VerticalWidth, _VerticalPower;
 
             VaryingsGlow vertGlow(AttributesGlow IN)
             {

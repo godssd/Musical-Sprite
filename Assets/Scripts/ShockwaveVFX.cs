@@ -45,6 +45,8 @@ public class ShockwaveVFX : MonoBehaviour
     public float sparkMinSpeed = 1.2f;
     [Tooltip("速度指数衰减强度（越大减速越快）")]
     [Range(0f, 20f)] public float sparkDecel = 3f;
+    [Tooltip("速度衰减下限。0=可减速到停止；>0 粒子会保持一个最低滑行速度")]
+    [Range(0f, 10f)] public float sparkEndMinSpeed = 0f;
 
     [Header("火花：方向")]
     [Tooltip("向上的抛射分量（>=0，避免朝下射入地面）")]
@@ -57,8 +59,20 @@ public class ShockwaveVFX : MonoBehaviour
     public float sparkMaxSize = 0.28f;
     [Tooltip("粒子最小尺寸")]
     public float sparkMinSize = 0.12f;
+    [Tooltip("粒子末端大小相对初始的倍数：1=不变，0=缩到0，>1=放大（如2=放大到2倍）")]
+    [Range(0f, 5f)] public float sparkEndSize = 0f;
+    [Tooltip("粒子大小变化曲线：1=线性，>1=先快后慢，<1=先慢后快")]
+    [Range(0.1f, 3f)] public float sparkSizeEase = 1f;
     [Tooltip("粒子寿命（秒）")]
     public float sparkLifetime = 0.55f;
+
+    [Header("火花：朝向")]
+    [Tooltip("粒子朝向模式。Billboard=始终面朝相机（像纸片）；StretchedBillboard=沿速度方向拉伸（有轨迹感）")]
+    public ParticleSystemRenderMode sparkRenderMode = ParticleSystemRenderMode.StretchedBillboard;
+    [Tooltip("StretchedBillboard 模式下，速度对拉伸长度的影响")]
+    [Range(0f, 2f)] public float sparkVelocityScale = 0.35f;
+    [Tooltip("StretchedBillboard 模式下，基础拉伸长度")]
+    [Range(0f, 2f)] public float sparkLengthScale = 0.5f;
 
     [Header("火花：颜色")]
     [Tooltip("红方火花颜色（HDR：分量 >1 才会被 Bloom 泛出光晕）")]
@@ -186,15 +200,19 @@ public class ShockwaveVFX : MonoBehaviour
         sh.scale = Vector3.one * 0.01f;
         sh.randomDirectionAmount = 0f;
 
-        // 关闭内置速度/受力模块：我们每帧手动写 velocity，避免和内置模拟打架
+        // 关闭内置速度/受力/大小模块：我们每帧手动写 velocity 与 size，避免和内置模拟打架
         var vel = ps.velocityOverLifetime;
         vel.enabled = false;
         var force = ps.forceOverLifetime;
         force.enabled = false;
+        var sizeLife = ps.sizeOverLifetime;
+        sizeLife.enabled = false;
 
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.sharedMaterial = mat;
-        r.renderMode = ParticleSystemRenderMode.Billboard;
+        r.renderMode = sparkRenderMode;
+        r.velocityScale = sparkVelocityScale;
+        r.lengthScale = sparkLengthScale;
         r.sortingOrder = sparkSortingOrder;
 
         ps.Play();   // 保证进入 Playing 状态，Emit 出来的粒子才会被模拟与绘制
@@ -226,22 +244,25 @@ public class ShockwaveVFX : MonoBehaviour
         EmitBurst(_sparkBlue, 1f, n);
     }
 
-    /// <summary>同步材质颜色 / 排序 —— Play 中改参数立刻可见。</summary>
+    /// <summary>同步材质颜色 / 渲染模式 / 排序 —— Play 中改参数立刻可见。</summary>
     private void SyncMaterials()
     {
         if (_matRed != null) _matRed.SetColor("_BaseColor", sparkColorRed);
         if (_matBlue != null) _matBlue.SetColor("_BaseColor", sparkColorBlue);
 
-        if (_sparkRed != null)
-        {
-            var r = _sparkRed.GetComponent<ParticleSystemRenderer>();
-            if (r != null && r.sortingOrder != sparkSortingOrder) r.sortingOrder = sparkSortingOrder;
-        }
-        if (_sparkBlue != null)
-        {
-            var r = _sparkBlue.GetComponent<ParticleSystemRenderer>();
-            if (r != null && r.sortingOrder != sparkSortingOrder) r.sortingOrder = sparkSortingOrder;
-        }
+        SyncRenderer(_sparkRed);
+        SyncRenderer(_sparkBlue);
+    }
+
+    private void SyncRenderer(ParticleSystem ps)
+    {
+        if (ps == null) return;
+        var r = ps.GetComponent<ParticleSystemRenderer>();
+        if (r == null) return;
+        if (r.renderMode != sparkRenderMode) r.renderMode = sparkRenderMode;
+        if (!Mathf.Approximately(r.velocityScale, sparkVelocityScale)) r.velocityScale = sparkVelocityScale;
+        if (!Mathf.Approximately(r.lengthScale, sparkLengthScale)) r.lengthScale = sparkLengthScale;
+        if (r.sortingOrder != sparkSortingOrder) r.sortingOrder = sparkSortingOrder;
     }
 
     /// <summary>爆发一次：count 个粒子从中缝附近按 distribution 沿 Z 分布射出。</summary>
@@ -299,8 +320,8 @@ public class ShockwaveVFX : MonoBehaviour
         return zNorm * halfLen;
     }
 
-    /// <summary>手动模拟：重力 + 指数衰减 + 地面碰撞。
-    /// 只改 velocity，不改 position——position 仍由粒子系统内部积分，避免双重积分。</summary>
+    /// <summary>手动模拟：重力 + 指数衰减 + 末端最小速度 + 大小变化 + 地面碰撞。
+    /// 只改 velocity 与 size，不改 position——position 仍由粒子系统内部积分，避免双重积分。</summary>
     private void ApplyPhysics(ParticleSystem ps, ref ParticleSystem.Particle[] buffer)
     {
         if (ps == null) return;
@@ -318,8 +339,18 @@ public class ShockwaveVFX : MonoBehaviour
             var p = buffer[i];
             // 重力：只改 velocity，让粒子系统内部去积分 position
             p.velocity = new Vector3(p.velocity.x, p.velocity.y - sparkGravity * dt, p.velocity.z);
-            // 速度指数衰减（标量 drag，方向不变）
-            p.velocity *= drag;
+
+            // 速度指数衰减（标量 drag，方向不变），但有下限
+            float speed = p.velocity.magnitude;
+            float newSpeed = speed * drag;
+            if (newSpeed < sparkEndMinSpeed) newSpeed = sparkEndMinSpeed;
+            if (speed > 0.0001f) p.velocity = p.velocity * (newSpeed / speed);
+
+            // 大小变化：lifeRatio=1 刚发射，0 将消失
+            float lifeRatio = p.remainingLifetime / Mathf.Max(0.001f, p.startLifetime);
+            float sizeT = Mathf.Pow(lifeRatio, sparkSizeEase);
+            p.size = Mathf.Lerp(sparkEndSize, 1f, sizeT) * p.startSize;
+
             // 地面碰撞：Y 停在地面，vy 清零，x/z 继续滑动
             if (p.position.y <= sparkGroundY)
             {

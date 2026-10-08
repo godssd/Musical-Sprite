@@ -67,8 +67,27 @@ public class ShockwaveMeshGenerator : MonoBehaviour
     [Range(0f, 1f)] public float opacity = 0.40f;
     public Color colorDeep = new Color(0.55f, 0.08f, 0.15f);
     public Color colorTip  = new Color(1.0f, 0.38f, 0.42f);
+
+    [Header("外观 · 3 层渐变（尾端颜色，默认 ColorTail = ColorDeep 即无变化）")]
+    [Tooltip("尾端颜色：判定线最外侧，比 ColorDeep 更深/更冷，形成『尾-深-亮』三层")]
+    public Color colorTail = new Color(0.25f, 0.02f, 0.08f);
+    [Tooltip("尾端结束位置（0=判定线，1=中缝）。Tail 占 0..TailPoint，Deep/Tip 占 TailPoint..1")]
+    [Range(0f, 1f)] public float tailPoint = 0.25f;
+    [Tooltip("Tail↔Deep 过渡宽度。越大越柔和，越小边缘越锐利")]
+    [Range(0.01f, 0.5f)] public float tailWidth = 0.12f;
+
+    [Header("外观 · 纵向渐变（自下而上，0=关闭）")]
+    [Tooltip("纵向渐变强度。0=均匀（关闭），1=完全生效")]
+    [Range(0f, 1f)] public float verticalAmount = 0f;
+    [Tooltip("纵向渐变中心高度：0=贴地，1=拱顶。默认 0.2 表示『从地面升起』")]
+    [Range(0f, 1f)] public float verticalCenter = 0.2f;
+    [Tooltip("纵向过渡宽度（上下宽度）：越小分界越锐利，越大越柔和")]
+    [Range(0.01f, 1f)] public float verticalWidth = 0.35f;
+    [Tooltip("纵向曲线：>1 中心尖锐集中，<1 平缓铺开，1=线性")]
+    [Range(0.1f, 4f)] public float verticalPower = 1f;
+
     [Header("纠色系数（乘法，红蓝各自独立；默认白=不改）")]
-    [Tooltip("整体乘到 colorDeep/colorTip 上，用于一键纠色而不必分别调 deep/tip")]
+    [Tooltip("整体乘到 colorDeep/colorTip/colorTail 上，用于一键纠色而不必分别调")]
     public Color colorTint = Color.white;
 
     [Header("P1 发光层（独立 Additive Pass，不影响主体透明度）")]
@@ -257,6 +276,15 @@ public class ShockwaveMeshGenerator : MonoBehaviour
         var m = mr.sharedMaterial;
         m.SetColor("_ColorDeep", colorDeep * colorTint);
         m.SetColor("_ColorTip", colorTip * colorTint);
+        m.SetColor("_ColorTail", colorTail * colorTint);
+
+        m.SetFloat("_TailPoint", tailPoint);
+        m.SetFloat("_TailWidth", tailWidth);
+
+        m.SetFloat("_VerticalAmount", verticalAmount);
+        m.SetFloat("_VerticalCenter", verticalCenter);
+        m.SetFloat("_VerticalWidth", verticalWidth);
+        m.SetFloat("_VerticalPower", verticalPower);
 
         // Shader 用顶点「局部坐标 x」推导渐变，所以锚点必须是【mesh 局部空间】的端点。
         // ⛔ 只要用的是导入模型（useImportedMesh && importedMesh != null），就必须用 mesh.bounds：
