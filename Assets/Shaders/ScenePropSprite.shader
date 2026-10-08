@@ -49,9 +49,11 @@ Shader "MusicalSprite/ScenePropSprite"
             // 冲击波辉光：全局参数（Shader.SetGlobal*），故意放在 CBUFFER 之外。
             // 放进去会被 Unity 归入 UnityPerMaterial，与 SetGlobal 写入冲突（SRP Batcher 要求逐材质常量）。
             float  _ShockGlowEnabled;
-            half4  _ShockGlowColor;
-            float4 _ShockGlowParams;   // xyz = 墙世界位置, w = 影响半径
-            float4 _ShockGlowParams2;  // x = 强度, y = 衰减指数（预留）
+            half4  _ShockGlowColorRed;
+            half4  _ShockGlowColorBlue;
+            float4 _ShockGlowParamsRed;   // xyz = 红墙世界位置, w = 影响半径
+            float4 _ShockGlowParamsBlue;  // xyz = 蓝墙世界位置, w = 影响半径
+            float4 _ShockGlowStrengths;   // x = 红强度, y = 蓝强度
 
             struct Attributes
             {
@@ -101,14 +103,20 @@ Shader "MusicalSprite/ScenePropSprite"
                 col *= 0.78;
 
                 // ---- 冲击波辉光染色（P1）----
-                // 距离衰减 + 指数：指数 >1 让中心更亮、边缘收得快，避免整片泛白。
-                // 强度为 0 时整段短路，等于关闭（不影响原有画面）。
-                if (_ShockGlowEnabled > 0.5 && _ShockGlowParams2.x > 0.0001)
+                // 【2026-10-08 改为双光源】红墙与蓝墙各自独立投光，按各自距离衰减后相加。
+                // 红方区域偏红、蓝方区域偏蓝，中间自然叠加 —— 不会再看谁大就全屏换色。
+                // 某侧强度为 0 时该侧贡献为 0，等于关闭（不影响原有画面）。
+                if (_ShockGlowEnabled > 0.5)
                 {
-                    float d = distance(i.posWS, _ShockGlowParams.xyz);
-                    float atten = saturate(1.0 - d / max(0.0001, _ShockGlowParams.w));
-                    atten = atten * atten;
-                    col += _ShockGlowColor.rgb * (atten * _ShockGlowParams2.x);
+                    float dR = distance(i.posWS, _ShockGlowParamsRed.xyz);
+                    float aR = saturate(1.0 - dR / max(0.0001, _ShockGlowParamsRed.w));
+                    aR = aR * aR;
+                    col += _ShockGlowColorRed.rgb * (aR * _ShockGlowStrengths.x);
+
+                    float dB = distance(i.posWS, _ShockGlowParamsBlue.xyz);
+                    float aB = saturate(1.0 - dB / max(0.0001, _ShockGlowParamsBlue.w));
+                    aB = aB * aB;
+                    col += _ShockGlowColorBlue.rgb * (aB * _ShockGlowStrengths.y);
                 }
 
                 return half4(col, tex.a * i.color.a);

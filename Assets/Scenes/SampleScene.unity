@@ -14817,9 +14817,6 @@ MonoBehaviour:
   idleBreathDelay: 1
   idleBreath: 1
   breathGapAmplitude: 0.8
-  wallWidthScaleX: 1
-  wallWidthScaleY: 1
-  wallWidthScaleZ: 1
   sceneGlowEnabled: 1
   sceneGlowStrength: 0.8
   sceneGlowRange: 6

@@ -41,22 +41,16 @@ public class ShockwavePreview : MonoBehaviour
     //   现【已从守卫中移除】：非运行态一律不驱动，详见 DriveRuntime 开头注释。
     [HideInInspector] public float previewTargetX = 0f;   // 保留字段仅为不破坏旧场景序列化
 
-    [Header("墙形状（编辑器基础造型修改 · 改完点下方【烘焙】按钮写进场景）")]
-    [Tooltip("沿推进方向（X）的粗细倍率。缩放绕『贴中缝的内侧边』pivot 进行，所以调大它墙会往【两侧外扩】，中缝宽度保持不变。1 = 保持当前；1.5 = 粗 50%；0.5 = 细一半。⚠ 这是【编辑器造型工具】不是运行时效果：改完必须点下方『烘焙』按钮，倍率会写进场景 Transform 并自动重置为 1，Play 时不参与任何计算。")]
-    [Range(0.2f, 3f)] public float wallWidthScaleX = 1f;
-    [Tooltip("墙高（Y）倍率。同上，需烘焙才生效")]
-    [Range(0.2f, 3f)] public float wallWidthScaleY = 1f;
-    [Tooltip("纵深（Z，沿场地前后）倍率。同上，需烘焙才生效")]
-    [Range(0.2f, 3f)] public float wallWidthScaleZ = 1f;
+    [Header("墙形状：直接在 Scene 里调两墙 Transform，改完右键本组件 → Recapture Base Transforms")]
 
     [Header("P1 场景染色：让场景与植被被冲击波的光影响")]
-    [Tooltip("总开关：把两堵墙的世界位置 + 颜色写成全局参数，\n场景 shader（ScenePropSprite / GrassFringe / GroundEdge）按距离衰减做加色。\n⛔ 本项目场景全部是 Unlit / 假光照，URP 灯光系统照不到它们，\n所以这是唯一能让『光洒到场景上』生效的通路（且零实时光源开销）")]
+    [Tooltip("总开关：红墙与蓝墙【各自独立】投光，各自带颜色/位置/强度写成全局参数，\n场景 shader（ScenePropSprite / GrassFringe / GroundEdge）按到各自墙的距离衰减后加色。\n红方区域偏红、蓝方区域偏蓝，中间自然叠加 —— 不会再看谁大就全屏换色。\n⛔ 本项目场景全部是 Unlit / 假光照，URP 灯光系统照不到它们，\n所以这是唯一能让『光洒到场景上』生效的通路（且零实时光源开销）")]
     public bool sceneGlowEnabled = true;
     [Tooltip("染色强度：场景被照亮的加色量。0 = 关闭染色。建议从 0.3~0.6 起步，过高会像加了浓雾")]
     [Range(0f, 1.5f)] public float sceneGlowStrength = 0.8f;
     [Tooltip("影响半径（世界单位）：距离墙中心多远处染色衰减到 0。\n墙的世界位置约在 z=-3.75、场地约在 z=0，所以半径至少要 4 以上才盖得到")]
     public float sceneGlowRange = 6f;
-    [Tooltip("两侧同时开启：红墙与蓝墙都往场景投染色（近距离时叠加得更亮）")]
+    [Tooltip("蓝方也投光：关闭则只有红方向场景投光（A/B 对比排查用）。\n开启时红蓝各自投光，中间地带叠加得更亮")]
     public bool sceneGlowBothSides = true;
 
     [Header("P2 缩放：弹簧阻尼（惯性肉体感）")]
@@ -143,8 +137,7 @@ public class ShockwavePreview : MonoBehaviour
     private Vector3 _redBasePos, _blueBasePos;
     private Quaternion _redBaseRot, _blueBaseRot;
     private Vector3 _redBaseScale, _blueBaseScale;
-    // CaptureBase 时捕获的场景原始缩放（不含任何形状系数），烘焙按钮以它为基准
-    private Vector3 _redRawScale, _blueRawScale;
+    // 【2026-10-08 已删除】原 _redRawScale/_blueRawScale 仅服务于已删除的「烘焙墙形状」功能。
     private Vector3 _redPivot, _bluePivot;   // 墙 mesh 局部空间里的"贴中缝内侧边"点
     private float _redScale = 1f, _blueScale = 1f;
 
@@ -278,7 +271,7 @@ public class ShockwavePreview : MonoBehaviour
         }
         // P1 场景染色：Shader.SetGlobal 是【跨对象的全局状态】，不随本组件销毁而清除。
         // 不清的话退出 Play 后场景物件会一直带着最后一次的染色（编辑器里也残留）。
-        Shader.SetGlobalFloat(ShockGlowParams2Id, 0f);
+        Shader.SetGlobalVector(ShockGlowStrengthsId, Vector4.zero);
         Shader.SetGlobalFloat(ShockGlowEnabledId, 0f);
     }
 
@@ -327,8 +320,8 @@ public class ShockwavePreview : MonoBehaviour
         //
         //
         //   【2026-10-08 定稿】编辑器非运行状态【一律不驱动】。
-        //   形状修改改用「烘焙」按钮（见 BakeWallShape）—— 在编辑态直接把倍率写进场景的
-        //   localScale，运行时逻辑完全不参与，避免指数累乘与中缝污染。
+        //   墙的基础造型直接在 Scene 里调两墙 Transform（加粗时同步微调 localPosition 保住中缝），
+        //   改完右键本组件 →「Recapture Base Transforms」重新绑定 —— 运行时逻辑不参与造型修改。
         if (!Application.isPlaying) return;
         float curX = SeamX;
         float dt = Time.deltaTime;
@@ -762,92 +755,74 @@ public class ShockwavePreview : MonoBehaviour
     //     - 形状完全可控（比点光源的球形衰减更适合长条拱形）
     //     - 墙移动时光效自动跟随（每帧写全局）
     //
-    // 两墙都在场景里，各自用自己的位置算距离；取【较亮的那一侧】写入全局。
+    // 【2026-10-08 改为双光源】红墙与蓝墙【各自独立】投光，不再是「取较亮的一侧」：
+    //   - 红方区域受红光、蓝方区域受蓝光，中间地带自然叠加成粉紫。
+    //   - 两侧各有独立的 颜色 / 位置 / 强度，谁大谁小都不会让全屏瞬间换色。
     // ==================================================================
-    private static readonly int ShockGlowColorId = Shader.PropertyToID("_ShockGlowColor");
-    private static readonly int ShockGlowParamsId = Shader.PropertyToID("_ShockGlowParams");
-    private static readonly int ShockGlowParams2Id = Shader.PropertyToID("_ShockGlowParams2");
-    private static readonly int ShockGlowEnabledId = Shader.PropertyToID("_ShockGlowEnabled");
+    private static readonly int ShockGlowEnabledId    = Shader.PropertyToID("_ShockGlowEnabled");
+    private static readonly int ShockGlowColorRedId   = Shader.PropertyToID("_ShockGlowColorRed");
+    private static readonly int ShockGlowColorBlueId  = Shader.PropertyToID("_ShockGlowColorBlue");
+    private static readonly int ShockGlowParamsRedId  = Shader.PropertyToID("_ShockGlowParamsRed");
+    private static readonly int ShockGlowParamsBlueId = Shader.PropertyToID("_ShockGlowParamsBlue");
+    private static readonly int ShockGlowStrengthsId  = Shader.PropertyToID("_ShockGlowStrengths");
 
     // 墙的发光颜色（取自 ShockwaveMeshGenerator.glowColor），在 CaptureBase 时缓存
     private Color _redGlowColor = new Color(1f, 0.5f, 0.5f, 1f);
     private Color _blueGlowColor = new Color(0.4f, 0.6f, 1f, 1f);
 
+    /// <summary>光照强度随墙放大倍率的变化因子（1.0 倍≈1.0×，1.5 倍≈1.4×）。
+    /// ⛔ 只改「照到场景上的量」，不改变墙自身亮度。
+    ///
+    /// 【扩展窗口】后续要加的「前进状态增强 / 衰退削弱 / 扣血闪动脉冲」等强度变化，
+    /// 都只需在这里多乘一个因子 —— shader 侧完全不用改（它只认最终强度这一个数）。
+    /// ⛔ 不要把强度逻辑写进 shader：否则每加一种效果都要动三个 shader 文件并膨胀全局参数。
+    /// </summary>
+    private float GlowStrengthFromScale(float wallScale)
+    {
+        return Mathf.Clamp(0.6f + 0.8f * wallScale, 0.4f, 1.8f);
+    }
+
     private void ApplySceneGlow()
     {
         if (!sceneGlowEnabled || sceneGlowStrength <= 0.0001f)
         {
-            // 关闭时把强度写 0（而不是恢复 Enabled=0）—— shader 侧会整段短路，画面完全回到原样
-            Shader.SetGlobalFloat(ShockGlowParams2Id, 0f);
             Shader.SetGlobalFloat(ShockGlowEnabledId, 0f);
             return;
         }
         Shader.SetGlobalFloat(ShockGlowEnabledId, 1f);
 
-        // ---- 选贡献更强的一侧：放大倍率越大 => 能量越强 => 染色越亮 ----
-        Transform src = redWall;
-        float srcScale = _redScale;
-        Color srcColor = _redGlowColor;
-        if (blueWall != null && (!sceneGlowBothSides || _blueScale > _redScale))
+        float range = Mathf.Max(0.0001f, sceneGlowRange);
+
+        // ---- 红光：红墙独立投光 ----
+        if (redWall != null)
         {
-            src = blueWall; srcScale = _blueScale; srcColor = _blueGlowColor;
-        }
-        if (src == null) return;
-
-        // 强度随放大倍率上升：1.0 倍时约 1.0×，1.5 倍时约 1.4×。
-        // ⛔ 不改变墙自身亮度，只改「照到场景上的量」。
-        float k = Mathf.Clamp(0.6f + 0.8f * srcScale, 0.4f, 1.8f);
-        float strength = sceneGlowStrength * k;
-
-        Vector3 p = src.position;
-        Shader.SetGlobalVector(ShockGlowParamsId,
-            new Vector4(p.x, p.y, p.z, Mathf.Max(0.0001f, sceneGlowRange)));
-        Shader.SetGlobalVector(ShockGlowParams2Id, new Vector4(strength, 2f, 0f, 0f));
-        Shader.SetGlobalColor(ShockGlowColorId, srcColor);
-    }
-
-    /// <summary>【编辑器造型工具】把 wallWidthScaleX/Y/Z 烘焙进两墙的 localScale，然后系数重置为 1。
-    ///
-    /// 语义（用户明确）：墙形状是【编辑器里的基础造型修改】，不是运行时效果。
-    /// Play 时这三个系数完全不参与任何计算 —— 形状已经写死在场景 Transform 里。
-    ///
-    /// ⛔ 为什么不做成"运行时实时生效"（2026-10-08 的事故教训）：
-    ///   1) 实时方案里 _redRawScale 会被 CaptureBase 反复读取，而读到的已是"乘过系数的当前值"
-    ///      -> 每次改参数都在历史值上再乘一次 -> <b>指数发散且不可逆</b>（154→232→348→543…），
-    ///      中缝被撑到巨大，退出 Play 也恢复不了（Unity 不回滚脚本对 Transform 的修改）。
-    ///   2) pivot 补偿量是 offset*(1-f)，静止时恒为 0，形状调大后墙的中缝侧会跟着变宽、压向对面。
-    ///   烘焙方案两个问题都不存在：倍率被"消费"成场景真实值后系数归1，永远不会累乘；
-    ///   而形状属于 base 的一部分，缩放绕内侧边 pivot 进行 —— 中缝宽度天然不变。
-    /// </summary>
-    [ContextMenu("烘焙墙形状到场景（倍率会重置为 1）")]
-    void BakeWallShape()
-    {
-        EnsureWalls();
-        if (_redRawScale == Vector3.zero) CaptureBase();   // 没捕获过就先捕获一次
-
-        var shape = WallShapeScale;
-        bool isIdentity = shape.x == 1f && shape.y == 1f && shape.z == 1f;
-
-        if (!isIdentity)
-        {
-            // 只改 localScale，不动 localPosition —— 形状进入 base 后由pivot 缩放自动保证中缝不变
-            redWall.localScale  = Vector3.Scale(_redRawScale, shape);
-            blueWall.localScale = Vector3.Scale(_blueRawScale, shape);
-            // 消费掉倍率，避免重复烘焙造成累乘
-            wallWidthScaleX = wallWidthScaleY = wallWidthScaleZ = 1f;
+            Vector3 pr = redWall.position;
+            Shader.SetGlobalVector(ShockGlowParamsRedId, new Vector4(pr.x, pr.y, pr.z, range));
+            Shader.SetGlobalColor(ShockGlowColorRedId, _redGlowColor);
         }
 
-        // 重新捕获，让新形状立刻成为运行时基准（CaptureBase 内会把 rawScale 更新为烘焙后的值）
-        CaptureBase();
+        // ---- 蓝光：蓝墙独立投光（sceneGlowBothSides 关闭则只留红光，A/B 排查用）----
+        if (blueWall != null && sceneGlowBothSides)
+        {
+            Vector3 pb = blueWall.position;
+            Shader.SetGlobalVector(ShockGlowParamsBlueId, new Vector4(pb.x, pb.y, pb.z, range));
+            Shader.SetGlobalColor(ShockGlowColorBlueId, _blueGlowColor);
+        }
 
-        Debug.Log(isIdentity
-            ? "[ShockwavePreview] 烘焙墙形状：倍率本就是 1，未改动 Transform，只重新捕获了base。"
-            : "[ShockwavePreview] 烘焙墙形状：" + shape.ToString("F3")
-              + " 已写入场景 Transform，倍率已重置为 1。请 Ctrl+S 保存场景。", this);
+        // ---- 强度：两侧各自独立，按各自的放大倍率变化 ----
+        float redStrength  = sceneGlowStrength * GlowStrengthFromScale(_redScale);
+        float blueStrength = (blueWall != null && sceneGlowBothSides)
+            ? sceneGlowStrength * GlowStrengthFromScale(_blueScale)
+            : 0f;
+        Shader.SetGlobalVector(ShockGlowStrengthsId, new Vector4(redStrength, blueStrength, 0f, 0f));
     }
 
-    /// <summary>墙形状倍率（Inspector 的 wallWidthScaleX/Y/Z），仅供上面的烘焙按钮使用。</summary>
-    private Vector3 WallShapeScale => new Vector3(wallWidthScaleX, wallWidthScaleY, wallWidthScaleZ);
+    // 【2026-10-08 已删除】原「烘焙墙形状」功能（BakeWallShape + WallShapeScale + wallWidthScaleX/Y/Z）。
+    //   删除理由：它只改 localScale、不改 localPosition，而内侧边 = pos.x + scale.x × pivot.x
+    //   → 缩放放大时内侧边向中缝推进（×1.4 时两墙各推进约 0.62，远超中缝 0.20 → 直接互相穿透）。
+    //   ⛔ 教训：pivot 补偿 offset*(1-f) 在 f=1（静止）时恒为 0，靠它「自动保住中缝」是错的。
+    //   现行做法：直接在 Scene 里调两墙 Transform（加粗时同步微调 localPosition），
+    //            改完右键本组件 →「Recapture Base Transforms」重新绑定。
 
     /// <summary>绕墙 mesh 局部内侧边 pivot 缩放：保持中缝侧边不动，向外扩，间隙不变。
     /// ⛔【通道分离铁律】f 只来自「累积距离 accum」，extra 只来自「呼吸开合 + 回弹弹开」：
@@ -888,10 +863,7 @@ public class ShockwavePreview : MonoBehaviour
             var mf = redWall.GetComponent<MeshFilter>();
             _redBasePos = redWall.localPosition;
             _redBaseRot = redWall.localRotation;
-            // 应用「墙形状」倍率（只在捕获 base 时乘一次，运行时 ApplyScale 的逻辑完全不动）。
-            // ⚠ 必须用 Vector3.Scale（逐分量），不能用 `*` —— Unity C# 不支持 Vector3 * Vector3（CS0019）。
-            _redRawScale = redWall.localScale;                       // 原始缩放（不含形状系数）
-            _redBaseScale = Vector3.Scale(_redRawScale, WallShapeScale);
+            _redBaseScale = redWall.localScale;
             _redPivot = (mf != null && mf.sharedMesh != null) ? GetInnerEdgeMeshLocal(mf, true) : Vector3.zero;
         }
         if (blueWall != null)
@@ -899,8 +871,7 @@ public class ShockwavePreview : MonoBehaviour
             var mf = blueWall.GetComponent<MeshFilter>();
             _blueBasePos = blueWall.localPosition;
             _blueBaseRot = blueWall.localRotation;
-            _blueRawScale = blueWall.localScale;
-            _blueBaseScale = Vector3.Scale(_blueRawScale, WallShapeScale);
+            _blueBaseScale = blueWall.localScale;
             _bluePivot = (mf != null && mf.sharedMesh != null) ? GetInnerEdgeMeshLocal(mf, false) : Vector3.zero;
         }
         // 缓存两墙的基础 Opacity（呼吸亮度在其上叠加；SyncMaterial 每帧会写回该值）
