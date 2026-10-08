@@ -42,10 +42,7 @@ public class ShockwavePreview : MonoBehaviour
     [HideInInspector] public float previewTargetX = 0f;   // 保留字段仅为不破坏旧场景序列化
 
     [Header("墙形状（编辑器基础造型修改 · 改完点下方【烘焙】按钮写进场景）")]
-    [Tooltip("沿推进方向（X）的粗细倍率。缩放绕『贴中缝的内侧边』pivot 进行，\n             "所以调大它，墙会往【两侧外扩】，中缝宽度保持不变。\n"
-             "1 = 保持当前；1.5 = 粗 50%；0.5 = 细一半。\n"
-             "⚠ 这是【编辑器造型工具】，不是运行时效果：改完必须点下方『烘焙』按钮，"
-             "倍率会写进场景 Transform 并自动重置为 1。Play 时不参与任何计算。")]
+    [Tooltip("沿推进方向（X）的粗细倍率。缩放绕『贴中缝的内侧边』pivot 进行，所以调大它墙会往【两侧外扩】，中缝宽度保持不变。1 = 保持当前；1.5 = 粗 50%；0.5 = 细一半。⚠ 这是【编辑器造型工具】不是运行时效果：改完必须点下方『烘焙』按钮，倍率会写进场景 Transform 并自动重置为 1，Play 时不参与任何计算。")]
     [Range(0.2f, 3f)] public float wallWidthScaleX = 1f;
     [Tooltip("墙高（Y）倍率。同上，需烘焙才生效")]
     [Range(0.2f, 3f)] public float wallWidthScaleY = 1f;
