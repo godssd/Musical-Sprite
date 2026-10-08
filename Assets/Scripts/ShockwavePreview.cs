@@ -820,24 +820,6 @@ public class ShockwavePreview : MonoBehaviour
         Shader.SetGlobalColor(ShockGlowColorId, srcColor);
     }
 
-    /// <summary>绕墙 mesh 局部内侧边 pivot 缩放：保持中缝侧边不动，向外扩，间隙不变。
-    /// ⛔【通道分离铁律】f 只来自「累积距离 accum」，extra 只来自「呼吸开合 + 回弹弹开」：
-    ///    - f     -> 只写 localScale（大小通道）
-    ///    - extra -> 只写 localPosition（位移通道）
-    /// 两者互不影响、互不叠加 —— 任何把 scale 塞进 extra 来源、或把位移塞进 f 的改动都违反铁律。</summary>
-    /// <summary>把「墙形状」系数实时乘进两墙的 baseScale。
-    /// ⚠【为什么不能只在 CaptureBase 里乘】用户会在 Play 模式里调 Inspector，
-    ///   而 CaptureBase 只在 Awake / 非Play 的 OnValidate 里跑 —— Play 中改参数不会重新捕获，
-    ///   参数看起来"完全没效果"。所以这里改成每帧应用，改完立刻见效。
-    ///   它只改 baseScale（大小通道的基准），不碰 extra（位移通道），也不改中缝位置。</summary>
-    private void ApplyShapeScale()
-    {
-        if (wallWidthScaleX == 1f && wallWidthScaleY == 1f && wallWidthScaleZ == 1f) return;
-        if (_redRawScale == Vector3.zero) return;   // 还没捕获 base，跳过
-        _redBaseScale = Vector3.Scale(_redRawScale, WallShapeScale);
-        if (_blueRawScale != Vector3.zero)
-            _blueBaseScale = Vector3.Scale(_blueRawScale, WallShapeScale);
-    }
     /// <summary>把「墙形状」系数实时乘进两墙的 baseScale。
     /// ⚠【为什么不能只在 CaptureBase 里乘】用户会在 Play 模式里调 Inspector，
     ///   而 CaptureBase 只在 Awake / 非 Play 的 OnValidate 里跑 —— Play 中改参数不会重新捕获，
