@@ -188,6 +188,12 @@ public class ShockwavePreview : MonoBehaviour
     private float _breathT = 0f;
     private float _breathK = 0f;
     private float _breathFade = 0f;
+    // P4① 撞击事件：_breathP = 上一帧相位；相位回绕（p 从 ~1 跳回 ~0）== 合拢到最紧 == 撞击瞬间。
+    // _breathImpact 是本帧撞击标记，由 ShockwaveVFX.ConsumeBreathImpact() 消费一次后清零。
+    private float _breathP = 0f;
+    private bool _breathImpact = false;
+    // 【2026-10-08 新增】P4 ① 碰撞火花。留空则 Play 时自动创建（见 EnsureVFX）。
+    public ShockwaveVFX vfx;
     private float _redBaseOpacity = 0f, _blueBaseOpacity = 0f;
 
     // 对峙循环判定：中线静止累计时长 + 上一帧中线位置（只看中线，与前进状态 / 衰退无关）
@@ -250,6 +256,8 @@ public class ShockwavePreview : MonoBehaviour
         // 运行时兜底：centerLine / ScoreManager 若忘记拖拽或晚于本脚本创建，这里补上
         if (centerLine == null) centerLine = FindFirstObjectByType<BattleCenterLine>();
         BindScoreEvents();
+        // P4① 火花组件：留空则自动创建（EnsureVFX 内部已做 isPlaying 守卫）
+        EnsureVFX();
     }
 
     /// <summary>墙的 ShockwaveMeshGenerator.autoFit 若开启，与本品 Transform 控制冲突，强制关闭并继续运行。</summary>
@@ -707,17 +715,24 @@ public class ShockwavePreview : MonoBehaviour
         {
             _breathFade = Mathf.MoveTowards(_breathFade, 0f, dt * 4f);
             if (_breathFade <= 1e-3f) { _breathFade = 0f; _breathT = 0f; _breathK = 0f; }
+            _breathP = 0f; _breathImpact = false;
             return;   // 不推进相位
         }
 
         // 静止：淡入呼吸并推进相位
+        _breathImpact = false;
         _breathFade = Mathf.MoveTowards(_breathFade, idleBreath ? 1f : 0f, dt * 3f);
-        if (!idleBreath && _breathFade <= 1e-3f) { _breathK = 0f; return; }
+        if (!idleBreath && _breathFade <= 1e-3f) { _breathK = 0f; _breathP = 0f; return; }
 
         _breathT += dt;
         float period = Mathf.Max(0.05f, breathPeriod);
         float p = Mathf.Repeat(_breathT, period) / period;      // 相位 0..1
         float outR = Mathf.Clamp(breathOutRatio, 0.05f, 0.95f);
+
+        // ---- P4① 撞击事件：相位回绕（1 -> 0）就是「合拢到最紧」的那一刻 ----
+        // _breathFade 未满时不发，避免刚从移动中停下、呼吸还没淡入完就先炸一下。
+        if (p < _breathP - 0.5f && _breathFade > 0.85f) _breathImpact = true;
+        _breathP = p;
 
         if (p <= outR)
         {
@@ -1013,6 +1028,35 @@ public class ShockwavePreview : MonoBehaviour
 
     /// <summary>中缝 X：接了 centerLine 用 currentX，否则用静态预览的 centerX。</summary>
     private float SeamX => (centerLine != null) ? centerLine.currentX : centerX;
+
+    /// <summary>中缝的世界 X（根位置 + 中缝逻辑坐标）。P4① 火花用它定位。</summary>
+    public float SeamWorldX => _baseRootPos.x + SeamX;
+
+    // ================== P4 ① 碰撞火花：撞击事件接口（供 ShockwaveVFX 消费）==================
+    /// <summary>取一次「合拢撞击」事件。消费后自动清零，每周期只会返回一次 true。
+    /// ⛔ 撞击事件完全由对峙呼吸的相位回绕产生，与得分 / 放大 / 衰退无关。</summary>
+    public bool ConsumeBreathImpact()
+    {
+        if (!_breathImpact) return false;
+        _breathImpact = false;
+        return true;
+    }
+
+    /// <summary>撞击强度 0..1（= 呼吸淡入系数）。呼吸刚开始淡入时弱，稳定后满值。
+    /// 火花用它缩放发射数量，避免"刚停下就满屏炸"。</summary>
+    public float BreathImpactStrength => _breathFade;
+
+    /// <summary>确保 P4 特效组件存在。⛔ 只在运行时创建 —— 编辑态创建会往场景里塞 DontSave 物体造成污染。</summary>
+    private void EnsureVFX()
+    {
+        if (!Application.isPlaying) return;
+        if (vfx != null) return;
+        var go = new GameObject("ShockwaveVFX_Auto");
+        go.transform.SetParent(transform, false);
+        go.hideFlags = HideFlags.DontSave;
+        vfx = go.AddComponent<ShockwaveVFX>();
+        vfx.preview = this;
+    }
 
     private void GetFronts(out float rFront, out float bFront)
     {
