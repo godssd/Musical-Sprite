@@ -203,14 +203,6 @@ public class ShockwavePreview : MonoBehaviour
     [SerializeField] private float _dbgRedTarget, _dbgBlueTarget;
     [SerializeField] private string _dbgRedState, _dbgBlueState;
     [SerializeField] private float _dbgRedIgnoreT, _dbgBlueIgnoreT;
-
-    [Header("场景染色 · 自检与诊断")]
-    [Tooltip("勾上后 ApplySceneGlow 跳过正常计算，直接写一组极端值：纯红 / 强度 8 / 半径 100 / 蓝光全关。用来判断 shader 侧到底有没有响应 Shader.SetGlobal*。判断完记得取消勾选。")]
-    [SerializeField] private bool _glowSelfTest;
-    [Tooltip("只读诊断，显示本帧真正写进全局的值。判读：Enabled=1 且 RedStr>0 但画面无变化 => shader 侧没响应（多半未重新编译）；ProbeAtten 接近 0 => Range 太小，盖不到地面。")]
-    [SerializeField] private float _dbgGlowEnabled, _dbgGlowRange, _dbgGlowRedStr, _dbgGlowBlueStr;
-    [SerializeField] private Vector3 _dbgGlowRedPos, _dbgGlowBluePos;
-    [SerializeField] private float _dbgGlowProbeDist, _dbgGlowProbeAtten;
 #endif
 
 #if UNITY_EDITOR
@@ -792,15 +784,9 @@ public class ShockwavePreview : MonoBehaviour
 
     private void ApplySceneGlow()
     {
-#if UNITY_EDITOR
-        if (_glowSelfTest) { WriteSelfTestGlow(); return; }
-#endif
         if (!sceneGlowEnabled || sceneGlowStrength <= 0.0001f)
         {
             Shader.SetGlobalFloat(ShockGlowEnabledId, 0f);
-#if UNITY_EDITOR
-            _dbgGlowEnabled = 0f;
-#endif
             return;
         }
         Shader.SetGlobalFloat(ShockGlowEnabledId, 1f);
@@ -829,48 +815,7 @@ public class ShockwavePreview : MonoBehaviour
             ? sceneGlowStrength * GlowStrengthFromScale(_blueScale)
             : 0f;
         Shader.SetGlobalVector(ShockGlowStrengthsId, new Vector4(redStrength, blueStrength, 0f, 0f));
-
-#if UNITY_EDITOR
-        _dbgGlowEnabled = 1f;
-        _dbgGlowRange = range;
-        _dbgGlowRedStr = redStrength;
-        _dbgGlowBlueStr = blueStrength;
-        _dbgGlowRedPos  = (redWall  != null) ? redWall.position  : Vector3.zero;
-        _dbgGlowBluePos = (blueWall != null) ? blueWall.position : Vector3.zero;
-        // 探针：场地中心、地面高度（y=0）处的一点。用它反推 range 到底够不够得着地面。
-        Vector3 probe = new Vector3((leftEdge + rightEdge) * 0.5f, 0f, 0f);
-        float dProbe = Vector3.Distance(probe, _dbgGlowRedPos);
-        float aProbe = Mathf.Clamp01(1f - dProbe / Mathf.Max(0.0001f, range));
-        _dbgGlowProbeDist = dProbe;
-        _dbgGlowProbeAtten = aProbe * aProbe;   // shader 里也是平方，这里保持一致
-#endif
     }
-
-#if UNITY_EDITOR
-    /// <summary>场景染色自检：绕开全部正常计算，直接写一组「不可能看不见」的极端值。
-    /// 纯红 / 强度 8 / 半径 100 / 蓝光全关。若这样画面仍无任何变化，即可 100% 判定
-    /// shader 侧根本没响应 Shader.SetGlobal*（最常见原因是 shader 未重新编译）。</summary>
-    private void WriteSelfTestGlow()
-    {
-        EnsureWalls();
-        Vector3 p = (redWall != null) ? redWall.position : Vector3.zero;
-        Shader.SetGlobalFloat(ShockGlowEnabledId, 1f);
-        Shader.SetGlobalVector(ShockGlowParamsRedId,  new Vector4(p.x, p.y, p.z, 100f));
-        Shader.SetGlobalColor(ShockGlowColorRedId, Color.red);
-        Shader.SetGlobalVector(ShockGlowParamsBlueId, new Vector4(p.x, p.y, p.z, 100f));
-        Shader.SetGlobalColor(ShockGlowColorBlueId, Color.black);
-        Shader.SetGlobalVector(ShockGlowStrengthsId, new Vector4(8f, 0f, 0f, 0f));
-
-        _dbgGlowEnabled = 1f;
-        _dbgGlowRange = 100f;
-        _dbgGlowRedStr = 8f;
-        _dbgGlowBlueStr = 0f;
-        _dbgGlowRedPos = p;
-        _dbgGlowBluePos = p;
-        _dbgGlowProbeDist = 0f;
-        _dbgGlowProbeAtten = 1f;
-    }
-#endif
 
     // 【2026-10-08 已删除】原「烘焙墙形状」功能（BakeWallShape + WallShapeScale + wallWidthScaleX/Y/Z）。
     //   删除理由：它只改 localScale、不改 localPosition，而内侧边 = pos.x + scale.x × pivot.x
