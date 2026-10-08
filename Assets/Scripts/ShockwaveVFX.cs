@@ -6,8 +6,9 @@ using UnityEngine;
 /// ① 碰撞火花的设计（用户 2026-10-08 指定）：
 ///   - 【穿插在对峙循环里】：每次对峙呼吸合拢到最紧（撞击瞬间）在中缝迸射一次。
 ///     与得分 / 放大 / 衰退完全无关 —— 触发源是 ShockwavePreview.ConsumeBreathImpact()。
-///   - 【位置】只在中缝那条线上，不是整条拱顶也不是墙全身。
-///   - 【方向】从中缝向周围迸开：±Z 为主、±Y 为辅、X 只有极微小发散（不是上飘的火星）。
+///   - 【位置】沿中缝 Z 轴分布，由 sparkDistribution 控制集中在中央还是两端。
+///   - 【方向】从中缝向外射出：主方向 ±Z + 上抛 + X 微发散。初速度大小 [min,max]，方向固定。
+///   - 【物理】速度指数衰减；持续受 -Y 重力；落到 sparkGroundY 后停止下降，自然滑动到 lifetime 结束。
 ///
 /// ⛔ 已踩过的坑（详见方案文档 §4，改本文件前必读）：
 ///   1) velocityOverLifetime 三轴必须同模式（MinMaxCurve(min,max)），否则 Console 报
@@ -25,42 +26,63 @@ public class ShockwaveVFX : MonoBehaviour
     [Tooltip("总开关。关闭后不发任何火花，已发射的粒子自然消散")]
     public bool enableSpark = true;
 
-    [Tooltip("迸射点的高度（世界 Y）。中缝线是竖直的一条，这里是它的中心高度")]
+    [Header("火花：发射")]
+    [Tooltip("迸射点的高度（世界 Y）")]
     public float sparkY = 0.7f;
-    [Tooltip("中缝线上『有多长一段』会迸射火花（世界单位，沿 Z 铺开）。\n调大=整条中缝都在冒火花；调小=只在中间一小段炸开")]
-    public float sparkLineLengthZ = 2.5f;
-
-    [Tooltip("每次撞击发射的粒子数。对撞的『量感』主要靠它")]
+    [Tooltip("地面高度。粒子 Y 不会低于此值")]
+    public float sparkGroundY = 0f;
+    [Tooltip("中缝线上『有多长一段』会迸射火花（世界单位，沿 Z 铺开）")]
+    public float sparkZLength = 2.5f;
+    [Tooltip("粒子发射位置沿 Z 的分布：0=集中在 Z=0 中央，0.5=均匀，1=偏向 Z=±Half 两端")]
+    [Range(0f, 1f)] public float sparkDistribution = 0.5f;
+    [Tooltip("每次撞击发射的粒子总量")]
     public int sparkBurstCount = 16;
 
-    [Tooltip("±Z 迸射速度（主方向）：粒子会在这个速度的 ± 区间里随机取一个恒定值")]
-    public float sparkSideZ = 2.6f;
-    [Tooltip("±Y 上下分量：让火花不是一条平线，有上下翻飞感。⚠ 不能只往上 —— 那会被看成上飘的火星")]
-    public float sparkUp = 1.3f;
-    [Tooltip("X 方向发散。保持很小：火花是『沿中缝迸开』不是『朝前后飞』")]
-    public float sparkSideX = 0.35f;
+    [Header("火花：速度")]
+    [Tooltip("粒子射出时的最大速度")]
+    public float sparkMaxSpeed = 3.5f;
+    [Tooltip("粒子射出时的最小速度")]
+    public float sparkMinSpeed = 1.2f;
+    [Tooltip("速度指数衰减强度（越大减速越快）")]
+    [Range(0f, 20f)] public float sparkDecel = 3f;
 
-    [Tooltip("粒子寿命（秒）。短一点更像撞击碎片，长了会糊成一片")]
+    [Header("火花：方向")]
+    [Tooltip("向上的抛射分量（>=0，避免朝下射入地面）")]
+    public float sparkUp = 1.6f;
+    [Tooltip("X 方向发散。中缝两侧微微散开；符号随机，不会偏向某一侧")]
+    public float sparkSideX = 0.3f;
+
+    [Header("火花：外观")]
+    [Tooltip("粒子最大尺寸")]
+    public float sparkMaxSize = 0.28f;
+    [Tooltip("粒子最小尺寸")]
+    public float sparkMinSize = 0.12f;
+    [Tooltip("粒子寿命（秒）")]
     public float sparkLifetime = 0.55f;
-    [Tooltip("粒子尺寸")]
-    public float sparkSize = 0.22f;
-    [Tooltip("尺寸随机比例 0~1：0=每个一样大，1=大小差异拉满。有差异才有碎屑感")]
-    [Range(0f, 1f)] public float sparkSizeRandom = 0.45f;
 
+    [Header("火花：颜色")]
     [Tooltip("红方火花颜色（HDR：分量 >1 才会被 Bloom 泛出光晕）")]
     public Color sparkColorRed = new Color(2.0f, 0.95f, 0.70f, 1f);
     [Tooltip("蓝方火花颜色（HDR）")]
     public Color sparkColorBlue = new Color(0.70f, 1.15f, 2.0f, 1f);
 
+    [Header("火花：触发")]
     [Tooltip("撞击强度不足时不发火花（0=只要撞就发，1=只有呼吸完全稳定才发）。\n用来避免『刚从移动中停下、呼吸还在淡入』就先炸一下")]
     [Range(0f, 1f)] public float sparkMinImpact = 0.6f;
+
+    [Header("火花：环境")]
+    [Tooltip("向下重力加速度（世界 Y）。粒子被持续拉低；建议保持较低值，让弧线更明显")]
+    [Range(0f, 20f)] public float sparkGravity = 2f;
 
     [Tooltip("渲染排序。火花盖在墙(约20)之上")]
     public int sparkSortingOrder = 21;
 
     private ParticleSystem _sparkRed, _sparkBlue;
     private Material _matRed, _matBlue;
-    private Texture2D _dot;              // 程序化圆点贴图（项目暂无粒子贴图资产）
+    private Texture2D _dot;
+
+    // 每帧 GetParticles/SetParticles 的缓冲区，复用避免 GC。
+    private ParticleSystem.Particle[] _redParticles, _blueParticles;
 
     void OnEnable()
     {
@@ -68,7 +90,14 @@ public class ShockwaveVFX : MonoBehaviour
         if (Application.isPlaying) Ensure();
     }
 
-    void OnDestroy() { DestroyRuntime(ref _matRed); DestroyRuntime(ref _matBlue); DestroyRuntime(ref _dot); }
+    void OnDestroy()
+    {
+        DestroyRuntime(ref _matRed);
+        DestroyRuntime(ref _matBlue);
+        DestroyRuntime(ref _dot);
+        _redParticles = null;
+        _blueParticles = null;
+    }
 
     private static void DestroyRuntime<T>(ref T o) where T : Object
     {
@@ -137,39 +166,29 @@ public class ShockwaveVFX : MonoBehaviour
         var ps = go.AddComponent<ParticleSystem>();
 
         var main = ps.main;
-        // ⚠ loop + playOnAwake 必须为 true：系统必须处于 Playing 状态才会模拟与渲染粒子。
-        //   发射率恒为 0，粒子只由 Emit(n) 手动产生 —— 两者配合才是"纯爆发式"发射。
+        // loop + playOnAwake 必须为 true：系统必须处于 Playing 状态才会模拟与渲染粒子。
+        // 发射率恒为 0，粒子只由 Emit 手动产生。
         main.loop = true;
         main.playOnAwake = true;
         main.simulationSpace = ParticleSystemSimulationSpace.World;   // 世界空间：不随父物体拉伸
-        main.startSpeed = 0f;                                         // 方向完全交给 velocityOverLifetime
-        main.startSize = new ParticleSystem.MinMaxCurve(
-            sparkSize * (1f - sparkSizeRandom), sparkSize * (1f + sparkSizeRandom));
-        main.startLifetime = sparkLifetime;
-        main.startColor = Color.white;
+        main.startSpeed = 0f;                                         // 速度完全由我们手动写入
+        main.startSize = 1f;
+        main.startLifetime = 1f;
         main.maxParticles = 512;
         main.scalingMode = ParticleSystemScalingMode.Hierarchy;
 
         var em = ps.emission;
-        em.rateOverTime = 0f;            // 只靠 Emit(n) 手动爆发，不自动持续发射
+        em.rateOverTime = 0f;            // 只靠 Emit 手动爆发，不自动持续发射
 
-        // 发射口：沿中缝线的一段竖直细条
+        // shape 保留一个极小 Box，实际发射位置由 EmitParams.position 指定
         var sh = ps.shape;
         sh.shapeType = ParticleSystemShapeType.Box;
-        sh.scale = new Vector3(0.06f, 1.0f, Mathf.Max(0.05f, sparkLineLengthZ));
-        sh.randomDirectionAmount = 0f;   // ⛔ 必须为 0，否则粒子四散飞（坑 #4）
+        sh.scale = Vector3.one * 0.01f;
+        sh.randomDirectionAmount = 0f;
 
-        // 方向：±Z 主、±Y 辅、X 微发散。三轴统一 RandomBetweenTwoConstants（坑 #1）
-        var vel = ps.velocityOverLifetime;
-        vel.enabled = true;
-        vel.space = ParticleSystemSimulationSpace.World;
-        vel.x = V(-sparkSideX, sparkSideX);
-        vel.y = V(-sparkUp, sparkUp);
-        vel.z = V(-sparkSideZ, sparkSideZ);
-
-        var col = ps.colorOverLifetime;
-        col.enabled = true;
-        col.color = new ParticleSystem.MinMaxGradient(MakeFadeGradient());
+        // 关闭内置速度/受力模块：我们每帧手动写 velocity，避免和内置模拟打架
+        ps.velocityOverLifetime.enabled = false;
+        ps.forceOverLifetime.enabled = false;
 
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.sharedMaterial = mat;
@@ -178,20 +197,6 @@ public class ShockwaveVFX : MonoBehaviour
 
         ps.Play();   // 保证进入 Playing 状态，Emit 出来的粒子才会被模拟与绘制
         return ps;
-    }
-
-    private static ParticleSystem.MinMaxCurve V(float min, float max)
-    {
-        return new ParticleSystem.MinMaxCurve(min, max);
-    }
-
-    private static Gradient MakeFadeGradient()
-    {
-        var g = new Gradient();
-        g.SetKeys(
-            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-            new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.85f, 0.3f), new GradientAlphaKey(0f, 1f) });
-        return g;
     }
 
     /// <summary>⛔ 必须 LateUpdate：排在 Preview.Update（它推进呼吸相位）之后，
@@ -203,9 +208,9 @@ public class ShockwaveVFX : MonoBehaviour
         if (preview == null) { preview = GetComponentInParent<ShockwavePreview>(); if (preview == null) return; }
         Ensure();
 
-        UpdateSparkTransform();
-        SyncSparkParams(_sparkRed, _matRed, sparkColorRed);
-        SyncSparkParams(_sparkBlue, _matBlue, sparkColorBlue);
+        SyncMaterials();
+        ApplyPhysics(_sparkRed, ref _redParticles);
+        ApplyPhysics(_sparkBlue, ref _blueParticles);
 
         if (!preview.ConsumeBreathImpact()) return;
 
@@ -214,39 +219,115 @@ public class ShockwaveVFX : MonoBehaviour
 
         // 撞击强度缩放发射数量：呼吸淡入未满时火花更少，稳定后满量
         int n = Mathf.Max(1, Mathf.RoundToInt(sparkBurstCount * strength));
-        if (_sparkRed != null) _sparkRed.Emit(n);
-        if (_sparkBlue != null) _sparkBlue.Emit(n);
+        // 红系统在中缝左侧，蓝系统在右侧，保证两侧颜色不混在一起
+        EmitBurst(_sparkRed, -1f, n);
+        EmitBurst(_sparkBlue, 1f, n);
     }
 
-    /// <summary>每帧同步 Inspector 参数到粒子系统 —— 让 Play 中调 Size / Lifetime / 速度 / 颜色立刻可见，
-    /// 不用重建粒子系统（重建会丢掉正在飞的粒子，观感会断）。</summary>
-    private void SyncSparkParams(ParticleSystem ps, Material mat, Color hdr)
+    /// <summary>同步材质颜色 / 排序 —— Play 中改参数立刻可见。</summary>
+    private void SyncMaterials()
+    {
+        if (_matRed != null) _matRed.SetColor("_BaseColor", sparkColorRed);
+        if (_matBlue != null) _matBlue.SetColor("_BaseColor", sparkColorBlue);
+
+        if (_sparkRed != null)
+        {
+            var r = _sparkRed.GetComponent<ParticleSystemRenderer>();
+            if (r != null && r.sortingOrder != sparkSortingOrder) r.sortingOrder = sparkSortingOrder;
+        }
+        if (_sparkBlue != null)
+        {
+            var r = _sparkBlue.GetComponent<ParticleSystemRenderer>();
+            if (r != null && r.sortingOrder != sparkSortingOrder) r.sortingOrder = sparkSortingOrder;
+        }
+    }
+
+    /// <summary>爆发一次：count 个粒子从中缝附近按 distribution 沿 Z 分布射出。</summary>
+    /// <param name="sideSign">-1=红侧（中缝左侧），+1=蓝侧（中缝右侧）</param>
+    private void EmitBurst(ParticleSystem ps, float sideSign, int count)
     {
         if (ps == null) return;
-        var main = ps.main;
-        main.startSize = new ParticleSystem.MinMaxCurve(
-            Mathf.Max(0.01f, sparkSize) * (1f - sparkSizeRandom), Mathf.Max(0.01f, sparkSize) * (1f + sparkSizeRandom));
-        main.startLifetime = Mathf.Max(0.05f, sparkLifetime);
+        float seamX = preview.SeamWorldX;
+        // 让红蓝系统分别位于中缝两侧，避免颜色混在一起
+        float x = seamX + sideSign * Mathf.Max(0.01f, preview.centerGap * 0.25f);
+        float halfLen = Mathf.Max(0.01f, sparkZLength * 0.5f);
 
-        var sh = ps.shape;
-        sh.scale = new Vector3(0.06f, 1.0f, Mathf.Max(0.05f, sparkLineLengthZ));
+        ParticleSystem.EmitParams ep = new ParticleSystem.EmitParams();
+        ep.startColor = Color.white;  // 颜色由两侧各自材质 _BaseColor 决定
+        ep.startLifetime = Mathf.Max(0.05f, sparkLifetime);
 
-        var vel = ps.velocityOverLifetime;
-        vel.enabled = true;
-        vel.x = V(-sparkSideX, sparkSideX);
-        vel.y = V(-sparkUp, sparkUp);
-        vel.z = V(-sparkSideZ, sparkSideZ);
+        for (int i = 0; i < count; i++)
+        {
+            float z = SampleSparkZ(halfLen, sparkDistribution);
+            float speed = Random.Range(sparkMinSpeed, sparkMaxSpeed);
+            float up = Mathf.Max(0f, sparkUp);  // 保证不朝下
+            float sideX = Random.Range(-sparkSideX, sparkSideX);
+            float zDir = Random.value < 0.5f ? -1f : 1f;  // 沿中缝 ±Z 主方向
 
-        if (mat != null) mat.SetColor("_BaseColor", hdr);
+            // 合成方向并归一化：固定方向，速度大小由 speed 决定，之后按指数衰减
+            Vector3 dir = new Vector3(sideX, up, zDir).normalized;
+            Vector3 velocity = dir * speed;
+
+            ep.position = new Vector3(x, sparkY, z);
+            ep.velocity = velocity;
+            ep.startSize = Random.Range(sparkMinSize, sparkMaxSize);
+
+            ps.Emit(ep, 1);
+        }
     }
 
-    /// <summary>把两个火花系统摆到中缝两侧（各让开半个 centerGap），跟随中缝移动。</summary>
-    private void UpdateSparkTransform()
+    /// <summary>沿 Z 轴采样发射位置。
+    /// distribution=0.5 时均匀；<0.5 时通过 power>1 推向中央；>0.5 时通过 power<1 推向两端。</summary>
+    private static float SampleSparkZ(float halfLen, float distribution)
     {
-        if (preview == null) return;
-        float seamX = preview.SeamWorldX;
-        float half = preview.centerGap * 0.5f;
-        if (_sparkRed != null) _sparkRed.transform.position = new Vector3(seamX - half, sparkY, 0f);
-        if (_sparkBlue != null) _sparkBlue.transform.position = new Vector3(seamX + half, sparkY, 0f);
+        float u = Random.value;
+        float t = (u - 0.5f) * 2f; // -1..1
+        float p;
+        if (distribution <= 0.5f)
+        {
+            // 集中中央：p 从 3 (distribution=0) 到 1 (distribution=0.5)
+            p = Mathf.Lerp(3f, 1f, distribution * 2f);
+        }
+        else
+        {
+            // 偏向两端：p 从 1 (distribution=0.5) 到 0.25 (distribution=1)
+            p = Mathf.Lerp(1f, 0.25f, (distribution - 0.5f) * 2f);
+        }
+        float zNorm = Mathf.Sign(t) * Mathf.Pow(Mathf.Abs(t), p);
+        return zNorm * halfLen;
+    }
+
+    /// <summary>手动模拟：重力 + 指数衰减 + 地面碰撞。
+    /// 只改 velocity，不改 position——position 仍由粒子系统内部积分，避免双重积分。</summary>
+    private void ApplyPhysics(ParticleSystem ps, ref ParticleSystem.Particle[] buffer)
+    {
+        if (ps == null) return;
+        int count = ps.particleCount;
+        if (count == 0) return;
+        if (buffer == null || buffer.Length < count) buffer = new ParticleSystem.Particle[count];
+
+        ps.GetParticles(buffer, count);
+        float dt = Time.deltaTime;
+        float drag = Mathf.Exp(-sparkDecel * dt);
+        bool changed = false;
+
+        for (int i = 0; i < count; i++)
+        {
+            var p = buffer[i];
+            // 重力：只改 velocity，让粒子系统内部去积分 position
+            p.velocity = new Vector3(p.velocity.x, p.velocity.y - sparkGravity * dt, p.velocity.z);
+            // 速度指数衰减（标量 drag，方向不变）
+            p.velocity *= drag;
+            // 地面碰撞：Y 停在地面，vy 清零，x/z 继续滑动
+            if (p.position.y <= sparkGroundY)
+            {
+                p.position = new Vector3(p.position.x, sparkGroundY, p.position.z);
+                p.velocity = new Vector3(p.velocity.x, 0f, p.velocity.z);
+            }
+            buffer[i] = p;
+            changed = true;
+        }
+
+        if (changed) ps.SetParticles(buffer, count);
     }
 }

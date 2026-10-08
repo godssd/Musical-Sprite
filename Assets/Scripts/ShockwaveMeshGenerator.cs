@@ -298,4 +298,22 @@ public class ShockwaveMeshGenerator : MonoBehaviour
         // P1 遮挡：排序层级写进 Renderer（调高即可盖住地面花草）
         if (mr.sortingOrder != sortingOrder) mr.sortingOrder = sortingOrder;
     }
+
+#if UNITY_EDITOR
+    /// <summary>【一键刷新材质】shader 代码新增参数后，运行时创建的 Material 不会自动显示新属性。
+    /// 点这个菜单会强制重建 sharedMaterial，让新参数出现在 Inspector 上。</summary>
+    [ContextMenu("Refresh Shader Material")]
+    void RefreshMaterial()
+    {
+        var mr = GetComponent<MeshRenderer>();
+        if (mr != null && mr.sharedMaterial != null)
+        {
+            if (Application.isPlaying) Destroy(mr.sharedMaterial);
+            else DestroyImmediate(mr.sharedMaterial);
+            mr.sharedMaterial = null;
+        }
+        SyncMaterial();
+        Debug.Log("[ShockwaveMeshGenerator] 材质已重建，新 shader 参数已可用。", this);
+    }
+#endif
 }
