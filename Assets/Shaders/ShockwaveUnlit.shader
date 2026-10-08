@@ -23,6 +23,13 @@ Shader "MusicalSprite/ShockwaveUnlit"
         _Opacity        ("Opacity", Range(0,1)) = 0.40
         _Flash          ("Flash Intensity", Range(0,1)) = 0
 
+        // ---- P1b 拱形结构渐变（A）+ 厚度 core（B）----
+        _ZHalf            ("Z Half Range (auto)", Float) = 3.75
+        _ArchPower        ("Arch Structure Power", Range(0.1, 4)) = 1
+        _ArchFocus        ("Arch Focus (0=edges, 1=crest)", Range(0,1)) = 1
+        _ArchAmount       ("Arch Color Amount", Range(0,1)) = 0
+        _ShellIntensity   ("Shell Thickness Intensity", Range(0,2)) = 0
+
         // ---- P1 发光层（独立 Additive Pass 专用）----
         _GlowColor      ("Glow Color", Color) = (1.00, 0.55, 0.62, 1)
         _GlowIntensity  ("Glow Intensity", Float) = 1.6
@@ -62,6 +69,7 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 float2 uv          : TEXCOORD0;
                 float  t           : TEXCOORD1;   // 0=back(判定线) 1=front(中缝)
                 float  vy          : TEXCOORD2;   // 0=接地 1=拱顶
+                float  vz          : TEXCOORD3;   // 0=拱顶中央(z=0) ±1=z边缘
             };
 
             half4  _ColorDeep, _ColorTip;
@@ -69,7 +77,8 @@ Shader "MusicalSprite/ShockwaveUnlit"
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             float2 _ScrollSpeed;
-            float  _BackX, _FrontX, _ArchHeight, _FadePower, _GradientPower, _GradientBalance, _EdgeGlow, _Opacity, _Flash;
+            float  _BackX, _FrontX, _ArchHeight, _ZHalf, _FadePower, _GradientPower, _GradientBalance, _EdgeGlow, _Opacity, _Flash;
+            float  _ArchPower, _ArchFocus, _ArchAmount, _ShellIntensity;
 
             Varyings vert(Attributes IN)
             {
@@ -80,6 +89,7 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 float span = max(0.0001, abs(_FrontX - _BackX));
                 o.t  = clamp((IN.positionOS.x - _BackX) / span, 0.0, 1.0);
                 o.vy = clamp(IN.positionOS.y / max(0.0001, _ArchHeight), 0.0, 1.0);
+                o.vz = clamp(IN.positionOS.z / max(0.0001, _ZHalf), -1.0, 1.0);
                 return o;
             }
 
@@ -87,6 +97,15 @@ Shader "MusicalSprite/ShockwaveUnlit"
             {
                 float t  = IN.t;
                 float vy = IN.vy;
+                float vz = IN.vz;
+
+                // ---- A+B 拱形结构：s = |z/zHalf|，0=拱顶中央，1=z边缘接地 ----
+                float s = abs(vz);
+                float powAP = max(0.01, _ArchPower);
+                float archMask = pow(1.0 - s, powAP);   // 拱顶浓
+                float edgeMask = pow(s, powAP);          // 两端浓
+                float structureBlend = lerp(edgeMask, archMask, _ArchFocus);
+                float core = archMask;                   // 拱顶厚、两端薄
 
                 // 1) alpha 淡入：判定线透明，中缝最浓
                 float alpha = pow(t, _FadePower) * _Opacity;
@@ -104,6 +123,10 @@ Shader "MusicalSprite/ShockwaveUnlit"
                                                  curved_t);
                 half3 col = lerp(_ColorDeep.rgb, _ColorTip.rgb, gradient_t);
 
+                // A) 拱形结构色：让 Deep/Tip 渐变也顺着 z 弧度走
+                half3 structureColor = lerp(_ColorDeep.rgb, _ColorTip.rgb, structureBlend);
+                col = lerp(col, structureColor, _ArchAmount);
+
                 // 可选贴图（默认白=无效果）：随时间滚动
                 float2 uvT = IN.uv * _MainTex_ST.xy + _Time.y * _ScrollSpeed;
                 half4 tex  = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uvT);
@@ -111,9 +134,14 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 alpha *= tex.a;
 
                 // 3) 边缘光：拱顶(vy->1) + 前沿(t->1)
+                //    B) core 调制：拱顶更亮、两端更收，产生厚度/体积感
                 float crest = pow(vy, 3.0);
                 float front = pow(t, 3.0);
-                col += _EdgeGlow * (crest + front) * _ColorTip.rgb;
+                float edgeGlowMod = lerp(1.0, core, _ShellIntensity);
+                col += _EdgeGlow * (crest + front) * _ColorTip.rgb * edgeGlowMod;
+
+                // B) alpha 也按 core 收边：默认 _ShellIntensity=0 时完全不变
+                alpha *= lerp(1.0, saturate(core * 1.2), _ShellIntensity * 0.5);
 
                 // 4) 补分闪烁：_Flash>0 时提亮 + 增饱和（饱和度向自身灰度外推）
                 if (_Flash > 0.001)
@@ -157,11 +185,13 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 float4 positionHCS : SV_POSITION;
                 float  t           : TEXCOORD0;   // 0=判定线 1=中缝（与主体 Pass 同定义）
                 float  vy          : TEXCOORD1;   // 0=接地   1=拱顶
+                float  vz          : TEXCOORD2;   // 0=拱顶中央 ±1=z边缘
             };
 
             half4 _GlowColor;
             float  _GlowIntensity, _GlowArch, _GlowFront, _GlowTailCut;
-            float  _BackX, _FrontX, _ArchHeight, _Flash;
+            float  _BackX, _FrontX, _ArchHeight, _ZHalf, _Flash;
+            float  _ArchPower, _ArchFocus, _ArchAmount, _ShellIntensity;
 
             VaryingsGlow vertGlow(AttributesGlow IN)
             {
@@ -170,6 +200,7 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 float span = max(0.0001, abs(_FrontX - _BackX));
                 o.t  = clamp((IN.positionOS.x - _BackX) / span, 0.0, 1.0);
                 o.vy = clamp(IN.positionOS.y / max(0.0001, _ArchHeight), 0.0, 1.0);
+                o.vz = clamp(IN.positionOS.z / max(0.0001, _ZHalf), -1.0, 1.0);
                 return o;
             }
 
@@ -182,6 +213,11 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 float crest = pow(IN.vy, max(0.01, _GlowArch));    // 拱顶聚拢
                 float front = pow(IN.t,  max(0.01, _GlowFront));   // 前沿聚拢
                 float mask  = saturate(crest * 0.75 + front) * tail + _Flash * 0.8;
+
+                // B) core 厚度：拱顶中央更亮，z 边缘收光
+                float s = abs(IN.vz);
+                float core = pow(1.0 - s, max(0.01, _ArchPower));
+                mask *= lerp(1.0, core, _ShellIntensity);
 
                 half3 g = _GlowColor.rgb * _GlowIntensity * mask;
                 return half4(g, 1.0);

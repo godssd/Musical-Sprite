@@ -275,6 +275,13 @@ public class ShockwaveMeshGenerator : MonoBehaviour
         m.SetFloat("_BackX", bx);
         m.SetFloat("_FrontX", fx);
         m.SetFloat("_ArchHeight", arch);
+
+        // A+B 厚度方案：shader 需要知道 mesh 在 z 方向的半宽，才能沿拱形跨度做结构渐变。
+        // 程序化 mesh 用 zHalfRange；导入模型用原始 mesh.bounds.extents.z（autoFit=0 时 Transform 由 Preview 控制，
+        // 但 positionOS 仍是 mesh 局部坐标，所以 extents.z 就是半宽）。
+        float zh = (useImportedMesh && importedMesh != null) ? importedMesh.bounds.extents.z : zHalfRange;
+        m.SetFloat("_ZHalf", zh);
+
         m.SetFloat("_FadePower", fadePower);
         m.SetFloat("_GradientPower", gradientPower);
         m.SetFloat("_GradientBalance", gradientBalance);
