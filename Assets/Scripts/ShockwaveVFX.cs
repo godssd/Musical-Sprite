@@ -29,31 +29,31 @@ public class ShockwaveVFX : MonoBehaviour
 
     [Header("火花：发射")]
     [Tooltip("迸射点的高度（世界 Y）")]
-    public float sparkY = 0.7f;
+    public float sparkY = 0f;
     [Tooltip("地面高度。粒子 Y 不会低于此值")]
     public float sparkGroundY = 0f;
     [Tooltip("中缝线上『有多长一段』会迸射火花（世界单位，沿 Z 铺开）")]
-    public float sparkZLength = 2.5f;
+    public float sparkZLength = 5f;
     [Tooltip("粒子发射位置沿 Z 的分布：0=集中在 Z=0 中央，0.5=均匀，1=偏向 Z=±Half 两端")]
-    [Range(0f, 1f)] public float sparkDistribution = 0.5f;
+    [Range(0f, 1f)] public float sparkDistribution = 0.453f;
     [Tooltip("每次撞击发射的粒子总量")]
-    public int sparkBurstCount = 16;
+    public int sparkBurstCount = 15;
 
     [Header("火花：速度")]
     [Tooltip("粒子射出时的最大速度")]
-    public float sparkMaxSpeed = 3.5f;
+    public float sparkMaxSpeed = 15f;
     [Tooltip("粒子射出时的最小速度")]
-    public float sparkMinSpeed = 1.2f;
+    public float sparkMinSpeed = 12f;
     [Tooltip("速度指数衰减强度（越大减速越快）")]
-    [Range(0f, 20f)] public float sparkDecel = 3f;
+    [Range(0f, 20f)] public float sparkDecel = 7.17f;
     [Tooltip("速度衰减下限。0=可减速到停止；>0 粒子会保持一个最低滑行速度")]
     [Range(0f, 10f)] public float sparkEndMinSpeed = 0f;
 
     [Header("火花：方向")]
     [Tooltip("向上的抛射分量（>=0，避免朝下射入地面）")]
-    public float sparkUp = 1.6f;
+    public float sparkUp = 21.8f;
     [Tooltip("X 方向发散。中缝两侧微微散开；符号随机，不会偏向某一侧")]
-    public float sparkSideX = 0.3f;
+    public float sparkSideX = 40f;
 
     [Header("火花：方向偏转侧重")]
     [Tooltip("X 轴偏转侧重（0~1）：接近 0 = 偏向『无 X 偏转』（走直线不横散），接近 1 = 偏向『X 偏转最大』（横向散到 ±sparkSideX）；0.5 = X 幅度在 [0, sparkSideX] 内均匀随机")]
@@ -63,23 +63,23 @@ public class ShockwaveVFX : MonoBehaviour
 
     [Header("火花：外观")]
     [Tooltip("粒子最大尺寸")]
-    public float sparkMaxSize = 0.28f;
+    public float sparkMaxSize = 0.1f;
     [Tooltip("粒子最小尺寸")]
-    public float sparkMinSize = 0.12f;
+    public float sparkMinSize = 0.1f;
     [Tooltip("粒子末端大小相对初始的倍数：1=不变，0=缩到0，>1=放大（如2=放大到2倍）")]
-    [Range(0f, 5f)] public float sparkEndSize = 0f;
+    [Range(0f, 5f)] public float sparkEndSize = 1.001f;
     [Tooltip("粒子大小变化曲线：1=线性，>1=先快后慢，<1=先慢后快")]
-    [Range(0.1f, 3f)] public float sparkSizeEase = 1f;
+    [Range(0.1f, 3f)] public float sparkSizeEase = 1.1f;
     [Tooltip("粒子寿命（秒）")]
-    public float sparkLifetime = 0.55f;
+    public float sparkLifetime = 0.8f;
 
     [Header("火花：朝向")]
     [Tooltip("粒子朝向模式。Billboard=始终面朝相机（像纸片）；Stretch=沿速度方向拉伸（有轨迹感）")]
     public ParticleSystemRenderMode sparkRenderMode = ParticleSystemRenderMode.Stretch;
     [Tooltip("Stretch 模式下，速度对拉伸长度的影响")]
-    [Range(0f, 2f)] public float sparkVelocityScale = 0.35f;
+    [Range(0f, 2f)] public float sparkVelocityScale = 0.453f;
     [Tooltip("Stretch 模式下，基础拉伸长度")]
-    [Range(0f, 2f)] public float sparkLengthScale = 0.5f;
+    [Range(0f, 2f)] public float sparkLengthScale = 1.019f;
 
     [Header("火花：颜色")]
     [Tooltip("红方火花颜色（HDR：分量 >1 才会被 Bloom 泛出光晕）")]
@@ -89,11 +89,11 @@ public class ShockwaveVFX : MonoBehaviour
 
     [Header("火花：触发")]
     [Tooltip("撞击强度不足时不发火花（0=只要撞就发，1=只有呼吸完全稳定才发）。\n用来避免『刚从移动中停下、呼吸还在淡入』就先炸一下")]
-    [Range(0f, 1f)] public float sparkMinImpact = 0.6f;
+    [Range(0f, 1f)] public float sparkMinImpact = 0f;
 
     [Header("火花：环境")]
     [Tooltip("向下重力加速度（世界 Y）。粒子被持续拉低；建议保持较低值，让弧线更明显")]
-    [Range(0f, 20f)] public float sparkGravity = 2f;
+    [Range(0f, 20f)] public float sparkGravity = 4f;
 
     [Tooltip("渲染排序。火花盖在墙(约20)之上")]
     public int sparkSortingOrder = 21;
