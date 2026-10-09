@@ -38,9 +38,9 @@ public class ShockwaveVFX : MonoBehaviour
     [Tooltip("中缝线上『有多长一段』会迸射火花（世界单位，沿 Z 铺开）")]
     public float sparkZLength = 5f;
     [Tooltip("粒子发射位置沿 Z 的分布：0=集中在 Z=0 中央，0.5=均匀，1=偏向 Z=±Half 两端")]
-    [Range(0f, 1f)] public float sparkDistribution = 0.453f;
+    [Range(0f, 1f)] public float sparkDistribution = 0.242f;
     [Tooltip("每次撞击发射的粒子总量")]
-    public int sparkBurstCount = 15;
+    public int sparkBurstCount = 20;
 
     [Header("火花：速度")]
     [Tooltip("粒子射出时的最大速度")]
@@ -48,25 +48,25 @@ public class ShockwaveVFX : MonoBehaviour
     [Tooltip("粒子射出时的最小速度")]
     public float sparkMinSpeed = 12f;
     [Tooltip("速度指数衰减强度（越大减速越快）")]
-    [Range(0f, 20f)] public float sparkDecel = 7.17f;
+    [Range(0f, 20f)] public float sparkDecel = 8.91f;
     [Tooltip("速度衰减下限。0=可减速到停止；>0 粒子会保持一个最低滑行速度")]
-    [Range(0f, 10f)] public float sparkEndMinSpeed = 0f;
+    [Range(0f, 10f)] public float sparkEndMinSpeed = 0.15f;
 
     [Header("火花：方向")]
     [Tooltip("向上的抛射分量（>=0，避免朝下射入地面）")]
-    public float sparkUp = 21.8f;
+    public float sparkUp = 15f;
     [Tooltip("X 方向发散上限。红色固定向负 X（红侧），蓝色固定向正 X（蓝侧）")]
-    public float sparkSideX = 60f;
+    public float sparkSideX = 50f;
     [Tooltip("Z 方向发散上限（沿中缝）。符号随机，红蓝都向 ±Z 散开")]
-    public float sparkSideZ = 1f;
+    public float sparkSideZ = 40f;
 
     [Header("火花：方向偏转侧重")]
     [Tooltip("X 轴偏转侧重（0~1）：接近 0 = 偏向『无 X 偏转』（走直线不横散），接近 1 = 偏向『X 偏转最大』（横向散到 ±sparkSideX）；0.5 = X 幅度在 [0, sparkSideX] 内均匀随机")]
     [Range(0f, 1f)] public float sparkBiasX = 0.268f;
     [Tooltip("Z 轴偏转侧重（0~1）：与 X 同理，但作用于 Z 轴（沿中缝的散射）。接近 0 = 火花几乎不沿中缝散开（偏向上 / 横向），接近 1 = 沿中缝散射到最大（±sparkSideZ）；0.5 = Z 幅度在 [0, sparkSideZ] 内均匀随机")]
-    [Range(0f, 1f)] public float sparkBiasZ = 0.517f;
+    [Range(0f, 1f)] public float sparkBiasZ = 0.46f;
     [Tooltip("Z 轴位置偏移程度系数：粒子发射位置离中心越远，Z 偏转越接近最大值；越靠近中心越接近最小值。\n0 = 均匀无倾向（与位置无关，退化为只用 sparkBiasZ）；数字越大，随距离变化的幅度越大（落差越陡）")]
-    [Range(0f, 5f)] public float sparkPosDeflectZ = 1f;
+    [Range(0f, 5f)] public float sparkPosDeflectZ = 5f;
 
     [Header("火花：外观")]
     [Tooltip("粒子最大尺寸")]
@@ -74,11 +74,13 @@ public class ShockwaveVFX : MonoBehaviour
     [Tooltip("粒子最小尺寸")]
     public float sparkMinSize = 0.1f;
     [Tooltip("粒子末端大小相对初始的倍数：1=不变，0=缩到0，>1=放大（如2=放大到2倍）")]
-    [Range(0f, 5f)] public float sparkEndSize = 1.001f;
+    [Range(0f, 5f)] public float sparkEndSize = 1f;
     [Tooltip("粒子大小变化曲线：1=线性，>1=先快后慢，<1=先慢后快")]
-    [Range(0.1f, 3f)] public float sparkSizeEase = 1.1f;
-    [Tooltip("粒子寿命（秒）")]
-    public float sparkLifetime = 0.8f;
+    [Range(0.1f, 3f)] public float sparkSizeEase = 0.88f;
+    [Tooltip("粒子寿命最小值（秒）。与 Max 相等时没有波动")]
+    public float sparkLifetimeMin = 0.8f;
+    [Tooltip("粒子寿命最大值（秒）。与 Min 相等时没有波动")]
+    public float sparkLifetimeMax = 0.8f;
 
     [Header("火花：朝向")]
     [Tooltip("粒子朝向模式。Billboard=始终面朝相机（像纸片）；Stretch=沿速度方向拉伸（有轨迹感）")]
@@ -291,7 +293,9 @@ public class ShockwaveVFX : MonoBehaviour
 
         ParticleSystem.EmitParams ep = new ParticleSystem.EmitParams();
         ep.startColor = Color.white;  // 颜色由两侧各自材质 _BaseColor 决定
-        ep.startLifetime = Mathf.Max(0.05f, sparkLifetime);
+        float lifeMin = Mathf.Min(sparkLifetimeMin, sparkLifetimeMax);
+        float lifeMax = Mathf.Max(sparkLifetimeMin, sparkLifetimeMax);
+        ep.startLifetime = Mathf.Max(0.05f, Random.Range(lifeMin, lifeMax));
 
         for (int i = 0; i < count; i++)
         {
