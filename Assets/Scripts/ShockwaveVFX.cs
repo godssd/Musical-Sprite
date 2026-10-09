@@ -7,7 +7,9 @@ using UnityEngine;
 ///   - 【穿插在对峙循环里】：每次对峙呼吸合拢到最紧（撞击瞬间）在中缝迸射一次。
 ///     与得分 / 放大 / 衰退完全无关 —— 触发源是 ShockwavePreview.ConsumeBreathImpact()。
 ///   - 【位置】沿中缝 Z 轴分布，由 sparkDistribution 控制集中在中央还是两端。
-///   - 【方向】从中缝向外射出：主方向 ±Z + 上抛 + X 微发散。X / Z 各自有『偏转侧重』旋钮
+///   - 【方向】从中缝向外射出：主方向 ±Z + 上抛 + X 发散。
+///     X 符号固定按阵营：红色只能向负 X（红侧），蓝色只能向正 X（蓝侧），避免混在一起；
+///     Z 符号随机，红蓝都沿中缝 ±Z 散开。X / Z 各自有『偏转侧重』旋钮
 ///     （0~1，控制散开幅度偏向无偏转还是最大偏转，0.5=均匀随机）。初速度大小 [min,max]，方向固定。
 ///   - 【物理】速度指数衰减；持续受 -Y 重力；落到 sparkGroundY 后停止下降，自然滑动到 lifetime 结束。
 ///
@@ -52,14 +54,16 @@ public class ShockwaveVFX : MonoBehaviour
     [Header("火花：方向")]
     [Tooltip("向上的抛射分量（>=0，避免朝下射入地面）")]
     public float sparkUp = 21.8f;
-    [Tooltip("X 方向发散。中缝两侧微微散开；符号随机，不会偏向某一侧")]
-    public float sparkSideX = 40f;
+    [Tooltip("X 方向发散上限。红色固定向负 X（红侧），蓝色固定向正 X（蓝侧）")]
+    public float sparkSideX = 60f;
+    [Tooltip("Z 方向发散上限（沿中缝）。符号随机，红蓝都向 ±Z 散开")]
+    public float sparkSideZ = 1f;
 
     [Header("火花：方向偏转侧重")]
     [Tooltip("X 轴偏转侧重（0~1）：接近 0 = 偏向『无 X 偏转』（走直线不横散），接近 1 = 偏向『X 偏转最大』（横向散到 ±sparkSideX）；0.5 = X 幅度在 [0, sparkSideX] 内均匀随机")]
-    [Range(0f, 1f)] public float sparkBiasX = 0.5f;
-    [Tooltip("Z 轴偏转侧重（0~1）：与 X 同理，但作用于 Z 轴（沿中缝的散射）。接近 0 = 火花几乎不沿中缝散开（偏向上 / 横向），接近 1 = 沿中缝散射到最大（±1）；0.5 = Z 幅度在 [0,1] 内均匀随机")]
-    [Range(0f, 1f)] public float sparkBiasZ = 0.5f;
+    [Range(0f, 1f)] public float sparkBiasX = 0.268f;
+    [Tooltip("Z 轴偏转侧重（0~1）：与 X 同理，但作用于 Z 轴（沿中缝的散射）。接近 0 = 火花几乎不沿中缝散开（偏向上 / 横向），接近 1 = 沿中缝散射到最大（±sparkSideZ）；0.5 = Z 幅度在 [0, sparkSideZ] 内均匀随机")]
+    [Range(0f, 1f)] public float sparkBiasZ = 0.517f;
 
     [Header("火花：外观")]
     [Tooltip("粒子最大尺寸")]
@@ -293,11 +297,12 @@ public class ShockwaveVFX : MonoBehaviour
             float up = Mathf.Max(0f, sparkUp);  // 保证不朝下
 
             // X / Z 偏转侧重：幅度在 [0,1] 内按 bias 偏向 0（无偏转）或 1（最大偏转），0.5=均匀随机。
-            // 符号各自随机，保证火花不会偏向某一侧 / 某一端。
+            // X 符号由红蓝阵营决定：红色（sideSign=-1）只能往负 X 飞，蓝色（sideSign=+1）只能往正 X 飞，避免混在一起。
+            // Z 符号随机：红蓝都沿中缝向 ±Z 散开。
             float mX = BiasedRandom(sparkBiasX);
             float mZ = BiasedRandom(sparkBiasZ);
-            float sideX = (Random.value < 0.5f ? -1f : 1f) * mX * sparkSideX;  // 横向发散幅度
-            float zDir  = (Random.value < 0.5f ? -1f : 1f) * mZ;               // 沿中缝散射幅度
+            float sideX = sideSign * mX * sparkSideX;                            // 红=负X，蓝=正X
+            float zDir  = (Random.value < 0.5f ? -1f : 1f) * mZ * sparkSideZ;    // 沿中缝 ±Z 散开
 
             // 合成方向并归一化：固定方向，速度大小由 speed 决定，之后按指数衰减
             Vector3 dir = new Vector3(sideX, up, zDir).normalized;
