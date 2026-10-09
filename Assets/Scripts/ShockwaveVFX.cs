@@ -70,7 +70,7 @@ public class ShockwaveVFX : MonoBehaviour
 
     [Header("火花：外观")]
     [Tooltip("粒子最大尺寸")]
-    public float sparkMaxSize = 0.1f;
+    public float sparkMaxSize = 0.3f;
     [Tooltip("粒子最小尺寸")]
     public float sparkMinSize = 0.1f;
     [Tooltip("粒子末端大小相对初始的倍数：1=不变，0=缩到0，>1=放大（如2=放大到2倍）")]
@@ -78,17 +78,17 @@ public class ShockwaveVFX : MonoBehaviour
     [Tooltip("粒子大小变化曲线：1=线性，>1=先快后慢，<1=先慢后快")]
     [Range(0.1f, 3f)] public float sparkSizeEase = 0.88f;
     [Tooltip("粒子寿命最小值（秒）。与 Max 相等时没有波动")]
-    public float sparkLifetimeMin = 0.8f;
+    public float sparkLifetimeMin = 0.7f;
     [Tooltip("粒子寿命最大值（秒）。与 Min 相等时没有波动")]
-    public float sparkLifetimeMax = 0.8f;
+    public float sparkLifetimeMax = 1f;
 
     [Header("火花：朝向")]
     [Tooltip("粒子朝向模式。Billboard=始终面朝相机（像纸片）；Stretch=沿速度方向拉伸（有轨迹感）")]
     public ParticleSystemRenderMode sparkRenderMode = ParticleSystemRenderMode.Stretch;
     [Tooltip("Stretch 模式下，速度对拉伸长度的影响")]
-    [Range(0f, 2f)] public float sparkVelocityScale = 0.453f;
+    [Range(0f, 2f)] public float sparkVelocityScale = 0.385f;
     [Tooltip("Stretch 模式下，基础拉伸长度")]
-    [Range(0f, 2f)] public float sparkLengthScale = 1.019f;
+    [Range(0f, 2f)] public float sparkLengthScale = 0.868f;
 
     [Header("火花：颜色")]
     [Tooltip("红方火花颜色（HDR：分量 >1 才会被 Bloom 泛出光晕）")]
