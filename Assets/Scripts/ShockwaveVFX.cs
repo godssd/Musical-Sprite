@@ -315,13 +315,16 @@ public class ShockwaveVFX : MonoBehaviour
     ///   - bias=0.5 → 在 [0,1] 内均匀随机（无侧重）；
     ///   - bias→0   → 向 0 聚拢（偏向『无偏转』）；
     ///   - bias→1   → 向 1 聚拢（偏向『最大偏转』）。
-    /// 实现：以 bias 为中点、半宽为 (1-|2·bias-1|) 做对称抖动后 Clamp01，
-    /// bias=0.5 时半宽=1 → 完整 [0,1] 均匀；bias=0/1 时半宽=0 → 恒为 0/1。</summary>
+    /// 实现：对 uniform [0,1] 做幂变换 u^((1-bias)/bias)。
+    ///   - bias=0.5 → 指数=1 → u^1 = 均匀；
+    ///   - bias 小于 0.5 → 指数大于 1 → 压向 0；
+    ///   - bias 大于 0.5 → 指数小于 1 → 抬向 1。
+    /// bias=0/1 时指数分别趋于 ∞/0，结果几乎全在 0/1。</summary>
     private static float BiasedRandom(float bias)
     {
-        float halfSpan = 1f - Mathf.Abs(2f * bias - 1f);   // 0.5→1，0/1→0
-        float v = bias + (Random.value * 2f - 1f) * halfSpan;
-        return Mathf.Clamp01(v);
+        float b = Mathf.Clamp(bias, 0.0001f, 0.9999f);   // 避免除 0 或 0^0
+        float exponent = (1f - b) / b;                    // 0.5→1, 0→∞, 1→0
+        return Mathf.Pow(Random.value, exponent);
     }
 
     /// <summary>沿 Z 轴采样发射位置。
