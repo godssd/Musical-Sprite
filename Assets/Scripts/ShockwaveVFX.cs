@@ -7,7 +7,8 @@ using UnityEngine;
 ///   - 【穿插在对峙循环里】：每次对峙呼吸合拢到最紧（撞击瞬间）在中缝迸射一次。
 ///     与得分 / 放大 / 衰退完全无关 —— 触发源是 ShockwavePreview.ConsumeBreathImpact()。
 ///   - 【位置】沿中缝 Z 轴分布，由 sparkDistribution 控制集中在中央还是两端。
-///   - 【方向】从中缝向外射出：主方向 ±Z + 上抛 + X 微发散。初速度大小 [min,max]，方向固定。
+///   - 【方向】从中缝向外射出：主方向 ±Z + 上抛 + X 微发散。X / Z 各自有『偏转侧重』旋钮
+///     （0~1，控制散开幅度偏向无偏转还是最大偏转，0.5=均匀随机）。初速度大小 [min,max]，方向固定。
 ///   - 【物理】速度指数衰减；持续受 -Y 重力；落到 sparkGroundY 后停止下降，自然滑动到 lifetime 结束。
 ///
 /// ⛔ 已踩过的坑（详见方案文档 §4，改本文件前必读）：
@@ -53,6 +54,12 @@ public class ShockwaveVFX : MonoBehaviour
     public float sparkUp = 1.6f;
     [Tooltip("X 方向发散。中缝两侧微微散开；符号随机，不会偏向某一侧")]
     public float sparkSideX = 0.3f;
+
+    [Header("火花：方向偏转侧重")]
+    [Tooltip("X 轴偏转侧重（0~1）：接近 0 = 偏向『无 X 偏转』（走直线不横散），接近 1 = 偏向『X 偏转最大』（横向散到 ±sparkSideX）；0.5 = X 幅度在 [0, sparkSideX] 内均匀随机")]
+    [Range(0f, 1f)] public float sparkBiasX = 0.5f;
+    [Tooltip("Z 轴偏转侧重（0~1）：与 X 同理，但作用于 Z 轴（沿中缝的散射）。接近 0 = 火花几乎不沿中缝散开（偏向上 / 横向），接近 1 = 沿中缝散射到最大（±1）；0.5 = Z 幅度在 [0,1] 内均匀随机")]
+    [Range(0f, 1f)] public float sparkBiasZ = 0.5f;
 
     [Header("火花：外观")]
     [Tooltip("粒子最大尺寸")]
@@ -284,8 +291,13 @@ public class ShockwaveVFX : MonoBehaviour
             float z = SampleSparkZ(halfLen, sparkDistribution);
             float speed = Random.Range(sparkMinSpeed, sparkMaxSpeed);
             float up = Mathf.Max(0f, sparkUp);  // 保证不朝下
-            float sideX = Random.Range(-sparkSideX, sparkSideX);
-            float zDir = Random.value < 0.5f ? -1f : 1f;  // 沿中缝 ±Z 主方向
+
+            // X / Z 偏转侧重：幅度在 [0,1] 内按 bias 偏向 0（无偏转）或 1（最大偏转），0.5=均匀随机。
+            // 符号各自随机，保证火花不会偏向某一侧 / 某一端。
+            float mX = BiasedRandom(sparkBiasX);
+            float mZ = BiasedRandom(sparkBiasZ);
+            float sideX = (Random.value < 0.5f ? -1f : 1f) * mX * sparkSideX;  // 横向发散幅度
+            float zDir  = (Random.value < 0.5f ? -1f : 1f) * mZ;               // 沿中缝散射幅度
 
             // 合成方向并归一化：固定方向，速度大小由 speed 决定，之后按指数衰减
             Vector3 dir = new Vector3(sideX, up, zDir).normalized;
@@ -297,6 +309,19 @@ public class ShockwaveVFX : MonoBehaviour
 
             ps.Emit(ep, 1);
         }
+    }
+
+    /// <summary>偏转侧重采样：返回 [0,1] 的幅度因子，由 bias 控制分布重心。
+    ///   - bias=0.5 → 在 [0,1] 内均匀随机（无侧重）；
+    ///   - bias→0   → 向 0 聚拢（偏向『无偏转』）；
+    ///   - bias→1   → 向 1 聚拢（偏向『最大偏转』）。
+    /// 实现：以 bias 为中点、半宽为 (1-|2·bias-1|) 做对称抖动后 Clamp01，
+    /// bias=0.5 时半宽=1 → 完整 [0,1] 均匀；bias=0/1 时半宽=0 → 恒为 0/1。</summary>
+    private static float BiasedRandom(float bias)
+    {
+        float halfSpan = 1f - Mathf.Abs(2f * bias - 1f);   // 0.5→1，0/1→0
+        float v = bias + (Random.value * 2f - 1f) * halfSpan;
+        return Mathf.Clamp01(v);
     }
 
     /// <summary>沿 Z 轴采样发射位置。
