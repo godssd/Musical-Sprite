@@ -108,8 +108,8 @@ public class ShockwavePreview : MonoBehaviour
     public bool breathAlwaysOn = false;
     [Tooltip("冻结前进 / 回弹的视觉输出：开启后墙的【大小】恒定为基准（不放大），P2b 起步回弹偏移强制为 0。\n⛔ 只冻结『表现』—— 前进状态机 / accum 累积 / 档位衰退 / 扣血闪白等系统逻辑照常运行，\n关掉即完全恢复，不会丢失任何状态。用来把对峙呼吸单独摘出来看，避免被放大与回弹干扰。\n【注意】大小在冻结期间固定为 1 倍，这【不等于】规则里的 accum 被清零")]
     public bool freezeAdvanceFx = false;
-    [Tooltip("宽度（Z轴）放大系数：0=宽度完全不被 accum 影响（始终 baseScale.z），1=宽度与 XY 等比放大（原有行为）。\n当墙本身较宽时，调小可避免放大后超出画面")]
-    [Range(0f, 1f)] public float scaleWidthAmplify = 1f;
+    [Tooltip("高度（Y轴）放大系数：0=高度完全不被 accum 影响（始终 baseScale.y），1=高度与 XZ 等比放大（原有行为）。\n⛔ 只作用于 Y 轴（拱高），X（推进方向）不受此系数影响、始终完整放大。\n当墙变高导致顶部超出画面时，调小该值")]
+    [Range(0f, 1f)] public float scaleHeightAmplify = 1f;
 
     [Header("亮度：总开关与上限（写材质 _Opacity）")]
     [Tooltip("总开关：关闭后只保留基础亮度，【优势指示 / 前进脉冲 / 碰撞闪光】都不生效。\nP1 自发光分层方案落地前先关闭，避免过曝与层次混乱。\n【注意】扣血闪白是机制反馈不是发光，不受此开关影响")]
@@ -920,19 +920,21 @@ public class ShockwavePreview : MonoBehaviour
     ///    - extra -> 只写 localPosition（位移通道）
     ///    两者互不影响、互不叠加 —— 任何把 scale 塞进 extra 来源、或把位移塞进 f 的改动都违反铁律。
     ///
-    /// ⚠ 宽度（Z轴）由 scaleWidthAmplify 独立控制：0 时 Z 不受 f 影响，1 时与 XY 等比。
-    ///   pivot 补偿只针对实际缩放部分（Z 用 fz 而不是 f），确保内侧边位置正确。
+    /// ⚠ 高度（Y轴）由 scaleHeightAmplify 独立控制：0 时 Y 不受 f 影响，1 时与 XZ 等比。
+    ///   X（推进方向）永远完整放大 f 倍，不受该系数影响。
+    ///   pivot 补偿按各轴实际缩放比例分别计算（Y 用 fy），确保内侧边位置正确。
     /// </summary>
     private void ApplyScale(Transform wall, Vector3 basePos, Quaternion baseRot, Vector3 baseScale,
                             Vector3 meshPivot, float f, Vector3 extra)
     {
         if (wall == null) return;
-        float fz = Mathf.Lerp(1f, f, scaleWidthAmplify);   // Z 轴在 [baseScale.z, baseScale.z*f] 之间按系数插值
-        wall.localScale = new Vector3(baseScale.x * f, baseScale.y * f, baseScale.z * fz);
-        // pivot 补偿：X/Y 用 f，Z 用 fz（因为 Z 实际缩放比例不同）
+        float fy = Mathf.Lerp(1f, f, scaleHeightAmplify);   // Y 轴在 [baseScale.y, baseScale.y*f] 之间按系数插值
+        // X（推进方向）与 Z（纵深）始终等比放大 f 倍；只有 Y（拱高）用 fy
+        wall.localScale = new Vector3(baseScale.x * f, baseScale.y * fy, baseScale.z * f);
+        // pivot 补偿：X/Z 用 f，Y 用 fy（因为 Y 实际缩放比例不同）
         Vector3 offset = baseRot * new Vector3(baseScale.x * meshPivot.x * (1f - f),
-                                               baseScale.y * meshPivot.y * (1f - f),
-                                               baseScale.z * meshPivot.z * (1f - fz));
+                                               baseScale.y * meshPivot.y * (1f - fy),
+                                               baseScale.z * meshPivot.z * (1f - f));
         wall.localPosition = basePos + offset + extra;
     }
 
