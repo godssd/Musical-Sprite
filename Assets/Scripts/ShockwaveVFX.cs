@@ -9,7 +9,8 @@ using UnityEngine;
 ///   - 【位置】沿中缝 Z 轴分布，由 sparkDistribution 控制集中在中央还是两端。
 ///   - 【方向】从中缝向外射出：主方向 ±Z + 上抛 + X 发散。
 ///     X 符号固定按阵营：红色只能向负 X（红侧），蓝色只能向正 X（蓝侧），避免混在一起；
-///     Z 符号随机，红蓝都沿中缝 ±Z 散开。X / Z 各自有『偏转侧重』旋钮
+///     Z 符号固定按发射位置：+Z 处发射只往 +Z 飞、-Z 处发射只往 -Z 飞，不会往中心倒灌。
+///     X / Z 各自有『偏转侧重』旋钮
 ///     （0~1，控制散开幅度偏向无偏转还是最大偏转，0.5=均匀随机）。初速度大小 [min,max]，方向固定。
 ///   - 【物理】速度指数衰减；持续受 -Y 重力；落到 sparkGroundY 后停止下降，自然滑动到 lifetime 结束。
 ///
@@ -64,6 +65,8 @@ public class ShockwaveVFX : MonoBehaviour
     [Range(0f, 1f)] public float sparkBiasX = 0.268f;
     [Tooltip("Z 轴偏转侧重（0~1）：与 X 同理，但作用于 Z 轴（沿中缝的散射）。接近 0 = 火花几乎不沿中缝散开（偏向上 / 横向），接近 1 = 沿中缝散射到最大（±sparkSideZ）；0.5 = Z 幅度在 [0, sparkSideZ] 内均匀随机")]
     [Range(0f, 1f)] public float sparkBiasZ = 0.517f;
+    [Tooltip("Z 轴位置偏移程度系数：粒子发射位置离中心越远，Z 偏转越接近最大值；越靠近中心越接近最小值。\n0 = 均匀无倾向（与位置无关，退化为只用 sparkBiasZ）；数字越大，随距离变化的幅度越大（落差越陡）")]
+    [Range(0f, 5f)] public float sparkPosDeflectZ = 1f;
 
     [Header("火花：外观")]
     [Tooltip("粒子最大尺寸")]
@@ -298,11 +301,14 @@ public class ShockwaveVFX : MonoBehaviour
 
             // X / Z 偏转侧重：幅度在 [0,1] 内按 bias 偏向 0（无偏转）或 1（最大偏转），0.5=均匀随机。
             // X 符号由红蓝阵营决定：红色（sideSign=-1）只能往负 X 飞，蓝色（sideSign=+1）只能往正 X 飞，避免混在一起。
-            // Z 符号随机：红蓝都沿中缝向 ±Z 散开。
+            // Z 符号由发射位置决定：+Z 处发射的只往 +Z 飞，-Z 处发射的只往 -Z 飞，不会往中心倒灌。
+            // Z 幅度再乘位置系数：离中心越远越接近最大偏转，越近越接近最小偏转（k=0 时恒为 1，无倾向）。
             float mX = BiasedRandom(sparkBiasX);
             float mZ = BiasedRandom(sparkBiasZ);
+            float dNorm = Mathf.Clamp01(Mathf.Abs(z) / halfLen);                 // 0=中心，1=两端
+            mZ *= Mathf.Pow(dNorm, sparkPosDeflectZ);                            // k=0 → 恒 1
             float sideX = sideSign * mX * sparkSideX;                            // 红=负X，蓝=正X
-            float zDir  = (Random.value < 0.5f ? -1f : 1f) * mZ * sparkSideZ;    // 沿中缝 ±Z 散开
+            float zDir  = (z >= 0f ? 1f : -1f) * mZ * sparkSideZ;                // 符号跟随发射位置
 
             // 合成方向并归一化：固定方向，速度大小由 speed 决定，之后按指数衰减
             Vector3 dir = new Vector3(sideX, up, zDir).normalized;
