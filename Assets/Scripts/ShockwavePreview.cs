@@ -109,13 +109,25 @@ public class ShockwavePreview : MonoBehaviour
     [Tooltip("冻结前进 / 回弹的视觉输出：开启后墙的【大小】恒定为基准（不放大），P2b 起步回弹偏移强制为 0。\n⛔ 只冻结『表现』—— 前进状态机 / accum 累积 / 档位衰退 / 扣血闪白等系统逻辑照常运行，\n关掉即完全恢复，不会丢失任何状态。用来把对峙呼吸单独摘出来看，避免被放大与回弹干扰。\n【注意】大小在冻结期间固定为 1 倍，这【不等于】规则里的 accum 被清零")]
     public bool freezeAdvanceFx = false;
 
-    [Header("亮度：前进 / 撞击加亮（写材质 _Opacity）")]
-    [Tooltip("总开关：关闭后只保留基础亮度，【前进加亮】与【撞击加亮】都不生效。\nP1 自发光分层方案落地前先关闭，避免过曝与层次混乱。\n【注意】扣血闪白是机制反馈不是发光，不受此开关影响")]
+    [Header("亮度：总开关与上限（写材质 _Opacity）")]
+    [Tooltip("总开关：关闭后只保留基础亮度，【优势指示 / 前进脉冲 / 碰撞闪光】都不生效。\nP1 自发光分层方案落地前先关闭，避免过曝与层次混乱。\n【注意】扣血闪白是机制反馈不是发光，不受此开关影响")]
     public bool enableBrightnessFx = false;
-    [Tooltip("前进加亮系数：优势方被放大时亮度随倍率提升（倍率 1.0→1.5 时亮度 +0.5×该值）")]
-    public float glowPerEnlarge = 0.3f;
-    [Tooltip("亮度上限：基础 Opacity + 前进加亮 + 撞击加亮 封顶值，防过曝")]
+    [Tooltip("亮度上限：基础 Opacity + 所有亮度层 封顶值，防过曝")]
     [Range(0f, 1f)] public float opacityMax = 0.85f;
+
+    [Header("亮度① 优势指示灯")]
+    [Tooltip("优势指示灯最大亮度。\n红墙亮度 ∝ 蓝方 scale（蓝方优势越大，红墙越亮）；\n蓝墙亮度 ∝ 红方 scale（红方优势越大，蓝墙越亮）。\n己方 scale 在 scaleAtRest 时该侧指示灯为 0，对方 scale 在 scaleAbove1_0 时该侧指示灯达到最大值。线性变化。")]
+    [Range(0f, 1f)] public float glowAdvantageMax = 0.25f;
+
+    [Header("亮度② 前进脉冲（合并到对峙循环）")]
+    [Tooltip("前进脉冲最大亮度。只给当前 state==Advancing 的那堵墙；\n幅度 = 本次前进的倍率因子（scale 越大越亮）；\n形状 = 对峙循环包络 (1 - _breathK) × _breathFade，即合拢最亮、张开最暗。")]
+    [Range(0f, 1f)] public float glowAdvancePulseMax = 0.35f;
+
+    [Header("亮度③ 碰撞闪光")]
+    [Tooltip("碰撞闪光峰值亮度。对峙循环合拢撞击瞬间触发，极短时间平方衰减到 0。")]
+    [Range(0f, 1f)] public float glowImpactFlashMax = 0.4f;
+    [Tooltip("碰撞闪光时长（秒）。建议 0.08~0.2，太短没感觉，太长像呼吸。")]
+    public float glowImpactFlashDuration = 0.12f;
 
     [Header("放大倍率表（按【累积距离 accum】分档；档间线性插值，平滑无硬边）")]
     [Tooltip("⚠ 唯一事实源：下面 6 个倍率就是『档位』本身。衰退时每降一档固定耗时 advanceDecayStepTime 秒。\n因为高档位之间的倍率差更大（1.5→1.3 是 0.2；1.1→1.05 只有 0.05），每档耗时相同 ⇒ 下降速度自然先快后慢")]
@@ -192,6 +204,8 @@ public class ShockwavePreview : MonoBehaviour
     // _breathImpact 是本帧撞击标记，由 ShockwaveVFX.ConsumeBreathImpact() 消费一次后清零。
     private float _breathP = 0f;
     private bool _breathImpact = false;
+    // 碰撞闪光计时：>=0 表示正在闪，<0 表示未激活。红蓝各自独立（撞击是两墙合拢，两侧同时触发）。
+    private float _redImpactFlashT = -1f, _blueImpactFlashT = -1f;
     // 【2026-10-08 新增】P4 ① 碰撞火花。留空则 Play 时自动创建（见 EnsureVFX）。
     public ShockwaveVFX vfx;
     private float _redBaseOpacity = 0f, _blueBaseOpacity = 0f;
@@ -435,8 +449,8 @@ public class ShockwavePreview : MonoBehaviour
         _lastAppliedRedScale = _redScale;
         _lastAppliedBlueScale = _blueScale;
 
-        // 呼吸亮度 + 前进加亮（优势方随放大倍率变亮）—— 受 enableBrightnessFx 总开关控制
-        ApplyWallGlow();
+        // 亮度三层叠加（优势指示 + 前进脉冲 + 碰撞闪光）—— 受 enableBrightnessFx 总开关控制
+        ApplyWallGlow(dt);
     }
 
     /// <summary>扣血/补分机制触发（阈值态）。由 ScoreManager.ApplyCatchUp 直呼；side 0=红墙，1=蓝墙（=被补分/扣血的劣势方）。
@@ -731,7 +745,12 @@ public class ShockwavePreview : MonoBehaviour
 
         // ---- P4① 撞击事件：相位回绕（1 -> 0）就是「合拢到最紧」的那一刻 ----
         // _breathFade 未满时不发，避免刚从移动中停下、呼吸还没淡入完就先炸一下。
-        if (p < _breathP - 0.5f && _breathFade > 0.85f) _breathImpact = true;
+        if (p < _breathP - 0.5f && _breathFade > 0.85f)
+        {
+            _breathImpact = true;
+            _redImpactFlashT = 0f;   // 两侧同时触发碰撞闪光
+            _blueImpactFlashT = 0f;
+        }
         _breathP = p;
 
         if (p <= outR)
@@ -748,22 +767,57 @@ public class ShockwavePreview : MonoBehaviour
         }
     }
 
-    /// <summary>墙亮度：基础 Opacity + 撞击加亮（对峙循环合拢最紧时最亮）+ 前进加亮（优势方被放大时随倍率变亮），封顶 opacityMax。
+    /// <summary>墙亮度：基础 Opacity + 三层叠加，封顶 opacityMax。
+    ///   ① 优势指示灯：红墙 ∝ 蓝方 scale，蓝墙 ∝ 红方 scale（劣势方更亮）。
+    ///   ② 前进脉冲：仅 Advancing 的墙获得，幅度 ∝ 本次前进倍率，形状 = 对峙循环包络 (1-_breathK)*_breathFade。
+    ///   ③ 碰撞闪光：对峙循环合拢撞击瞬间触发，快速平方衰减。
     /// 注意：ShockwaveMeshGenerator.SyncMaterial 每帧会写回基础值，本方法在 DriveRuntime 末尾调用（在它之后），故本帧生效。</summary>
-    private void ApplyWallGlow()
+    private void ApplyWallGlow(float dt)
     {
-        // 总开关关闭（P1 自发光分层方案落地前）：只保留基础亮度，前进加亮与撞击加亮都不生效
+        // 碰撞闪光计时必须始终推进，否则总开关关闭期间会卡住，重新打开时突然爆闪。
+        float rImpact = GetImpactFlash(ref _redImpactFlashT, dt);
+        float bImpact = GetImpactFlash(ref _blueImpactFlashT, dt);
+
+        // 总开关关闭（P1 自发光分层方案落地前）：只保留基础亮度，三层加亮都不生效
         if (!enableBrightnessFx)
         {
             SetWallFloat(redWall, "_Opacity", _redBaseOpacity);
             SetWallFloat(blueWall, "_Opacity", _blueBaseOpacity);
             return;
         }
-        float breath = breathOpacityAmp * _breathFade * (1f - _breathK);   // k=0（合拢最紧）最亮
-        float rGlow = breath + (_redScale - 1f) * glowPerEnlarge;           // 红墙：自己被放大才变亮
-        float bGlow = breath + (_blueScale - 1f) * glowPerEnlarge;
+
+        float advRange = Mathf.Max(1e-6f, scaleAbove1_0 - scaleAtRest);
+        float breathEnvelope = _breathFade * (1f - _breathK);   // 0=张开最大/未淡入，1=合拢最紧且满淡入
+
+        // ① 优势指示灯：己方完全劣势（对方 scale 最大）时最亮，己方优势最大时 0
+        float rAdvantage = glowAdvantageMax * Mathf.Clamp01((_blueScale - scaleAtRest) / advRange);
+        float bAdvantage = glowAdvantageMax * Mathf.Clamp01((_redScale - scaleAtRest) / advRange);
+
+        // ② 前进脉冲：只给正在前进的墙；幅度 = 本次前进的倍率；波形合并到对峙循环
+        float rPulse = (_redAdvState == AdvanceState.Advancing)
+            ? glowAdvancePulseMax * Mathf.Clamp01((_redScale - scaleAtRest) / advRange) * breathEnvelope
+            : 0f;
+        float bPulse = (_blueAdvState == AdvanceState.Advancing)
+            ? glowAdvancePulseMax * Mathf.Clamp01((_blueScale - scaleAtRest) / advRange) * breathEnvelope
+            : 0f;
+
+        float rGlow = rAdvantage + rPulse + rImpact;
+        float bGlow = bAdvantage + bPulse + bImpact;
+
         SetWallFloat(redWall, "_Opacity", Mathf.Clamp(_redBaseOpacity + rGlow, 0f, opacityMax));
         SetWallFloat(blueWall, "_Opacity", Mathf.Clamp(_blueBaseOpacity + bGlow, 0f, opacityMax));
+    }
+
+    /// <summary>推进一帧碰撞闪光计时并返回当前亮度。计时结束后自动标记为未激活（t<0）。</summary>
+    private float GetImpactFlash(ref float t, float dt)
+    {
+        if (t < 0f) return 0f;
+        float dur = Mathf.Max(0.01f, glowImpactFlashDuration);
+        float k = 1f - Mathf.Clamp01(t / dur);   // 1 -> 0
+        float v = glowImpactFlashMax * k * k;    // 平方衰减，起步最亮、收尾柔和
+        t += dt;
+        if (t >= dur) t = -1f;
+        return v;
     }
 
     /// <summary>写墙材质浮点。
@@ -932,6 +986,7 @@ public class ShockwavePreview : MonoBehaviour
         _redPending = 0f; _bluePending = 0f;
         _redFlashing = false; _blueFlashing = false; _redFlashT = 0f; _blueFlashT = 0f;
         _breathT = 0f; _breathK = 0f; _breathFade = 0f;   // 呼吸相位归零，从合拢最紧处平滑起步
+        _redImpactFlashT = -1f; _blueImpactFlashT = -1f;   // 碰撞闪光归零
         // 对峙静止判定 / 已应用倍率 归零
         _idleTimer = 0f; _lastCenterX = (centerLine != null) ? centerLine.currentX : centerX;
         _lastAppliedRedScale = 1f; _lastAppliedBlueScale = 1f;
