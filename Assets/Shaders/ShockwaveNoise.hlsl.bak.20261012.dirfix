@@ -1,0 +1,104 @@
+// 冲击波墙 / 拖尾 共用的程序化噪声（URP 17 / Unity 6）。
+// 用法：在 HLSLPROGRAM 里 #include "ShockwaveNoise.hlsl"
+//
+// ★为什么不用噪声贴图：先用程序化 value noise 跑通效果，避免临时素材进版本库；
+//   等自绘/购买的噪声贴图就位后，只需把 FlowNoise 内部换成一次 SAMPLE_TEXTURE2D，
+//   对外接口 (p, time, speed, warp, detail, stretchX, stretchY, swirl, scrollDirX, scrollDirY) 保持不变，调用方一行都不用改。
+//
+// 设计目标：做出「分形杂色 → 漩涡 → 上下拉很长 → 沿指定方向移动」的能量流动/溶解感。
+//   - stretchX/Y：各向异性缩放采样坐标。拖尾用 stretchY 大 ⇒ 长条上下方向，流动沿 +X（从左到右）。
+//   - swirl：用低频噪声对采样坐标做局部旋转，形成 AE 里 Turbulent Noise 的漩涡扭曲。
+//   - scrollDirX/Y：滚动方向向量。墙面默认 (0,-1) 向下；拖尾默认 (1,0) 从左到右。
+//
+// 成本：FlowNoise 在 detail>0 时约 4~6 次 VNoise（每次 4 次 hash）。
+//      移动端若吃紧，把 detail 设 0（省一次）、warp 设 0（省两次）、swirl 设 0（省一次）。
+#ifndef MUSICAL_SPRITE_SHOCKWAVE_NOISE_INCLUDED
+#define MUSICAL_SPRITE_SHOCKWAVE_NOISE_INCLUDED
+
+float ShockHash21(float2 p)
+{
+    p = frac(p * float2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return frac(p.x * p.y);
+}
+
+float ShockVNoise(float2 p)
+{
+    float2 i = floor(p), f = frac(p);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    float a = ShockHash21(i);
+    float b = ShockHash21(i + float2(1.0, 0.0));
+    float c = ShockHash21(i + float2(0.0, 1.0));
+    float d = ShockHash21(i + float2(1.0, 1.0));
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+/// <summary>
+/// 分形杂色 + 漩涡扭曲 + 各向异性拉伸 + 沿 scrollDir 方向滚动。
+/// 用于墙面流体 / 拖尾流体 / 溶解噪声。
+/// </summary>
+float ShockFlowNoise(float2 p, float time, float speed, float warp, float detail,
+                     float stretchX, float stretchY, float swirl,
+                     float scrollDirX, float scrollDirY)
+{
+    // 1) 各向异性拉伸：拖尾 stretchY 大 ⇒ 长条上下方向，流动沿 +X 扩散
+    float2 uv = p * float2(stretchX, stretchY);
+
+    // 2) 沿 scrollDir 方向滚动（默认墙面 -Y，拖尾 +X）
+    float2 flow = uv + float2(scrollDirX, scrollDirY) * time * speed;
+
+    // 3) 漩涡扭曲：低频噪声驱动局部旋转角度，形成连续的涡状结构
+    if (abs(swirl) > 0.001)
+    {
+        float low = ShockVNoise(flow * 0.35 + float2(0.0, time * speed * 0.1));
+        float ang = (low * 2.0 - 1.0) * swirl * 6.283185;
+        float c = cos(ang), s = sin(ang);
+        float2 centered = flow - uv;
+        flow = uv + float2(centered.x * c - centered.y * s, centered.x * s + centered.y * c);
+    }
+
+    // 4) domain-warp：低频噪声扭曲高频采样坐标 ⇒ 翻滚细节
+    if (warp > 0.001)
+    {
+        float2 w = float2(ShockVNoise(flow * 0.6), ShockVNoise(flow * 0.6 + float2(3.7, 1.3)));
+        flow += (w - 0.5) * 2.0 * warp;
+    }
+
+    float n = ShockVNoise(flow);
+    if (detail > 0.001)
+        n = lerp(n, n * 0.7 + ShockVNoise(flow * 2.1 + float2(7.3, 2.7) - time * speed) * 0.3, detail);
+    return saturate(n);
+}
+
+/// <summary>溶解带权重：t 越小（越靠判定线/尾部）越接近 1。</summary>
+float ShockDissolveBand(float t, float pointC, float width)
+{
+    return 1.0 - smoothstep(max(0.0, pointC - width), saturate(pointC + width), t);
+}
+
+/// <summary>
+/// 溶解：用分形杂色噪声作为侵蚀图，柔和地衰减 alpha，并在侵蚀边缘产生淡淡的发光。
+/// 输出：keep = 保留部分（0=完全烧掉），glow = 边缘发光强度（用于叠加能量色）。
+/// edge 越小发光带越窄（0.001 接近硬边），越大越柔和。
+/// </summary>
+void ShockDissolve(float2 p, float band, float amount, float edge, float scale,
+                   float speed, float time, float stretchX, float stretchY, float swirl,
+                   float scrollDirX, float scrollDirY,
+                   out float keep, out float glow)
+{
+    // 溶解噪声：与流体同源，但可独立控制拉伸/漩涡/滚动方向
+    float n = ShockFlowNoise(p * scale, time, speed, 0.0, 0.0, stretchX, stretchY, swirl, scrollDirX, scrollDirY);
+
+    // 侵蚀强度：越靠近尾部、整体 amount 越大、噪声越亮 ⇒ 烧蚀越多
+    float erode = band * amount * n;
+
+    // alpha 保留：从 1 柔和地衰减到 0，不再用硬阈值切出斑块
+    keep = saturate(1.0 - erode);
+
+    // 边缘发光：只在侵蚀带中间（erode ≈ e~2.5e）产生一圈淡淡的能量边
+    float e = max(0.001, edge);
+    glow = smoothstep(0.0, e, erode) * (1.0 - smoothstep(e, e * 2.5, erode)) * band;
+    glow *= 0.5; // 默认亮度压低，避免白色斑块过曝
+}
+
+#endif

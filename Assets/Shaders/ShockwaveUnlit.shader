@@ -36,6 +36,36 @@ Shader "MusicalSprite/ShockwaveUnlit"
         _GlowArch       ("Glow Arch Focus", Float) = 2.0
         _GlowFront      ("Glow Front Focus", Float) = 1.6
         _GlowTailCut    ("Glow Tail Cut", Range(0,1)) = 0.15
+
+        // ---- P3 表面流体（分形杂色 + 漩涡 + 上下拉长 + 沿推进方向流动；★实验项，_FlowAmount=0 时完全等同于旧版）----
+        _FlowAmount     ("Flow Amount", Range(0,1)) = 0
+        _FlowScale      ("Flow Scale", Float) = 3
+        _FlowSpeed      ("Flow Speed", Float) = 0.35
+        _FlowWarp       ("Flow Warp", Range(0,2)) = 0.6
+        _FlowDetail     ("Flow Detail (2nd octave)", Range(0,1)) = 0.5
+        _FlowColorAmt   ("Flow Color Amount", Range(0,1)) = 0.5
+        _FlowAlphaAmt   ("Flow Alpha Amount", Range(0,1)) = 0.6
+        _FlowStretchX   ("Flow Stretch X (flow axis, pull long)", Float) = 1
+        _FlowStretchY   ("Flow Stretch Y (height, pull long)", Float) = 4
+        _FlowSwirl      ("Flow Swirl", Range(0,2)) = 0.6
+        // 0 = 采样 x 轴用纵深 vz（旧版，只能上下/纵深流动）；1 = 用"从中缝向己方半场"的长度坐标(1-t)
+        _FlowLengthMix  ("Flow Axis: 0=depth vz, 1=length outward", Range(0,1)) = 1
+        // ★方向 = 图案看起来的移动方向。x:+1 = 从中缝往己方半场（与拖尾同向），y:+1 = 向上
+        _FlowScrollDir  ("Flow Scroll Dir (+x outward, +y up)", Vector) = (1, 0, 0, 0)
+
+        // ---- P3 尾部溶解（同源的漩涡分形杂色作为侵蚀图，判定线侧 t→0 被柔和烧蚀；★实验项，_DissolveAmount=0 时完全等同于旧版）----
+        _DissolveAmount      ("Dissolve Amount", Range(0,1)) = 0
+        _DissolvePoint       ("Dissolve Center (t)", Range(0,1)) = 0.18
+        _DissolveWidth       ("Dissolve Width (t)", Range(0.01,1)) = 0.25
+        _DissolveEdge        ("Dissolve Edge Softness", Range(0.001,0.5)) = 0.08
+        _DissolveScale       ("Dissolve Noise Scale", Float) = 4
+        _DissolveSpeed       ("Dissolve Noise Speed", Float) = 0.15
+        _DissolveStretchX    ("Dissolve Stretch X (depth vz)", Float) = 1
+        _DissolveStretchY    ("Dissolve Stretch Y (height, pull long)", Float) = 4
+        _DissolveSwirl       ("Dissolve Swirl", Range(0,2)) = 0.6
+        _DissolveScrollDir   ("Dissolve Scroll Dir (x y)", Vector) = (0, -1, 0, 0)
+        _DissolveEdgeColor   ("Dissolve Edge Color", Color) = (1.60, 0.90, 0.60, 1)
+        _DissolveEdgeIntensity ("Dissolve Edge Intensity", Float) = 0.8
     }
     SubShader
     {
@@ -56,6 +86,7 @@ Shader "MusicalSprite/ShockwaveUnlit"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "ShockwaveNoise.hlsl"
 
             struct Attributes
             {
@@ -73,6 +104,14 @@ Shader "MusicalSprite/ShockwaveUnlit"
             };
 
             half4  _ColorDeep, _ColorTip, _ColorTail;
+            half4  _DissolveEdgeColor;
+            float  _FlowAmount, _FlowScale, _FlowSpeed, _FlowWarp, _FlowDetail, _FlowColorAmt, _FlowAlphaAmt;
+            float  _FlowStretchX, _FlowStretchY, _FlowSwirl, _FlowLengthMix;
+            float4 _FlowScrollDir;
+            float  _DissolveAmount, _DissolvePoint, _DissolveWidth, _DissolveEdge, _DissolveScale;
+            float  _DissolveSpeed, _DissolveEdgeIntensity;
+            float  _DissolveStretchX, _DissolveStretchY, _DissolveSwirl;
+            float4 _DissolveScrollDir;
             float4 _MainTex_ST;
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
@@ -148,6 +187,37 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 col   *= tex.rgb;
                 alpha *= tex.a;
 
+                // ---- P3 表面流体：沿墙推进方向流动的长条状涡状浓淡 ----
+                // ★ _FlowAmount=0 时整段跳过，输出与旧版逐位一致（主游戏默认零影响）
+                // 采样坐标 x 轴 = lerp(纵深 vz, "从中缝往己方半场"的长度 1-t, _FlowLengthMix)；y 轴 = 拱高 vy
+                //   （y 再被 _FlowStretchY 拉长 ⇒ 上下拉得很长的漩涡；_FlowScrollDir(+x) 让它从中缝往己方半场流）
+                if (_FlowAmount > 0.001)
+                {
+                    float2 fp = float2(lerp(vz, 1.0 - t, _FlowLengthMix), vy) * _FlowScale;
+                    float fn = ShockFlowNoise(fp, _Time.y, _FlowSpeed,
+                                              _FlowWarp * _FlowAmount, _FlowDetail,
+                                              _FlowStretchX, _FlowStretchY, _FlowSwirl * _FlowAmount,
+                                              _FlowScrollDir.x, _FlowScrollDir.y);
+                    // 明暗对比拉开，让流动看得见：颜色波动 0.60~1.40，alpha 波动 0.50~1.30
+                    col   *= lerp(1.0, 0.60 + fn * 0.80, _FlowColorAmt * _FlowAmount);
+                    alpha  = saturate(alpha * lerp(1.0, 0.50 + fn * 0.80, _FlowAlphaAmt * _FlowAmount));
+                }
+
+                // ---- P3 尾部溶解：判定线侧(t→0)被分形杂色漩涡柔和烧蚀 + 淡淡能量边 ----
+                // ★ _DissolveAmount=0 时整段跳过（主游戏默认零影响）
+                if (_DissolveAmount > 0.001)
+                {
+                    float band = ShockDissolveBand(t, _DissolvePoint, _DissolveWidth);
+                    float keep, glow;
+                    ShockDissolve(float2(vz, vy), band, _DissolveAmount, _DissolveEdge,
+                                  _DissolveScale, _DissolveSpeed, _Time.y,
+                                  _DissolveStretchX, _DissolveStretchY, _DissolveSwirl * _DissolveAmount,
+                                  _DissolveScrollDir.x, _DissolveScrollDir.y,
+                                  keep, glow);
+                    alpha *= keep;
+                    col += _DissolveEdgeColor.rgb * (_DissolveEdgeIntensity * glow);
+                }
+
                 // 3) 边缘光：拱顶(vy->1) + 前沿(t->1)
                 //    B) core 调制：拱顶更亮、两端更收，产生厚度/体积感
                 float crest = pow(vy, 3.0);
@@ -189,6 +259,7 @@ Shader "MusicalSprite/ShockwaveUnlit"
             #pragma vertex vertGlow
             #pragma fragment fragGlow
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "ShockwaveNoise.hlsl"
 
             struct AttributesGlow
             {
@@ -204,6 +275,14 @@ Shader "MusicalSprite/ShockwaveUnlit"
             };
 
             half4 _GlowColor;
+            half4 _DissolveEdgeColor;
+            float  _FlowAmount, _FlowScale, _FlowSpeed, _FlowWarp, _FlowDetail, _FlowAlphaAmt;
+            float  _FlowStretchX, _FlowStretchY, _FlowSwirl, _FlowLengthMix;
+            float4 _FlowScrollDir;
+            float  _DissolveAmount, _DissolvePoint, _DissolveWidth, _DissolveEdge, _DissolveScale;
+            float  _DissolveSpeed;
+            float  _DissolveStretchX, _DissolveStretchY, _DissolveSwirl;
+            float4 _DissolveScrollDir;
             float  _GlowIntensity, _GlowArch, _GlowFront, _GlowTailCut;
             float  _BackX, _FrontX, _ArchHeight, _ZHalf, _Flash;
             float  _ArchPower, _ArchFocus, _ArchAmount, _ShellIntensity;
@@ -235,6 +314,31 @@ Shader "MusicalSprite/ShockwaveUnlit"
                 float s = abs(IN.vz);
                 float core = pow(1.0 - s, max(0.01, _ArchPower));
                 mask *= lerp(1.0, core, _ShellIntensity);
+
+                // P3 流体：发光也跟着浓淡起伏，才不会"墙身有流动、光却是平的"
+                if (_FlowAmount > 0.001)
+                {
+                    // 与主体 Pass 严格同坐标：x = lerp(vz, 1-t, _FlowLengthMix)，y = vy
+                    float2 fp = float2(lerp(IN.vz, 1.0 - IN.t, _FlowLengthMix), IN.vy) * _FlowScale;
+                    float fn = ShockFlowNoise(fp, _Time.y, _FlowSpeed,
+                                              _FlowWarp * _FlowAmount, _FlowDetail,
+                                              _FlowStretchX, _FlowStretchY, _FlowSwirl * _FlowAmount,
+                                              _FlowScrollDir.x, _FlowScrollDir.y);
+                    mask *= lerp(1.0, 0.50 + fn * 0.80, _FlowAlphaAmt * _FlowAmount);
+                }
+
+                // P3 溶解：被烧掉的地方不能再发光（否则会出现"烧没了但光还在"）
+                if (_DissolveAmount > 0.001)
+                {
+                    float band = ShockDissolveBand(IN.t, _DissolvePoint, _DissolveWidth);
+                    float keep, glow;
+                    ShockDissolve(float2(IN.vz, IN.vy), band, _DissolveAmount, _DissolveEdge,
+                                  _DissolveScale, _DissolveSpeed, _Time.y,
+                                  _DissolveStretchX, _DissolveStretchY, _DissolveSwirl * _DissolveAmount,
+                                  _DissolveScrollDir.x, _DissolveScrollDir.y,
+                                  keep, glow);
+                    mask *= keep;
+                }
 
                 half3 g = _GlowColor.rgb * _GlowIntensity * mask;
                 return half4(g, 1.0);

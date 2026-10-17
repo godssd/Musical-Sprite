@@ -1,0 +1,69 @@
+// 冲击波墙 / 拖尾 共用的程序化噪声（URP 17 / Unity 6）。
+// 用法：在 HLSLPROGRAM 里 #include "ShockwaveNoise.hlsl"
+//
+// ★为什么不用噪声贴图：先用程序化 value noise 跑通效果，避免临时素材进版本库；
+//   等自绘/购买的噪声贴图就位后，只需把 FlowNoise 内部换成一次 SAMPLE_TEXTURE2D，
+//   对外接口 (p, time, speed, warp, detail) 保持不变，调用方一行都不用改。
+//
+// 成本：FlowNoise 在 detail>0 时约 4 次 VNoise（每次 4 次 hash）。
+//      移动端若吃紧，把 detail 设 0（省一次）、warp 设 0（省两次）。
+#ifndef MUSICAL_SPRITE_SHOCKWAVE_NOISE_INCLUDED
+#define MUSICAL_SPRITE_SHOCKWAVE_NOISE_INCLUDED
+
+float ShockHash21(float2 p)
+{
+    p = frac(p * float2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return frac(p.x * p.y);
+}
+
+float ShockVNoise(float2 p)
+{
+    float2 i = floor(p), f = frac(p);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    float a = ShockHash21(i);
+    float b = ShockHash21(i + float2(1.0, 0.0));
+    float c = ShockHash21(i + float2(0.0, 1.0));
+    float d = ShockHash21(i + float2(1.0, 1.0));
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+/// <summary>
+/// domain-warp 流体噪声：用低频噪声扭曲高频采样坐标 ⇒ 翻滚涡流，
+/// 而不是像 UV 平移那样整片滑动。
+/// </summary>
+float ShockFlowNoise(float2 p, float time, float speed, float warp, float detail)
+{
+    float2 flow = p + float2(0.0, -time * speed);
+    if (warp > 0.001)
+    {
+        float2 w = float2(ShockVNoise(flow * 0.6), ShockVNoise(flow * 0.6 + float2(3.7, 1.3)));
+        flow += (w - 0.5) * 2.0 * warp;                 // 域扭曲：出涡流
+    }
+    float n = ShockVNoise(flow);
+    if (detail > 0.001)
+        n = lerp(n, n * 0.7 + ShockVNoise(flow * 2.1 + float2(7.3, 2.7) - time * speed) * 0.3, detail);
+    return saturate(n);
+}
+
+/// <summary>溶解带权重：t 越小（越靠判定线/尾部）越接近 1。</summary>
+float ShockDissolveBand(float t, float pointC, float width)
+{
+    return 1.0 - smoothstep(max(0.0, pointC - width), saturate(pointC + width), t);
+}
+
+/// <summary>
+/// 溶解：噪声阈值烧蚀。keep = 保留部分（0=烧掉），glow = 燃烧亮边。
+/// edge 越小边越硬（0.001 接近硬切），越大越柔和。
+/// </summary>
+void ShockDissolve(float2 p, float band, float amount, float edge, float scale,
+                   float speed, float time, out float keep, out float glow)
+{
+    float thresh = band * amount;
+    float dn = ShockFlowNoise(p * scale, time, speed, 0.0, 0.0);
+    float e = max(0.001, edge);
+    keep = smoothstep(thresh - e, thresh + e, dn);
+    glow = keep * (1.0 - smoothstep(thresh + e, thresh + e * 3.0, dn));
+}
+
+#endif

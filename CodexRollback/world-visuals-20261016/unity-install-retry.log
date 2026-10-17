@@ -1,0 +1,712 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.0/staging' branch; Version is '6000.0.82f1 (2fb0dae735e1) revision 3125466'; Using compiler version '193933523'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator" at "2026-10-16T12:26:55.0889878Z"
+OS: 'Windows 10  (10.0.19045) 64bit Professional' Language: 'zh' Physical Memory: 16322 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-10-16T12:26:55Z
+
+COMMAND LINE ARGUMENTS:
+D:\unity\6000.0.82f1\Editor\Unity.exe
+-batchmode
+-nographics
+-quit
+-projectPath
+D:\unity\plan go\Musical Sprite
+-executeMethod
+MusicalSprite.EditorTools.WorldVisualSceneInstaller.Install
+-logFile
+D:\unity\plan go\Musical Sprite\CodexRollback\world-visuals-20261016\unity-install-retry.log
+Successfully changed project path to: D:\unity\plan go\Musical Sprite
+D:/unity/plan go/Musical Sprite
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [13096]  Target information:
+
+Player connection [13096]  * "[IP] 192.168.31.163 [Port] 55504 [Flags] 2 [Guid] 1801188068 [EditorId] 1801188068 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [13096]  * "[IP] 172.18.0.1 [Port] 55504 [Flags] 2 [Guid] 1801188068 [EditorId] 1801188068 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [13096] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [13096] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-30336" after 0.3 seconds.
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Refreshing native plugins compatible for Editor in 0.88 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 6000.0.82f1 (2fb0dae735e1)
+[Subsystems] Discovering subsystems at path D:/unity/6000.0.82f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/unity/plan go/Musical Sprite/Assets
+Forcing GfxDevice: Null
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+NullGfxDevice:
+    Version:  NULL 1.0 [1.0]
+    Renderer: Null Device
+    Vendor:   Unity Technologies
+Shader Hidden/ProbeVolume/VoxelizeScene is not supported: GPU does not support conservative rasterization
+Initialize mono
+Mono path[0] = 'D:/unity/6000.0.82f1/Editor/Data/Managed'
+Mono path[1] = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56336
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: D:/unity/6000.0.82f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.005937 seconds.
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.3'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-Administrator"
+[Licensing::IpcConnector] LicenseClient-Administrator channel disconnected successfully.
+[Licensing::IpcConnector] Channel LicenseClient-Administrator-6000.0.82 doesn't exist
+[Licensing::Module] Successfully launched the LicensingClient (PId: 14576)
+- Loaded All Assemblies, in  0.489 seconds
+Native extension for WindowsStandalone target not found
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82" at "2026-10-16T12:26:57.2265169Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 14576, path: "D:/unity/6000.0.82f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+Package Manager log level set to [2]
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.343 seconds
+Domain Reload Profiling: 828ms
+	BeginReloadAssembly (198ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (3ms)
+	RebuildCommonClasses (47ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (62ms)
+	LoadAllAssembliesAndSetupDomain (164ms)
+		LoadAssemblies (188ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (161ms)
+			TypeCache.Refresh (159ms)
+				TypeCache.ScanAssembly (142ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (1ms)
+	FinalizeReload (344ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (305ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (22ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (57ms)
+			ProcessInitializeOnLoadAttributes (150ms)
+			ProcessInitializeOnLoadMethodAttributes (72ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Module] Licensing is not yet initialized.
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              7ed593ee8d9a435582033a00e33c3868
+  Correlation Id:          f2ad70d5274181cb27d3526f6636fb6a
+  External correlation Id: 2077056537964738544
+  Machine Id:              zBAHGvhiEkomrmV9VYKbt7d65SM=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-Administrator-6000.0.82" (connect: 0.37s, validation: 0.26s, handshake: 0.01s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82-notifications" at "2026-10-16T12:26:57.4899497Z"
+[Licensing::Module] Connected to LicensingClient (PId: 14576, launch time: 0.00, total connection time: 0.64s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-WJVU-GZ2K-34D2-CCZA-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: 2026-10-21T11:17:15Z
+[Licensing::Module] License group:
+  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
+  Product: Unity Personal Version
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.01
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-WJVU-GZ2K-34D2-CCZA-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: 2026-10-21T11:17:15Z
+[Licensing::Module] License group:
+  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
+  Product: Unity Personal Version
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Module] Licensing Background thread has ended after 2.45s
+[Licensing::Module] Licensing is initialized (took 0.18s).
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-WJVU-GZ2K-34D2-CCZA-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: 2026-10-21T11:17:15Z
+[Licensing::Module] License group:
+  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
+  Product: Unity Personal Version
+  Type: Assigned
+  Expiration: Unlimited
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 64 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.ai.assistant@2.19.0-pre.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.assistant@8d1e3e89e3a7)
+    com.unity.ai.inference@2.6.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.inference@9a123aee5df7)
+    com.unity.ai.navigation@2.0.14 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.navigation@134dd6a3b97b)
+    com.unity.collab-proxy@2.13.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collab-proxy@4628d2ba6ea4)
+    com.unity.ide.rider@3.0.39 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.rider@4504839d03f7)
+    com.unity.ide.visualstudio@2.0.27 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.visualstudio@dc1ddd4f09b6)
+    com.unity.inputsystem@1.19.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.inputsystem@21a28c3a6c83)
+    com.unity.timeline@1.8.12 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.11 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.visualscripting@8bed5ad90189)
+    com.unity.burst@1.8.30 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.burst@2f3d916873ea)
+    com.unity.dt.app-ui@1.3.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.dt.app-ui@3bbd9e4c5c92)
+    com.unity.collections@2.6.8 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collections@84e8eb3fc12e)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.mathematics@1.3.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.mathematics@8017b507cc74)
+    com.unity.nuget.mono-cecil@1.11.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.searcher@4.9.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.searcher@1e17ce91558d)
+    com.unity.test-framework.performance@3.5.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework.performance@8b56083ec0f0)
+  Built-in packages:
+    com.unity.multiplayer.center@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.multiplayer.center@f3fb577b3546)
+    com.unity.render-pipelines.universal@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal@c7abd84d7030)
+    com.unity.test-framework@1.6.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework@082c24152fd4)
+    com.unity.ugui@2.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ugui@8bb446d869cd)
+    com.unity.modules.accessibility@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.ai@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.screencapture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vehicles@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.vr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vr)
+    com.unity.modules.wind@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ext.nunit@031a54704bff)
+    com.unity.2d.sprite@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.2d.sprite@0eb6ea2c7181)
+    com.unity.render-pipelines.core@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.core@f663854f0ceb)
+    com.unity.shadergraph@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.shadergraph@14250cfec0ec)
+    com.unity.render-pipelines.universal-config@17.0.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal-config@dd206bf35d04)
+    com.unity.rendering.light-transport@1.0.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.rendering.light-transport@9bd588f963c0)
+  Git packages:
+    com.esotericsoftware.spine.spine-unity@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Assets/Spine#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-unity@21b16484175f)
+    com.esotericsoftware.spine.spine-csharp@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-csharp/src#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-csharp@62e1be8a5d43)
+    com.esotericsoftware.spine.urp-shaders@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Modules/com.esotericsoftware.spine.urp-shaders#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.urp-shaders@413194061080)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.02 seconds
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_1.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_2.1.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_2.2.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_2.3.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_2.4.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_2.5.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_2.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_3.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_4.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+A meta data file (.meta) exists but its asset 'Assets/Art/tree_5.png' can't be found. When moving or deleting files outside of Unity, please ensure that the corresponding .meta file is moved or deleted along with it.
+Version Control: UpdateSettings: Unknown version control plugin: Hidden Meta Files
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEditorInternal.VersionControl.AssetModificationHook:OnWillDeleteAsset (string,UnityEditor.RemoveAssetOptions)
+UnityEditor.AssetModificationProcessorInternal:OnWillDeleteAsset (string,UnityEditor.RemoveAssetOptions)
+
+[C:\build\output\unity\unity\Editor\Src\VersionControl\VCMessage.cpp line 121]
+
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+Refreshing native plugins compatible for Editor in 5.45 ms, found 5 plugins.
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+DisplayProgressbar: Compiling Scripts
+ExitCode: 4 Duration: 0s262ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/1900b0aE-inputdata.json
+*** Tundra requires additional run (0.20 seconds), 0 items updated, 654 evaluated
+Starting: D:\unity\6000.0.82f1\Editor\Data\Tools\netcorerun\netcorerun.exe "D:\unity\6000.0.82f1\Editor\Data\Tools\BuildPipeline\ScriptCompilationBuildProgram.exe" "Library/Bee/1900b0aE.dag.json" "Library/Bee/1900b0aE-inputdata.json" "Library\Bee\buildprogram0.traceevents"
+WorkingDir: D:/unity/plan go/Musical Sprite
+ExitCode: 0 Duration: 1s265ms
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\1900b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+ExitCode: 0 Duration: 3s82ms
+Finished compiling graph: 1479 nodes, 28648 flattened edges (22828 ToBuild, 248 ToUse), maximum node priority 1686
+[ 667/1475  0s] WriteText Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.rsp
+[ 669/1475  0s] WriteText Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.rsp
+[1118/1475  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1467/1475  1s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+
+Assets\Scripts\Environment\FeverSceneryController.cs(22,27): warning CS0108: 'FeverSceneryController.animation' hides inherited member 'Component.animation'. Use the new keyword if hiding was intended.
+
+Assets\Scripts\GameManager.cs(243,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Scripts\NotePrewarmer.cs(32,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+
+Assets\Scripts\NoteMover.cs(94,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+
+Assets\Scripts\HoldNote.cs(232,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used
+
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+[1468/1475  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 133 defines and 323 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1469/1475  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+[1470/1475  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1471/1475  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+[1472/1475  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 131 defines and 345 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1473/1475  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[1474/1475  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (3.06 seconds), 11 items updated, 1475 evaluated
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+Assets\Scripts\Environment\FeverSceneryController.cs(22,27): warning CS0108: 'FeverSceneryController.animation' hides inherited member 'Component.animation'. Use the new keyword if hiding was intended.
+Assets\Scripts\GameManager.cs(243,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Scripts\NotePrewarmer.cs(32,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+Assets\Scripts\NoteMover.cs(94,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+Assets\Scripts\HoldNote.cs(232,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+AssetDatabase: script compilation time: 5.383510s
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  1.605 seconds
+Refreshing native plugins compatible for Editor in 4.25 ms, found 5 plugins.
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 4.44 ms, found 5 plugins.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  5.780 seconds
+Domain Reload Profiling: 7371ms
+	BeginReloadAssembly (314ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (10ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (145ms)
+	RebuildCommonClasses (35ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (64ms)
+	LoadAllAssembliesAndSetupDomain (1166ms)
+		LoadAssemblies (756ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (522ms)
+			TypeCache.Refresh (406ms)
+				TypeCache.ScanAssembly (385ms)
+			BuildScriptInfoCaches (100ms)
+			ResolveRequiredComponents (12ms)
+	FinalizeReload (5781ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (5486ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (14ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (244ms)
+			ProcessInitializeOnLoadAttributes (4785ms)
+			ProcessInitializeOnLoadMethodAttributes (425ms)
+			AfterProcessingInitializeOnLoad (12ms)
+			EditorAssembliesLoaded (1ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (16ms)
+Start importing Assets/Art/tree_3_A.png using Guid(1089068d26ba7c14fa43d706d4e8eaa3) (TextureImporter) -> (artifact id: 'f2f96b8216e27d10373d98fc0313345d') in 0.0938 seconds
+Start importing Assets/Art/tree_2.2_B.png using Guid(21fb86891cb1f254cb7008a4149003f3) (TextureImporter) -> (artifact id: 'b1c58d0bb1d7cf565899c3d48520286e') in 0.0093648 seconds
+Start importing Assets/Art/tree_2_B.png using Guid(7123ade5cab367c4c9c199b016b75297) (TextureImporter) -> (artifact id: '496986335199cc44ee3abd0cf5830f75') in 0.0405339 seconds
+Start importing Assets/Art/tree_2.5_B.png using Guid(c2abfc2c957797d42bc77cee130930e3) (TextureImporter) -> (artifact id: 'e06f3082e3d7c5a9174e80d4ae0352cd') in 0.0054532 seconds
+Start importing Assets/Art/tree_2.3_A.png using Guid(23297d225995e7e4ab0bb12727d3c164) (TextureImporter) -> (artifact id: 'a3db1b8eb81fcb142f9bb996a347d40d') in 0.0051922 seconds
+Start importing Assets/Art/tree_4_B.png using Guid(e342143cd17a098448b86d18b464da2f) (TextureImporter) -> (artifact id: 'a272213396e1711ab98d57c9b440f047') in 0.0394892 seconds
+Start importing Assets/Art/tree_2.3_B.png using Guid(f465d446a850f844ea4fe544f6713a72) (TextureImporter) -> (artifact id: '0f71fd1869aa7d8a69894fdf565d3779') in 0.0051209 seconds
+Start importing Assets/Art/tree_2.5_A.png using Guid(86dc32d2a3f60de40810160c4308d5d0) (TextureImporter) -> (artifact id: '54a8ad16aa13852ce0f1864590d072b0') in 0.0057621 seconds
+Start importing Assets/Art/tree_2.4_B.png using Guid(5710366a9933ca14395c8313057f1683) (TextureImporter) -> (artifact id: 'a1c2e4cf2bc4c7a0074e6676d2c773c8') in 0.0077113 seconds
+Start importing Assets/Art/1__super_feverB.png using Guid(575f0ce28d5b5a04db6e5796746b3e00) (TextureImporter) -> (artifact id: 'd35338597f588aef835e647635c67e4a') in 0.0382027 seconds
+Start importing Assets/Art/tree_2.1_B.png using Guid(183a0e74b175c1f458405c3b3fbadbe6) (TextureImporter) -> (artifact id: '83933121f174789d8d114cd509f6da69') in 0.0056078 seconds
+Start importing Assets/Art/1__feverA.png using Guid(28130722c8a9e5c4192d5e4c3f8e861a) (TextureImporter) -> (artifact id: 'bc4aa92abf21498a5cf2aa0bda363c79') in 0.0471765 seconds
+Start importing Assets/Art/tree_2.6_B.png using Guid(688a3d7b0b54cda4cb12a256dd35372f) (TextureImporter) -> (artifact id: '530534618a73eee86a3f06da3119848b') in 0.0073649 seconds
+Start importing Assets/Art/1__super_feverA.png using Guid(f9c25421161d420499d967c11985085d) (TextureImporter) -> (artifact id: 'f1cf4a115b6a3fc1ad788613d44a94d2') in 0.0387255 seconds
+Start importing Assets/Art/tree_3_B.png using Guid(2a0d27d54d8fe4943a167039f940a6a9) (TextureImporter) -> (artifact id: 'f69b3628d687cbe85a514541a3f9ab41') in 0.0515725 seconds
+Start importing Assets/Art/tree_4_A.png using Guid(eabd560bbd89c454fb61deb302e69508) (TextureImporter) -> (artifact id: '5682d242661ff82eb0603b3b97257c88') in 0.039154 seconds
+Start importing Assets/Art/tree_2.7_B.png using Guid(1b946e152ad9acd48b4f7897e656c375) (TextureImporter) -> (artifact id: '3dd5728d625201f3d5f18f325e2a82d8') in 0.0432735 seconds
+Start importing Assets/Art/tree_1_B.png using Guid(abb98d816f849124b9a4b44dfa6e7729) (TextureImporter) -> (artifact id: '9ba02f9138432078334a6b7bc0d8d4eb') in 0.0695875 seconds
+Start importing Assets/Art/tree_2.7_A.png using Guid(4cf56f93b6be3a848af643940a89b9be) (TextureImporter) -> (artifact id: 'a1f3871609a5b67d2067fefc2ea09846') in 0.0410585 seconds
+Start importing Assets/Art/tree_2.1_A.png using Guid(0d3071e7032726541b61f073f9e5bcae) (TextureImporter) -> (artifact id: 'cab0eb9e1a13e7a249bfafb5594a8051') in 0.0057843 seconds
+Start importing Assets/Art/tree_5_B.png using Guid(4dfe5da5b10091b469ff4fc9421b3afc) (TextureImporter) -> (artifact id: '443d94b671509aa371517fecb2e7bac4') in 0.0424759 seconds
+Start importing Assets/Art/tree_2.4 _A.png using Guid(7d0ff6907fd7482408e8aba650ac7b95) (TextureImporter) -> (artifact id: '2ba11eebef1bf5c02181e5e175750def') in 0.0072682 seconds
+Start importing Assets/Art/tree_2_A.png using Guid(0e8f99b1704c179409ace20bc4a565a5) (TextureImporter) -> (artifact id: 'ed6a77c0ee5879d2a3705e249cb23c5e') in 0.0412475 seconds
+Start importing Assets/Art/tree_2.2_A.png using Guid(3ed25e9ecac73624ba877d03101cd5a4) (TextureImporter) -> (artifact id: '29520d2b8ca23a1dd77ba1ea935fd4cf') in 0.0056509 seconds
+Start importing Assets/Art/tree_1_A.png using Guid(ae11bbf2425cb78459940bee3ba50c5f) (TextureImporter) -> (artifact id: 'd60fb514b600ac77c4ff7444956c76fc') in 0.0385741 seconds
+Start importing Assets/Art/tree_2.6_A.png using Guid(1fa27d6528a1dc44c8433ddf461dd71c) (TextureImporter) -> (artifact id: '5f2483f1e6de7f5ad18dad874a0a5e6a') in 0.0081971 seconds
+Start importing Assets/Art/1__feverB.png using Guid(9f4b7d366da621a488de51cfbe806f1b) (TextureImporter) -> (artifact id: '7eb6ce947da629ab27de25f3da06df33') in 0.0401292 seconds
+Start importing Assets/Art/tree_5_A.png using Guid(bf1a9bcaa7b7a0440863dd66ffa87509) (TextureImporter) -> (artifact id: '89eebfe559a5f05a5028e8d5b727e865') in 0.043117 seconds
+Start importing Assets/Shaders/ScenePropSprite.shader using Guid(adb8f613f0ffab6445c93da323b0edbb) (ShaderImporter)Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+ -> (artifact id: '46fecffbc3c9c359bd2baf4097b03bae') in 0.140363 seconds
+Shader Hidden/ProbeVolume/VoxelizeScene is not supported: GPU does not support conservative rasterization
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Refreshing native plugins compatible for Editor in 5.10 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 1.12 ms.
+Asset Pipeline Refresh (id=63b356e39d9b2f046874d54d11aa2ab1): Total: 16.275 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=1 (actual=1, local cache=0, cache server=0)
+		Asset DB Process Time: managed=39 ms, native=7963 ms
+		Asset DB Callback time: managed=1005 ms, native=160 ms
+		Scripting: domain reloads=1, domain reload time=1605 ms, compile time=5385 ms, other=115 ms
+		Project Asset Count: scripts=2231, non-scripts=4683
+		Asset File Changes: new=33, changed=36, moved=0, deleted=10
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 25.425ms
+	ApplyChangesToAssetFolders: 0.725ms
+	Scan: 550.740ms
+	OnSourceAssetsModified: 2.420ms
+	CategorizeAssetsWithTransientArtifact: 129.593ms
+	ProcessAssetsWithTransientArtifactChanges: 129.785ms
+	UnregisterDeletedAssets: 0.004ms
+	CategorizeAssets: 120.422ms
+	ImportOutOfDateAssets: 6798.442ms (414.907ms without children)
+		ImportManagerImport: 992.317ms (3.664ms without children)
+			ImportInProcess: 988.544ms
+			UpdateCategorizedAssets: 0.108ms
+		CompileScripts: 5384.818ms
+		ReloadNativeAssets: 0.048ms
+		UnloadImportedAssets: 1.617ms
+		ReloadImportedAssets: 0.893ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.108ms
+		InitializingProgressBar: 0.011ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 1.722ms
+	PostProcessAllAssets: 1128.370ms
+	Hotreload: 12.252ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.003ms
+	UnloadStreamsBegin: 2.493ms
+	PersistCurrentRevisions: 0.773ms
+	UnloadStreamsEnd: 0.002ms
+	GenerateScriptTypeHashes: 3.720ms
+	Untracked: 7373.565ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 3.493ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Musical Sprite
+Unloading 81 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 10407 unused Assets / (13.7 MB). Loaded Objects now: 11201.
+Memory consumption went from 268.6 MB to 254.9 MB.
+Total: 24.025300 ms (FindLiveObjects: 1.123900 ms CreateObjectMapping: 1.831500 ms MarkObjects: 15.877400 ms  DeleteObjects: 5.191300 ms)
+
+Opening scene 'Assets/Scenes/SampleScene.unity'
+Unloading 54 Unused Serialized files (Serialized files now loaded: 0)
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMin (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:562)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:225)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene (string,UnityEditor.SceneManagement.OpenSceneMode)
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:Install () (at Assets/Editor/WorldVisualSceneInstaller.cs:23)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 562]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMax (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:557)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:225)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene (string,UnityEditor.SceneManagement.OpenSceneMode)
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:Install () (at Assets/Editor/WorldVisualSceneInstaller.cs:23)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 557]
+
+Loaded scene 'Assets/Scenes/SampleScene.unity'
+	Deserialize:            60.938 ms
+	Integration:            344.697 ms
+	Integration of assets:  4.463 ms
+	Thread Wait Time:       -0.806 ms
+	Total Operation Time:   409.292 ms
+Unloading 6 unused Assets / (4.4 KB). Loaded Objects now: 11990.
+Memory consumption went from 236.6 MB to 236.6 MB.
+Total: 16.926700 ms (FindLiveObjects: 0.666100 ms CreateObjectMapping: 0.549200 ms MarkObjects: 15.668900 ms  DeleteObjects: 0.041600 ms)
+
+Start importing Assets/WorldVisualSets using Guid(a6f2be8c09f49a343a265c812a6a97cd) (DefaultImporter) -> (artifact id: '19ce4086ed199039a97d3f9fcbddd077') in 0.0023444 seconds
+Refreshing native plugins compatible for Editor in 4.12 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=fe2f5ad95e0960d41be8ab0ab972c469): Total: 0.109 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+Start importing Assets/WorldVisualSets/PlayerWorld_A.asset using Guid(0ecf3e664eaaa874cb31b1e88f4443ac) (NativeFormatImporter) -> (artifact id: '68d5d5ed8f2ae5829dc4acc3ea0c9da4') in 0.0023737 seconds
+Refreshing native plugins compatible for Editor in 4.12 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.08 ms.
+Asset Pipeline Refresh (id=ef9b8857379d441489469bc6a53d2d38): Total: 0.045 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_1_A.png using Guid(ae11bbf2425cb78459940bee3ba50c5f) (TextureImporter) -> (artifact id: '7e2268f896e8eb9bddc115bea14dd5c4') in 0.0827792 seconds
+Refreshing native plugins compatible for Editor in 4.38 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=3e0e347d2160e2b43809acf3f1e5414a): Total: 0.139 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2_A.png using Guid(0e8f99b1704c179409ace20bc4a565a5) (TextureImporter) -> (artifact id: '809e764bd818f2499dfbc602f9678938') in 0.0788802 seconds
+Refreshing native plugins compatible for Editor in 4.48 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.10 ms.
+Asset Pipeline Refresh (id=8e0a84d728bed02418702e8c5be7fd58): Total: 0.134 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_3_A.png using Guid(1089068d26ba7c14fa43d706d4e8eaa3) (TextureImporter) -> (artifact id: 'f0a5d49e432bfad4ccbec37db80fdc32') in 0.1264293 seconds
+Refreshing native plugins compatible for Editor in 4.32 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=226e9e05e21dec545bf64a65b5ceaaf5): Total: 0.184 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_4_A.png using Guid(eabd560bbd89c454fb61deb302e69508) (TextureImporter) -> (artifact id: '99fac7310fb20628a99f767efd6e63cb') in 0.0641099 seconds
+Refreshing native plugins compatible for Editor in 4.40 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=d0abb142e88fe3143b802fbc14642a20): Total: 0.118 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_5_A.png using Guid(bf1a9bcaa7b7a0440863dd66ffa87509) (TextureImporter) -> (artifact id: 'b4dab8fa040a25753b2c78dcf0cfeee2') in 0.084122 seconds
+Refreshing native plugins compatible for Editor in 5.52 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.08 ms.
+Asset Pipeline Refresh (id=89b42d358d007074598448c98e0f9530): Total: 0.146 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.1_A.png using Guid(0d3071e7032726541b61f073f9e5bcae) (TextureImporter) -> (artifact id: 'be0913efa4b10f1e2a65cc68741eb579') in 0.0099492 seconds
+Refreshing native plugins compatible for Editor in 5.21 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=c03b566cdcfdac244ab5eb2590009e1d): Total: 0.073 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.2_A.png using Guid(3ed25e9ecac73624ba877d03101cd5a4) (TextureImporter) -> (artifact id: '0f25e4bfd99bf0de9b665a037c73c3e4') in 0.0075577 seconds
+Refreshing native plugins compatible for Editor in 5.14 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.08 ms.
+Asset Pipeline Refresh (id=920cb80236d7cc244863a4d695703e9d): Total: 0.069 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.3_A.png using Guid(23297d225995e7e4ab0bb12727d3c164) (TextureImporter) -> (artifact id: '2f99aa1d925a345fdf0b73f27f489a0c') in 0.0070631 seconds
+Refreshing native plugins compatible for Editor in 4.65 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=3e8b281e15b53ae4b9f23113ef12f7ba): Total: 0.064 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.4 _A.png using Guid(7d0ff6907fd7482408e8aba650ac7b95) (TextureImporter) -> (artifact id: '04d82d37002a65c6c7f8ff8c2e9a03d6') in 0.0121884 seconds
+Refreshing native plugins compatible for Editor in 4.27 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=bc0bbc433ab342f4cad134b43da5a940): Total: 0.070 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.5_A.png using Guid(86dc32d2a3f60de40810160c4308d5d0) (TextureImporter) -> (artifact id: 'a5b7f66cdc404360ddbb5dcfe849ad29') in 0.0080469 seconds
+Refreshing native plugins compatible for Editor in 4.62 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=dcb05ca8edf505041aaf38c3d7aef846): Total: 0.066 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.6_A.png using Guid(1fa27d6528a1dc44c8433ddf461dd71c) (TextureImporter) -> (artifact id: '4010c04d70c101d153c85216145f9e21') in 0.0120225 seconds
+Refreshing native plugins compatible for Editor in 4.77 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=ab5f7ba78a60d314085d8efffbf82f8c): Total: 0.070 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.7_A.png using Guid(4cf56f93b6be3a848af643940a89b9be) (TextureImporter) -> (artifact id: 'af3478b7388e98780ef139516b776106') in 0.0759948 seconds
+Refreshing native plugins compatible for Editor in 4.32 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=c6fffd35880ca45429c8b46ee10664aa): Total: 0.135 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/1__feverA.png using Guid(28130722c8a9e5c4192d5e4c3f8e861a) (TextureImporter) -> (artifact id: '3c9663cc11e2b9512c4b15481276cdff') in 0.0667652 seconds
+Refreshing native plugins compatible for Editor in 4.19 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=9fdef30289984724f9dd13eb7576771b): Total: 0.124 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/1__super_feverA.png using Guid(f9c25421161d420499d967c11985085d) (TextureImporter) -> (artifact id: 'edfbc6a6814d4ee2717ae6b44aa54d9c') in 0.0662949 seconds
+Refreshing native plugins compatible for Editor in 4.38 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=d3b74568fe452634b80318331c56f446): Total: 0.122 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/WorldVisualSets/PlayerWorld_B.asset using Guid(4b53879f7ce73d24390139a17c5f307c) (NativeFormatImporter) -> (artifact id: '08f75c9d7cc12212f7ffdec0cba616c1') in 0.0020756 seconds
+Refreshing native plugins compatible for Editor in 4.20 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=5eba933152e39114e9da4d091b242289): Total: 0.045 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_1_B.png using Guid(abb98d816f849124b9a4b44dfa6e7729) (TextureImporter) -> (artifact id: '26b249b3048d86d3b9fc6653393450e0') in 0.0769378 seconds
+Refreshing native plugins compatible for Editor in 4.19 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=6f769cda7e20e524895a9f15cd035152): Total: 0.134 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2_B.png using Guid(7123ade5cab367c4c9c199b016b75297) (TextureImporter) -> (artifact id: '7f2bc2ed91f87dd8abf240c5da79e618') in 0.075986 seconds
+Refreshing native plugins compatible for Editor in 4.48 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=538ec6f9ca07b8742b8d7f4ec8bfb78a): Total: 0.131 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_3_B.png using Guid(2a0d27d54d8fe4943a167039f940a6a9) (TextureImporter) -> (artifact id: '2be1ccce705bae64c3a612f203c6e0f9') in 0.13133 seconds
+Refreshing native plugins compatible for Editor in 4.26 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=5b7f472b20a310e4cb3be9412b5fa663): Total: 0.186 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_4_B.png using Guid(e342143cd17a098448b86d18b464da2f) (TextureImporter) -> (artifact id: '267f9d68bbe06019b61e77004e093199') in 0.066577 seconds
+Refreshing native plugins compatible for Editor in 4.24 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=8ca51c8d835125a4ba0204ff6bb0f7d2): Total: 0.122 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_5_B.png using Guid(4dfe5da5b10091b469ff4fc9421b3afc) (TextureImporter) -> (artifact id: '5b0dfbf1f163d2d44ecf22c604389e92') in 0.0755433 seconds
+Refreshing native plugins compatible for Editor in 4.12 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=d57c4d8fe1ca4944ba328a2960f11582): Total: 0.130 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.1_B.png using Guid(183a0e74b175c1f458405c3b3fbadbe6) (TextureImporter) -> (artifact id: '1ed73e2890e5b68552477f53e846068b') in 0.009614 seconds
+Refreshing native plugins compatible for Editor in 4.13 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.08 ms.
+Asset Pipeline Refresh (id=105030a621d5a1840ad9ca3770a8bd5c): Total: 0.063 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.2_B.png using Guid(21fb86891cb1f254cb7008a4149003f3) (TextureImporter) -> (artifact id: 'e51280fd478f5e99b9bc25f8123637cc') in 0.0070544 seconds
+Refreshing native plugins compatible for Editor in 4.17 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=e349cc97c9d4bc84898958255009e962): Total: 0.061 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.3_B.png using Guid(f465d446a850f844ea4fe544f6713a72) (TextureImporter) -> (artifact id: 'b8c1746daaf1c768524805c8c7dbb788') in 0.0074708 seconds
+Refreshing native plugins compatible for Editor in 4.56 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=154be4337b7a75e4c8ac53002d38aef9): Total: 0.062 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.4_B.png using Guid(5710366a9933ca14395c8313057f1683) (TextureImporter) -> (artifact id: '2a55cee043b7db062949e6945e85ea93') in 0.0118037 seconds
+Refreshing native plugins compatible for Editor in 4.31 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=6c2ca8b348e2a0d4f8bc6844916e1b00): Total: 0.068 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.5_B.png using Guid(c2abfc2c957797d42bc77cee130930e3) (TextureImporter) -> (artifact id: 'b23584e54e9aefbb7b2139867b3ea3a2') in 0.0077237 seconds
+Refreshing native plugins compatible for Editor in 4.19 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=35fde15698723264f9594a8fa0a9fdbb): Total: 0.063 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.6_B.png using Guid(688a3d7b0b54cda4cb12a256dd35372f) (TextureImporter) -> (artifact id: 'd5fb56a5d91deb725e88e291caa17d4d') in 0.0113653 seconds
+Refreshing native plugins compatible for Editor in 4.14 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.09 ms.
+Asset Pipeline Refresh (id=4d3f54418927dba499a8e694bcf8bbb4): Total: 0.065 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/tree_2.7_B.png using Guid(1b946e152ad9acd48b4f7897e656c375) (TextureImporter) -> (artifact id: '281b632928b6998d6e2fc955a912fc56') in 0.0770755 seconds
+Refreshing native plugins compatible for Editor in 4.13 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=a3883e2acc329b046bfd2bd7566e4ba1): Total: 0.130 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/1__feverB.png using Guid(9f4b7d366da621a488de51cfbe806f1b) (TextureImporter) -> (artifact id: 'b67294d7b1924fb16257209d4f3a4b7e') in 0.066135 seconds
+Refreshing native plugins compatible for Editor in 4.18 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=2068594bce8b0d944926583025bee3f6): Total: 0.120 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Art/1__super_feverB.png using Guid(575f0ce28d5b5a04db6e5796746b3e00) (TextureImporter) -> (artifact id: '12075752526cb8a3fa5599eb438a5b72') in 0.0726835 seconds
+Refreshing native plugins compatible for Editor in 4.22 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=9346afeac86178a47adc1d9f6c2713c9): Total: 0.128 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+UnityException: CreateImpl is not allowed to be called from a MonoBehaviour constructor (or instance field initializer), call it in Awake or Start instead. Called from MonoBehaviour 'WorldVisualOwnership' on game object 'tree_1_B_Prop'.
+See "Script Serialization" page in the Unity Manual for further details.
+  at (wrapper managed-to-native) UnityEngine.MaterialPropertyBlock.CreateImpl()
+  at UnityEngine.MaterialPropertyBlock..ctor () [0x00008] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at MusicalSprite.Terrain.WorldVisualOwnership..ctor () [0x00007] in D:\unity\plan go\Musical Sprite\Assets\Scripts\Environment\WorldVisualOwnership.cs:14 
+UnityEngine.GameObject:Internal_AddComponentWithType_Injected(IntPtr, Type)
+UnityEngine.GameObject:Internal_AddComponentWithType(Type)
+UnityEngine.GameObject:AddComponent(Type)
+UnityEngine.GameObject:AddComponent()
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:SetOwnership(GameObject, Kind) (at Assets\Editor\WorldVisualSceneInstaller.cs:171)
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:Install() (at Assets\Editor\WorldVisualSceneInstaller.cs:50)
+
+(Filename: Assets/Editor/WorldVisualSceneInstaller.cs Line: 171)
+
+ArgumentNullException: Value cannot be null.
+Parameter name: dest
+  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00018] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at UnityEngine.Renderer.Internal_GetPropertyBlock (UnityEngine.MaterialPropertyBlock dest) [0x00003] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at UnityEngine.Renderer.GetPropertyBlock (UnityEngine.MaterialPropertyBlock properties) [0x00001] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at MusicalSprite.Terrain.WorldVisualOwnership.Apply () [0x00034] in D:\unity\plan go\Musical Sprite\Assets\Scripts\Environment\WorldVisualOwnership.cs:24 
+  at MusicalSprite.Terrain.WorldVisualOwnership.OnEnable () [0x00000] in D:\unity\plan go\Musical Sprite\Assets\Scripts\Environment\WorldVisualOwnership.cs:16 
+UnityEngine.GameObject:Internal_AddComponentWithType_Injected(IntPtr, Type)
+UnityEngine.GameObject:Internal_AddComponentWithType(Type)
+UnityEngine.GameObject:AddComponent(Type)
+UnityEngine.GameObject:AddComponent()
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:SetOwnership(GameObject, Kind) (at Assets\Editor\WorldVisualSceneInstaller.cs:171)
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:Install() (at Assets\Editor\WorldVisualSceneInstaller.cs:50)
+
+(Filename: Assets/Editor/WorldVisualSceneInstaller.cs Line: 171)
+
+ArgumentNullException: Value cannot be null.
+Parameter name: dest
+  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00018] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at UnityEngine.Renderer.Internal_GetPropertyBlock (UnityEngine.MaterialPropertyBlock dest) [0x00003] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at UnityEngine.Renderer.GetPropertyBlock (UnityEngine.MaterialPropertyBlock properties) [0x00001] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at MusicalSprite.Terrain.WorldVisualOwnership.Apply () [0x00034] in D:\unity\plan go\Musical Sprite\Assets\Scripts\Environment\WorldVisualOwnership.cs:24 
+  at MusicalSprite.Terrain.WorldVisualOwnership.OnValidate () [0x00000] in D:\unity\plan go\Musical Sprite\Assets\Scripts\Environment\WorldVisualOwnership.cs:17 
+UnityEngine.GameObject:Internal_AddComponentWithType_Injected(IntPtr, Type)
+UnityEngine.GameObject:Internal_AddComponentWithType(Type)
+UnityEngine.GameObject:AddComponent(Type)
+UnityEngine.GameObject:AddComponent()
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:SetOwnership(GameObject, Kind) (at Assets\Editor\WorldVisualSceneInstaller.cs:171)
+MusicalSprite.EditorTools.WorldVisualSceneInstaller:Install() (at Assets\Editor\WorldVisualSceneInstaller.cs:50)
+
+(Filename: Assets/Editor/WorldVisualSceneInstaller.cs Line: 171)
+
+ArgumentNullException: Value cannot be null.
+Parameter name: dest
+  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00018] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at UnityEngine.Renderer.Internal_GetPropertyBlock (UnityEngine.MaterialPropertyBlock dest) [0x00003] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at UnityEngine.Renderer.GetPropertyBlock (UnityEngine.MaterialPropertyBlock properties) [0x00001] in <cacc1b48a79f4e06850e7b9af174af54>:0 
+  at MusicalSprite.Terrain.WorldVisualOwnership.Apply () [0x00034] in D:\unity\plan go\Musical Sprite\Assets\Scripts\Environment\WorldVisualOwnership.cs:24 
+  at MusicalSprite.EditorTools.WorldVisualSceneInstaller.SetOwnership (UnityEngine.GameObject obj, MusicalSprite.Terrain.WorldVisualOwnership+Kind kind) [0x0001e] in D:\unity\plan go\Musical Sprite\Assets\Editor\WorldVisualSceneInstaller.cs:173 
+  at MusicalSprite.EditorTools.WorldVisualSceneInstaller.Install () [0x000fc] in D:\unity\plan go\Musical Sprite\Assets\Editor\WorldVisualSceneInstaller.cs:50 
+
+(Filename: Assets/Editor/WorldVisualSceneInstaller.cs Line: 50)
+
+executeMethod method MusicalSprite.EditorTools.WorldVisualSceneInstaller.Install threw exception.
+Exiting without the bug reporter. Application will terminate with return code 1

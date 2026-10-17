@@ -111,6 +111,14 @@ public class ShockwavePreview : MonoBehaviour
     [Tooltip("高度（Y轴）放大系数：0=高度完全不被 accum 影响（始终 baseScale.y），1=高度与 XZ 等比放大（原有行为）。\n⛔ 只作用于 Y 轴（拱高），X（推进方向）不受此系数影响、始终完整放大。\n当墙变高导致顶部超出画面时，调小该值")]
     [Range(0f, 1f)] public float scaleHeightAmplify = 1f;
 
+    [Header("沙盒驱动（仅 VFXSandbox 场景；绝不影响对局逻辑）")]
+    [Tooltip("沙盒模式：开启后用 sandboxAdvance / sandboxOffset 直接驱动墙的放大与根 X 偏移，绕开整套得分前进状态机。游戏场景保持关闭。")]
+    public bool sandboxMode = false;
+    [Tooltip("沙盒：直接指定放大倍率 f（1=基准, 1.5=封顶），绕过得分前进 / 衰退。")]
+    [Range(1f, 1.5f)] public float sandboxAdvance = 1f;
+    [Tooltip("沙盒：根节点 X 偏移（世界单位），把整组左右平移观察。")]
+    public float sandboxOffset = 0f;
+
     [Header("亮度：总开关与上限（写材质 _Opacity）")]
     [Tooltip("总开关：关闭后只保留基础亮度，【优势指示 / 前进脉冲 / 碰撞闪光】都不生效。\nP1 自发光分层方案落地前先关闭，避免过曝与层次混乱。\n【注意】扣血闪白是机制反馈不是发光，不受此开关影响")]
     public bool enableBrightnessFx = false;
@@ -255,7 +263,9 @@ public class ShockwavePreview : MonoBehaviour
         // 非 Play 态捕获 base 是安全的（编辑器不驱动墙的 Transform），
         // 这样「烘焙」按钮改完形状后能立刻拿到新的基准。
         // ⛔ Play 态下【不】捕获：此时墙已被 ApplyScale 写入临时位移，捕获会污染 base。
-        if (!Application.isPlaying) CaptureBase();
+        // ⛔ 沙盒（sandboxMode）下【也不】捕获：沙盒编辑态会用 ApplyScale 把墙按滑块放大，
+        //   若在此重抓 base，会把"已预览放大的墙"当成新基准 -> 下次重载叠加漂移。游戏场景 sandboxMode=false，不受影响。
+        if (!Application.isPlaying && !sandboxMode) CaptureBase();
     }
     // ⛔ autoFit 与本品互斥：它每帧按 (frontX - backX) 覆盖墙的 localScale，而 frontX 跟着中缝走，
     //    会把被推入侧的墙腰斩（实测 156 → 76，≈0.49 倍）。因此必须在 CaptureBase 之前强制关闭。
@@ -349,10 +359,17 @@ public class ShockwavePreview : MonoBehaviour
         //
         //
         //
-        //   【2026-10-08 定稿】编辑器非运行状态【一律不驱动】。
-        //   墙的基础造型直接在 Scene 里调两墙 Transform（加粗时同步微调 localPosition 保住中缝），
-        //   改完右键本组件 →「Recapture Base Transforms」重新绑定 —— 运行时逻辑不参与造型修改。
-        if (!Application.isPlaying) return;
+        //   【2026-10-08 定稿】编辑器非运行状态【一律不驱动】游戏场景（sandboxMode=false），避免写坏墙 Transform。
+        //   ⛔ 例外：VFXSandbox 场景（sandboxMode=true）需要编辑态实时预览，故放开 —— 仅作用于沙盒，游戏场景永不进入。
+        if (!Application.isPlaying && !sandboxMode) return;
+
+        // 沙盒：纯可视化驱动，绕开对局逻辑（仅 VFXSandbox 场景）
+        if (sandboxMode)
+        {
+            DriveSandbox(Time.deltaTime);
+            return;
+        }
+
         float curX = SeamX;
         float dt = Time.deltaTime;
         RefreshDecayLevels();   // 档位表每帧刷新一次；下面的映射函数都依赖它
@@ -451,7 +468,44 @@ public class ShockwavePreview : MonoBehaviour
         _lastAppliedRedScale = _redScale;
         _lastAppliedBlueScale = _blueScale;
 
+        // 拖尾用的『前进 / 充电量』：放大倍率超出基准的部分（0=静止，封顶 = scaleAbove1_0 - scaleAtRest）
+        RootAdvanceX = Mathf.Max(_redScale, _blueScale) - scaleAtRest;
+
         // 亮度三层叠加（优势指示 + 前进脉冲 + 碰撞闪光）—— 受 enableBrightnessFx 总开关控制
+        ApplyWallGlow(dt);
+    }
+
+    /// <summary>沙盒驱动：仅 VFXSandbox 场景用。用滑块直接设定放大倍率与根偏移，绕开得分 / 前进 / 衰退 / 对峙整套逻辑，纯可视化调参。
+    /// 拖尾、飘散等组件通过 RedScale / BlueScale / RootAdvanceX 读取本方法写出的状态。
+    /// ⛔ 游戏场景 sandboxMode=false，永不进入本分支。</summary>
+    private void DriveSandbox(float dt)
+    {
+        // 根节点随 sandboxOffset 平移（不接 centerLine）
+        transform.position = new Vector3(_baseRootPos.x + sandboxOffset, _baseRootPos.y, _baseRootPos.z);
+
+        // 编辑态（沙盒预览）：直接吸附到滑块值，保证拖滑块即时反映（编辑态 Time.deltaTime 不可靠，不做弹簧缓动）
+        // 运行态：弹簧跟随，保留一点惯性手感
+        if (!Application.isPlaying)
+        {
+            _redScale = _blueScale = sandboxAdvance;
+            _redVel = _blueVel = 0f;
+        }
+        else
+        {
+            SpringScale(ref _redScale, ref _redVel, sandboxAdvance, dt);
+            SpringScale(ref _blueScale, ref _blueVel, sandboxAdvance, dt);
+        }
+
+        float visR = freezeAdvanceFx ? scaleAtRest : _redScale;
+        float visB = freezeAdvanceFx ? scaleAtRest : _blueScale;
+        ApplyScale(redWall, _redBasePos, _redBaseRot, _redBaseScale, _redPivot, visR, Vector3.zero);
+        ApplyScale(blueWall, _blueBasePos, _blueBaseRot, _blueBaseScale, _bluePivot, visB, Vector3.zero);
+        _lastAppliedRedScale = _redScale;
+        _lastAppliedBlueScale = _blueScale;
+
+        RootAdvanceX = Mathf.Max(_redScale, _blueScale) - scaleAtRest;
+
+        ApplySceneGlow();
         ApplyWallGlow(dt);
     }
 
@@ -1092,6 +1146,13 @@ public class ShockwavePreview : MonoBehaviour
 
     /// <summary>中缝的世界 X（根位置 + 中缝逻辑坐标）。P4① 火花用它定位。</summary>
     public float SeamWorldX => _baseRootPos.x + SeamX;
+
+    /// <summary>当前『前进 / 充电量』：放大倍率超出基准的部分（静止 = 0，封顶 = scaleAbove1_0 - scaleAtRest）。拖尾用它推算带子长度。</summary>
+    public float RootAdvanceX { get; private set; }
+
+    /// <summary>红 / 蓝墙当前实际倍率（弹簧跟随值，已含 freezeAdvanceFx 冻结前的内部状态）。拖尾用它推算不透明度。</summary>
+    public float RedScale => _redScale;
+    public float BlueScale => _blueScale;
 
     // ================== P4 ① 碰撞火花：撞击事件接口（供 ShockwaveVFX 消费）==================
     /// <summary>取一次「合拢撞击」事件。消费后自动清零，每周期只会返回一次 true。

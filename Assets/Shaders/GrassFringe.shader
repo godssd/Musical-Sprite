@@ -63,6 +63,7 @@ Shader "MusicalSprite/GrassFringe"
             #pragma multi_compile_fog
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "WorldSeamDissolve.hlsl"
 
             struct Attributes
             {
@@ -179,8 +180,7 @@ Shader "MusicalSprite/GrassFringe"
                 float4 redMap  = SAMPLE_TEXTURE2D(_RedMap, sampler_RedMap, groundUV);
                 float4 blueMap = SAMPLE_TEXTURE2D(_BlueMap, sampler_BlueMap, groundUV);
 
-                float halfBlend = max(0.0001, _CenterBlend * 0.5);
-                float redWeight = 1.0 - smoothstep(_CenterLineX - halfBlend, _CenterLineX + halfBlend, input.anchorWS.x);
+                float redWeight = WorldSeamRedWeight(WorldSeamDistance(input.anchorWS));
                 float3 groundTint = lerp(blueMap.rgb, redMap.rgb, redWeight);
 
                 // Per-tuft green/brown mix.

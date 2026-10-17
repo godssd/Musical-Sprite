@@ -1,0 +1,215 @@
+using UnityEngine;
+
+/// <summary>
+/// 冲击波拖尾：在每堵墙的【后侧（己方半场）】拉出一条带状 mesh，朝后延伸。
+///   - 长度随墙前进（preview.RootAdvanceX）增加。
+///   - 不透明度随放大倍率（preview.RedScale/BlueScale）增加。
+///   - 颜色由灰度形态贴图(_MainTex) + 注入颜色(_Tint)决定，符合项目「灰度图+指定颜色」约定。
+/// 仅运行时/沙盒编辑态生成 mesh（DontSave，不入场景），游戏场景编辑态不创建以免污染场景。
+/// 注意：墙的局部 X/Z 缩放极大（154/80），所以本脚本【不读墙体包围盒】，改用固定可调跨度，避免带子被拉到几百单位外。
+/// </summary>
+[ExecuteAlways]
+[RequireComponent(typeof(ShockwavePreview))]
+public class ShockwaveTrail : MonoBehaviour
+{
+    public ShockwavePreview preview;
+
+    [Header("几何")]
+    [Tooltip("基础长度（世界单位，朝己方半场后侧拉出）")]
+    public float trailLengthBase = 2f;
+    [Tooltip("每单位前进位移额外增加的长度")]
+    public float trailLengthPerAdvance = 4f;
+    [Tooltip("带子的 Z 跨度（世界单位，固定值，不读墙缩放）")]
+    public float trailZSpan = 7f;
+    [Tooltip("带子离地高度（世界 Y）")]
+    public float trailY = 0.6f;
+    [Tooltip("贴墙后侧边向外偏移一点，避免和墙体重叠")]
+    public float trailBackMargin = 0.3f;
+    [Tooltip("沿长度方向细分的段数。1 = 旧版 4 顶点；8~12 才能表现沿长度的流动与非线性淡出")]
+    [Range(1, 32)] public int trailSegments = 10;
+    [Tooltip("远端淡出曲线指数。1 = 旧版线性；>1 远端更快消失（更像被拉散的能量丝）")]
+    public float trailFalloffPower = 1f;
+
+    [Header("外观")]
+    [Tooltip("不透明度（乘以『放大倍率归一』系数）")]
+    [Range(0f, 1f)] public float trailOpacity = 0.7f;
+    [Tooltip("红方颜色（HDR，>1 才会被 Bloom 泛出光晕）")]
+    public Color trailColorRed = new Color(2.0f, 0.5f, 0.6f, 1f);
+    [Tooltip("蓝方颜色（HDR）")]
+    public Color trailColorBlue = new Color(0.5f, 0.7f, 2.0f, 1f);
+    [Tooltip("UV 滚动速度（沿延伸方向流动，制造循环内容）")]
+    public Vector2 trailScrollSpeed = new Vector2(0.3f, 0f);
+    [Tooltip("灰度形态贴图（白=实心，黑=透明/描边）。留空则用纯色+顶点渐隐")]
+    public Texture2D trailTexture;
+
+    [Header("流体（P3 实验：0 = 与旧版完全一致）")]
+    [Tooltip("流体总强度。0 = 关闭（旧版行为）；1 = 最强涡流")]
+    [Range(0f, 1f)] public float trailFlowAmount = 0f;
+    public float trailFlowScale = 4f;
+    public float trailFlowSpeed = 0.5f;
+    [Range(0f, 2f)] public float trailFlowWarp = 0.7f;
+    [Range(0f, 1f)] public float trailFlowDetail = 0.5f;
+    [Range(0f, 1f)] public float trailFlowColorAmt = 0.5f;
+    [Range(0f, 1f)] public float trailFlowAlphaAmt = 0.7f;
+    [Tooltip("长度方向采样缩放（1 为不拉伸）")]
+    public float trailFlowStretchX = 1f;
+    [Tooltip("纵深方向采样缩放（拉大 = 长条状漩涡）。拖尾 UV 的 y 是纵深，所以这里是'上下'拉长")]
+    public float trailFlowStretchY = 4f;
+    [Tooltip("漩涡扭曲强度。0 = 直条纹")]
+    [Range(0f, 2f)] public float trailFlowSwirl = 0.6f;
+    [Tooltip("流动方向基础向量（x = 沿拖尾长度方向，y = 沿纵深方向）。默认 (1,0)。\n" +
+             "实际运行时红蓝自动取反：蓝墙(+x) 从左到右；红墙(-x) 从右到左（均从头部/中缝侧向墙后远方扩散）。")]
+    public Vector2 trailFlowScrollDir = new Vector2(1f, 0f);
+
+    private Mesh _meshRed, _meshBlue;
+    private Material _matRed, _matBlue;
+
+    void OnEnable()
+    {
+        if (preview == null) preview = GetComponent<ShockwavePreview>();
+        // 运行态 或 沙盒编辑态（sandboxMode）才生成 mesh；游戏场景编辑态不生成，避免污染
+        if (Application.isPlaying || (preview != null && preview.sandboxMode)) EnsureMeshes();
+    }
+
+    void OnDisable()
+    {
+        DestroyRuntime(ref _meshRed); DestroyRuntime(ref _meshBlue);
+        DestroyRuntime(ref _matRed); DestroyRuntime(ref _matBlue);
+    }
+
+    private void DestroyRuntime<T>(ref T o) where T : Object
+    {
+        if (o == null) return;
+        if (Application.isPlaying) Destroy(o); else DestroyImmediate(o);
+        o = null;
+    }
+
+    private void EnsureMeshes()
+    {
+        if (preview == null) return;
+        if (_meshRed != null) return;
+
+        _meshRed = new Mesh();  _meshRed.hideFlags  = HideFlags.DontSave;
+        _meshBlue = new Mesh(); _meshBlue.hideFlags = HideFlags.DontSave;
+        _matRed = MakeTrailMaterial(trailColorRed);
+        _matBlue = MakeTrailMaterial(trailColorBlue);
+
+        Attach("Trail_Red", _meshRed, _matRed, preview.redWall);
+        Attach("Trail_Blue", _meshBlue, _matBlue, preview.blueWall);
+    }
+
+    // 拖尾 mesh 挂在场景根（无父物体），用【世界坐标】顶点，避免被墙/根的缩放与位移二次变换。
+    private void Attach(string name, Mesh mesh, Material mat, Transform wall)
+    {
+        if (wall == null) return;
+        var go = new GameObject(name);
+        go.transform.SetParent(null, false);           // 场景根，identity 变换
+        go.hideFlags = HideFlags.DontSave;
+        var mf = go.AddComponent<MeshFilter>();
+        mf.sharedMesh = mesh;
+        var mr = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = mat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = false;
+    }
+
+    private Material MakeTrailMaterial(Color tint)
+    {
+        var sh = Shader.Find("MusicalSprite/TrailUnlit");
+        var m = new Material(sh);
+        m.hideFlags = HideFlags.DontSave;
+        m.SetColor("_Tint", tint);
+        m.SetFloat("_Opacity", trailOpacity);
+        m.SetVector("_ScrollSpeed", trailScrollSpeed);
+        if (trailTexture != null) m.SetTexture("_MainTex", trailTexture);
+        return m;
+    }
+
+    void LateUpdate()
+    {
+        // 运行态 或 沙盒编辑态（sandboxMode）才重建拖尾；游戏场景编辑态不动，避免写污染
+        if (!Application.isPlaying && !(preview != null && preview.sandboxMode)) return;
+        if (preview == null) return;
+        EnsureMeshes();
+
+        float adv = Mathf.Abs(preview.RootAdvanceX);
+        float len = trailLengthBase + adv * trailLengthPerAdvance;
+
+        // 红墙在 -x（己方半场=-x），蓝墙在 +x（己方半场=+x）
+        BuildRibbon(_meshRed, _matRed, preview.redWall, -1f, preview.RedScale, len);
+        BuildRibbon(_meshBlue, _matBlue, preview.blueWall, 1f, preview.BlueScale, len);
+    }
+
+    private void BuildRibbon(Mesh mesh, Material mat, Transform wall, float sideSign, float f, float length)
+    {
+        if (wall == null || mesh == null) return;
+
+        float zHalf = trailZSpan * 0.5f;
+        Vector3 c = wall.position;
+        // 后侧边（远离中缝的一侧）：红墙在 -x，蓝墙在 +x
+        float backEdgeX = c.x + sideSign * trailBackMargin;
+        float outerX = backEdgeX + sideSign * length;
+        float y = trailY;
+
+        // 沿长度方向细分（seg=1 时与旧版 4 顶点完全一致）
+        int seg = Mathf.Max(1, trailSegments);
+        float fall = Mathf.Max(0.001f, trailFalloffPower);
+        int vCount = (seg + 1) * 2;
+        var verts = new Vector3[vCount];
+        var uvs = new Vector2[vCount];
+        var cols = new Color[vCount];
+        var tris = new int[seg * 6];
+
+        for (int i = 0; i <= seg; i++)
+        {
+            float k = (float)i / seg;                       // 0 = 贴墙，1 = 远端
+            float x = Mathf.Lerp(backEdgeX, outerX, k);
+            float a = Mathf.Pow(1f - k, fall);              // 顶点 alpha：内侧 1 → 远端 0
+            int b = i * 2;
+            verts[b]     = new Vector3(x, y, c.z - zHalf);
+            verts[b + 1] = new Vector3(x, y, c.z + zHalf);
+            uvs[b]       = new Vector2(k, 0f);
+            uvs[b + 1]   = new Vector2(k, 1f);
+            cols[b]      = new Color(1f, 1f, 1f, a);
+            cols[b + 1]  = new Color(1f, 1f, 1f, a);
+        }
+        for (int i = 0; i < seg; i++)
+        {
+            int b = i * 2, t = i * 6;
+            tris[t] = b;     tris[t + 1] = b + 2; tris[t + 2] = b + 1;
+            tris[t + 3] = b + 1; tris[t + 4] = b + 2; tris[t + 5] = b + 3;
+        }
+
+        mesh.Clear();
+        mesh.SetVertices(verts);
+        mesh.SetUVs(0, uvs);
+        mesh.SetColors(cols);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals();
+
+        // 不透明度随放大倍率：f 在 scaleAtRest 时淡到 0.3，在 scaleAbove1_0 时满
+        float fNorm = Mathf.Clamp01((f - preview.scaleAtRest) / Mathf.Max(0.0001f, (preview.scaleAbove1_0 - preview.scaleAtRest)));
+        float op = trailOpacity * Mathf.Lerp(0.3f, 1f, fNorm);
+        if (mat != null)
+        {
+            mat.SetColor("_Tint", sideSign < 0f ? trailColorRed : trailColorBlue);
+            mat.SetFloat("_Opacity", op);
+            mat.SetVector("_ScrollSpeed", trailScrollSpeed);
+            // P3 拖尾流体（0 = 旧版行为）
+            mat.SetFloat("_FlowAmount", trailFlowAmount);
+            mat.SetFloat("_FlowScale", trailFlowScale);
+            mat.SetFloat("_FlowSpeed", trailFlowSpeed);
+            mat.SetFloat("_FlowWarp", trailFlowWarp);
+            mat.SetFloat("_FlowDetail", trailFlowDetail);
+            mat.SetFloat("_FlowColorAmt", trailFlowColorAmt);
+            mat.SetFloat("_FlowAlphaAmt", trailFlowAlphaAmt);
+            mat.SetFloat("_FlowStretchX", trailFlowStretchX);
+            mat.SetFloat("_FlowStretchY", trailFlowStretchY);
+            mat.SetFloat("_FlowSwirl", trailFlowSwirl);
+            // 拖尾方向：蓝墙(+x) 从左到右；红墙(-x) 从右到左（都从头部/中缝侧向墙后远方扩散）
+            Vector2 dir = trailFlowScrollDir;
+            if (Mathf.Approximately(dir.x, 0f) && Mathf.Approximately(dir.y, 0f)) dir.x = 1f;
+            mat.SetVector("_FlowScrollDir", new Vector2(dir.x * sideSign, dir.y));
+        }
+    }
+}

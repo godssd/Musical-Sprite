@@ -1,0 +1,1266 @@
+using UnityEngine;
+
+/// <summary>
+/// 布姆炸弹的卡通爆炸效果 —— 【1:1 对齐 Stylized Explosion Pack 参考 prefab】
+/// 参考体：Assets/EffectCore/packs/StylizedExplosionPack1/prefabs/mobile/red_originalFire_mobile/
+///         explosionMobile_stylized_small_originalFire.prefab
+///
+/// ============================ 参考的真实结构（已逐层扒参） ============================
+/// 参考不是"一堆 billboard 圆点"，而是 **Mesh 渲染 + Billboard + Stretch 混搭**：
+///
+///   ① sphereFlash         Mesh(内置 Sphere) + 无色纯色    → 爆炸扩散球，0→2.8 膨胀后淡出
+///   ② flarespikes         Mesh(cone.obj)    + flarespark  → 放射火舌，speed=0，靠 size 0→5 膨胀
+///   ③ flarespikes_delayed Mesh(cone.obj)    + flarespark  → 错峰第二波火舌
+///   ④ inner_fire          Billboard         + fire.psd    → 焰心，size 1→0 收缩，白→金黄→橙→深红
+///   ⑤ fire_floaters       Stretch           + fire.psd    → 上浮火苗，gravity 为负
+///   ⑥ firey_debris        Mesh(scrap.obj)   + 亮色        → 碎片，gravity 正，抛物线落地
+///   ⑦ circle              Mesh(quad4point)  + circle.psd  → 贴地扩散环，size 25
+///   ⑧ circularSmoke       Billboard         + smoke_d.psd → 环形烟（AlphaBlend）
+///   ⑨ smokeUp             Billboard         + smoke_d.psd → 向上喷发的烟柱（AlphaBlend）
+///   ⑩ smoke               Billboard         + smoke_d.psd → 近地余烟（AlphaBlend）
+///   ⑪ decal_heatedStrike  HorizBillboard    + explodedecal→ 地面焦痕（随机旋转，AlphaBlend）
+///   ⑫ decal               HorizBillboard    + explodedecal→ 大焦痕（AlphaBlend）
+///
+///
+/// 【第三轮：补齐参考里此前完全漏掉的 4 个模块（★烟尘手感的关键）】
+///   ⛔⛔ 教训：只对齐 Initial/Shape/Emission/Size/Color 五个模块是不够的，
+///       参考还开了 ClampVelocity / UV(序列帧) / Rotation / Collision，缺一个手感就全不对。
+///   g) **ClampVelocityModule → limitVelocityOverLifetime**（inner_fire / floaters / debris /
+///      circularSmoke / smokeUp / smoke 六层都开了）。
+///      这才是「高初速爆出 → 被阻尼拉回低速 → 靠负重力缓缓上飘」的来源：
+///      circularSmoke 初速 15，但 limit 被钳到随机 0.5~1.2、dampen 0.4。
+///      缺了它，烟会一直高速直线飘，完全没有"炸开后收住"的节奏。
+///   h) **UVModule → textureSheetAnimation**（inner_fire / fire_floaters 开了）。
+///      ⛔ fire.psd 其实是 **2×2 精灵图（4 个火焰变体）**，参考每颗粒子随机取一格；
+///      我们之前整张 4 格一起贴 ⇒ 火焰等于大了 2 倍且糊成一团。
+///      （smoke_d.psd 不是序列帧，烟层没开这个模块。）
+///   i) **RotationModule → rotationOverLifetime**（6 层都开了，仅 Z 轴随机自转，弧度/秒）。
+///      让每团烟/每簇火朝向各不相同，避免"复制粘贴"感。
+///   j) **CollisionModule**（仅 firey_debris 开了）：bounce=1（全弹）、能量损失 0.5
+///      ⇒ 碎片落地会弹跳。⚠ 需要场景里有地面碰撞体，沙盒没地面则不弹（无害）。
+///   k) 仍未照搬：firey_debris 的 SubModule 会把 smoke 作为 Birth 子发射（每个碎片带 1 团淡烟），
+///      我们保留独立的 smoke burst=8（更明显），属有意偏离。
+///
+/// ⛔ 五个历史踩坑（别再犯）：
+///   1. 参考的**烟是 AlphaBlend**，不是 Additive。用加法会把烟做成发亮的大黄云。
+///   2. 参考的**颜色全在 colorOverLifetime 梯度里**，startColor 基本是白/灰。
+///      URP 若把 _ColorMode 设成 Additive(1) 会忽略顶点色 → 梯度失效 → 爆炸发灰。
+///   3. 参考的火舌层 **startSpeed = 0**，是靠 size 从 0 膨胀形成"向外辐射"，不是靠速度飞出去。
+///   4. ⛔⛔ **喷射朝向**：下面这些层的 Transform 在参考里都带 **绕 X 轴 −90°** 的旋转——
+///        sphereFlash / inner_fire / fire_floaters / circularSmoke / smokeUp / smoke / firey_debris
+///      它把 Cone/Sphere 的喷射主轴从 +Y 掰到 **−Z**（参考 demo 的相机正位于 −Z 侧，
+///      所以屏幕上看到的就是"爆向镜头、由内向外放射"）。
+///      而 flarespikes / flarespikes_delayed / circle / decal* 保持 identity（主轴仍 +Y）。
+///      漏掉这个 −90° ⇒ 烟/火/碎屑全部朝天，俯视锁视角下彻底失去放射感
+///      ⇒ 这就是"烟尘运动错误很严重"的根因。
+///      现用 aimMode 控制：0=照搬参考(−90°，主轴恒向世界 −Z)
+///                        1=每轮爆炸前动态对准主相机（默认推荐，任何视角下都是"由内向外"）
+///                        2=自定义欧拉角
+///
+/// 【第二轮逐参数筛查修正（对比参考 prefab 原始 YAML）】
+///   a) Shape 半径全照搬：参考几乎所有层的出生点半径都只有 **0.01**（几乎就是一个点），
+///      只有 circularSmoke=0.48（这才是"环形烟"的由来）、inner_fire=0.1、floaters=0.61。
+///      之前自作主张放大到 0.25~0.5 ⇒ 粒子从一个大球面起跳 ⇒ 画面糊成一团、看不出从中心炸开。
+///   b) circle（扩散环）startColor 的 alpha 参考是 **0.282**（加法 shader 里 alpha 会乘进 rgb）
+///      ⇒ 之前用 1.0，环过亮过实。
+///   c) decal（大焦痕）startColor 参考是 **黑 RGB + alpha 0.541**
+///      ⇒ 之前用白色，焦痕发白；改黑后才对（焦痕本来就该是烧黑的）。
+///   d) 每层有自己的 localPosition（y 从 −0.09 到 0.68、多数 z=+0.18），不再统一抬高。
+///   e) fire_floaters 补上参考开启的 Noise（frequency 0.5 / damping / octaves 1）。
+///   f) smokeUp 参考的 localPosition 是 (−2.78, 0.13, −2.04)，烟柱会跑到爆点外很远，
+///      疑似 prefab 残留 ⇒ 默认归零并留出 smokeUpExtraOffset，想照搬原值填进去即可。
+///
+/// 【素材】默认槽位为空 → 运行时程序化兜底；在沙盒里由 VFXSandboxBuilder 自动填入参考包素材。
+///   最终替换成自绘贴图/模型时，只需改这几个字段的引用，参数一行不动。
+/// ⛔ 所有 GameObject / Material / Texture / Mesh 运行时创建且 HideFlags.DontSave，绝不污染场景。
+/// </summary>
+public class BombExplosion : MonoBehaviour
+{
+    // ====================================================================
+    // 素材槽（留空 = 程序化兜底）
+    // ====================================================================
+    [Header("素材槽 · 贴图（留空则程序化兜底）")]
+    [Tooltip("参考：packs/StylizedExplosionPack1/textures/fire.psd")]
+    public Texture2D texFire;
+    [Tooltip("参考：packs/StylizedExplosionPack1/textures/smoke_d.psd")]
+    public Texture2D texSmoke;
+    [Tooltip("参考：packs/StylizedExplosionPack1/textures/circle.psd")]
+    public Texture2D texCircle;
+    [Tooltip("参考：packs/StylizedExplosionPack1/textures/flarespark.psd")]
+    public Texture2D texFlareSpark;
+    [Tooltip("参考：packs/StylizedExplosionPack1/textures/explodedecal.psd")]
+    public Texture2D texDecal;
+
+    [Header("素材槽 · 模型（留空则程序化兜底）")]
+    [Tooltip("参考：Assets/EffectCore/models/cone.obj（导入 globalScale=0.01，底在 y=0、尖朝 +Y、高 0.37）")]
+    public Mesh meshCone;
+    [Tooltip("参考：Assets/EffectCore/models/quad4point.obj（导入 globalScale=0.001，XZ 平面水平四边形）")]
+    public Mesh meshQuad4Point;
+    [Tooltip("参考：Assets/EffectCore/models/scrap.obj（不规则碎片）")]
+    public Mesh meshScrap;
+
+    // ====================================================================
+    // 全局
+    // ====================================================================
+    [Header("全局")]
+    [Tooltip("HDR 亮度倍数。参考净效果 = 内置 Additive 的 2.0 × _TintColor 0.5 = 1.0，故默认 1.0")]
+    public float hdrIntensity = 1.0f;
+    [Tooltip("整体额外抬高（加在参考各层原有高度之上）。0 = 完全照搬参考；地面不平时可适当加一点")]
+    public float explodeHeight = 0f;
+    [Tooltip("整体缩放。1=与参考同尺寸")]
+    public float globalScale = 1.0f;
+
+    // ====================================================================
+    // 喷射朝向 —— 决定烟/火/碎屑「往哪飞」
+    // ====================================================================
+    [Header("喷射朝向（烟尘/火焰的运动方向）")]
+    [Tooltip("0 = 照搬参考（★俯视默认）：受影响层一律绕 X 轴 −90°，喷射主轴恒指向世界 −Z。\n" +
+             "    俯视锁视角下，−Z 是水平方向，烟/火会贴着地面向四周扩散，再靠负重力缓缓上升——这正是参考的扩散→上升→消散节奏。\n" +
+             "1 = 动态对准主相机：每轮爆炸前把喷射主轴转向主相机。侧视/过场动画可用；俯视相机在头顶时会把烟柱朝天喷，出现截图里那种「烟云堆在爆点上方」的问题。\n" +
+             "2 = 自定义欧拉角（填在 aimEulerOverride）。")]
+    public int aimMode = 0;
+    [Tooltip("aimMode=2 时使用的欧拉角")]
+    public Vector3 aimEulerOverride = new Vector3(-90f, 0f, 0f);
+    [Tooltip("受朝向瞄准影响的层：sphereFlash / inner_fire / fire_floaters / circularSmoke / smokeUp / smoke / firey_debris。\n" +
+             "（flarespikes、circle、decal 在参考里没有这个旋转，永远不受瞄准影响）")]
+    public bool enableAim = true;
+    [Tooltip("Mesh 渲染层的朝向模式。Local = 粒子保持自身朝向（★默认，火舌才有放射感）；\n" +
+             "View = 粒子一律面向相机。参考 prefab 是 Unity5 老格式、没有这个字段，若火舌观感不对可切到 View 对比。")]
+    public ParticleSystemRenderSpace meshAlignment = ParticleSystemRenderSpace.Local;
+    [Tooltip("smokeUp 的额外偏移。参考 prefab 原值是 (−2.78, 0, −2.04)，会让烟柱跑到爆点外很远（疑似残留），默认归零。")]
+    public Vector3 smokeUpExtraOffset = Vector3.zero;
+
+    // ====================================================================
+    // 补齐参考里此前漏掉的模块（★烟尘运动手感的关键，全部可一键关闭回退）
+    // ====================================================================
+    [Header("参考遗漏模块（可整体关闭回退）")]
+    [Tooltip("★速度钳制+阻尼。烟/火高速爆出后被拉回低速，形成「快出→减速→缓缓上飘→缩小消失」的节奏。\n" +
+             "参考 = ClampVelocityModule，Unity6 里对应 limitVelocityOverLifetime。关掉=回到之前\"一直高速飘\"的错误手感。")]
+    public bool enableClampVelocity = true;
+    [Tooltip("★序列帧动画。fire.psd 其实是 2×2 精灵图（4 个火焰变体），参考每层火焰随机取其中一格。\n" +
+             "之前我们整张 4 格一起贴，火焰等于大了 2 倍且糊成一团。关掉=回到整图显示。")]
+    public bool enableSheetAnimation = true;
+    [Tooltip("生命周期内随机自转，让每团烟/每簇火的朝向各不相同，避免\"复制粘贴\"感。参考 = RotationModule。")]
+    public bool enableRotOverLife = true;
+    [Tooltip("碎片落地碰撞弹跳。参考 firey_debris 开了碰撞：bounce=1（全弹）、能量损失 0.5。\n" +
+             "⚠ 需要场景里有地面碰撞体才生效；沙盒没地面则不弹（无害）。")]
+    public bool enableDebrisCollision = true;
+
+    // ====================================================================
+    // ① 爆炸扩散球 sphereFlash —— Mesh(Sphere)，无色纯色
+    // ====================================================================
+    [Header("① 扩散球 sphereFlash（Mesh 球体）")]
+    public bool enableSphereFlash = true;
+    public float sphereFlashSize = 2.8f;
+    public float sphereFlashLifetime = 0.28f;
+
+    // ====================================================================
+    // ② 放射火舌 flarespikes —— Mesh(cone)，speed=0，size 0→5
+    // ====================================================================
+    [Header("② 放射火舌 flarespikes（Mesh 锥体）")]
+    public bool enableSpikes = true;
+    public float spikeSize = 5.0f;
+    public float spikeLifetime = 0.30f;
+    public int spikeCount = 2;
+    [Tooltip("火舌起点距中心的距离（Sphere shape 半径）。参考原值 0.01 —— 几乎从同一个点炸出，这才是放射感的来源")]
+    public float spikeRadius = 0.01f;
+
+    // ====================================================================
+    // ③ 错峰火舌 flarespikes_delayed
+    // ====================================================================
+    [Header("③ 错峰火舌 flarespikes_delayed")]
+    public bool enableDelayedSpikes = true;
+    public float delayedSpikeSize = 6.0f;
+    public float delayedSpikeLifetime = 0.20f;
+    public int delayedSpikeCount = 2;
+    public float delayedSpikeDelay = 0.05f;
+    [Tooltip("参考原值 0.01")]
+    public float delayedSpikeRadius = 0.01f;
+
+    // ====================================================================
+    // ④ 焰心 inner_fire —— Billboard + fire.psd，Cone 13.18°，size 1→0
+    // ====================================================================
+    [Header("④ 焰心 inner_fire（Billboard）")]
+    public bool enableInnerFire = true;
+    public float innerFireSizeMin = 0.6f, innerFireSizeMax = 1.4f;
+    public float innerFireLifeMin = 0.1f, innerFireLifeMax = 0.4f;
+    public float innerFireSpeedMin = 11.32f, innerFireSpeedMax = 12.4f;
+    public float innerFireGravity = 1.0f;
+    public float innerFireConeAngle = 13.18f;
+    [Tooltip("焰心 Cone 出生点半径。参考原值 0.1（之前误用 0.5，焰心糊成一团）")]
+    public float innerFireConeRadius = 0.1f;
+
+    // ====================================================================
+    // ⑤ 上浮火苗 fire_floaters —— Stretch + fire.psd
+    // ====================================================================
+    [Header("⑤ 上浮火苗 fire_floaters（Stretch）")]
+    public bool enableFloaters = true;
+    public float floaterSize = 0.04f;
+    public float floaterLifeMin = 0.1f, floaterLifeMax = 1.0f;
+    public float floaterSpeedMin = 2.0f, floaterSpeedMax = 3.0f;
+    public float floaterGravityMin = -0.5f, floaterGravityMax = -0.1f;
+    public float floaterVelocityScale = 0.1f;
+    public float floaterLengthScale = 2.0f;
+    [Tooltip("火苗出生所用的 Hemisphere 半径。参考原值 0.61（注：参考这里用的是 Hemisphere，不是 Cone）")]
+    public float floaterShapeRadius = 0.61f;
+    [Tooltip("Hemisphere 的角度。参考原值 12.9")]
+    public float floaterShapeAngle = 12.9f;
+    [Tooltip("参考给火苗开了 Noise，让上浮轨迹有自然抖动")]
+    public bool floaterNoise = true;
+    public float floaterNoiseStrength = 1.0f;
+    public float floaterNoiseFrequency = 0.5f;
+
+    // ====================================================================
+    // ⑥ 火焰碎片 firey_debris —— Mesh(scrap)，Cone 39°，gravity 正
+    // ====================================================================
+    [Header("⑥ 火焰碎片 firey_debris（Mesh 碎片）")]
+    public bool enableDebris = true;
+    public float debrisSizeMin = 0.7f, debrisSizeMax = 1.4f;
+    public float debrisLifeMin = 0.4f, debrisLifeMax = 0.8f;
+    public float debrisSpeedMin = 15.0f, debrisSpeedMax = 19.0f;
+    public float debrisGravityMin = 0.3f, debrisGravityMax = 2.5f;
+    public float debrisConeAngle = 39.03f;
+    [Tooltip("碎片 Cone 出生点半径。参考原值 0.01（之前误用 0.3，碎片像从一个大球壳里冒出来）")]
+    public float debrisConeRadius = 0.01f;
+    public int debrisCount = 3;
+
+    // ====================================================================
+    // ⑦ 贴地扩散环 circle —— Mesh(quad4point) + circle.psd
+    // ====================================================================
+    [Header("⑦ 扩散环 circle（Mesh 水平四边形）")]
+    public bool enableRing = true;
+    public float ringSize = 25.0f;
+    public float ringLifetime = 0.40f;
+    [Tooltip("若扩散环过大盖住场地，调小此值（参考原值 25）")]
+    public float ringSizeScale = 1.0f;
+
+    // ====================================================================
+    // ⑧ 环形烟 circularSmoke —— Billboard + smoke_d.psd，AlphaBlend
+    // ====================================================================
+    [Header("⑧ 环形烟 circularSmoke（Alpha 混合）")]
+    public bool enableCircleSmoke = true;
+    public float circleSmokeSizeMin = 0.4f, circleSmokeSizeMax = 0.9f;
+    public float circleSmokeLifeMin = 0.6f, circleSmokeLifeMax = 2.0f;
+    public float circleSmokeSpeedMin = 7.0f, circleSmokeSpeedMax = 15.0f;
+    public float circleSmokeGravity = -0.1f;
+    public float circleSmokeConeAngle = 74.49f;
+    [Tooltip("环形烟 Cone 出生点半径。参考原值 0.48 —— 这是全套里唯一较大的出生半径，\"环形烟\"由此而来")]
+    public float circleSmokeConeRadius = 0.48f;
+    public int circleSmokeCount = 15;
+
+    // ====================================================================
+    // ⑨ 上喷烟柱 smokeUp —— Billboard + smoke_d.psd，AlphaBlend
+    // ====================================================================
+    [Header("⑨ 上喷烟柱 smokeUp（Alpha 混合）")]
+    public bool enableSmokeUp = true;
+    public float smokeUpSizeMin = 1.3f, smokeUpSizeMax = 1.8f;
+    public float smokeUpLifeMin = 1.4f, smokeUpLifeMax = 1.7f;
+    public float smokeUpSpeedMin = 22.0f, smokeUpSpeedMax = 25.0f;
+    public float smokeUpGravityMin = -0.6f, smokeUpGravityMax = -0.2f;
+    public float smokeUpConeAngle = 21.6f;
+    [Tooltip("烟柱 Cone 出生点半径。参考原值 0.01（之前误用 0.5，烟柱东一块西一块，不成\"柱\"）")]
+    public float smokeUpConeRadius = 0.01f;
+    public int smokeUpCount = 15;
+
+    // ====================================================================
+    // ⑩ 近地余烟 smoke —— Billboard + smoke_d.psd，AlphaBlend
+    //     参考该层 burst=0（靠父物体驱动），此处给一个小 burst 让它可见
+    // ====================================================================
+    [Header("⑩ 近地余烟 smoke（Alpha 混合）")]
+    public bool enableSmoke = true;
+    public float smokeSize = 0.6f;
+    public float smokeLifeMin = 0.4f, smokeLifeMax = 0.5f;
+    public float smokeSpeedMin = 0.13f, smokeSpeedMax = 0.92f;
+    public float smokeGravityMin = 0.1f, smokeGravityMax = 0.5f;
+    [Tooltip("余烟 Sphere 出生点半径。参考原值 0.01（之前误用 0.4，余烟像从一个大气球里冒出来）")]
+    public float smokeRadius = 0.01f;
+    public int smokeCount = 8;
+    public float smokeDelay = 0.08f;
+
+    // ====================================================================
+    // ⑪⑫ 地面焦痕 decal —— HorizBillboard + explodedecal.psd，AlphaBlend，随机旋转
+    // ====================================================================
+    [Header("⑪⑫ 地面焦痕 decal（随机角度 · Alpha 混合）")]
+    public bool enableDecal = true;
+    public float decalHeatedSize = 0.6f;
+    public float decalHeatedLifetime = 2.5f;
+    public float decalSize = 1.8f;
+    public float decalLifetime = 3.0f;
+
+    // ====================================================================
+    // 爆炸闪光（参考有 light_fireexplosion 点光源）
+    // ====================================================================
+    [Header("爆炸闪光（点光源）")]
+    public bool enableLight = true;
+    public Color lightColor = new Color(1f, 0.55f, 0.2f, 1f);
+    public float lightIntensity = 8f;
+    public float lightRange = 14f;
+    public float lightDuration = 0.5f;
+
+    [Header("循环（沙盒预览用）")]
+    [Tooltip("开启后持续循环爆炸，便于在沙盒里反复观察（进游戏用单次 Explode/ExplodeAt 即可）")]
+    public bool loop = false;
+    [Tooltip("每轮爆炸间隔（秒）。参考整套最长 3s（decal），建议 ≥3s 让一轮跑完")]
+    public float loopInterval = 3.0f;
+
+    // ---------------- 运行时资源 ----------------
+    private Texture2D _genFire, _genSmoke, _genCircle, _genFlare, _genDecal;
+    private Mesh _genCone, _genQuad, _genScrap, _genSphere;
+    private Material _matFire, _matFlare, _matRing, _matSmoke, _matDecal, _matPlain;
+    private Light _light;
+    private float _lightT = -1f;
+    private float _loopTimer = 0f;
+    private bool _built;
+
+    // 各层粒子系统
+    private ParticleSystem[] _all;
+    /// <summary>需要按 aimMode 调整喷射主轴的层（参考里带 Rx(−90°) 的那几个）。</summary>
+    private readonly System.Collections.Generic.List<Transform> _aimTargets =
+        new System.Collections.Generic.List<Transform>();
+
+    void OnEnable()
+    {
+        if (Application.isPlaying)
+        {
+            Build();
+            if (loop) _loopTimer = 0f;
+        }
+    }
+
+    void OnDisable()
+    {
+        DestroyRuntime(ref _matFire); DestroyRuntime(ref _matFlare);
+        DestroyRuntime(ref _matRing); DestroyRuntime(ref _matSmoke);
+        DestroyRuntime(ref _matDecal); DestroyRuntime(ref _matPlain);
+        DestroyRuntime(ref _genFire); DestroyRuntime(ref _genSmoke);
+        DestroyRuntime(ref _genCircle); DestroyRuntime(ref _genFlare);
+        DestroyRuntime(ref _genDecal);
+        DestroyRuntime(ref _genCone); DestroyRuntime(ref _genQuad);
+        DestroyRuntime(ref _genScrap); DestroyRuntime(ref _genSphere);
+        _all = null;
+        _aimTargets.Clear();
+        _built = false;
+    }
+
+    void OnDestroy()
+    {
+        DestroyRuntime(ref _matFire); DestroyRuntime(ref _matFlare);
+        DestroyRuntime(ref _matRing); DestroyRuntime(ref _matSmoke);
+        DestroyRuntime(ref _matDecal); DestroyRuntime(ref _matPlain);
+        DestroyRuntime(ref _genFire); DestroyRuntime(ref _genSmoke);
+        DestroyRuntime(ref _genCircle); DestroyRuntime(ref _genFlare);
+        DestroyRuntime(ref _genDecal);
+        DestroyRuntime(ref _genCone); DestroyRuntime(ref _genQuad);
+        DestroyRuntime(ref _genScrap); DestroyRuntime(ref _genSphere);
+        _aimTargets.Clear();
+    }
+
+    private static void DestroyRuntime<T>(ref T o) where T : Object
+    {
+        if (o == null) return;
+        if (Application.isPlaying) Destroy(o); else DestroyImmediate(o);
+        o = null;
+    }
+
+    // ====================================================================
+    // 参考包的颜色梯度（逐层照抄 prefab 的 ColorModule）
+    // ====================================================================
+
+    static Gradient GradSphereFlash() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.38f, 1f, 0.796f, 0.353f, 1f),
+        (0.42f, 1f, 0.796f, 0.353f, 1f), (1.00f, 1f, 0.282f, 0.016f, 0f));
+
+    static Gradient GradSpikes() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.75f, 1f, 0.682f, 0f, 1f), (1.00f, 1f, 0.682f, 0f, 0f));
+
+    static Gradient GradDelayed() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.36f, 1f, 0.831f, 0.282f, 1f),
+        (0.53f, 1f, 0.4f, 0.1f, 1f), (0.75f, 1f, 0f, 0f, 0.859f), (0.85f, 1f, 0f, 0f, 0.4f),
+        (1.00f, 1f, 0f, 0f, 0f));
+
+    static Gradient GradInnerFire() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.16f, 1f, 0.855f, 0.247f, 1f),
+        (0.52f, 1f, 0.529f, 0f, 1f), (1.00f, 1f, 0.012f, 0f, 1f));
+
+    static Gradient GradFloaters() => Grad(
+        (0.00f, 1f, 0.980f, 0.875f, 1f), (0.26f, 1f, 0.871f, 0.137f, 1f),
+        (0.48f, 1f, 0.584f, 0f, 1f), (0.74f, 1f, 0.075f, 0f, 1f),
+        (1.00f, 0.255f, 0.110f, 0f, 1f));
+
+    static Gradient GradDebris() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.14f, 1f, 0.984f, 0.447f, 1f),
+        (0.53f, 1f, 0.514f, 0.404f, 1f), (1.00f, 1f, 0.514f, 0.404f, 1f));
+
+    static Gradient GradRing() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.14f, 1f, 0.839f, 0.310f, 1f),
+        (0.61f, 1f, 0.169f, 0.169f, 1f), (1.00f, 1f, 0.169f, 0.169f, 0f));
+
+    static Gradient GradCircleSmoke() => Grad(
+        (0.00f, 1f, 0.949f, 0.655f, 1f), (0.05f, 1f, 0.765f, 0f, 1f),
+        (0.09f, 1f, 0.435f, 0f, 1f), (0.10f, 0.368f, 0.368f, 0.368f, 1f),
+        (1.00f, 0.368f, 0.368f, 0.368f, 1f));
+
+    static Gradient GradSmokeUp() => Grad(
+        (0.00f, 1f, 0.961f, 0.624f, 1f), (0.03f, 0.918f, 0.851f, 0.302f, 1f),
+        (0.07f, 0.945f, 0.475f, 0.051f, 1f), (0.11f, 0.368f, 0.368f, 0.368f, 1f),
+        (1.00f, 0.368f, 0.368f, 0.368f, 1f));
+
+    static Gradient GradSmoke() => Grad(
+        (0.00f, 1f, 0.949f, 0.655f, 1f), (0.02f, 1f, 0.765f, 0f, 1f),
+        (0.12f, 1f, 0.435f, 0f, 1f), (0.39f, 0.368f, 0.368f, 0.368f, 1f),
+        (1.00f, 0.368f, 0.368f, 0.368f, 1f));
+
+    static Gradient GradDecalHeated() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.14f, 1f, 0.760f, 0f, 1f),
+        (0.35f, 1f, 0.4f, 0f, 1f), (0.87f, 1f, 0f, 0f, 0.3f), (1.00f, 1f, 0f, 0f, 0f));
+
+    static Gradient GradDecal() => Grad(
+        (0.00f, 1f, 1f, 1f, 1f), (0.89f, 1f, 1f, 1f, 1f), (1.00f, 1f, 1f, 1f, 0f));
+
+    // ====================================================================
+    // 参考包的 SizeOverLifetime 曲线
+    // ====================================================================
+
+    static AnimationCurve C_Grow() => Keys((0f, 0f), (1f, 1f));
+    static AnimationCurve C_DelayedSpike() => Keys((0f, 0f), (0.43f, 0.84f), (1f, 1f));
+    static AnimationCurve C_InnerFire() => Keys((0f, 1f), (1f, 0f));
+    static AnimationCurve C_Floaters() => Keys((0f, 0f), (0.05f, 1f), (0.32f, 0.58f), (1f, 0.17f));
+    static AnimationCurve C_Debris() => Keys((0f, 1f), (1f, 0.54f));
+    static AnimationCurve C_Ring() => Keys((0f, 0f), (0.16f, 0.59f), (1f, 1f));
+    static AnimationCurve C_CircleSmoke() => Keys((0f, 0f), (0.07f, 1f), (1f, 0f));
+    static AnimationCurve C_SmokeUp() => Keys((0f, 0f), (0.07f, 1f), (0.76f, 0.56f), (1f, 0f));
+    static AnimationCurve C_Smoke() => Keys((0f, 0.49f), (0.12f, 1f), (1f, 0f));
+    static AnimationCurve C_DecalHeated() => Keys((0f, 1f), (1f, 0.82f));
+
+    static AnimationCurve Keys(params (float t, float v)[] k)
+    {
+        var ks = new Keyframe[k.Length];
+        for (int i = 0; i < k.Length; i++)
+            ks[i] = new Keyframe(k[i].t, k[i].v, 0f, 0f);
+        return new AnimationCurve(ks);
+    }
+
+    static Gradient Grad(params (float t, float r, float g, float b, float a)[] s)
+    {
+        var g = new Gradient();
+        var ck = new GradientColorKey[s.Length];
+        var ak = new GradientAlphaKey[s.Length];
+        for (int i = 0; i < s.Length; i++)
+        {
+            ck[i] = new GradientColorKey(new Color(s[i].r, s[i].g, s[i].b), s[i].t);
+            ak[i] = new GradientAlphaKey(s[i].a, s[i].t);
+        }
+        g.SetKeys(ck, ak);
+        return g;
+    }
+
+    // ====================================================================
+    // 构建
+    // ====================================================================
+
+    private void Build()
+    {
+        if (_built) return;
+
+        var fire = texFire != null ? texFire : (_genFire = MakeFireTexture());
+        var smoke = texSmoke != null ? texSmoke : (_genSmoke = MakeSmokeTexture());
+        var circle = texCircle != null ? texCircle : (_genCircle = MakeRingTexture());
+        var flare = texFlareSpark != null ? texFlareSpark : (_genFlare = MakeFlareTexture());
+        var decal = texDecal != null ? texDecal : (_genDecal = MakeDecalTexture());
+
+        // 加法材质：火焰 / 火舌 / 扩散环 / 碎片 / 扩散球
+        _matFire = MakeAdditive(fire);
+        _matFlare = MakeAdditive(flare);
+        _matRing = MakeAdditive(circle);
+        _matPlain = MakeAdditive(null);          // 扩散球：无色纯色
+        // ⛔ Alpha 材质：烟与焦痕（参考就是 AlphaBlend，用加法会变成发亮的大黄云）
+        _matSmoke = MakeAlpha(smoke);
+        _matDecal = MakeAlpha(decal);
+
+        var cone = meshCone != null ? meshCone : (_genCone = MakeConeMesh());
+        var quad = meshQuad4Point != null ? meshQuad4Point : (_genQuad = MakeQuadMesh());
+        var scrap = meshScrap != null ? meshScrap : (_genScrap = MakeScrapMesh());
+        var sphere = _genSphere = MakeSphereMesh();
+
+        var list = new System.Collections.Generic.List<ParticleSystem>();
+
+        if (enableSphereFlash)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "SphereFlash", mat = _matPlain, mesh = sphere,
+                renderMode = ParticleSystemRenderMode.Mesh, alignment = ParticleSystemRenderSpace.Local,
+                shape = ParticleSystemShapeType.Box, shapeScale = Vector3.zero,
+                sizeMin = sphereFlashSize, sizeMax = sphereFlashSize,
+                lifeMin = sphereFlashLifetime, lifeMax = sphereFlashLifetime,
+                speedMin = 0f, speedMax = 0f, gravityMin = 0f, gravityMax = 0f,
+                startColor = Color.white, grad = GradSphereFlash(), sizeCurve = C_Grow(),
+                bursts = new[] { (0f, 1) }, sortOrder = 5,
+                offset = new Vector3(0f, 0.68f, 0.18f), aimToCamera = true,
+            }));
+
+        if (enableSpikes)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "FlareSpikes", mat = _matFlare, mesh = cone,
+                renderMode = ParticleSystemRenderMode.Mesh, alignment = ParticleSystemRenderSpace.Local,
+                shape = ParticleSystemShapeType.Sphere, shapeRadius = spikeRadius,
+                sizeMin = spikeSize, sizeMax = spikeSize,
+                lifeMin = spikeLifetime, lifeMax = spikeLifetime,
+                speedMin = 0f, speedMax = 0f, gravityMin = 0f, gravityMax = 0f,
+                startColor = Color.white, grad = GradSpikes(), sizeCurve = C_Grow(),
+                bursts = new[] { (0f, spikeCount) }, sortOrder = 3,
+                offset = new Vector3(0f, -0.09f, 0.18f),
+            }));
+
+        if (enableDelayedSpikes)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "FlareSpikesDelayed", mat = _matFlare, mesh = cone,
+                renderMode = ParticleSystemRenderMode.Mesh, alignment = ParticleSystemRenderSpace.Local,
+                shape = ParticleSystemShapeType.Sphere, shapeRadius = delayedSpikeRadius,
+                sizeMin = delayedSpikeSize, sizeMax = delayedSpikeSize,
+                lifeMin = delayedSpikeLifetime, lifeMax = delayedSpikeLifetime,
+                speedMin = 0f, speedMax = 0f, gravityMin = 0f, gravityMax = 0f,
+                startColor = Color.white, grad = GradDelayed(), sizeCurve = C_DelayedSpike(),
+                bursts = new[] { (delayedSpikeDelay, delayedSpikeCount) }, sortOrder = 3,
+                offset = new Vector3(0f, -0.09f, 0.18f),
+            }));
+
+        if (enableInnerFire)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "InnerFire", mat = _matFire,
+                renderMode = ParticleSystemRenderMode.Billboard, alignment = ParticleSystemRenderSpace.View,
+                shape = ParticleSystemShapeType.Cone, shapeAngle = innerFireConeAngle, shapeRadius = innerFireConeRadius,
+                sizeMin = innerFireSizeMin, sizeMax = innerFireSizeMax,
+                lifeMin = innerFireLifeMin, lifeMax = innerFireLifeMax,
+                speedMin = innerFireSpeedMin, speedMax = innerFireSpeedMax,
+                gravityMin = innerFireGravity, gravityMax = innerFireGravity,
+                startColor = new Color(0.612f, 0.612f, 0.612f, 1f),
+                grad = GradInnerFire(), sizeCurve = C_InnerFire(),
+                bursts = new[] { (0f, 4), (0.1f, 3), (0.2f, 2) }, sortOrder = 2,
+                offset = new Vector3(0f, 0.19f, 0.18f), aimToCamera = true,
+                clampVel = true, clampLimitMin = 1f, clampLimitMax = 1f, clampDampen = 0.1f,
+                sheet = true, sheetTilesX = 2, sheetTilesY = 2,
+                rotLife = true, rotLifeZMin = -1.5708f, rotLifeZMax = 1.5708f,
+            }));
+
+        if (enableFloaters)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "FireFloaters", mat = _matFire,
+                renderMode = ParticleSystemRenderMode.Stretch, alignment = ParticleSystemRenderSpace.View,
+                velocityScale = floaterVelocityScale, lengthScale = floaterLengthScale,
+                shape = ParticleSystemShapeType.Hemisphere,
+                shapeRadius = floaterShapeRadius, shapeAngle = floaterShapeAngle, radiusThickness = 0f,
+                sizeMin = floaterSize, sizeMax = floaterSize,
+                lifeMin = floaterLifeMin, lifeMax = floaterLifeMax,
+                speedMin = floaterSpeedMin, speedMax = floaterSpeedMax,
+                gravityMin = floaterGravityMin, gravityMax = floaterGravityMax,
+                startColor = new Color(0.706f, 0.706f, 0.706f, 1f),
+                grad = GradFloaters(), sizeCurve = C_Floaters(),
+                bursts = new[] { (0f, 3), (0.05f, 3) }, sortOrder = 3,
+                offset = new Vector3(0f, 0.602f, 0.18f), aimToCamera = true,
+                noise = floaterNoise, noiseStrength = floaterNoiseStrength, noiseFrequency = floaterNoiseFrequency,
+                clampVel = true, clampLimitMin = 0.5f, clampLimitMax = 2f, clampDampen = 0.1f,
+                sheet = true, sheetTilesX = 2, sheetTilesY = 2,
+                rotLife = true, rotLifeZMin = -3.14159f, rotLifeZMax = 3.14159f,
+            }));
+
+        if (enableDebris)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "FireyDebris", mat = _matFire, mesh = scrap,
+                renderMode = ParticleSystemRenderMode.Mesh, alignment = ParticleSystemRenderSpace.Local,
+                shape = ParticleSystemShapeType.Cone, shapeAngle = debrisConeAngle, shapeRadius = debrisConeRadius,
+                randomDir = 1f, sphericalDir = 0.2f,
+                sizeMin = debrisSizeMin, sizeMax = debrisSizeMax,
+                lifeMin = debrisLifeMin, lifeMax = debrisLifeMax,
+                speedMin = debrisSpeedMin, speedMax = debrisSpeedMax,
+                gravityMin = debrisGravityMin, gravityMax = debrisGravityMax,
+                startColor = Color.white, grad = GradDebris(), sizeCurve = C_Debris(),
+                bursts = new[] { (0f, debrisCount) }, sortOrder = 0,
+                offset = new Vector3(0f, 0.11f, 0f), aimToCamera = true,
+                clampVel = true, clampLimitMin = 3f, clampLimitMax = 3f, clampDampen = 0.1f,
+                rotLife = true, rotLifeZMin = 0f, rotLifeZMax = 6.283185f,
+                collide = true, collideBounce = 1f, collideEnergyLoss = 0.5f,
+            }));
+
+        if (enableRing)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "GroundRing", mat = _matRing, mesh = quad,
+                renderMode = ParticleSystemRenderMode.Mesh, alignment = ParticleSystemRenderSpace.Local,
+                shape = ParticleSystemShapeType.Box, shapeScale = Vector3.zero,
+                sizeMin = ringSize * ringSizeScale, sizeMax = ringSize * ringSizeScale,
+                lifeMin = ringLifetime, lifeMax = ringLifetime,
+                speedMin = 0f, speedMax = 0f, gravityMin = 0f, gravityMax = 0f,
+                startColor = new Color(1f, 1f, 1f, 0.282f), grad = GradRing(), sizeCurve = C_Ring(),
+                bursts = new[] { (0f, 1) }, sortOrder = 0,
+                offset = new Vector3(0f, 0.13f, 0.18f),
+            }));
+
+        if (enableCircleSmoke)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "CircularSmoke", mat = _matSmoke,
+                renderMode = ParticleSystemRenderMode.Billboard, alignment = ParticleSystemRenderSpace.View,
+                shape = ParticleSystemShapeType.Cone, shapeAngle = circleSmokeConeAngle, shapeRadius = circleSmokeConeRadius,
+                sizeMin = circleSmokeSizeMin, sizeMax = circleSmokeSizeMax,
+                lifeMin = circleSmokeLifeMin, lifeMax = circleSmokeLifeMax,
+                speedMin = circleSmokeSpeedMin, speedMax = circleSmokeSpeedMax,
+                gravityMin = circleSmokeGravity, gravityMax = circleSmokeGravity,
+                rotMin = -0.785f, rotMax = 0.785f,
+                startColor = Color.white, grad = GradCircleSmoke(), sizeCurve = C_CircleSmoke(),
+                bursts = new[] { (0f, circleSmokeCount) }, sortOrder = 2,
+                offset = new Vector3(0f, 0.04f, 0.18f), aimToCamera = true,
+                clampVel = true, clampLimitMin = 0.5f, clampLimitMax = 1.2f, clampDampen = 0.4f,
+                rotLife = true, rotLifeZMin = -1.5708f, rotLifeZMax = 0.7854f,
+            }));
+
+        if (enableSmokeUp)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "SmokeUp", mat = _matSmoke,
+                renderMode = ParticleSystemRenderMode.Billboard, alignment = ParticleSystemRenderSpace.View,
+                shape = ParticleSystemShapeType.Cone, shapeAngle = smokeUpConeAngle, shapeRadius = smokeUpConeRadius,
+                sizeMin = smokeUpSizeMin, sizeMax = smokeUpSizeMax,
+                lifeMin = smokeUpLifeMin, lifeMax = smokeUpLifeMax,
+                speedMin = smokeUpSpeedMin, speedMax = smokeUpSpeedMax,
+                gravityMin = smokeUpGravityMin, gravityMax = smokeUpGravityMax,
+                rotMin = -0.785f, rotMax = 0.785f,
+                startColor = Color.white, grad = GradSmokeUp(), sizeCurve = C_SmokeUp(),
+                bursts = new[] { (0f, smokeUpCount) }, sortOrder = 4,
+                offset = new Vector3(0f, 0.13f, 0f) + smokeUpExtraOffset, aimToCamera = true,
+                clampVel = true, clampLimitMin = 0.5f, clampLimitMax = 1.2f, clampDampen = 0.2f,
+                rotLife = true, rotLifeZMin = -0.7854f, rotLifeZMax = 0.7854f,
+            }));
+
+        if (enableSmoke)
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "Smoke", mat = _matSmoke,
+                renderMode = ParticleSystemRenderMode.Billboard, alignment = ParticleSystemRenderSpace.View,
+                shape = ParticleSystemShapeType.Sphere, shapeRadius = smokeRadius,
+                sizeMin = smokeSize, sizeMax = smokeSize,
+                lifeMin = smokeLifeMin, lifeMax = smokeLifeMax,
+                speedMin = smokeSpeedMin, speedMax = smokeSpeedMax,
+                gravityMin = smokeGravityMin, gravityMax = smokeGravityMax,
+                rotMin = -0.785f, rotMax = 0.785f,
+                startColor = Color.white, grad = GradSmoke(), sizeCurve = C_Smoke(),
+                bursts = new[] { (smokeDelay, smokeCount) }, sortOrder = 2,
+                offset = new Vector3(0f, 0.04f, 0f), aimToCamera = true,
+                clampVel = true, clampLimitMin = 0.5f, clampLimitMax = 1.2f, clampDampen = 0.4f,
+                rotLife = true, rotLifeZMin = -1.5708f, rotLifeZMax = 0.7854f,
+            }));
+
+        if (enableDecal)
+        {
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "DecalHeatedStrike", mat = _matDecal,
+                renderMode = ParticleSystemRenderMode.HorizontalBillboard, alignment = ParticleSystemRenderSpace.View,
+                shape = ParticleSystemShapeType.Sphere, shapeRadius = 0f,
+                sizeMin = decalHeatedSize, sizeMax = decalHeatedSize,
+                lifeMin = decalHeatedLifetime, lifeMax = decalHeatedLifetime,
+                speedMin = 0f, speedMax = 0f, gravityMin = 0f, gravityMax = 0f,
+                rotMin = 0f, rotMax = 6.283185f,                     // 参考：随机角度 → 每次爆炸底纹朝向不同
+                startColor = Color.white, grad = GradDecalHeated(), sizeCurve = C_DecalHeated(),
+                bursts = new[] { (0f, 1) }, sortOrder = 0,
+                offset = new Vector3(0f, 0.05f, 0f),
+            }));
+
+            list.Add(MakeLayer(new LayerDef
+            {
+                name = "Decal", mat = _matDecal,
+                renderMode = ParticleSystemRenderMode.HorizontalBillboard, alignment = ParticleSystemRenderSpace.View,
+                shape = ParticleSystemShapeType.Sphere, shapeRadius = 0f,
+                sizeMin = decalSize, sizeMax = decalSize,
+                lifeMin = decalLifetime, lifeMax = decalLifetime,
+                speedMin = 0f, speedMax = 0f, gravityMin = 0f, gravityMax = 0f,
+                rotMin = 0f, rotMax = 6.283185f,
+                startColor = new Color(0f, 0f, 0f, 0.541f), grad = GradDecal(), sizeCurve = null,
+                bursts = new[] { (0f, 1) }, sortOrder = 0,
+                offset = new Vector3(0f, 0.05f, 0f),
+            }));
+        }
+
+        _all = list.ToArray();
+
+        if (enableLight)
+        {
+            var lgo = new GameObject("ExplosionLight");
+            lgo.transform.SetParent(transform, false);
+            lgo.transform.localPosition = new Vector3(0.88f, explodeHeight + 0.73f, 0.15f);
+            lgo.hideFlags = HideFlags.DontSave;
+            _light = lgo.AddComponent<Light>();
+            _light.type = LightType.Point;
+            _light.color = lightColor;
+            _light.range = lightRange * globalScale;
+            _light.intensity = 0f;
+            _light.shadows = LightShadows.None;
+            lgo.SetActive(false);
+        }
+
+        ApplyAim();
+        _built = true;
+    }
+
+    // ====================================================================
+    // 喷射朝向
+    // ====================================================================
+
+    /// <summary>
+    /// 把「出生形状的主轴(+Y)」转到目标方向。
+    /// 参考 prefab 是固定的绕 X 轴 −90°（主轴 → 世界 −Z，正对参考 demo 的相机）。
+    /// 在俯视锁视角游戏里，相机在头顶，若把主轴对准相机，烟/火会朝天喷射，变成一团垂直烟云；
+    /// 而参考的 −90° 会让烟/火沿水平 −Z 方向burst，再靠负 gravityModifier 缓缓上升，才是「扩散→上升→消散」的正确节奏。
+    /// 因此俯视场景默认用 aimMode=0（照搬参考），侧视/过场再用 aimMode=1 对准相机。
+    /// ⛔ 只影响「出生方向 / 初速方向」，重力永远是 −Y（参考也是这样），所以瞄准后不需要补偿。
+    /// </summary>
+    private void ApplyAim()
+    {
+        if (_aimTargets.Count == 0) return;
+
+        Quaternion q;
+        if (aimMode == 0)
+        {
+            q = Quaternion.Euler(-90f, 0f, 0f);                     // 照搬参考
+        }
+        else if (aimMode == 2)
+        {
+            q = Quaternion.Euler(aimEulerOverride);                 // 自定义
+        }
+        else
+        {
+            var cam = Camera.main;
+            if (cam == null)
+            {
+                q = Quaternion.Euler(-90f, 0f, 0f);                 // 没有主相机就退回参考朝向
+            }
+            else
+            {
+                // dir = 爆点 → 相机。LookRotation 让局部 +Z 对准 dir，
+                // 再预乘 Rx(90°) 把局部 +Y 先掰到 +Z ⇒ 最终 +Y（出生主轴）指向相机。
+                Vector3 dir = (cam.transform.position - transform.position);
+                if (dir.sqrMagnitude < 1e-6f) dir = cam.transform.forward * -1f;
+                dir.Normalize();
+                // 相机几乎正上方时 LookRotation 的 up 会退化，换一个参考轴避免抖动
+                Vector3 upRef = Mathf.Abs(Vector3.Dot(dir, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up;
+                q = Quaternion.LookRotation(dir, upRef) * Quaternion.Euler(90f, 0f, 0f);
+            }
+        }
+
+        for (int i = 0; i < _aimTargets.Count; i++)
+            if (_aimTargets[i] != null) _aimTargets[i].rotation = q;
+    }
+
+    public void Explode() => ExplodeAt(transform.position);
+
+    public void ExplodeAt(Vector3 worldPos)
+    {
+        if (!Application.isPlaying) return;
+        Build();
+        transform.position = worldPos;
+
+        // 先瞄准再发射：已飞出去的粒子不受影响（World 模拟空间），所以每轮重新瞄一次即可
+        ApplyAim();
+
+        if (_all != null)
+            for (int i = 0; i < _all.Length; i++) Trigger(_all[i]);
+
+        if (_light != null)
+        {
+            _light.gameObject.SetActive(true);
+            _light.intensity = lightIntensity;
+            _lightT = 0f;
+        }
+    }
+
+    private static void Trigger(ParticleSystem ps)
+    {
+        if (ps == null) return;
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        ps.Play(true);
+    }
+
+    void Update()
+    {
+        if (_lightT >= 0f && _light != null)
+        {
+            _lightT += Time.deltaTime;
+            float t = Mathf.Clamp01(_lightT / Mathf.Max(0.01f, lightDuration));
+            _light.intensity = lightIntensity * (1f - t) * (1f - t);
+            if (t >= 1f)
+            {
+                _light.intensity = 0f;
+                _light.gameObject.SetActive(false);
+                _lightT = -1f;
+            }
+        }
+
+        if (loop && Application.isPlaying)
+        {
+            _loopTimer -= Time.deltaTime;
+            if (_loopTimer <= 0f)
+            {
+                _loopTimer = Mathf.Max(0.2f, loopInterval);
+                ExplodeAt(transform.position);
+            }
+        }
+    }
+
+    // ====================================================================
+    // 层构建
+    // ====================================================================
+
+    private class LayerDef
+    {
+        public string name;
+        public Material mat;
+        public Mesh mesh;
+        public ParticleSystemRenderMode renderMode = ParticleSystemRenderMode.Billboard;
+        public ParticleSystemRenderSpace alignment = ParticleSystemRenderSpace.View;
+        public ParticleSystemShapeType shape = ParticleSystemShapeType.Sphere;
+        public float shapeAngle = 25f;
+        public float shapeRadius = 1f;
+        [Tooltip("1 = 形状内部实心分布；0 = 只在表面（参考给 fire_floaters 用的是 0）")]
+        public float radiusThickness = 1f;
+        public Vector3 shapeScale = Vector3.one;
+        public float randomDir = 0f, sphericalDir = 0f;
+        public float sizeMin = 1f, sizeMax = 1f;
+        public float lifeMin = 1f, lifeMax = 1f;
+        public float speedMin = 0f, speedMax = 0f;
+        public float gravityMin = 0f, gravityMax = 0f;
+        public float rotMin = 0f, rotMax = 0f;
+        public Color startColor = Color.white;
+        public Gradient grad;
+        public AnimationCurve sizeCurve;
+        public (float t, int n)[] bursts;
+        public float velocityScale = 0f, lengthScale = 2f;
+        public int sortOrder = 0;
+        /// <summary>该层在参考 prefab 里的 localPosition（不再统一抬高，各层高低错开才有层次）。</summary>
+        public Vector3 offset = Vector3.zero;
+        /// <summary>true ⇒ 该层在参考里带 Rx(−90°)，其喷射主轴要交给 aimMode 控制。</summary>
+        public bool aimToCamera = false;
+        /// <summary>aimToCamera=false 的层所用的静态欧拉角（参考里就是 identity）。</summary>
+        public Vector3 localEuler = Vector3.zero;
+        public bool noise = false;
+        public float noiseStrength = 1f, noiseFrequency = 0.5f;
+        public int noiseOctaves = 1;
+        public float noiseOctaveMultiplier = 0.5f;
+        public bool noiseDamping = true;
+
+        // ---- 参考 ClampVelocityModule（Unity6: limitVelocityOverLifetime）----
+        /// <summary>true ⇒ 参考该层开了速度钳制。</summary>
+        public bool clampVel = false;
+        /// <summary>速度上限（随机区间）。粒子初速可以很高，但会被拉回这个上限。</summary>
+        public float clampLimitMin = 1f, clampLimitMax = 1f;
+        /// <summary>阻尼 0~1，越大拉回上限越猛。参考：烟 0.2~0.4、火 0.1。</summary>
+        public float clampDampen = 0.1f;
+
+        // ---- 参考 UVModule（Unity6: textureSheetAnimation）----
+        /// <summary>true ⇒ 参考该层开了序列帧（fire.psd 是 2×2 精灵图）。</summary>
+        public bool sheet = false;
+        public int sheetTilesX = 2, sheetTilesY = 2;
+
+        // ---- 参考 RotationModule（Unity6: rotationOverLifetime）----
+        /// <summary>true ⇒ 参考该层开了生命周期内随机自转（弧度/秒，仅 Z 轴）。</summary>
+        public bool rotLife = false;
+        public float rotLifeZMin = 0f, rotLifeZMax = 0f;
+
+        // ---- 参考 CollisionModule（仅 firey_debris 有）----
+        /// <summary>true ⇒ 参考该层开了世界碰撞（碎片落地弹跳）。</summary>
+        public bool collide = false;
+        public float collideBounce = 1f, collideEnergyLoss = 0.5f;
+    }
+
+    private ParticleSystem MakeLayer(LayerDef d)
+    {
+        var go = new GameObject(d.name);
+        go.transform.SetParent(transform, false);
+        go.transform.localPosition = new Vector3(d.offset.x, explodeHeight + d.offset.y, d.offset.z);
+        go.transform.localScale = Vector3.one * globalScale;
+        if (d.aimToCamera && enableAim) _aimTargets.Add(go.transform);
+        else go.transform.localRotation = Quaternion.Euler(d.localEuler);
+        go.hideFlags = HideFlags.DontSave;
+
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var main = ps.main;
+        main.loop = false;
+        main.playOnAwake = false;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startLifetime = Rnd(d.lifeMin, d.lifeMax);
+        main.startSize = Rnd(d.sizeMin, d.sizeMax);
+        main.startSpeed = Rnd(d.speedMin, d.speedMax);
+        main.startColor = d.startColor;
+        main.startRotation = Rnd(d.rotMin, d.rotMax);
+        main.gravityModifier = Rnd(d.gravityMin, d.gravityMax);
+        main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+        main.maxParticles = 256;
+
+        float dur = d.lifeMax;
+        if (d.bursts != null)
+            for (int i = 0; i < d.bursts.Length; i++)
+                dur = Mathf.Max(dur, d.bursts[i].t + d.lifeMax);
+        main.duration = dur + 0.05f;
+
+        if (d.bursts != null && d.bursts.Length > 0)
+        {
+            var arr = new ParticleSystem.Burst[d.bursts.Length];
+            for (int i = 0; i < d.bursts.Length; i++)
+                arr[i] = new ParticleSystem.Burst(d.bursts[i].t,
+                    (short)d.bursts[i].n, (short)d.bursts[i].n);
+            var em = ps.emission;
+            em.enabled = true;
+            em.rateOverTime = 0f;
+            em.SetBursts(arr);
+        }
+
+        var sh = ps.shape;
+        sh.enabled = true;
+        sh.shapeType = d.shape;
+        sh.radius = d.shapeRadius;
+        sh.scale = d.shapeScale;
+        sh.radiusThickness = d.radiusThickness;
+        if (d.shape == ParticleSystemShapeType.Cone || d.shape == ParticleSystemShapeType.Hemisphere)
+            sh.angle = d.shapeAngle;
+        sh.randomDirectionAmount = d.randomDir;
+        sh.sphericalDirectionAmount = d.sphericalDir;
+
+        if (d.sizeCurve != null)
+        {
+            var sz = ps.sizeOverLifetime;
+            sz.enabled = true;
+            sz.size = new ParticleSystem.MinMaxCurve(1f, d.sizeCurve);
+        }
+
+        if (d.noise)
+        {
+            var nz = ps.noise;
+            nz.enabled = true;
+            nz.strength = d.noiseStrength;
+            nz.frequency = d.noiseFrequency;
+            nz.octaveCount = d.noiseOctaves;
+            nz.octaveMultiplier = d.noiseOctaveMultiplier;
+            nz.damping = d.noiseDamping;
+            nz.quality = ParticleSystemNoiseQuality.High;   // 参考 quality=2
+        }
+
+        // ★ 速度钳制 + 阻尼：高初速爆出 → 被拉回低速 → 靠重力缓缓上飘（烟尘手感的灵魂）
+        if (d.clampVel && enableClampVelocity)
+        {
+            var lv = ps.limitVelocityOverLifetime;
+            lv.enabled = true;
+            lv.separateAxes = false;                       // 参考未开分轴
+            lv.limit = Rnd(d.clampLimitMin, d.clampLimitMax);
+            lv.dampen = d.clampDampen;
+        }
+
+        // ★ 生命周期内随机自转（仅 Z 轴，单位弧度/秒）
+        if (d.rotLife && enableRotOverLife)
+        {
+            var ro = ps.rotationOverLifetime;
+            ro.enabled = true;
+            ro.x = 0f;
+            ro.y = 0f;
+            ro.z = Rnd(d.rotLifeZMin, d.rotLifeZMax);
+        }
+
+        // ★ 序列帧：fire.psd 是 2×2 精灵图，每颗粒子随机取一格
+        if (d.sheet && enableSheetAnimation)
+        {
+            var ts = ps.textureSheetAnimation;
+            ts.enabled = true;
+            ts.numTilesX = d.sheetTilesX;
+            ts.numTilesY = d.sheetTilesY;
+            ts.animation = ParticleSystemAnimationType.SingleRow;
+            ts.useRandomRow = true;                        // 参考 randomRow=1
+            ts.rowIndex = 0;
+            ts.cycleCount = 1;                             // 参考 cycles=1
+            ts.frameOverTime = new ParticleSystem.MinMaxCurve(0f, 1f);
+            ts.startFrame = new ParticleSystem.MinMaxCurve(0f);
+        }
+
+        // ★ 世界碰撞：碎片落地弹跳（需要场景里有地面碰撞体）
+        if (d.collide && enableDebrisCollision)
+        {
+            var cl = ps.collision;
+            cl.enabled = true;
+            cl.type = ParticleSystemCollisionType.World;
+            cl.mode = ParticleSystemCollisionMode.Collision3D;
+            cl.bounce = new ParticleSystem.MinMaxCurve(d.collideBounce);
+            cl.energyLoss = new ParticleSystem.MinMaxCurve(d.collideEnergyLoss);
+            cl.dampen = new ParticleSystem.MinMaxCurve(0f);
+            cl.colliderForce = new ParticleSystem.MinMaxCurve(0f);
+            cl.quality = ParticleSystemCollisionQuality.High;
+        }
+
+        if (d.grad != null)
+        {
+            var col = ps.colorOverLifetime;
+            col.enabled = true;
+            col.color = new ParticleSystem.MinMaxGradient(d.grad);
+        }
+
+        var r = ps.GetComponent<ParticleSystemRenderer>();
+        r.sharedMaterial = d.mat;
+        r.renderMode = d.renderMode;
+        // Mesh 层的朝向模式走全局开关（参考老格式没这个字段，默认 Local 才有火舌的放射感）
+        r.alignment = (d.renderMode == ParticleSystemRenderMode.Mesh) ? meshAlignment : d.alignment;
+        r.sortingOrder = d.sortOrder;
+        if (d.renderMode == ParticleSystemRenderMode.Mesh && d.mesh != null)
+            r.mesh = d.mesh;
+        if (d.renderMode == ParticleSystemRenderMode.Stretch)
+        {
+            r.velocityScale = d.velocityScale;
+            r.lengthScale = d.lengthScale;
+        }
+
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        return ps;
+    }
+
+    private static ParticleSystem.MinMaxCurve Rnd(float a, float b)
+        => Mathf.Approximately(a, b) ? new ParticleSystem.MinMaxCurve(a)
+                                     : new ParticleSystem.MinMaxCurve(Mathf.Min(a, b), Mathf.Max(a, b));
+
+    // ====================================================================
+    // 材质
+    // ====================================================================
+
+    private Material MakeAdditive(Texture2D tex)
+    {
+        var sh = Shader.Find("MusicalSprite/BombVFXAdditive");
+        if (sh == null)
+        {
+            Debug.LogWarning("[BombExplosion] 找不到 MusicalSprite/BombVFXAdditive，爆炸将显示为 magenta。");
+            sh = Shader.Find("Hidden/InternalErrorShader");
+        }
+        var m = new Material(sh);
+        m.hideFlags = HideFlags.DontSave;
+        if (tex != null)
+        {
+            m.SetTexture("_BaseMap", tex);
+            m.mainTexture = tex;
+        }
+        var w = Color.white * hdrIntensity;
+        m.SetColor("_BaseColor", new Color(w.r, w.g, w.b, 1f));
+        return m;
+    }
+
+    /// <summary>烟 / 焦痕专用 Alpha 混合（参考包 cartoonSmoke_mobile_alphaBlend / decal_alphaBlend）。</summary>
+    private Material MakeAlpha(Texture2D tex)
+    {
+        var sh = Shader.Find("MusicalSprite/BombVFXAlpha");
+        if (sh == null) sh = Shader.Find("Hidden/InternalErrorShader");
+        var m = new Material(sh);
+        m.hideFlags = HideFlags.DontSave;
+        if (tex != null)
+        {
+            m.SetTexture("_BaseMap", tex);
+            m.mainTexture = tex;
+        }
+        m.SetColor("_BaseColor", new Color(hdrIntensity, hdrIntensity, hdrIntensity, 1f));
+        return m;
+    }
+
+    // ====================================================================
+    // 程序化兜底素材
+    // ====================================================================
+
+    /// <summary>锥体：底在 y=0、尖朝 +Y、半径 0.25、高 0.37（对齐 cone.obj @ globalScale 0.01）。</summary>
+    private static Mesh MakeConeMesh()
+    {
+        const int seg = 12;
+        var verts = new System.Collections.Generic.List<Vector3>();
+        var uvs = new System.Collections.Generic.List<Vector2>();
+        var tris = new System.Collections.Generic.List<int>();
+        verts.Add(new Vector3(0f, 0.37f, 0f)); uvs.Add(new Vector2(0.5f, 1f));   // apex
+        for (int i = 0; i <= seg; i++)
+        {
+            float a = i * Mathf.PI * 2f / seg;
+            float x = Mathf.Cos(a) * 0.25f, z = Mathf.Sin(a) * 0.25f;
+            verts.Add(new Vector3(x, 0f, z));
+            uvs.Add(new Vector2(i / (float)seg, 0f));
+        }
+        for (int i = 1; i < verts.Count - 1; i++)
+        {
+            tris.Add(0); tris.Add(i + 1); tris.Add(i);
+        }
+        return FinishMesh(verts, uvs, tris);
+    }
+
+    /// <summary>XZ 平面水平四边形（对齐 quad4point.obj @ globalScale 0.001）。</summary>
+    private static Mesh MakeQuadMesh()
+    {
+        var verts = new System.Collections.Generic.List<Vector3>
+        {
+            new Vector3(-0.05f, 0f, 0.05f), new Vector3(0.05f, 0f, 0.05f),
+            new Vector3(-0.05f, 0f, -0.05f), new Vector3(0.05f, 0f, -0.05f),
+        };
+        var uvs = new System.Collections.Generic.List<Vector2>
+        {
+            new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f),
+        };
+        var tris = new System.Collections.Generic.List<int> { 0, 1, 2, 2, 1, 3 };
+        return FinishMesh(verts, uvs, tris);
+    }
+
+    /// <summary>不规则碎片（对齐 scrap.obj）。</summary>
+    private static Mesh MakeScrapMesh()
+    {
+        var verts = new System.Collections.Generic.List<Vector3>
+        {
+            new Vector3(-0.054f, 0f, 0.041f), new Vector3(0.061f, 0f, 0.061f),
+            new Vector3(0.022f, 0.073f, 0.032f), new Vector3(-0.041f, 0.031f, -0.033f),
+        };
+        var uvs = new System.Collections.Generic.List<Vector2>
+        {
+            new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f),
+        };
+        var tris = new System.Collections.Generic.List<int> { 0, 1, 2, 0, 2, 3, 0, 3, 1, 1, 3, 2 };
+        return FinishMesh(verts, uvs, tris);
+    }
+
+    /// <summary>低模球（半径 0.5，对齐 Unity 内置 Sphere）。给 sphereFlash 用。</summary>
+    private static Mesh MakeSphereMesh()
+    {
+        const int seg = 10, ring = 6;
+        var verts = new System.Collections.Generic.List<Vector3>();
+        var uvs = new System.Collections.Generic.List<Vector2>();
+        var tris = new System.Collections.Generic.List<int>();
+        for (int y = 0; y <= ring; y++)
+        {
+            float v = y / (float)ring;
+            float phi = v * Mathf.PI;
+            for (int x = 0; x <= seg; x++)
+            {
+                float u = x / (float)seg;
+                float theta = u * Mathf.PI * 2f;
+                float sy = Mathf.Cos(phi) * 0.5f;
+                float sr = Mathf.Sin(phi) * 0.5f;
+                verts.Add(new Vector3(Mathf.Cos(theta) * sr, sy, Mathf.Sin(theta) * sr));
+                uvs.Add(new Vector2(u, 1f - v));
+            }
+        }
+        int w = seg + 1;
+        for (int y = 0; y < ring; y++)
+            for (int x = 0; x < seg; x++)
+            {
+                int i = y * w + x;
+                tris.Add(i); tris.Add(i + w); tris.Add(i + 1);
+                tris.Add(i + 1); tris.Add(i + w); tris.Add(i + w + 1);
+            }
+        return FinishMesh(verts, uvs, tris);
+    }
+
+    private static Mesh FinishMesh(System.Collections.Generic.List<Vector3> v,
+        System.Collections.Generic.List<Vector2> uv, System.Collections.Generic.List<int> tris)
+    {
+        var m = new Mesh { hideFlags = HideFlags.DontSave };
+        m.SetVertices(v);
+        m.SetUVs(0, uv);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // ---- 程序化贴图兜底 ----
+
+    private static Texture2D MakeFireTexture()
+    {
+        const int n = 64;
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        float c = (n - 1) * 0.5f;
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float r = Mathf.Sqrt(dx * dx + dy * dy) / c;
+                float a = Mathf.Pow(Mathf.Clamp01(1f - r), 1.3f);
+                t.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        return FinishTex(t);
+    }
+
+    private static Texture2D MakeSmokeTexture()
+    {
+        const int n = 64;
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        float c = (n - 1) * 0.5f;
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float r = Mathf.Sqrt(dx * dx + dy * dy) / c;
+                float falloff = 1f - Mathf.SmoothStep(0f, 1f, r);
+                float n1 = Mathf.PerlinNoise(x * 0.06f + 10f, y * 0.06f + 20f);
+                float a = Mathf.Pow(Mathf.Clamp01(falloff * (0.85f + (n1 - 0.5f) * 0.25f)), 2.0f);
+                t.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        return FinishTex(t);
+    }
+
+    private static Texture2D MakeRingTexture()
+    {
+        const int n = 128;
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        float c = (n - 1) * 0.5f;
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float d = Mathf.Sqrt(dx * dx + dy * dy) / c;
+                float band = Mathf.Exp(-((d - 0.78f) * (d - 0.78f)) / (2f * 0.13f * 0.13f));
+                t.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(band)));
+            }
+        return FinishTex(t);
+    }
+
+    private static Texture2D MakeFlareTexture()
+    {
+        const int n = 64;
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        float c = (n - 1) * 0.5f;
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float r = Mathf.Sqrt(dx * dx + dy * dy) / c;
+                float a = Mathf.Pow(Mathf.Clamp01(1f - r), 0.8f);
+                t.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        return FinishTex(t);
+    }
+
+    private static Texture2D MakeDecalTexture()
+    {
+        const int n = 64;
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        float c = (n - 1) * 0.5f;
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float r = Mathf.Sqrt(dx * dx + dy * dy) / c;
+                float n1 = Mathf.PerlinNoise(x * 0.11f, y * 0.11f);
+                float a = Mathf.Clamp01((1f - r) * (0.5f + n1 * 0.8f));
+                t.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        return FinishTex(t);
+    }
+
+    private static Texture2D FinishTex(Texture2D t)
+    {
+        t.hideFlags = HideFlags.DontSave;
+        t.wrapMode = TextureWrapMode.Clamp;
+        t.filterMode = FilterMode.Bilinear;
+        t.anisoLevel = 1;
+        t.Apply();
+        return t;
+    }
+}

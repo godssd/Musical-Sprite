@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ShockwavePaint_Blue
+  m_Shader: {fileID: 4800000, guid: 2a5779e8ee6247358589c89f53402d5a, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BrushMask:
+        m_Texture: {fileID: 2800000, guid: 5f6797362d724aaa92479b18ddcd5f80, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ArchHeight: 1.2
+    - _ArtHeightMax: 0.0932
+    - _ArtWidthHalf: 0.1469
+    - _BackX: -0.028096559
+    - _EdgeGlow: 4.24
+    - _Erode: 0.22
+    - _FadePower: 1
+    - _Flash: 0
+    - _FlowSpeed: 0.62
+    - _FlowStrength: 0.7
+    - _FrontX: 0.01
+    - _GlowArch: 10
+    - _GlowFront: 6.82
+    - _GlowIntensity: 1.6
+    - _GlowTailCut: 0.15
+    - _GradientBalance: 0.218
+    - _GradientPower: 1
+    - _Opacity: 0.147
+    - _TailPoint: 0.25
+    - _TailWidth: 0.12
+    - _VerticalAmount: 0
+    - _VerticalCenter: 0.2
+    - _VerticalPower: 1
+    - _VerticalWidth: 0.35
+    - _ZHalf: 0.0465817
+    m_Colors:
+    - _ArtBody: {r: 0.065, g: 0.22, b: 0.83, a: 1}
+    - _ArtDark: {r: 0.035, g: 0.08, b: 0.35, a: 1}
+    - _ArtLight: {r: 0.25, g: 0.67, b: 1.18, a: 1}
+    - _ArtRim: {r: 0.5, g: 0.98, b: 1.29, a: 1}
+    - _ColorDeep: {r: 0, g: 0.23211932, b: 1, a: 1}
+    - _ColorTail: {r: 0.25, g: 0.02, b: 0.08, a: 1}
+    - _ColorTip: {r: 0.5424528, g: 0.7365638, b: 1, a: 1}
+    - _GlowColor: {r: 0.2004717, g: 0.2560431, b: 0.5, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

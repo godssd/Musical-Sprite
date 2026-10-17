@@ -1,0 +1,211 @@
+using UnityEngine;
+
+/// <summary>
+/// 中间粉色竖杠（中线）。
+/// 根据双方命中情况左右移动，命中多的一方会把中线往对方推。
+/// 同时控制红蓝地面的面积随中线位置变化。
+/// </summary>
+public class BattleCenterLine : MonoBehaviour
+{
+    [Header("显示")]
+    [Tooltip("P0 起粉杠由双冲击波取代，默认隐藏；冲击波落地后此开关可删")]
+    public bool showCenterLine = false;
+
+    [Header("移动范围")]
+    [Tooltip("中线最左能到的 X 坐标")]
+    public float minX = -3f;
+
+    [Tooltip("中线最右能到的 X 坐标")]
+    public float maxX = 3f;
+
+    [Header("移动参数")]
+    [Tooltip("分差 5000 时中线移动 5 个单位")]
+    public float pushPerHit = 0.001f;
+
+    [Tooltip("中线归中/平滑移动的速度")]
+    public float smoothSpeed = 5f;
+
+    [Header("分数引用")]
+    [Tooltip("可选：直接引用 ScoreManager，用真实分差驱动中线移动")]
+    public ScoreManager scoreManager;
+
+    [Header("地面引用")]
+    [Tooltip("左侧红色地面（保留引用，但地面为静态，不再被缩放/移动）")]
+    public Transform leftGround;
+
+    [Tooltip("右侧蓝色地面（保留引用，但地面为静态，不再被缩放/移动）")]
+    public Transform rightGround;
+
+    [Header("地面材质(可选,用于优势显现)")]
+    [Tooltip("红方 GroundEdge 材质；赋值后会根据优势设置 _Reveal，使红方地面显现更多")]
+    public Material leftGroundMat;
+
+    [Tooltip("蓝方 GroundEdge 材质；赋值后会根据优势设置 _Reveal，使蓝方地面显现更多")]
+    public Material rightGroundMat;
+
+    [Header("新地面：单块 ArenaGround")]
+    [Tooltip("单场地面材质（M_GroundEdge_Arena），含红蓝两张贴图。优先使用此字段设置中缝 _CenterLineX。")]
+    public Material groundMaterial;
+
+    [Tooltip("草丛流苏材质（M_GrassFringe）。赋值后会跟随 groundMaterial 一起设置 _CenterLineX，使草丛颜色随粉杠变化。")]
+    public Material grassMaterial;
+
+    [Tooltip("单场地面对象 Transform（ArenaGround）")]
+    public Transform ground;
+
+    [Tooltip("场地总宽度（从 -X 到 +X）")]
+    public float arenaTotalWidth = 16f;
+
+    [Header("A/B 资产溶解过渡")]
+    [Tooltip("VFX Texture Lab 制作的可平铺灰度遮罩；地面和场景件共用")]
+    public Texture2D seamDissolveMask;
+
+    [Min(0.01f)] public float seamMaskScale = 0.6f;
+    [Min(0f)] public float seamNoiseWidth = 0.55f;
+    [Min(0.001f)] public float seamFeather = 0.025f;
+    [Min(0.001f)] public float seamEdgeWidth = 0.07f;
+    [Range(0f, 1f)] public float seamEdgeStrength = 0.32f;
+    public Color seamEdgeColorA = new Color(1f, 0.48f, 0.18f, 1f);
+    public Color seamEdgeColorB = new Color(0.22f, 0.72f, 1f, 1f);
+
+    [Header("A/B 场景件局部溶解")]
+    [Tooltip("每个场景件独立的细颗粒密度，不改变地面中缝的推进位置")]
+    [Min(0.01f)] public float seamPropMaskScale = 3.5f;
+    [Tooltip("局部颗粒偏离地面中缝的最大宽度")]
+    [Min(0f)] public float seamPropNoiseWidth = 0.22f;
+    [Min(0.001f)] public float seamPropEdgeWidth = 0.05f;
+    [Range(0f, 1f)] public float seamPropEdgeStrength = 0.55f;
+
+    [Header("只读状态")]
+    [SerializeField] private float _currentX;
+
+    [SerializeField] private float _targetX;     // 由分差决定的终点 X（冲击波放大倍率依据）
+    [SerializeField] private float _leftScore;   // 左玩家累计命中优势
+    [SerializeField] private float _rightScore;  // 右玩家累计命中优势
+
+    public float currentX => _currentX;
+    /// <summary>分差决定的目标位置（= diff * pushPerHit）。冲击波用 |currentX - targetX| 作为"剩余距离"驱动放大。</summary>
+    public float targetX => _targetX;
+
+    void Start()
+    {
+        _currentX = 0f;
+        _leftScore = 0f;
+        _rightScore = 0f;
+        // P0：粉杠由双冲击波取代，默认隐藏；冲击波落地后此开关可删
+        Renderer r = GetComponent<Renderer>();
+        if (r != null) r.enabled = showCenterLine;
+    }
+
+#if UNITY_EDITOR
+    // 编辑模式下即时响应 showCenterLine 开关，便于验收
+    void OnValidate()
+    {
+        if (Application.isPlaying) return;
+        Renderer r = GetComponent<Renderer>();
+        if (r != null) r.enabled = showCenterLine;
+    }
+#endif
+
+    void Update()
+    {
+        // 根据双方得分差计算目标位置
+        // 优先使用 ScoreManager 的真实分差；未引用时回退到内部累计
+        // 注意：中线应该向分数更低的一方移动，所以用 左分 - 右分
+        float diff;
+        if (scoreManager != null)
+        {
+            diff = scoreManager.GetLeftScore() - scoreManager.GetRightScore();
+        }
+        else
+        {
+            diff = _leftScore - _rightScore;
+        }
+
+        // 分差 5000 时移动 5 个单位；允许超过原 minX/maxX，让粉杠随分差继续推进
+        float targetX = diff * pushPerHit;
+        _targetX = targetX;
+
+        _currentX = Mathf.Lerp(_currentX, targetX, Time.deltaTime * smoothSpeed);
+
+        Vector3 pos = transform.position;
+        pos.x = _currentX;
+        transform.position = pos;
+
+        UpdateGroundArea();
+    }
+
+    /// <summary>
+    /// 更新红蓝地面的"优势显现"。
+    /// 新方案：单块地面 ArenaGround，材质含红蓝两张贴图。
+    /// 粉杠 X 坐标直接驱动材质 _CenterLineX：
+    ///   - 粉杠右移（左/红方优势）-> 红线覆盖更多区域
+    ///   - 粉杠左移（右/蓝方优势）-> 蓝线覆盖更多区域
+    /// 兼容旧方案：如果只有 leftGroundMat/rightGroundMat，仍用 _Reveal 控制。
+    /// </summary>
+    private void UpdateGroundArea()
+    {
+        // 场景件与地面使用同一帧、同一条世界坐标中缝。
+        Shader.SetGlobalFloat("_WorldSeamX", _currentX);
+        float blend = groundMaterial != null && groundMaterial.HasProperty("_CenterBlend")
+            ? groundMaterial.GetFloat("_CenterBlend") : 0.15f;
+        Shader.SetGlobalFloat("_WorldSeamBlend", blend);
+        Shader.SetGlobalTexture("_WorldSeamDissolveTex",
+            seamDissolveMask != null ? seamDissolveMask : Texture2D.grayTexture);
+        Shader.SetGlobalFloat("_WorldSeamMaskScale", seamMaskScale);
+        Shader.SetGlobalFloat("_WorldSeamNoiseWidth", seamNoiseWidth);
+        Shader.SetGlobalFloat("_WorldSeamFeather", seamFeather);
+        Shader.SetGlobalFloat("_WorldSeamEdgeWidth", seamEdgeWidth);
+        Shader.SetGlobalFloat("_WorldSeamEdgeStrength", seamEdgeStrength);
+        Shader.SetGlobalColor("_WorldSeamEdgeColorA", seamEdgeColorA);
+        Shader.SetGlobalColor("_WorldSeamEdgeColorB", seamEdgeColorB);
+        Shader.SetGlobalFloat("_WorldSeamPropMaskScale", seamPropMaskScale);
+        Shader.SetGlobalFloat("_WorldSeamPropNoiseWidth", seamPropNoiseWidth);
+        Shader.SetGlobalFloat("_WorldSeamPropEdgeWidth", seamPropEdgeWidth);
+        Shader.SetGlobalFloat("_WorldSeamPropEdgeStrength", seamPropEdgeStrength);
+        // 新方案：直接把粉杠 X 传给单块地面材质 + 草丛流苏材质
+        if (groundMaterial != null)
+        {
+            groundMaterial.SetFloat("_CenterLineX", _currentX);
+            if (grassMaterial != null)
+                grassMaterial.SetFloat("_CenterLineX", _currentX);
+            return;
+        }
+
+        // 旧方案兼容：各自材质的 _Reveal
+        float halfWidth = arenaTotalWidth * 0.5f;
+        float a = Mathf.Clamp(_currentX / halfWidth, -1f, 1f);
+
+        if (leftGroundMat != null)
+            leftGroundMat.SetFloat("_Reveal", 0.5f + 0.5f * a);
+        if (rightGroundMat != null)
+            rightGroundMat.SetFloat("_Reveal", 0.5f - 0.5f * a);
+    }
+
+    /// <summary>
+    /// 注册一次命中。
+    /// side: 0 = 左玩家命中（中线向右推），1 = 右玩家命中（中线向左推）
+    /// </summary>
+    public void RegisterHit(int side, float accuracy)
+    {
+        float weight = Mathf.Clamp01(1f - accuracy); // 越接近 Perfect，权重越大（这里用 1 - 误差比例）
+        if (side == 0)
+        {
+            _leftScore += weight;
+        }
+        else
+        {
+            _rightScore += weight;
+        }
+    }
+
+    /// <summary>
+    /// 重置对战状态。
+    /// </summary>
+    public void ResetBattle()
+    {
+        _leftScore = 0f;
+        _rightScore = 0f;
+        _currentX = 0f;
+    }
+}

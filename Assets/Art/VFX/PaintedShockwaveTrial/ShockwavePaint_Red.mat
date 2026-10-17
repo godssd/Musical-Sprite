@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ShockwavePaint_Red
+  m_Shader: {fileID: 4800000, guid: 2a5779e8ee6247358589c89f53402d5a, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BrushMask:
+        m_Texture: {fileID: 2800000, guid: 5f6797362d724aaa92479b18ddcd5f80, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ArchHeight: 1.2
+    - _ArtHeightMax: 0.0932
+    - _ArtWidthHalf: 0.1469
+    - _BackX: -0.028096559
+    - _EdgeGlow: 3
+    - _Erode: 0.22
+    - _FadePower: 1
+    - _Flash: 0
+    - _FlowSpeed: 0.62
+    - _FlowStrength: 0.7
+    - _FrontX: 0.01
+    - _GlowArch: 10
+    - _GlowFront: 6.82
+    - _GlowIntensity: 1.6
+    - _GlowTailCut: 0.15
+    - _GradientBalance: 0.218
+    - _GradientPower: 1
+    - _Opacity: 0.14
+    - _TailPoint: 0.864
+    - _TailWidth: 0.143
+    - _VerticalAmount: 0
+    - _VerticalCenter: 0.2
+    - _VerticalPower: 1
+    - _VerticalWidth: 0.35
+    - _ZHalf: 0.0465817
+    m_Colors:
+    - _ArtBody: {r: 0.86, g: 0.14, b: 0.09, a: 1}
+    - _ArtDark: {r: 0.35, g: 0.045, b: 0.075, a: 1}
+    - _ArtLight: {r: 1.15, g: 0.4, b: 0.23, a: 1}
+    - _ArtRim: {r: 1.25, g: 0.81, b: 0.44, a: 1}
+    - _ColorDeep: {r: 1, g: 0.4292453, b: 0.51552236, a: 1}
+    - _ColorTail: {r: 0.6486718, g: 0.14640442, b: 0.6603774, a: 1}
+    - _ColorTip: {r: 0.8113208, g: 0.24875402, b: 0.28419128, a: 1}
+    - _GlowColor: {r: 0.764151, g: 0.3992541, b: 0.24150053, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

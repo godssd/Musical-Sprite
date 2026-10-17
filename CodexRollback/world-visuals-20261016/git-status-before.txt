@@ -1,0 +1,135 @@
+ M Assets/Art/Materials/M_GrassFringe.mat
+ M Assets/Art/Materials/M_GroundEdge_Arena.mat
+ D Assets/Art/tree_1.png
+ D Assets/Art/tree_2.png
+ D Assets/Art/tree_3.png
+ D Assets/Art/tree_4.png
+ D Assets/Art/tree_5.png
+ M Assets/Scripts/ShockwavePreview.cs
+ M Assets/Scripts/ShockwaveVFX.cs
+ M Assets/Shaders/ShockwaveUnlit.shader
+ M UserSettings/EditorUserSettings.asset
+?? Assets/Art/1__feverA.png
+?? Assets/Art/1__feverB.png
+?? Assets/Art/1__super_feverA.png
+?? Assets/Art/1__super_feverB.png
+?? Assets/Art/VFX/PaintedShockwaveTrial.meta
+?? Assets/Art/VFX/PaintedShockwaveTrial/
+?? Assets/Art/VFX/SandboxShockwaveBrush.png
+?? Assets/Art/VFX/SandboxShockwaveBrush.png.meta
+?? Assets/Art/tree_1_A.png
+?? Assets/Art/tree_1_B.png
+?? Assets/Art/tree_2.1.png.meta
+?? Assets/Art/tree_2.1_A.png
+?? Assets/Art/tree_2.1_B.png
+?? Assets/Art/tree_2.2.png.meta
+?? Assets/Art/tree_2.2_A.png
+?? Assets/Art/tree_2.2_B.png
+?? Assets/Art/tree_2.3.png.meta
+?? Assets/Art/tree_2.3_A.png
+?? Assets/Art/tree_2.3_B.png
+?? "Assets/Art/tree_2.4 _A.png"
+?? Assets/Art/tree_2.4.png.meta
+?? Assets/Art/tree_2.4_B.png
+?? Assets/Art/tree_2.5.png.meta
+?? Assets/Art/tree_2.5_A.png
+?? Assets/Art/tree_2.5_B.png
+?? Assets/Art/tree_2.6_A.png
+?? Assets/Art/tree_2.6_B.png
+?? Assets/Art/tree_2.7_A.png
+?? Assets/Art/tree_2.7_B.png
+?? Assets/Art/tree_2_A.png
+?? Assets/Art/tree_2_B.png
+?? Assets/Art/tree_3_A.png
+?? Assets/Art/tree_3_B.png
+?? Assets/Art/tree_4_A.png
+?? Assets/Art/tree_4_B.png
+?? Assets/Art/tree_5_A.png
+?? Assets/Art/tree_5_B.png
+?? Assets/Editor/VFXSandboxBuilder.cs
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.dirfix
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.dirfix.meta
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.flow
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.flow.meta
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.swirl
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.swirl.meta
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.taper
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.taper.meta
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.vfxfix
+?? Assets/Editor/VFXSandboxBuilder.cs.bak.20261012.vfxfix.meta
+?? Assets/Editor/VFXSandboxBuilder.cs.meta
+?? Assets/EffectCore.meta
+?? Assets/EffectCore/
+?? Assets/Scenes/VFXSandbox.unity
+?? Assets/Scenes/VFXSandbox.unity.meta
+?? Assets/Scenes/VFXSandbox_Materials.meta
+?? Assets/Scenes/VFXSandbox_Materials/
+?? Assets/Scenes/VFXSandbox_PaintedTrial.unity
+?? Assets/Scenes/VFXSandbox_PaintedTrial.unity.meta
+?? Assets/Scripts/BombExplosion.cs
+?? Assets/Scripts/BombExplosion.cs.bak.20261011.aim
+?? Assets/Scripts/BombExplosion.cs.bak.20261011.aim.meta
+?? Assets/Scripts/BombExplosion.cs.bak.20261012.compilefix
+?? Assets/Scripts/BombExplosion.cs.bak.20261012.compilefix.meta
+?? Assets/Scripts/BombExplosion.cs.bak.20261012.modules
+?? Assets/Scripts/BombExplosion.cs.bak.20261012.modules.meta
+?? Assets/Scripts/BombExplosion.cs.bak.20261012.smokelook
+?? Assets/Scripts/BombExplosion.cs.bak.20261012.smokelook.meta
+?? Assets/Scripts/BombExplosion.cs.meta
+?? Assets/Scripts/BombGlow.cs
+?? Assets/Scripts/BombGlow.cs.meta
+?? Assets/Scripts/BombThrow.cs
+?? Assets/Scripts/BombThrow.cs.meta
+?? Assets/Scripts/ReferenceExplosionLooper.cs
+?? Assets/Scripts/ReferenceExplosionLooper.cs.meta
+?? Assets/Scripts/SandboxShockwaveArt.cs
+?? Assets/Scripts/SandboxShockwaveArt.cs.meta
+?? Assets/Scripts/ShockwaveTrail.cs
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.dirfix
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.dirfix.meta
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.flow
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.flow.meta
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.swirl
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.swirl.meta
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.taper
+?? Assets/Scripts/ShockwaveTrail.cs.bak.20261012.taper.meta
+?? Assets/Scripts/ShockwaveTrail.cs.meta
+?? Assets/Scripts/ShockwaveVFX.cs.bak.20261012.taper
+?? Assets/Scripts/ShockwaveVFX.cs.bak.20261012.taper.meta
+?? Assets/Shaders/BombVFXAlpha.shader
+?? Assets/Shaders/BombVFXAlpha.shader.meta
+?? Assets/Shaders/BombVFXUnlit.shader
+?? Assets/Shaders/BombVFXUnlit.shader.meta
+?? Assets/Shaders/SandboxShockwaveAccent.shader
+?? Assets/Shaders/SandboxShockwaveAccent.shader.meta
+?? Assets/Shaders/SandboxShockwavePaint.shader
+?? Assets/Shaders/SandboxShockwavePaint.shader.meta
+?? Assets/Shaders/ShockwaveNoise.hlsl
+?? Assets/Shaders/ShockwaveNoise.hlsl.bak.20261012.dirfix
+?? Assets/Shaders/ShockwaveNoise.hlsl.bak.20261012.dirfix.meta
+?? Assets/Shaders/ShockwaveNoise.hlsl.bak.20261012.swirl
+?? Assets/Shaders/ShockwaveNoise.hlsl.bak.20261012.swirl.meta
+?? Assets/Shaders/ShockwaveNoise.hlsl.meta
+?? Assets/Shaders/ShockwaveUnlit.shader.bak.20261012.dirfix
+?? Assets/Shaders/ShockwaveUnlit.shader.bak.20261012.dirfix.meta
+?? Assets/Shaders/ShockwaveUnlit.shader.bak.20261012.flow
+?? Assets/Shaders/ShockwaveUnlit.shader.bak.20261012.flow.meta
+?? Assets/Shaders/ShockwaveUnlit.shader.bak.20261012.swirl
+?? Assets/Shaders/ShockwaveUnlit.shader.bak.20261012.swirl.meta
+?? Assets/Shaders/TrailUnlit.shader
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.dirfix
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.dirfix.meta
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.flow
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.flow.meta
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.swirl
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.swirl.meta
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.taper
+?? Assets/Shaders/TrailUnlit.shader.bak.20261012.taper.meta
+?? Assets/Shaders/TrailUnlit.shader.meta
+?? CodexRollback/
+?? Docs/ArtConcept/
+?? Docs/计划/VFX-炸弹爆炸特效_进度存档_20261012.md
+?? Docs/计划/冲击波制作场景试验副本_V2_20261013.md
+?? Docs/计划/冲击波制作场景试验副本_实现记录_20261013.md
+?? Docs/计划/冲击波美术迭代_用户示意图方案_20261013.md
+?? Docs/计划/冲击波试验副本_V3_纠偏_20261013.md

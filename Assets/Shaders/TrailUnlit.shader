@@ -1,0 +1,120 @@
+Shader "MusicalSprite/TrailUnlit"
+{
+    // 冲击波拖尾专用 Unlit 透明 shader（URP 17 / Unity 6）。
+    // 设计：颜色 = 灰度形态贴图(_MainTex) × 注入颜色(_Tint)，符合项目「灰度图 + 指定颜色」约定。
+    // 不透明度 = _Tint.a × _Opacity × 顶点 alpha × 贴图 alpha。顶点 alpha 由 CPU 端写入（内侧贴墙=1，远端=0）形成渐隐。
+    // _ScrollSpeed 让 UV 沿延伸方向滚动，制造循环流动内容。
+    Properties
+    {
+        _MainTex     ("Pattern (gray mask)", 2D) = "white" {}
+        _Tint        ("Tint", Color) = (1, 1, 1, 1)
+        _Opacity     ("Opacity", Range(0, 1)) = 1
+        _ScrollSpeed ("UV Scroll (xy)", Vector) = (0.3, 0.0, 0, 0)
+
+        // ---- P3 拖尾流体（与冲击波墙同源的 domain-warped noise；★实验项，_FlowAmount=0 时完全等同于旧版）----
+        _FlowAmount   ("Flow Amount", Range(0,1)) = 0
+        _FlowScale    ("Flow Scale", Float) = 4
+        _FlowSpeed    ("Flow Speed", Float) = 0.5
+        _FlowWarp     ("Flow Warp", Range(0,2)) = 0.7
+        _FlowDetail   ("Flow Detail (2nd octave)", Range(0,1)) = 0.5
+        _FlowColorAmt ("Flow Color Amount", Range(0,1)) = 0.5
+        _FlowAlphaAmt ("Flow Alpha Amount", Range(0,1)) = 0.7
+        _FlowStretchX ("Flow Stretch X (length)", Float) = 1
+        _FlowStretchY ("Flow Stretch Y (depth, pull long)", Float) = 4
+        _FlowSwirl    ("Flow Swirl", Range(0,2)) = 0.6
+        // ★方向 = 图案看起来的移动方向。UV.x: 0=贴墙端(头部) 1=远端(尾部/己方半场)，
+        //   所以 (1,0) = 从头部往尾部扩散。红蓝两侧 UV 已各自按半场朝向铺好，【两侧用同一个值】即可。
+        _FlowScrollDir ("Flow Scroll Dir (+x head->tail)", Vector) = (1, 0, 0, 0)
+
+        // ---- P3b 两侧长边羽化：uv.y 的 0/1 是拖尾的两条长边，向边缘淡出，避免边缘"太实" ----
+        _EdgeFeather ("Side Edge Feather (uv.y)", Range(0, 0.5)) = 0.15
+    }
+    SubShader
+    {
+        Tags
+        {
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
+            "RenderPipeline" = "UniversalPipeline"
+        }
+        LOD 100
+        Blend SrcAlpha OneMinusSrcAlpha
+        Cull Off
+        ZWrite Off
+
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "ShockwaveNoise.hlsl"
+
+            struct Attributes
+            {
+                float3 positionOS : POSITION;
+                float2 uv         : TEXCOORD0;
+                float4 color      : COLOR;
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float2 uv          : TEXCOORD0;
+                float4 color       : COLOR;
+            };
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+            float4 _MainTex_ST;
+            half4 _Tint;
+            float _Opacity;
+            float2 _ScrollSpeed;
+            float _FlowAmount, _FlowScale, _FlowSpeed, _FlowWarp, _FlowDetail, _FlowColorAmt, _FlowAlphaAmt;
+            float _FlowStretchX, _FlowStretchY, _FlowSwirl, _EdgeFeather;
+            float4 _FlowScrollDir;
+
+            Varyings vert(Attributes IN)
+            {
+                Varyings o;
+                o.positionHCS = TransformObjectToHClip(IN.positionOS);
+                o.uv = IN.uv;
+                o.color = IN.color;
+                return o;
+            }
+
+            half4 frag(Varyings IN) : SV_Target
+            {
+                float2 uvT = IN.uv * _MainTex_ST.xy + _Time.y * _ScrollSpeed;
+                half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uvT);
+                half3 col = _Tint.rgb * tex.rgb;
+                half a = _Tint.a * _Opacity * IN.color.a * tex.a;
+
+                // P3b 两侧长边羽化：靠近 uv.y=0 / uv.y=1 的两条边逐渐透明（0 = 完全不过渡，保持旧版硬边）
+                if (_EdgeFeather > 0.001)
+                {
+                    float d = min(IN.uv.y, 1.0 - IN.uv.y);          // 到最近长边的距离（0=边缘，0.5=中轴）
+                    a *= smoothstep(0.0, _EdgeFeather, d);
+                }
+
+                // ---- P3 拖尾流体：沿带子 (x=延伸方向 0贴墙→1远端, y=纵深) 流动的长条状涡状浓淡 ----
+                // ★ _FlowAmount=0 时整段跳过，输出与旧版逐位一致
+                // 纵深方向拉长（stretchY 大）⇒ 长条状；_FlowScrollDir=(1,0) 从头部(贴墙端)往尾部扩散
+                if (_FlowAmount > 0.001)
+                {
+                    float2 fp = IN.uv * _FlowScale;
+                    float fn = ShockFlowNoise(fp, _Time.y, _FlowSpeed,
+                                              _FlowWarp * _FlowAmount, _FlowDetail,
+                                              _FlowStretchX, _FlowStretchY, _FlowSwirl * _FlowAmount,
+                                              _FlowScrollDir.x, _FlowScrollDir.y);
+                    // 明暗对比拉开，让流动看得见：颜色波动 0.60~1.40，alpha 波动 0.50~1.30
+                    col *= lerp(1.0, 0.60 + fn * 0.80, _FlowColorAmt * _FlowAmount);
+                    a = saturate(a * lerp(1.0, 0.50 + fn * 0.80, _FlowAlphaAmt * _FlowAmount));
+                }
+
+                return half4(col, a);
+            }
+            ENDHLSL
+        }
+    }
+}

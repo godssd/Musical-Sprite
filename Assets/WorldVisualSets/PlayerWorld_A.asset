@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 543394744dab2484499d03dd92a1defd, type: 3}
+  m_Name: PlayerWorld_A
+  m_EditorClassIdentifier: 
+  groundMap: {fileID: 2800000, guid: e58fc9c9a70b6c84fab460f83fadad1d, type: 3}
+  stageMap: {fileID: 2800000, guid: 7c3f2a91d4e54b608a1d3f2c5e9b4a17, type: 3}
+  sceneProps:
+  - {fileID: 21300000, guid: ae11bbf2425cb78459940bee3ba50c5f, type: 3}
+  - {fileID: 21300000, guid: 0e8f99b1704c179409ace20bc4a565a5, type: 3}
+  - {fileID: 21300000, guid: 1089068d26ba7c14fa43d706d4e8eaa3, type: 3}
+  - {fileID: 21300000, guid: eabd560bbd89c454fb61deb302e69508, type: 3}
+  - {fileID: 21300000, guid: bf1a9bcaa7b7a0440863dd66ffa87509, type: 3}
+  - {fileID: 21300000, guid: 0d3071e7032726541b61f073f9e5bcae, type: 3}
+  - {fileID: 21300000, guid: 3ed25e9ecac73624ba877d03101cd5a4, type: 3}
+  - {fileID: 21300000, guid: 23297d225995e7e4ab0bb12727d3c164, type: 3}
+  - {fileID: 21300000, guid: 7d0ff6907fd7482408e8aba650ac7b95, type: 3}
+  - {fileID: 21300000, guid: 86dc32d2a3f60de40810160c4308d5d0, type: 3}
+  - {fileID: 21300000, guid: 1fa27d6528a1dc44c8433ddf461dd71c, type: 3}
+  - {fileID: 21300000, guid: 4cf56f93b6be3a848af643940a89b9be, type: 3}
+  normalBackground: {fileID: 21300000, guid: 28130722c8a9e5c4192d5e4c3f8e861a, type: 3}
+  feverScenery: {fileID: 21300000, guid: 28130722c8a9e5c4192d5e4c3f8e861a, type: 3}
+  superFeverScenery: {fileID: 21300000, guid: f9c25421161d420499d967c11985085d, type: 3}
+  judgementLineSkin: {fileID: 0}
+  laneIndicatorSkin: {fileID: 0}
+  noteSkin: {fileID: 0}

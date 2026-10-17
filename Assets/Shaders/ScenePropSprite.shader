@@ -9,6 +9,7 @@ Shader "MusicalSprite/ScenePropSprite"
         // 树保留为不透明/裁透明 -> 写深度 -> 吃全屏雾。
         _WhiteKey ("White Key (luminance)", Range(0.5, 1.0)) = 0.9
         _Cutoff ("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
+        [HideInInspector] _TerritorySide ("Territory Side (-1 neutral, 0 A, 1 B)", Float) = -1
         [HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
 
     }
@@ -39,6 +40,7 @@ Shader "MusicalSprite/ScenePropSprite"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "WorldSeamDissolve.hlsl"
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
@@ -46,6 +48,7 @@ Shader "MusicalSprite/ScenePropSprite"
             float4 _RendererColor;
             float  _WhiteKey;
             float  _Cutoff;
+            float  _TerritorySide;
             // 冲击波辉光：全局参数（Shader.SetGlobal*），故意放在 CBUFFER 之外。
             // 放进去会被 Unity 归入 UnityPerMaterial，与 SetGlobal 写入冲突（SRP Batcher 要求逐材质常量）。
             float  _ShockGlowEnabled;
@@ -94,6 +97,12 @@ Shader "MusicalSprite/ScenePropSprite"
             {
                 half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
                 clip(DiscardMask(tex));
+                // 与地面共用世界空间溶解场，保留 AlphaTest 的深度和雾。
+                if (_TerritorySide >= 0.0)
+                {
+                    float seamDistance = WorldSeamDistance(i.posWS);
+                    clip(_TerritorySide < 0.5 ? -seamDistance : seamDistance);
+                }
                 half3 col = tex.rgb * i.color.rgb;
 
                 // 与 GroundEdge 同款 fake-light：把场景件统一压到 ~0.78 亮度带，
@@ -119,6 +128,14 @@ Shader "MusicalSprite/ScenePropSprite"
                     col += _ShockGlowColorBlue.rgb * (aB * _ShockGlowStrengths.y);
                 }
 
+                if (_TerritorySide >= 0.0)
+                {
+                    float seamDistance = WorldSeamDistance(i.posWS);
+                    float3 edgeColor = _TerritorySide < 0.5
+                        ? _WorldSeamEdgeColorA.rgb : _WorldSeamEdgeColorB.rgb;
+                    col = lerp(col, edgeColor, WorldSeamEdge(seamDistance));
+                }
+
                 return half4(col, tex.a * i.color.a);
             }
             ENDHLSL
@@ -136,11 +153,13 @@ Shader "MusicalSprite/ScenePropSprite"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "WorldSeamDissolve.hlsl"
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             float  _WhiteKey;
             float  _Cutoff;
+            float  _TerritorySide;
 
             struct Attributes
             {
@@ -152,6 +171,7 @@ Shader "MusicalSprite/ScenePropSprite"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv         : TEXCOORD0;
+                float3 posWS      : TEXCOORD1;
             };
 
             Varyings vert (Attributes v)
@@ -160,6 +180,7 @@ Shader "MusicalSprite/ScenePropSprite"
                 float3 posWS = TransformObjectToWorld(v.positionOS);
                 o.positionCS = TransformWorldToHClip(posWS);
                 o.uv = v.uv;
+                o.posWS = posWS;
                 return o;
             }
 
@@ -173,6 +194,11 @@ Shader "MusicalSprite/ScenePropSprite"
             {
                 half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
                 clip(DiscardMask(tex));
+                if (_TerritorySide >= 0.0)
+                {
+                    float seamDistance = WorldSeamDistance(i.posWS);
+                    clip(_TerritorySide < 0.5 ? -seamDistance : seamDistance);
+                }
                 // 公告板是朝向相机的平面，法线取朝相机方向 (0,0,1) 即可（仅影响 SSAO 质量，不影响雾）。
                 return half4(half3(0.0, 0.0, 1.0), 0.0);
             }

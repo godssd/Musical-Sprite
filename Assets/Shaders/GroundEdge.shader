@@ -84,6 +84,7 @@ Shader "MusicalSprite/GroundEdge"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "WorldSeamDissolve.hlsl"
 
             struct Attributes
             {
@@ -307,8 +308,7 @@ Shader "MusicalSprite/GroundEdge"
                     float4 redMap  = SAMPLE_TEXTURE2D(_RedMap, sampler_RedMap, groundUV);
                     float4 blueMap = SAMPLE_TEXTURE2D(_BlueMap, sampler_BlueMap, groundUV);
 
-                    float halfBlend = max(0.0001, _CenterBlend * 0.5);
-                    float redWeight = 1.0 - smoothstep(_CenterLineX - halfBlend, _CenterLineX + halfBlend, worldXZ.x);
+                    float redWeight = WorldSeamRedWeight(WorldSeamDistance(worldPos));
                     groundCol = lerp(blueMap.rgb, redMap.rgb, redWeight) * _BaseColor.rgb;
 
                     // Distance from the original inner boundary (negative inside, positive outside).
@@ -427,6 +427,14 @@ Shader "MusicalSprite/GroundEdge"
                     float aB = saturate(1.0 - dB / max(0.0001, _ShockGlowParamsBlue.w));
                     aB = aB * aB;
                     finalCol += _ShockGlowColorBlue.rgb * (aB * _ShockGlowStrengths.y);
+                }
+
+                if (_ShapeMode < 0.5)
+                {
+                    float seamDistance = WorldSeamDistance(worldPos);
+                    float3 edgeColor = seamDistance < 0.0
+                        ? _WorldSeamEdgeColorA.rgb : _WorldSeamEdgeColorB.rgb;
+                    finalCol = lerp(finalCol, edgeColor, WorldSeamEdge(seamDistance));
                 }
 
                 return float4(finalCol, 1.0);

@@ -56,6 +56,18 @@ public class BattleCenterLine : MonoBehaviour
     [Tooltip("场地总宽度（从 -X 到 +X）")]
     public float arenaTotalWidth = 16f;
 
+    [Header("A/B 资产溶解过渡")]
+    [Tooltip("VFX Texture Lab 制作的可平铺灰度遮罩；地面和场景件共用")]
+    public Texture2D seamDissolveMask;
+
+    [Min(0.01f)] public float seamMaskScale = 0.28f;
+    [Min(0f)] public float seamNoiseWidth = 0.85f;
+    [Min(0.001f)] public float seamFeather = 0.025f;
+    [Min(0.001f)] public float seamEdgeWidth = 0.13f;
+    [Range(0f, 1f)] public float seamEdgeStrength = 0.55f;
+    public Color seamEdgeColorA = new Color(1f, 0.48f, 0.18f, 1f);
+    public Color seamEdgeColorB = new Color(0.22f, 0.72f, 1f, 1f);
+
     [Header("只读状态")]
     [SerializeField] private float _currentX;
 
@@ -125,6 +137,20 @@ public class BattleCenterLine : MonoBehaviour
     /// </summary>
     private void UpdateGroundArea()
     {
+        // 场景件与地面使用同一帧、同一条世界坐标中缝。
+        Shader.SetGlobalFloat("_WorldSeamX", _currentX);
+        float blend = groundMaterial != null && groundMaterial.HasProperty("_CenterBlend")
+            ? groundMaterial.GetFloat("_CenterBlend") : 0.15f;
+        Shader.SetGlobalFloat("_WorldSeamBlend", blend);
+        Shader.SetGlobalTexture("_WorldSeamDissolveTex",
+            seamDissolveMask != null ? seamDissolveMask : Texture2D.grayTexture);
+        Shader.SetGlobalFloat("_WorldSeamMaskScale", seamMaskScale);
+        Shader.SetGlobalFloat("_WorldSeamNoiseWidth", seamNoiseWidth);
+        Shader.SetGlobalFloat("_WorldSeamFeather", seamFeather);
+        Shader.SetGlobalFloat("_WorldSeamEdgeWidth", seamEdgeWidth);
+        Shader.SetGlobalFloat("_WorldSeamEdgeStrength", seamEdgeStrength);
+        Shader.SetGlobalColor("_WorldSeamEdgeColorA", seamEdgeColorA);
+        Shader.SetGlobalColor("_WorldSeamEdgeColorB", seamEdgeColorB);
         // 新方案：直接把粉杠 X 传给单块地面材质 + 草丛流苏材质
         if (groundMaterial != null)
         {

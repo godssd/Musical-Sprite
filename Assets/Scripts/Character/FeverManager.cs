@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using MusicalSprite.Terrain;
 
 /// <summary>
 /// 过热（Fever / Super Fever）运行时管理器。
@@ -137,10 +138,15 @@ public class FeverManager : MonoBehaviour
 
     private void EnsureFeverBanner()
     {
+        // 场景已配置新三层图片布景时，不再自动叠出旧的山峦线条。
+        var scenery = FindObjectsByType<FeverSceneryController>(FindObjectsSortMode.None);
         // 每侧一座山峦涂鸦：side=0 在场地左中线上空，side=1 在右中线上空
         var existing = FindObjectsByType<FeverBanner>(FindObjectsSortMode.None);
         for (int s = 0; s < 2; s++)
         {
+            bool hasScenery = false;
+            foreach (var layer in scenery) { if (layer != null && layer.side == s) { hasScenery = true; break; } }
+            if (hasScenery) continue;
             bool sideExists = false;
             foreach (var b in existing) { if (b != null && b.side == s) { sideExists = true; break; } }
             if (sideExists) continue;

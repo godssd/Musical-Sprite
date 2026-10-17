@@ -1,0 +1,562 @@
+using UnityEngine;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
+
+/// <summary>
+/// VFX 沙盒构建器：在独立空场景里重建与游戏场景一致的冲击波效果，便于安全调特效，绝不修改 SampleScene。
+/// 用法（Unity 菜单）：
+///   1) VFX/1) Import Stylized Explosion Pack —— 导入你下载的卡通爆炸参考包（非交互导入）。
+///   2) VFX/2) Build Sandbox Scene        —— 从游戏场景实例化 冲击波(两堵墙+ShockwavePreview+ShockwaveVFX) 进空场景，
+///                                           加相机/灯光/拖尾组件，并把沙盒驱动打开（用滑块调 f 与前進），存为 VFXSandbox.unity。
+///   3) VFX/3) 打开参考爆炸演示场景       —— 直接打开参考包自带的投弹爆炸演示（StylizedExplosionPack1_ThrowBombs_mobile），看全套卡通爆炸效果。
+///   4) VFX/4) 在沙盒放置参考爆炸(循环)   —— 把参考包里 URP 安全的 mobile 红爆炸放进当前场景（建议 VFXSandbox），并设为循环播放，杜绝“只播一次”与 magenta。
+///   5) VFX/5) 在沙盒放置炸弹特效(循环) —— 把炸弹拆成两个独立循环特效放進沙盒：
+///                                           ① BombGlow（发光占位体 + 环绕光晕，原地循环，无抛物线弹道，弹道进游戏再做）；
+///                                           ② BombExplosion（loop=true，持续循环爆炸）。
+///                                           进 Play 即自动持续循环，方便反复观察这两个拆出的特效。
+///                                           执行时会自动把参考包的贴图/模型填进 BombExplosion 的素材槽，
+///                                           做到与参考 prefab 1:1 复刻（12 层：Mesh 火舌/碎片/扩散环 + Billboard 焰心/烟 + Stretch 火苗）。
+///                                           （BombThrow 仍保留用于游戏内真实弹道投掷，不在沙盒测试里用固定弹道。）
+/// 构建器通过 EditorSceneManager 打开游戏场景(Additive,只读不存)→ 实例化 → 新建空场景 → 把实例移入 → 存盘 → 关掉游戏场景(不存)。
+/// 所有跨对象引用（VFX→Preview）在实例化后重定向，内嵌材质随实例克隆，安全。
+/// </summary>
+public static class VFXSandboxBuilder
+{
+    const string GameScenePath = "Assets/Scenes/SampleScene.unity";
+    const string OutScenePath  = "Assets/Scenes/VFXSandbox.unity";
+    const string PackPath = @"D:\unity\plan go\Stylized Explosion Pack 1 v1.74.unitypackage";
+
+    /// <summary>生成一个程序化的 soft-dot 灰度贴图，作为 Default-Particle.png 找不到时的兜底。</summary>
+    private static Texture2D MakeFallbackTexture()
+    {
+        const int size = 64;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.hideFlags = HideFlags.DontSave;
+        var px = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float u = (x / (float)(size - 1)) * 2f - 1f;
+                float v = (y / (float)(size - 1)) * 2f - 1f;
+                float r = Mathf.Sqrt(u * u + v * v);
+                float a = Mathf.Clamp01(1f - r);
+                a = Mathf.Pow(a, 2f);
+                int idx = y * size + x;
+                px[idx] = new Color(1f, 1f, 1f, a);
+            }
+        }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
+    }
+
+    [MenuItem("VFX/1) Import Stylized Explosion Pack")]
+    static void ImportPack()
+    {
+        try
+        {
+            if (!System.IO.File.Exists(PackPath))
+            {
+                EditorUtility.DisplayDialog("VFX Sandbox", "找不到参考包：\n" + PackPath, "OK");
+                return;
+            }
+            AssetDatabase.ImportPackage(PackPath, false);
+            AssetDatabase.Refresh();
+            EditorUtility.DisplayDialog("VFX Sandbox",
+                "参考包已导入（非交互）。\n请在 Project 中查看，并把想要的 prefab 拖进 VFXSandbox 场景做风格参照。",
+                "OK");
+        }
+        catch (System.Exception e)
+        {
+            EditorUtility.DisplayDialog("VFX Sandbox", "导入失败：\n" + e.Message, "OK");
+        }
+    }
+
+    [MenuItem("VFX/3) 打开参考爆炸演示场景")]
+    static void OpenReferenceDemo()
+    {
+        const string demoPath =
+            "Assets/EffectCore/packs/StylizedExplosionPack1/scenes/StylizedExplosionPack1_ThrowBombs_mobile.unity";
+        var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(demoPath);
+        if (sceneAsset == null)
+        {
+            EditorUtility.DisplayDialog("VFX Sandbox",
+                "找不到参考演示场景，请先执行 1) Import Stylized Explosion Pack。", "OK");
+            return;
+        }
+        // 打开参考包自带的投弹爆炸演示（会新增一个场景 tab，可手动关掉 VFXSandbox 的 tab）
+        EditorSceneManager.OpenScene(demoPath);
+    }
+
+    [MenuItem("VFX/4) 在沙盒放置参考爆炸(循环)")]
+    static void PlaceReferenceExplosionLoop()
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (string.IsNullOrEmpty(scene.path))
+        {
+            EditorUtility.DisplayDialog("VFX Sandbox", "请先打开 VFXSandbox.unity（或任意场景）再执行此菜单。", "OK");
+            return;
+        }
+
+        // 先移除上一次放置的参考爆炸，避免重复堆叠
+        foreach (var go in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            if (go.name.StartsWith("ReferenceExplosion")) Object.DestroyImmediate(go);
+        }
+
+        // 选 mobile 红爆炸：URP 安全（内置 Particles/Additive，不用 ShaderGraph，避免 magenta）
+        var guids = AssetDatabase.FindAssets("explosionMobile_stylized_small_originalFire t:Prefab");
+        if (guids.Length == 0)
+        {
+            EditorUtility.DisplayDialog("VFX Sandbox",
+                "找不到 mobile 参考爆炸预制体，请先执行 1) Import Stylized Explosion Pack。", "OK");
+            return;
+        }
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guids[0]));
+        if (prefab == null) return;
+
+        var inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
+        inst.name = "ReferenceExplosion_" + prefab.name;
+        inst.transform.position = new Vector3(6f, 0.5f, 0f);   // 放在自制爆炸(BombExplosionTest, x=2)更右侧，拉开距离便于同屏对比
+
+        // ⛔ 关键：参考包 prefab 上挂了自带的自毁脚本 ECdestroyMe（deathtimer=5），
+        //    播几次后就会 Destroy(gameObject) 让整个对象消失。沙盒里要持续观察，必须先把它摘掉。
+        foreach (var comp in inst.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            if (comp == null) continue;
+            string typeName = comp.GetType().Name;
+            if (typeName == "ECdestroyMe")
+            {
+                Object.DestroyImmediate(comp);
+                Debug.Log("[VFX Sandbox] 已移除参考爆炸自带的自毁脚本 ECdestroyMe，现在可持续循环观看。");
+            }
+        }
+
+        // 让所有粒子系统循环播放，方便反复观察（不再“只播一次”）
+        // 注意：prefab 默认 playOnAwake=1，实例化后可能已经开始播放；先全部 Clear Stop，再统一设 loop，最后统一 Play，确保从干净状态开始循环。
+        foreach (var ps in inst.GetComponentsInChildren<ParticleSystem>(true))
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        foreach (var ps in inst.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            var main = ps.main;
+            main.loop = true;
+            main.playOnAwake = true;
+        }
+
+        foreach (var ps in inst.GetComponentsInChildren<ParticleSystem>(true))
+            ps.Play(true);
+
+        // 保险：挂一个强制循环器。参考包 main.loop 实测播 1~2 次后 burst 就不再触发，
+        // 所以额外用定时器到点强制 Stop→Play 重启，保证能一直看。
+        var looper = inst.GetComponent<ReferenceExplosionLooper>();
+        if (looper == null) looper = inst.AddComponent<ReferenceExplosionLooper>();
+        looper.loopInterval = 4.0f;
+
+        // 安全网：把任何可能 magenta 的材质（ShaderGraph/Standard/Hidden/旧 Built-in）自动换成 URP 加法材质并保住原贴图/颜色，杜绝粉块
+        // 注意：不调用 AssetDatabase.GetBuiltinExtraResource("Default-Particle.png")，该 API 在某些项目/版本下会打印 error log。
+        var fallbackTex = MakeFallbackTexture();
+
+        foreach (var r in inst.GetComponentsInChildren<ParticleSystemRenderer>(true))
+        {
+            var mats = r.sharedMaterials;
+            bool changed = false;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                var m = mats[i];
+                if (!NeedsMaterialFallback(m)) continue;
+
+                var safe = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+                safe.SetFloat("_Surface", 1f);   // Transparent
+                safe.SetFloat("_Blend", 2f);     // Additive
+                safe.SetFloat("_SrcBlend", 5f);  // SrcAlpha
+                safe.SetFloat("_DstBlend", 1f);  // One
+                safe.SetFloat("_ZWrite", 0f);
+                safe.SetFloat("_ColorMode", 1f); // Additive color (matches old Particles/Additive)
+                safe.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                safe.EnableKeyword("_BLENDMODE_ADD");
+                safe.EnableKeyword("_COLORADDSUBDIFF_ON");
+
+                // 尽量保住原贴图
+                Texture tex = null;
+                if (m != null)
+                {
+                    if (m.HasProperty("_BaseMap")) tex = m.GetTexture("_BaseMap");
+                    if (tex == null && m.HasProperty("_MainTex")) tex = m.GetTexture("_MainTex");
+                    if (tex == null && m.HasProperty("_Texture_shadergraph")) tex = m.GetTexture("_Texture_shadergraph");
+                    if (tex == null) tex = m.mainTexture;
+                }
+                safe.SetTexture("_BaseMap", tex != null ? tex : fallbackTex);
+
+                // 尽量保住原颜色；旧 Built-in 加法材质常用 _TintColor，ShaderGraph 版常用 _Color_shadergraph
+                Color c = new Color(1f, 0.6f, 0.3f, 1f);
+                if (m != null)
+                {
+                    if (m.HasProperty("_BaseColor")) c = m.GetColor("_BaseColor");
+                    else if (m.HasProperty("_TintColor")) c = m.GetColor("_TintColor");
+                    else if (m.HasProperty("_Color")) c = m.GetColor("_Color");
+                    else if (m.HasProperty("_Color_shadergraph")) c = m.GetColor("_Color_shadergraph");
+                }
+                safe.SetColor("_BaseColor", c);
+
+                mats[i] = safe;
+                changed = true;
+            }
+            if (changed) r.sharedMaterials = mats;
+        }
+
+        EditorUtility.DisplayDialog("VFX Sandbox",
+            "已在场景右侧放置参考爆炸（mobile 红，已设为循环播放）。\n" +
+            "进 Play 即可反复观看；也可在 Scene 视图选中它后点左上角粒子 ▶ 在编辑态预览。\n" +
+            "想换位置直接在 Scene 视图拖动；再执行一次此菜单会替换旧的那份。", "OK");
+    }
+
+    [MenuItem("VFX/5) 在沙盒放置炸弹特效(循环)")]
+    static void PlaceBombEffectsLoop()
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (string.IsNullOrEmpty(scene.path))
+        {
+            EditorUtility.DisplayDialog("VFX Sandbox", "请先打开 VFXSandbox.unity（或任意场景）再执行此菜单。", "OK");
+            return;
+        }
+
+        // 移除上一次放置的炸弹特效体，避免重复堆叠
+        foreach (var old in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            if (old.name.StartsWith("BombGlowTest") || old.name.StartsWith("BombExplosionTest"))
+                Object.DestroyImmediate(old);
+        }
+
+        // ① BombGlow：发光占位体 + 环绕光晕，原地循环（不做弹道）
+        var glowGO = new GameObject("BombGlowTest");
+        var glow = glowGO.AddComponent<BombGlow>();
+        glowGO.transform.position = new Vector3(-2f, 0.5f, 0f);   // 放在红墙左侧，相机明显可见
+        glow.autoLoopOnStart = true;
+
+        // ② BombExplosion：持续循环爆炸（loop=true）
+        //    间隔对齐参考包整套时长：参考的 decal 寿命 3.0s、circularSmoke 2.0s，
+        //    间隔太短会让上一轮的烟还没结束就叠上下一轮，画面长期被烟占据（发灰）。
+        var exGO = new GameObject("BombExplosionTest");
+        var ex = exGO.AddComponent<BombExplosion>();
+        exGO.transform.position = new Vector3(2f, 0.5f, 0f);      // 放在参考爆炸(x=6,y=0.5)左侧，同高度便于逐帧对比
+        ex.loop = true;
+        ex.loopInterval = 3.0f;
+        ex.aimMode = 0;                                           // 俯视锁视角：用参考 −90° 水平扩散，避免烟柱朝天
+
+        // 自动填入参考包素材（贴图 + 模型），实现 1:1 复刻观感
+        string missing = AssignReferenceAssets(ex);
+
+        Undo.RegisterCreatedObjectUndo(glowGO, "Place Bomb Effects");
+        Undo.RegisterCreatedObjectUndo(exGO, "Place Bomb Effects");
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        EditorUtility.DisplayDialog("VFX Sandbox",
+            "已放置两个拆分的炸弹特效（均进 Play 自动持续循环）：\n" +
+            "• BombGlowTest —— 发光占位体 + 环绕光晕，原地循环（无弹道；弹道进游戏再做）。\n" +
+            "• BombExplosionTest —— 持续循环爆炸（已按参考包 1:1 复刻 12 层）。\n\n" +
+            "参考素材装载情况：" + (missing.Length == 0 ? "全部成功" : "缺失 → " + missing) + "\n\n" +
+            "想做同屏对比：再执行 VFX/4) 在沙盒放置参考爆炸(循环)，参考会放在更右侧。\n" +
+            "素材就绪后把自绘贴图/模型拖到 BombExplosion 的素材槽即可替换参考素材。", "OK");
+    }
+
+    // ---- 参考包素材路径（仅用于沙盒验证期；最终替换为自绘素材） ----
+    const string RefTexDir = "Assets/EffectCore/packs/StylizedExplosionPack1/textures/";
+    const string RefModelDir = "Assets/EffectCore/models/";
+
+    /// <summary>把参考包的贴图 / 模型填进 BombExplosion 的素材槽，返回缺失清单。</summary>
+    static string AssignReferenceAssets(BombExplosion ex)
+    {
+        var missing = new System.Collections.Generic.List<string>();
+
+        ex.texFire = LoadTex(RefTexDir + "fire.psd", "fire.psd", missing);
+        ex.texSmoke = LoadTex(RefTexDir + "smoke_d.psd", "smoke_d.psd", missing);
+        ex.texCircle = LoadTex(RefTexDir + "circle.psd", "circle.psd", missing);
+        ex.texFlareSpark = LoadTex(RefTexDir + "flarespark.psd", "flarespark.psd", missing);
+        ex.texDecal = LoadTex(RefTexDir + "explodedecal.psd", "explodedecal.psd", missing);
+
+        ex.meshCone = LoadMesh(RefModelDir + "cone.obj", "cone.obj", missing);
+        ex.meshQuad4Point = LoadMesh(RefModelDir + "quad4point.obj", "quad4point.obj", missing);
+        ex.meshScrap = LoadMesh(RefModelDir + "scrap.obj", "scrap.obj", missing);
+
+        return string.Join("、", missing);
+    }
+
+    static Texture2D LoadTex(string path, string label,
+        System.Collections.Generic.List<string> missing)
+    {
+        var a = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (a == null) { missing.Add(label); return null; }
+        return a;
+    }
+
+    static Mesh LoadMesh(string path, string label,
+        System.Collections.Generic.List<string> missing)
+    {
+        // Unity 导入 obj 后 mesh 是主资源，用 LoadMainAssetAtPath 更稳
+        var a = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+        if (a == null) a = AssetDatabase.LoadMainAssetAtPath(path) as Mesh;
+        if (a == null) { missing.Add(label); return null; }
+        return a;
+    }
+
+    [MenuItem("VFX/2) Build Sandbox Scene")]
+    static void Build()
+    {
+        try
+        {
+            var active = EditorSceneManager.GetActiveScene();
+            // 记下构建前已打开的场景路径，构建后只关闭「本次新打开 / 重建」的场景，用户原本打开的场景一律不动（避免误关丢失未保存工作）
+            var preOpened = new System.Collections.Generic.HashSet<string>();
+            for (int i = 0; i < EditorSceneManager.sceneCount; i++)
+                preOpened.Add(EditorSceneManager.GetSceneAt(i).path);
+            Scene gameScene;
+            bool openedAdditive = false;
+            if (active != null && active.path == GameScenePath)
+            {
+                gameScene = active;
+            }
+            else
+            {
+                gameScene = EditorSceneManager.OpenScene(GameScenePath, OpenSceneMode.Additive);
+                openedAdditive = true;
+            }
+
+            var previewGO = GameObject.Find("ShockwavePreview");
+            var vfxGO = GameObject.Find("ShockwaveVFX");
+            if (previewGO == null || vfxGO == null)
+            {
+                EditorUtility.DisplayDialog("VFX Sandbox", "在游戏场景里找不到 ShockwavePreview / ShockwaveVFX。", "OK");
+                if (openedAdditive) EditorSceneManager.CloseScene(gameScene, false);
+                return;
+            }
+
+            // 实例化（保留内部引用与内嵌材质）；RedWall/BlueWall 是 Preview 的子物体，一并克隆
+            var previewInst = Object.Instantiate(previewGO);
+            var vfxInst = Object.Instantiate(vfxGO);
+            // 重定向 VFX → 新 Preview（VFX 只通过 preview 字段引用墙）
+            var vfxComp = vfxInst.GetComponent<ShockwaveVFX>();
+            if (vfxComp != null)
+            {
+                var pPreview = previewInst.GetComponent<ShockwavePreview>();
+                vfxComp.preview = pPreview;
+                // 告知 Preview 已有一个 VFX，避免运行时 EnsureVFX 再自动创建一个重复 VFX 组件
+                if (pPreview != null) pPreview.vfx = vfxComp;
+            }
+
+            // 新建空场景（Additive），设为 active，再把实例移入
+            var newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            EditorSceneManager.SetActiveScene(newScene);
+            EditorSceneManager.MoveGameObjectToScene(previewInst, newScene);
+            EditorSceneManager.MoveGameObjectToScene(vfxInst, newScene);
+
+            AddCameraAndLight(newScene);
+
+            // 沙盒驱动：直接用滑块驱动，便于调特效（绝不影响对局逻辑）
+            var pInst = previewInst.GetComponent<ShockwavePreview>();
+if (pInst != null) pInst.sandboxMode = true;
+
+            // 拖尾组件（挂在 Preview 上，自动取到 preview 引用）
+            previewInst.AddComponent<ShockwaveTrail>();
+
+            // ★沙盒专属材质：把冲击波墙材质克隆到沙盒目录再赋值。
+            //   ⛔ 不这么做的话，编辑态 ShockwavePreview 写 sharedMaterial 会直接改到主场景共用的 .mat，污染 SampleScene。
+            CloneSandboxWallMaterials(previewInst);
+
+            // 若目标场景已被打开（旧实例），先关掉它，避免保存新实例到同一路径时冲突
+            for (int i = EditorSceneManager.sceneCount - 1; i >= 0; i--)
+            {
+                var s = EditorSceneManager.GetSceneAt(i);
+                if (s != newScene && s.path == OutScenePath) EditorSceneManager.CloseScene(s, true);
+            }
+
+            EditorSceneManager.SaveScene(newScene, OutScenePath);
+
+            // 只关闭「本次新打开的游戏场景」（即构建前没开着的）；用户原本就打开的场景（含原本就开着的 SampleScene）一律不动
+            if (openedAdditive && !preOpened.Contains(GameScenePath))
+                EditorSceneManager.CloseScene(gameScene, false);
+
+            EditorUtility.DisplayDialog("VFX Sandbox",
+                "已生成 VFXSandbox.unity（含 冲击波 + 拖尾 + 飘散；相机已对齐游戏锁视角）。\n" +
+                "编辑态即可在 Scene 视图拖 ShockwavePreview.sandboxAdvance / sandboxOffset 实时看墙放大与拖尾变化（无需进 Play）；\n" +
+                "粒子（火花/飘散）仍需进 Play。你原本打开的场景保持不变，仅关闭了本次新打开的游戏场景。",
+                "OK");
+        }
+        catch (System.Exception e)
+        {
+            EditorUtility.DisplayDialog("VFX Sandbox", "构建失败：\n" + e.Message + "\n" + e.StackTrace, "OK");
+        }
+    }
+
+    // ====================================================================
+    // 沙盒专属材质 + P3「流体 / 溶解」实验预设
+    // ====================================================================
+    const string SandboxMatFolder = "Assets/Scenes/VFXSandbox_Materials";
+
+    /// <summary>
+    /// 把冲击波墙材质（Shader = MusicalSprite/ShockwaveUnlit）克隆到沙盒专属目录并赋给沙盒实例。
+    /// ⛔ 背景：ShockwavePreview 编辑态用 sharedMaterial 写参数；若沙盒与主场景共用同一个 .mat，
+    ///    在沙盒里调参会直接落盘到主场景材质 —— 这一步就是为杜绝这种污染。
+    /// </summary>
+    static void CloneSandboxWallMaterials(GameObject root)
+    {
+        if (!AssetDatabase.IsValidFolder(SandboxMatFolder))
+            AssetDatabase.CreateFolder("Assets/Scenes", "VFXSandbox_Materials");
+
+        int idx = 0;
+        foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+        {
+            var mats = r.sharedMaterials;
+            bool changed = false;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                var m = mats[i];
+                if (m == null || m.shader == null) continue;
+                if (m.shader.name != "MusicalSprite/ShockwaveUnlit") continue;
+                var clone = GetOrCreateSandboxMaterial(m, SanitizeFileName(m.name) + "_Sandbox" + idx);
+                idx++;
+                if (clone != null) { mats[i] = clone; changed = true; }
+            }
+            if (changed) r.sharedMaterials = mats;
+        }
+    }
+
+    static Material GetOrCreateSandboxMaterial(Material src, string baseName)
+    {
+        string path = SandboxMatFolder + "/" + baseName + ".mat";
+        var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (existing != null) return existing;          // 已存在：保留用户在沙盒里调过的参数
+        var clone = new Material(src);
+        AssetDatabase.CreateAsset(clone, path);
+        AssetDatabase.SaveAssets();
+        return clone;
+    }
+
+    static string SanitizeFileName(string s)
+    {
+        var bad = new[] { '/', '\\', ':', '*', '?', '"', '<', '>', '|', ' ' };
+        foreach (var c in bad) s = s.Replace(c.ToString(), "_");
+        return string.IsNullOrEmpty(s) ? "Mat" : s;
+    }
+
+    [MenuItem("VFX/6) 冲击波：流体+溶解 实验预设")]
+    static void ApplyShockwaveFlowPreset()
+    {
+        var preview = Object.FindFirstObjectByType<ShockwavePreview>();
+        if (preview == null)
+        {
+            EditorUtility.DisplayDialog("VFX Sandbox", "当前场景里没有 ShockwavePreview。请先跑 VFX/2) Build Sandbox Scene。", "OK");
+            return;
+        }
+
+        // 先确保用的是沙盒克隆材质，绝不会写回主场景
+        CloneSandboxWallMaterials(preview.gameObject);
+
+        int n = 0;
+        foreach (var r in preview.GetComponentsInChildren<Renderer>(true))
+        {
+            foreach (var m in r.sharedMaterials)
+            {
+                if (m == null || m.shader == null || m.shader.name != "MusicalSprite/ShockwaveUnlit") continue;
+
+                // ---- 表面流体（分形杂色 + 漩涡 + 上下拉长 + 向下滚动）----
+                m.SetFloat("_FlowAmount", 0.75f);
+                m.SetFloat("_FlowScale", 3f);
+                m.SetFloat("_FlowSpeed", 0.35f);
+                m.SetFloat("_FlowWarp", 0.9f);
+                m.SetFloat("_FlowDetail", 0.6f);
+                m.SetFloat("_FlowColorAmt", 0.65f);
+                m.SetFloat("_FlowAlphaAmt", 0.80f);
+                m.SetFloat("_FlowStretchX", 1.0f);
+                m.SetFloat("_FlowStretchY", 4.0f);
+                m.SetFloat("_FlowSwirl", 0.7f);
+                m.SetVector("_FlowScrollDir", new Vector4(0f, -1f, 0f, 0f));
+
+                // ---- 尾部溶解（同源的漩涡分形杂色作为柔和侵蚀图）----
+                m.SetFloat("_DissolveAmount", 0.55f);
+                m.SetFloat("_DissolvePoint", 0.18f);
+                m.SetFloat("_DissolveWidth", 0.22f);
+                m.SetFloat("_DissolveEdge", 0.06f);
+                m.SetFloat("_DissolveScale", 4f);
+                m.SetFloat("_DissolveSpeed", 0.15f);
+                m.SetFloat("_DissolveStretchX", 1.0f);
+                m.SetFloat("_DissolveStretchY", 4.0f);
+                m.SetFloat("_DissolveSwirl", 0.7f);
+                m.SetVector("_DissolveScrollDir", new Vector4(0f, -1f, 0f, 0f));
+                m.SetFloat("_DissolveEdgeIntensity", 0.8f);
+                m.SetColor("_DissolveEdgeColor", new Color(1.6f, 0.9f, 0.6f, 1f));
+
+                EditorUtility.SetDirty(m);
+                n++;
+            }
+        }
+
+        // ---- 拖尾流体 ----
+        var trail = preview.GetComponent<ShockwaveTrail>();
+        if (trail == null) trail = preview.gameObject.AddComponent<ShockwaveTrail>();
+        trail.trailSegments = 12;
+        trail.trailFalloffPower = 1.6f;
+        trail.trailFlowAmount = 0.8f;
+        trail.trailFlowScale = 4f;
+        trail.trailFlowSpeed = 0.5f;
+        trail.trailFlowWarp = 0.9f;
+        trail.trailFlowDetail = 0.5f;
+        trail.trailFlowColorAmt = 0.65f;
+        trail.trailFlowAlphaAmt = 0.80f;
+        trail.trailFlowStretchX = 1.0f;
+        trail.trailFlowStretchY = 4.0f;
+        trail.trailFlowSwirl = 0.7f;
+        trail.trailFlowScrollDir = new Vector2(1f, 0f);
+        EditorUtility.SetDirty(trail);
+
+        AssetDatabase.SaveAssets();
+        EditorSceneManager.MarkSceneDirty(preview.gameObject.scene);
+
+        EditorUtility.DisplayDialog("VFX Sandbox",
+            $"已把「流体 + 溶解」实验预设写到 {n} 个墙材质 + 拖尾（材质均为沙盒克隆版，不会污染主场景）。\n\n" +
+            "墙：_FlowAmount 0.75 / 向下滚动 / 上下拉长 _FlowStretchY 4\n" +
+            "拖尾：trailFlowAmount 0.8 / 沿长度方向(+X)扩散 / 上下拉长 trailFlowStretchY 4\n\n" +
+            "想对比原效果：把墙材质的 _FlowAmount 与 _DissolveAmount 调回 0；\n" +
+            "想只留流体：把 _DissolveAmount 调 0；想只留溶解：把 _FlowAmount 调 0。\n" +
+            "编辑态拖 ShockwavePreview.sandboxAdvance 即可看墙放大后的效果（无需进 Play）。",
+            "OK");
+    }
+
+    static void AddCameraAndLight(Scene scene)
+    {
+        // 相机对齐游戏锁视角（取自 SampleScene 的 Main Camera）：位置/旋转/FOV 一致，一打开就和游戏里看冲击波的角度相同
+        var cam = new GameObject("Main Camera");
+        var c = cam.AddComponent<Camera>();
+        c.transform.position = new Vector3(0f, 10.3f, -2.8f);
+        c.transform.rotation = Quaternion.Euler(62f, 0f, 0f);
+        c.fieldOfView = 50f;
+        c.nearClipPlane = 0.3f;
+        c.farClipPlane = 1000f;
+        c.backgroundColor = new Color(0.15f, 0.15f, 0.15f);
+        SceneManager.MoveGameObjectToScene(cam, scene);
+
+        var light = new GameObject("Directional Light");
+        var l = light.AddComponent<Light>();
+        l.type = LightType.Directional;
+        l.transform.position = new Vector3(0f, 10f, 0f);
+        l.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+        SceneManager.MoveGameObjectToScene(light, scene);
+    }
+
+    /// <summary>判断材质是否需要被替换成 URP 加法材质，避免 magenta。</summary>
+    private static bool NeedsMaterialFallback(Material m)
+    {
+        if (m == null) return true;
+        if (m.shader == null) return true;
+        string n = m.shader.name;
+        if (string.IsNullOrEmpty(n)) return true;
+        if (n.Contains("Hidden")) return true;                 // Hidden/InternalErrorShader 等编译失败产物
+        if (n.Contains("ShaderGraph") || n.Contains("Shader Graph")) return true; // 老 ShaderGraph 在 Unity 6 常编译失败
+        if (n.Contains("Standard")) return true;               // Built-in Standard 在 URP 下品红
+        if (n.StartsWith("Particles/")) return true;           // Built-in 粒子 shader 在 URP 下通常品红
+        if (n.StartsWith("Mobile/Particles/")) return true;    // 同上
+        return false;
+    }
+}
