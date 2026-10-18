@@ -150,6 +150,17 @@ public class HoldNote : MonoBehaviour
     private List<Mesh> bandOverlayMeshes = new List<Mesh>();   // select 覆盖带：跟随进度线从链头渐覆到进度点
     private List<Material> bandOverlayMats = new List<Material>();
     private List<MeshRenderer> bandOverlayRends = new List<MeshRenderer>();
+    private sealed class RibbonBuffers
+    {
+        public Vector3[] vertices;
+        public Vector2[] uvs;
+        public Color[] colors;
+        public Vector3[] normals;
+        public int[] triangles;
+    }
+    private readonly Dictionary<Mesh, RibbonBuffers> ribbonBuffers = new Dictionary<Mesh, RibbonBuffers>();
+    private Vector3[] rawNodePositions;
+    private float[] cumulativeBandLengths;
     // P3 附魔换皮：每段带子的贴图覆盖表（null=基础贴图）。UpdateBands 每帧会重设贴图，
     // 所以附魔换皮必须走覆盖表，由每帧刷新时读取，而不是只 Set 一次（会被冲掉）。
     private List<Texture2D> bandTexOverrides = new List<Texture2D>();          // base 带：附魔态=Note_Slide_Link 皮肤
@@ -477,6 +488,8 @@ public class HoldNote : MonoBehaviour
             times = new float[] { 0f, 1f };
         }
         nodeCount = lanes.Length;
+        rawNodePositions = new Vector3[nodeCount];
+        cumulativeBandLengths = new float[nodeCount];
         nodeBaseScales = new Vector3[nodeCount];
         nodePop = new float[nodeCount];
         nodeShrinkStart = new float[nodeCount];
@@ -538,6 +551,7 @@ public class HoldNote : MonoBehaviour
             go.transform.SetParent(transform, false);
             var mf = go.AddComponent<MeshFilter>();
             var mesh = new Mesh();
+            mesh.MarkDynamic();
             mf.mesh = mesh;
             var rend = go.AddComponent<MeshRenderer>();
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -554,6 +568,7 @@ public class HoldNote : MonoBehaviour
             ogo.transform.SetParent(transform, false);
             var omf = ogo.AddComponent<MeshFilter>();
             var omesh = new Mesh();
+            omesh.MarkDynamic();
             omf.mesh = omesh;
             var orend = ogo.AddComponent<MeshRenderer>();
             orend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -858,10 +873,10 @@ public class HoldNote : MonoBehaviour
         float wA = BandWidth(s) * bandWidthScale * shrinkFactor, wB = BandWidth(s + 1) * bandWidthScale * shrinkFactor; // shrinkFactor：miss 残留/清屏整体缩小
         bool flip = b.x >= a.x;
         float tileWorld = Mathf.Max(0.0001f, (wA + wB) * 0.5f); // G5：每"一格带宽"平铺一次，保持纵横比不变形
-        int vCount = (M + 1) * 2;
-        Vector3[] verts = new Vector3[vCount];
-        Vector2[] uvs = new Vector2[vCount];
-        Color[] cols = new Color[vCount];
+        RibbonBuffers buffers = GetRibbonBuffers(mesh, M);
+        Vector3[] verts = buffers.vertices;
+        Vector2[] uvs = buffers.uvs;
+        Color[] cols = buffers.colors;
         for (int i = 0; i <= M; i++)
         {
             float u = u0 + (u1 - u0) * (i / (float)M);
@@ -889,15 +904,8 @@ public class HoldNote : MonoBehaviour
             cols[2 * i] = new Color(bf, bf, bf, 1f);
             cols[2 * i + 1] = new Color(bf, bf, bf, 1f);
         }
-        int[] tris = new int[M * 6];
-        for (int i = 0; i < M; i++)
-        {
-            int o = i * 6;
-            int i0 = 2 * i, i1 = 2 * i + 1, i2 = 2 * i + 2, i3 = 2 * i + 3;
-            tris[o] = i0; tris[o + 1] = i1; tris[o + 2] = i2;
-            tris[o + 3] = i2; tris[o + 4] = i1; tris[o + 5] = i3;
-        }
-        mesh.Clear();
+        int[] tris = buffers.triangles;
+        mesh.Clear(false);
         // ② 带子顶点在世界坐标构建，但 band GO 挂在根 transform 下、mesh 顶点是局部坐标，
         // 渲染时会被根再平移一次 => 带子相对节点/粉杠"恒偏"。此处统一转成根局部坐标，消除双重偏移。
         // 根在原点(identity)时为恒等变换，零副作用；根有平移时彻底对齐节点与粉杠。
@@ -913,8 +921,35 @@ public class HoldNote : MonoBehaviour
         mesh.vertices = verts;
         mesh.uv = uvs;
         mesh.colors = cols;
+        Vector3 normal = flip ? Vector3.down : Vector3.up;
+        for (int i = 0; i < buffers.normals.Length; i++) buffers.normals[i] = normal;
+        mesh.normals = buffers.normals;
         mesh.triangles = tris;
-        mesh.RecalculateNormals();
+    }
+
+    private RibbonBuffers GetRibbonBuffers(Mesh mesh, int subdiv)
+    {
+        int vertexCount = (subdiv + 1) * 2;
+        if (ribbonBuffers.TryGetValue(mesh, out RibbonBuffers buffers)
+            && buffers.vertices.Length == vertexCount) return buffers;
+
+        buffers = new RibbonBuffers
+        {
+            vertices = new Vector3[vertexCount],
+            uvs = new Vector2[vertexCount],
+            colors = new Color[vertexCount],
+            normals = new Vector3[vertexCount],
+            triangles = new int[subdiv * 6]
+        };
+        for (int i = 0; i < subdiv; i++)
+        {
+            int o = i * 6;
+            int i0 = 2 * i, i1 = i0 + 1, i2 = i0 + 2, i3 = i0 + 3;
+            buffers.triangles[o] = i0; buffers.triangles[o + 1] = i1; buffers.triangles[o + 2] = i2;
+            buffers.triangles[o + 3] = i2; buffers.triangles[o + 4] = i1; buffers.triangles[o + 5] = i3;
+        }
+        ribbonBuffers[mesh] = buffers;
+        return buffers;
     }
 
     private void SetBandTexture(Material mat, Texture2D tex)
@@ -925,10 +960,9 @@ public class HoldNote : MonoBehaviour
     /// <summary>逐顶点 alpha：过粉杠 reveal + 越判定线 fade + 整体 g。平台外沿由 shader 裁切。</summary>
     private void ApplyBandAlpha(Mesh mesh, float revealX, float judgeX, float g)
     {
-        if (mesh == null || mesh.vertexCount < 4) return;
-        Vector3[] vs = mesh.vertices;
-        Color[] cols = mesh.colors;
-        if (cols == null || cols.Length != vs.Length) cols = new Color[vs.Length];
+        if (mesh == null || mesh.vertexCount < 4 || !ribbonBuffers.TryGetValue(mesh, out RibbonBuffers buffers)) return;
+        Vector3[] vs = buffers.vertices;
+        Color[] cols = buffers.colors;
         // ③ 顶点已转根局部坐标(改动②)，revealX/judgeX 为世界值，须同步转局部才能与 vp.x 同坐标系比较，
         // 否则粉杠移动时遮罩边界与节点/粉杠"恒偏"。根 identity 时两处恒等、零副作用。
         float localRevealX = transform.InverseTransformPoint(new Vector3(revealX, 0f, 0f)).x;
@@ -967,11 +1001,11 @@ public class HoldNote : MonoBehaviour
         else if (fadeTimer >= 0f && !broken) { g = 1f - Mathf.Clamp01(fadeTimer / Mathf.Max(fadeDuration, 1e-4f)); }
 
         // 节点与连接带共用时间外推，越界后仍保持折线方向；平台外沿以外由 shader 裁切。
-        Vector3[] rawPos = new Vector3[nodeCount];
+        Vector3[] rawPos = rawNodePositions;
         for (int i = 0; i < nodeCount; i++) rawPos[i] = NodeRawPos(i);
 
         // 链长累计（渐变用）
-        float[] cum = new float[bandMeshes.Count + 1];
+        float[] cum = cumulativeBandLengths;
         float total = 0f;
         for (int s = 0; s < bandMeshes.Count; s++)
         {

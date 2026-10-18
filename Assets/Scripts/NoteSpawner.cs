@@ -126,6 +126,10 @@ public class NoteSpawner : MonoBehaviour
     public bool IsFinished => beatmap != null && spawnIndex >= beatmap.notes.Length
         && activeNotes.Count == 0 && activeHoldNotes.Count == 0;
 
+    /// <summary>开场可见的音符已在静默期分帧生成完毕，音乐才允许起播。</summary>
+    public bool OpeningNotesReady => beatmap == null || beatmap.notes == null
+        || spawnIndex >= beatmap.notes.Length || beatmap.notes[spawnIndex].time > leadTime;
+
     void Start()
     {
         laneOffsets = new Vector3[laneCount];

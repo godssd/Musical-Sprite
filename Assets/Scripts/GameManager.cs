@@ -77,7 +77,7 @@ public class GameManager : MonoBehaviour
                     conductor.musicSource.clip = bgm.audioClip;
                     // 开场动画兜底起播：待命直到全员开场动画播完（最长的角色成为静默期标准）+ leadIn 保底，
                     // 再 PlayScheduled 精确起播。卡顿会冻结开场动画从而自动推迟起播，结构上不可能吞掉歌曲开头。
-                    conductor.introReadyProvider = AllIntroAnimationsDone;
+                    conductor.introReadyProvider = IsOpeningReady;
                     conductor.ArmPlayback();
 
                     // 静默期预热：在开场动画+保底静默期间逐帧消化音符系统首开成本
@@ -226,7 +226,7 @@ public class GameManager : MonoBehaviour
         ReplayAllIntroAnimations();
         if (conductor != null)
         {
-            conductor.introReadyProvider = AllIntroAnimationsDone;
+            conductor.introReadyProvider = IsOpeningReady;
             conductor.ArmPlayback();
         }
 
@@ -241,6 +241,14 @@ public class GameManager : MonoBehaviour
     private void RefreshIntroAnimators()
     {
         introAnimators = FindObjectsOfType<CharacterAnimator>(true);
+    }
+
+    // 起播前先完成音符预热及首批音符构建，避免负时间滴灌未完成时在 songPosition=0 倾泻余量。
+    private bool IsOpeningReady()
+    {
+        return AllIntroAnimationsDone() && NotePrewarmer.IsReady
+            && (leftSpawner == null || leftSpawner.OpeningNotesReady)
+            && (rightSpawner == null || rightSpawner.OpeningNotesReady);
     }
 
     /// <summary>就绪条件：全员开场动画播完（无开场资源的角色视为 0 秒，立即就绪）。</summary>

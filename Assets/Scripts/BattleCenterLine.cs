@@ -65,6 +65,11 @@ public class BattleCenterLine : MonoBehaviour
     [Min(0.001f)] public float seamFeather = 0.025f;
     [Min(0.001f)] public float seamEdgeWidth = 0.13f;
     [Range(0f, 1f)] public float seamEdgeStrength = 0.55f;
+    [Header("静止时的溶解循环")]
+    [Tooltip("遮罩沿小圆周循环的周期（秒），不移动中缝和双方资产范围")]
+    [Min(0.1f)] public float seamLoopSeconds = 4.5f;
+    [Tooltip("遮罩采样的循环半径；0 表示关闭动态溶解")]
+    [Range(0f, 0.3f)] public float seamLoopRadius = 0.07f;
     public Color seamEdgeColorA = new Color(1f, 0.48f, 0.18f, 1f);
     public Color seamEdgeColorB = new Color(0.22f, 0.72f, 1f, 1f);
 
@@ -146,6 +151,8 @@ public class BattleCenterLine : MonoBehaviour
             seamDissolveMask != null ? seamDissolveMask : Texture2D.grayTexture);
         Shader.SetGlobalFloat("_WorldSeamMaskScale", seamMaskScale);
         Shader.SetGlobalFloat("_WorldSeamNoiseWidth", seamNoiseWidth);
+        Shader.SetGlobalFloat("_WorldSeamLoopSpeed", Mathf.PI * 2f / Mathf.Max(0.1f, seamLoopSeconds));
+        Shader.SetGlobalFloat("_WorldSeamLoopRadius", seamLoopRadius);
         Shader.SetGlobalFloat("_WorldSeamFeather", seamFeather);
         Shader.SetGlobalFloat("_WorldSeamEdgeWidth", seamEdgeWidth);
         Shader.SetGlobalFloat("_WorldSeamEdgeStrength", seamEdgeStrength);

@@ -28,6 +28,12 @@ public class BattleVisualsController : MonoBehaviour
 
     private void Start()
     {
+        // 判定灯按 side * 4 + lane 排列；在运行时建立独立的视觉预览，不改场景资产。
+        if (indicators != null)
+        {
+            for (int i = 0; i < indicators.Length; i++)
+                if (indicators[i] != null) indicators[i].ConfigureSide(i / 4);
+        }
         if (leftSpawner != null)
         {
             leftSpawner.OnLanePress += OnLanePress;
@@ -99,6 +105,14 @@ public class BattleVisualsController : MonoBehaviour
     {
         // 沉睡期间该轨道角色无命中表现（输入已被屏蔽，此处作双保险，且避免沉睡中残留连击跳动）
         if (SleepController.Instance != null && SleepController.Instance.IsCharacterSleeping(side, lane)) return;
+
+        // 输入先触发中性白光；判定成功再由同一盏灯转为本方颜色。
+        if (rank != "MISS" && side >= 0 && side < 2 && lane >= 0 && lane < 4)
+        {
+            int idx = side * 4 + lane;
+            if (indicators != null && idx < indicators.Length && indicators[idx] != null)
+                indicators[idx].Hit();
+        }
 
         ComboDisplay target = side == 0 ? leftComboDisplay : rightComboDisplay;
         if (target == null) return;

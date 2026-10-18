@@ -14,6 +14,14 @@ using UnityEngine;
 public static class NotePrewarmer
 {
     private static bool _done;
+    public static bool IsReady { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetState()
+    {
+        _done = false;
+        IsReady = false;
+    }
 
     /// <summary>由 GameManager.Start 启动（需 MonoBehaviour 作协程宿主）。</summary>
     public static IEnumerator Run()
@@ -45,6 +53,7 @@ public static class NotePrewarmer
 
         // 2. 构建全部静态音符网格（quad / 圆角平板 / 圆柱）
         NoteMover.PrewarmMeshes();
+        NoteMover.PrewarmSharedTapMaterial();
         yield return null;
 
         // 3. 收集全部纹理（HashSet 去重：数字等精灵可能共享图集）
@@ -75,12 +84,14 @@ public static class NotePrewarmer
         if (cam != null && textures.Count > 0)
         {
             var warmRoot = new GameObject("NotePrewarmRuntime (alpha0, auto-destroy)");
+            var warmMaterials = new List<Material>();
             int i = 0;
             foreach (var tex in textures)
             {
                 if (tex == null) continue;
                 Material mat = NoteMover.BuildPrewarmMaterial(tex);
                 if (mat == null) continue;
+                warmMaterials.Add(mat);
 
                 var go = new GameObject("pw" + i++);
                 go.transform.SetParent(warmRoot.transform, false);
@@ -99,7 +110,10 @@ public static class NotePrewarmer
             yield return null;
             yield return null;   // 两帧确保真的渲染过（变体编译 + 纹理上传都发生在这两帧内）
             Object.Destroy(warmRoot);
+            foreach (var mat in warmMaterials) Object.Destroy(mat);
         }
+
+        IsReady = true;
     }
 
     private static void Collect(Sprite s, HashSet<Texture2D> set)

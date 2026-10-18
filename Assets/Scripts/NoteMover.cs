@@ -28,6 +28,9 @@ public class NoteMover : MonoBehaviour
 
     private MeshRenderer rend;
     private Material noteMaterial;
+    private MaterialPropertyBlock noteProperties;
+    private Color noteTint = Color.white;
+    private static Material sharedTapMaterial;
     private Color originalColor;
     private bool isChainTap = false;
     private TextMesh chainCountText;
@@ -285,9 +288,11 @@ public class NoteMover : MonoBehaviour
     /// <summary>把主体材质贴图换成 t（兼容 URP _BaseMap 与旧 _MainTex）。</summary>
     private void SetNoteTexture(Texture2D t)
     {
-        if (noteMaterial == null || t == null) return;
+        if (noteMaterial == null || rend == null || t == null) return;
         string p = noteMaterial.HasProperty("_BaseMap") ? "_BaseMap" : (noteMaterial.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
-        noteMaterial.SetTexture(p, t);
+        if (noteProperties == null) noteProperties = new MaterialPropertyBlock();
+        noteProperties.SetTexture(p, t);
+        rend.SetPropertyBlock(noteProperties);
     }
 
     /// <summary>P9(恢复09-17) 连点逐数字更新（附魔态）：只换数字精灵为技能数字剩余值，本体保持技能底座。</summary>
@@ -644,26 +649,29 @@ public class NoteMover : MonoBehaviour
         rend = GetComponentInChildren<MeshRenderer>();
         if (rend != null)
         {
+            bool usesGeneratedMaterial = false;
             if (textured)
             {
-                // 卡通换皮：用成品材质或运行时生成的 URP Unlit 透明材质贴爪印；副本互不影响。
+                // 每个音符只保留自己的属性块，材质模板可共用，避免首批音符逐个 new Material。
                 if (isSmallTap)
-                    noteMaterial = smallTapNoteMaterial != null ? new Material(smallTapNoteMaterial) : MakeTapMaterial(smallTex);
+                    noteMaterial = smallTapNoteMaterial != null ? smallTapNoteMaterial : SharedTapMaterial;
                 else if (isChainTap)
-                    noteMaterial = MakeTapMaterial(activeTex);   // P8 连点：强制用通用 Repeat 贴图建材质，不复用 tap 模板（其自带 Note_Tap 贴图）
+                    noteMaterial = SharedTapMaterial;   // 连点沿用通用 Repeat 贴图，不使用 Tap 模板的内置贴图
                 else
-                    noteMaterial = tapNoteMaterial != null ? new Material(tapNoteMaterial) : MakeTapMaterial(activeTex);
+                    noteMaterial = tapNoteMaterial != null ? tapNoteMaterial : SharedTapMaterial;
+                usesGeneratedMaterial = isChainTap || (isSmallTap ? smallTapNoteMaterial == null : tapNoteMaterial == null);
                 visibleBaseColor = Color.white;
                 visibleAlpha = tapAlpha;
             }
             else
             {
-                // 复制一份材质实例，避免影响其他音符（保持原黑底表现，其他音符类型不受影响）
-                noteMaterial = new Material(rend.material);
+                noteMaterial = rend.sharedMaterial;
                 visibleBaseColor = Color.black;
                 visibleAlpha = 1f;
             }
-            rend.material = noteMaterial;
+            rend.sharedMaterial = noteMaterial;
+            noteProperties = new MaterialPropertyBlock();
+            if (usesGeneratedMaterial) SetNoteTexture(activeTex);
             originalColor = visibleBaseColor;
             SetNoteTint(visibleBaseColor);   // 初始色（rend 仍 disabled，过粉杠后再显形）
             // 初始不可见：越过粉杠前完全隐藏
@@ -928,8 +936,7 @@ public class NoteMover : MonoBehaviour
     private void ApplySelectTexture()
     {
         if (noteMaterial == null || _selectTex == null) return;
-        string texProp = noteMaterial.HasProperty("_BaseMap") ? "_BaseMap" : (noteMaterial.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
-        noteMaterial.SetTexture(texProp, _selectTex);
+        SetNoteTexture(_selectTex);
         if (isChainTap && _isChainTextured && digitRenders[0] != null)
         {
             int rem = (note != null) ? Mathf.Max(0, note.chainTapRemaining) : 0;
@@ -963,8 +970,7 @@ public class NoteMover : MonoBehaviour
         Texture2D skin2 = NoteSpriteLibrary.GetEnchantSkin(skillId, kind);
         if (skin2 == null) return false; // 无皮肤集：回退发光染色
         Texture2D skinSelect = NoteSpriteLibrary.GetEnchantSkin(skillId, kind + "_Select");
-        string texProp = noteMaterial.HasProperty("_BaseMap") ? "_BaseMap" : (noteMaterial.HasProperty("_MainTex") ? "_MainTex" : "_BaseMap");
-        noteMaterial.SetTexture(texProp, skin2);
+        SetNoteTexture(skin2);
         if (skinSelect != null) _selectTex = skinSelect;   // 命中后切到皮肤 Select 版
         textured = true;                                   // 命中走 Select（完成）贴图路径
         SetNoteTint(Color.white);                          // 以贴图原色显示
@@ -1128,15 +1134,30 @@ public class NoteMover : MonoBehaviour
     /// <summary>统一着色：URP Unlit 用 _BaseColor（Material.color 不生效），旧材质用 _Color，两者兼容。</summary>
     private void SetNoteTint(Color c)
     {
-        if (noteMaterial == null) return;
-        if (noteMaterial.HasProperty("_BaseColor")) noteMaterial.SetColor("_BaseColor", c);
-        else noteMaterial.color = c;
+        if (noteMaterial == null || rend == null) return;
+        noteTint = c;
+        if (noteProperties == null) noteProperties = new MaterialPropertyBlock();
+        noteProperties.SetColor(noteMaterial.HasProperty("_BaseColor") ? "_BaseColor" : "_Color", c);
+        rend.SetPropertyBlock(noteProperties);
     }
 
     private Color GetNoteTint()
     {
-        if (noteMaterial == null) return Color.white;
-        return noteMaterial.HasProperty("_BaseColor") ? noteMaterial.GetColor("_BaseColor") : noteMaterial.color;
+        return noteTint;
+    }
+
+    private static Material SharedTapMaterial
+    {
+        get
+        {
+            if (sharedTapMaterial == null) sharedTapMaterial = MakeTapMaterial(null);
+            return sharedTapMaterial;
+        }
+    }
+
+    public static void PrewarmSharedTapMaterial()
+    {
+        Material unused = SharedTapMaterial;
     }
 
     /// <summary>运行时生成普通点击的卡通材质：URP Unlit + Transparent + 贴图（绕开自定义 shader 在 URP 下加载失败的根因）。</summary>
