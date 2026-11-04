@@ -1,0 +1,102 @@
+[
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\0.png",
+    "Bytes": 136878,
+    "SHA256": "8205F067CE51A0A1791E446F0BF899EA0DC6A099555FD51CBEF290AEC8D01EE7"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\1.png",
+    "Bytes": 107289,
+    "SHA256": "C3B83D635F13E0DFE72D6837BDF17777A49CB6EF81F6B1615E4AA40BC711A113"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\2.png",
+    "Bytes": 141502,
+    "SHA256": "C65A83F42C86C7E3673F61FBB0236AFC8FA92644AD6B7AB4C7EE3A7B3A548F68"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\3.png",
+    "Bytes": 132383,
+    "SHA256": "963ED7843A21BEE5C9FC8399A2A4CFD01314A900CCDA82D568B109DF8C50BED4"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\4.png",
+    "Bytes": 146245,
+    "SHA256": "4EE343312990AF7D5F7611BEAA1254B2A493B76F6D884A218568EC089DA55E2F"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\5.png",
+    "Bytes": 133174,
+    "SHA256": "685B03C5D457F49612AC64E3CD8A609EF5B28190C398D3613FEDDCA3AD598F46"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\6.png",
+    "Bytes": 138202,
+    "SHA256": "4D66D3A43990059184B59C18F4AD9221D87EABA605A10CE22D9F6B03690A63ED"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\7.png",
+    "Bytes": 126631,
+    "SHA256": "46FC37A6145D99A60BD19189EDE0062A3EF6F771CFDFD2A32EA7985DE9A0342F"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\8.png",
+    "Bytes": 147908,
+    "SHA256": "252CAA994BAB269E7DFEC552B00ECA163BF04D5B8EB79EB0AF06C223C350B0E6"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\9.png",
+    "Bytes": 132287,
+    "SHA256": "D6C80D0B21A970E340CBDB4A404614EAFC48D447B6C4B7CBE31F470E237AB8D2"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\accents.png",
+    "Bytes": 59952,
+    "SHA256": "2AC501EFD50B2BFBFA48AD090BDD4255248EAE51D66539A7AB24F9CF38A0498B"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\combo.png",
+    "Bytes": 239330,
+    "SHA256": "307E210CA57328083BA5CE691732EAB99F9EB15DA476A4010D72A7DF42064823"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\hp-body.png",
+    "Bytes": 366093,
+    "SHA256": "1C822113EA89881834297503B2A33ED84BD04417AF338FBFCEE4AB275FFD9885"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\hp-tail.png",
+    "Bytes": 362064,
+    "SHA256": "6D612E9ACBEE62D30D80AF5E80EA1CDDDAC4E969D68343DB1F0448F6968B517C"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\hp.png",
+    "Bytes": 150948,
+    "SHA256": "4100CB39119D6F39ADB643DF34EAD1701F1274C3DC7DAADD17614A0236772680"
+  },
+  {
+    "Path": "Assets\\Art\\UI\\V11-Handpainted\\leaves.png",
+    "Bytes": 134569,
+    "SHA256": "4F37CA3E0D2DB1B9D71EE5B99A6A4693EAB1ADCF5AD5EDD71BDE9AF272E8A3AD"
+  },
+  {
+    "Path": "Assets\\Resources\\BattleVisualV11\\HudAssets\\digits-v1.png",
+    "Bytes": 1553883,
+    "SHA256": "36C99AA456B054ACB606FCD54A320260273D9D35E8A8A9240B26499B9E741B11"
+  },
+  {
+    "Path": "Assets\\Resources\\BattleVisualV11\\HudAssets\\labels-v1.png",
+    "Bytes": 1254004,
+    "SHA256": "53865F64A8CD3B18C20DC187AA45066347E85DEE7B52E9C88864F063A332D6CA"
+  },
+  {
+    "Path": "Assets\\Resources\\BattleVisualV11\\HudAssets\\layout-v1.json",
+    "Bytes": 1461,
+    "SHA256": "D97C7641C1CCD2AE15CE4AF3D3A900C3747A71C54BCD0BD1F14ACA729EEB66FB"
+  },
+  {
+    "Path": "Assets\\Resources\\BattleVisualV11\\HudAssets\\ribbon-v1.png",
+    "Bytes": 1166201,
+    "SHA256": "1C01DEAA217E985256E0BDD36275EF4B10BED5635945600399565AD0F179ECA9"
+  }
+]

@@ -1,0 +1,1 @@
+PASS: transparent RGBA frame imported at 724x2172, uncompressed; three named 724x724 icon sprites imported from 2172x724 atlas; sRGB, bilinear, no mipmaps. Runtime style and scene untouched. Motion board is concept art, not implemented animation.

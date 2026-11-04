@@ -1,0 +1,1 @@
+PASS: 62 nonempty PNGs with transparent padding; 5 exact mirrored alpha mask pairs; avatar frame has transparent center.

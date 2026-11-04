@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 349993d032564b21bbcf3d355204af84, type: 3}
+  m_Name: ConnectedHeaderStyle
+  m_EditorClassIdentifier:
+  useConnectedHeader: 1
+  redFrame: {fileID: 21300000, guid: 0f649afb885e4f4d81fb08d540e6b97d, type: 3}
+  blueFrame: {fileID: 21300000, guid: 516562bfe263431883fcaf53b9de6a87, type: 3}
+  body: {fileID: 21300000, guid: d21ca1a1792f4ff6b0007223e0024eb9, type: 3}
+  blueBody: {fileID: 21300000, guid: 3201a26b13074b73998564271c1923b8, type: 3}
+  scale: 1
+  screenInset: {x: 24, y: 18}
+  centerGap: 100
+  height: 160
+  endPadding: 40
+  frameTop: 50
+  frameHeight: 100
+  scoreTailSpace: 44
+  resizeTime: 0.12
+  hpRootSize: {x: 380, y: 160}
+  bodyOffset: {x: 62, y: 70}
+  bodySize: {x: 286, y: 37}
+  numberOffset: {x: 66, y: 22}
+  numberSize: {x: 270, y: 44}
+  hpDigitHeight: 38
+  hpLabelRatio: 0.79
+  hpLabelGap: 10
+  scoreOffset: {x: 400, y: 0}
+  scoreDigitHeight: 72
+  scorePunchAllowance: 0.04
+  showDetails: 1
+  outerLeafOffset: {x: 0, y: 0}
+  outerLeafSize: {x: 52, y: 60}
+  innerLeafOffset: {x: -12, y: 12}
+  innerLeafSize: {x: 43, y: 50}
+  marksOffset: {x: 358, y: 69}
+  marksSize: {x: 30, y: 18}

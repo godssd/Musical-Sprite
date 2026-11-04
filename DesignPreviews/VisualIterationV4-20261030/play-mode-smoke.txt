@@ -1,0 +1,1 @@
+PASS: SampleScene Play mode automatically installed the new HUD; both old bars/scores were retained and hidden; live TakeDamage/Heal settled correctly; result waited for zero impact; restart cleared the pending defeat and replayed entrance.

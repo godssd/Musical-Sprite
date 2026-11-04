@@ -1,0 +1,18 @@
+# V6 素材生成记录
+
+方式：内置 imagegen。
+
+## 已采用：独立曲线血槽
+
+Use case: stylized-concept. Production transparent sprite of ONE solid ivory-white handpainted organic HP band for a sophisticated cartoon rhythm game. Genuine alpha, no backdrop, no labels or other objects.
+The actual SILHOUETTE must visibly differ from a rounded rectangle: a long LOW shallow rising arc, like a softly drawn broad brush sweep. Left end is comfortably round and thick. Width 1500 units, maximum thickness160units. Upper edge rises in a smooth shallow bow near first third, then gradually slopes down toward right. Lower edge is also gently curved but rises faster toward right. Thus thickness goes approx 125 at10% length, 160 at35%,120 at65%,85 at90%, ending in a ROUND cap of diameter80, not a point. The right terminal center is slightly HIGHER than left terminal, creating a subtle uplifting flow. Asymmetric flowing shape, smoothly controlled, not an oval, not an even-thickness capsule, not a straight rectangle, not a long tapering needle. Fully white filled inside with barely perceptible matte paper texture, crisply antialiased. No holes, no outline, no drop shadow, no lighting, no extrusion, no glow. Wide 3:1canvas, shape centered with generous margin for no clipping. No crescent, underline, leaves, musical notes, text, digits, empty HP slot, or border. Delicate but visible silhouette curvature is the key goal.
+
+## 首次双部件探索：未采用
+
+首轮的血槽轮廓仍过于均匀，未切片、未用于最终组合。最终轮廓复用 V5，以新血槽及间距重排。
+
+Use case: precise-object-edit. Asset type: coordinated transparent HUD sprite master with TWO SEPARATE parts. Reference image is approved style and arrangement. Revise only the HP bar and crescent/underline relationship, remove ALL text, digits, leaves and accent marks. Genuine transparent background, wide2172x724 canvas. Flat white neutral ink, near-white matte subtle fine grain for runtime coral/blue tinting, NO shadows, glow, rims or outlines.
+Composition: one connected outer C-shaped crescent on the LEFT that flows from its lower bowl into a long slender underline toward the RIGHT ending in a small downward curl. Left crescent broad and graceful, clean open inner cavity. Underline smooth and gently varying in height, mostly level along central60% for future stretch; its line thickness is far thinner than HP band. At upper-left INSIDE THE OPEN CAVITY but NOT TOUCHING IT, ONE separate thick HP band. Body begins right of the crescent inner wall and floats comfortably ABOVE underline. Leave an obvious continuous transparent negative-space ribbon between the HP band bottom and the underline, and a clear transparent gap between its left end and crescent inner wall. The two components must NEVER touch, overlap or be tangent, even at left rounded tip. Clear gap at least35px at source scale everywhere along the whole HP band.
+HP band: NOT a mechanically uniform capsule. Handdrawn subtle flowing asymmetry: shallow upward bow, broad rounded beginning at left, quietly fuller around left-middle, slight taper toward RIGHT, still substantial at right end and finishes with a soft rounded cap, never sharp or a thin tail. Upper and lower boundaries BOTH curve gently to echo the underline's flowing rhythm. Controlled premium shape, no wavy sausage, no crooked kinks, no bulges or torn outline. At full health the ENTIRE distinct HP band is filled solid white.
+Approximate occupied layout: crescent x160..360 y240..520; HP band x370..1080 y330..440, underline beneath at y500..520; long line continues to x1930 and small right curl y490..550. Keep ample transparent margin. EXACTLY TWO visible disconnected ink components: 1 HP body, 2 crescent+continuous underline+curl. No background, no other objects. A production layer master, not a text presentation.
+

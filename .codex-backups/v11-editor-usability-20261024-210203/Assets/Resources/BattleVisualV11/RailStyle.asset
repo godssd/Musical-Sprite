@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d752fc813f048efa64daab299bc7412, type: 3}
+  m_Name: RailStyle
+  m_EditorClassIdentifier: 
+  railWidth: 0.14
+  guideHalfWidth: 0.013
+  segmentGap: 0
+  guideReach: 0.72
+  idleOpacity: 0.9
+  idleBrightness: 1
+  guideOpacity: 0.18
+  lightReach: 0.45
+  seamPadding: 0.25
+  railHaloWidth: 0.25
+  edgeHaloWidth: 0.23
+  pressStrength: 0.58
+  hitStrength: 1
+  edgeStrength: 1
+  pressWashStrength: 0.3
+  pressWashOpacity: 0.14
+  hitWashOpacity: 0.21
+  falloffPower: 1.55
+  tailFadeStart: 0.7
+  edgeTaper: 0.62
+  hueAmount: 0.78
+  hueStart: 0.04
+  hueEnd: 0.9
+  railCoreIntensity: 0.96
+  railHaloIntensity: 0.26
+  railCorePower: 125
+  railHaloPower: 5.5
+  edgeCoreIntensity: 0.68
+  edgeHaloIntensity: 0.3
+  edgeCorePower: 190
+  edgeHaloPower: 5
+  hitPeakHold: 0
+  hitFadeDuration: 0.28
+  releaseDuration: 0.1
+  idleRed: {r: 0.73, g: 0.32, b: 0.31, a: 1}
+  idleBlue: {r: 0.38, g: 0.5, b: 0.73, a: 1}
+  hitRed: {r: 1, g: 0.34, b: 0.3, a: 1}
+  hitBlue: {r: 0.35, g: 0.62, b: 1, a: 1}
+  coreRed: {r: 1, g: 0.94, b: 0.84, a: 1}
+  coreBlue: {r: 0.86, g: 0.97, b: 1, a: 1}
+  farColor: {r: 0.6, g: 0.49, b: 0.78, a: 1}

@@ -1,0 +1,13 @@
+Fever side=0 Fever_Rising world=(-4.04, -0.24, 3.68) viewport=(0.02, 0.72, 12.12)..(0.44, 0.92, 12.12)
+Fever side=0 SuperFever_Rising_Front world=(-4.04, -1.41, 0.35) viewport=(0.02, 0.41, 12.08)..(0.44, 0.64, 12.08)
+Fever side=1 Fever_Rising world=(4.04, -0.24, 3.68) viewport=(0.56, 0.72, 12.12)..(0.98, 0.92, 12.12)
+Fever side=1 SuperFever_Rising_Front world=(4.04, -1.41, 0.35) viewport=(0.56, 0.41, 12.08)..(0.98, 0.64, 12.08)
+SuperFever side=0 Fever_Rising world=(-4.04, -0.24, 3.68) viewport=(0.02, 0.72, 12.12)..(0.44, 0.92, 12.12)
+SuperFever side=0 SuperFever_Rising_Front world=(-4.04, -0.32, 3.34) viewport=(0.02, 0.69, 12.08)..(0.44, 0.92, 12.08)
+SuperFever side=1 Fever_Rising world=(4.04, -0.24, 3.68) viewport=(0.56, 0.72, 12.12)..(0.98, 0.92, 12.12)
+SuperFever side=1 SuperFever_Rising_Front world=(4.04, -0.32, 3.34) viewport=(0.56, 0.69, 12.08)..(0.98, 0.92, 12.08)
+None side=0 Fever_Rising world=(-4.04, -1.22, 1.00) viewport=(0.02, 0.47, 12.12)..(0.44, 0.67, 12.12)
+None side=0 SuperFever_Rising_Front world=(-4.04, -1.41, 0.35) viewport=(0.02, 0.41, 12.08)..(0.44, 0.64, 12.08)
+None side=1 Fever_Rising world=(4.04, -1.22, 1.00) viewport=(0.56, 0.47, 12.12)..(0.98, 0.67, 12.12)
+None side=1 SuperFever_Rising_Front world=(4.04, -1.41, 0.35) viewport=(0.56, 0.41, 12.08)..(0.98, 0.64, 12.08)
+PASS: ordinary/super crowns remain in frame and each team half; all inactive layers and their backdrops are disabled.

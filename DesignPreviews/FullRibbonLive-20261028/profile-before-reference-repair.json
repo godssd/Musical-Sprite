@@ -1,0 +1,237 @@
+{
+    "MonoBehaviour": {
+        "m_Enabled": true,
+        "m_EditorHideFlags": 0,
+        "m_Name": "FullRibbonHUDStyle",
+        "m_EditorClassIdentifier": "",
+        "useFullRibbon": true,
+        "screenInset": {
+            "x": 24.0,
+            "y": 18.0
+        },
+        "scale": 1.0,
+        "centerGap": 80.0,
+        "teamSize": {
+            "x": 720.0,
+            "y": 200.0
+        },
+        "ribbonPosition": {
+            "x": 156.0,
+            "y": 113.0
+        },
+        "ribbonSize": {
+            "x": 505.0,
+            "y": 48.0
+        },
+        "scoreHeight": 64.0,
+        "hpHeight": 36.0,
+        "ribbon": [
+            {
+                "fileID": 21300000,
+                "guid": "682dcf5f03fa4eaa827abe2e8adb84ed",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "cacf649414684c36abb89c1a4c6ae9c5",
+                "type": 3
+            }
+        ],
+        "avatarFrame": [
+            {
+                "fileID": 21300000,
+                "guid": "76f988e1ca1f4544b13164dd5fcbce5b",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "f556988df28543fb9d2a489ada410eb8",
+                "type": 3
+            }
+        ],
+        "crescent": [
+            {
+                "fileID": 21300000,
+                "guid": "7eb33ea74c6240d88e2df27a7a0c35cc",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "2deb1703552d4addaaf92a3ab8931707",
+                "type": 3
+            }
+        ],
+        "outerLeaves": [
+            {
+                "fileID": 21300000,
+                "guid": "ea5ddbdf4fe4418b92f2db4ee156db66",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "673633ca8a1f42fcb1ce5937e85545dc",
+                "type": 3
+            }
+        ],
+        "innerLeaves": [
+            {
+                "fileID": 21300000,
+                "guid": "d96863a917dc4e91b096c2af43fa7ed2",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "65931cb04b8c4ccf987eba5be5ce1708",
+                "type": 3
+            }
+        ],
+        "marks": [
+            {
+                "fileID": 21300000,
+                "guid": "d6bce0fb1e244a90a5808a2e14198be3",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "9e6461bc6d824b9dbfa4d4d118278a38",
+                "type": 3
+            }
+        ],
+        "dot": [
+            {
+                "fileID": 21300000,
+                "guid": "52043e159ab14d2bbbb8076904a949b6",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "2c83afd6b6fa4074abf64986a6c96966",
+                "type": 3
+            }
+        ],
+        "avatarMask": {
+            "fileID": 21300000,
+            "guid": "70d52bf1ed9c43b782381536f2bb1a13",
+            "type": 3
+        },
+        "avatars": [
+            {
+                "fileID": 21300000,
+                "guid": "873a61c84b814b9a8b15777126fb48ac",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "5f8297974ad54952a4e974799112a863",
+                "type": 3
+            }
+        ],
+        "hpLabel": {
+            "fileID": 21300000,
+            "guid": "339347a561434433be1ee168cb44300d",
+            "type": 3
+        },
+        "digits": [
+            {
+                "fileID": 21300000,
+                "guid": "c126d4446c274b0d93c82131b9de4487",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "93aa9198652048d08fcac0bc758e9244",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "e599e5bf44024fe89a20e3b8191e86e1",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "2418e59bb0d94753ac7a751b05f39d79",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "10c742736f884dc8b55e5b9c578bdce7",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "dbc8024ecd3d48daa45ed6c517d841c1",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "22200973aac1429dbd5cc895d2f88e37",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "ae63aba345f24953830ff895e2e25191",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "c13e11dd25fc4446a1c6edfff565b313",
+                "type": 3
+            },
+            {
+                "fileID": 21300000,
+                "guid": "da8eb3dbeb2c474d9958ad5fad4c53e3",
+                "type": 3
+            }
+        ],
+        "red": {
+            "r": 1.0,
+            "g": 0.3179999887943268,
+            "b": 0.2939999997615814,
+            "a": 1.0
+        },
+        "blue": {
+            "r": 0.4779999852180481,
+            "g": 0.6389999985694885,
+            "b": 1.0,
+            "a": 1.0
+        },
+        "flashDuration": 0.09000000357627869,
+        "holdDuration": 0.10000000149011612,
+        "lossDuration": 0.2800000011920929,
+        "healDuration": 0.44999998807907107,
+        "lossColor": {
+            "r": 0.6600000262260437,
+            "g": 0.5099999904632568,
+            "b": 0.2199999988079071,
+            "a": 1.0
+        },
+        "healingColor": {
+            "r": 0.4699999988079071,
+            "g": 0.7900000214576721,
+            "b": 0.36000001430511477,
+            "a": 1.0
+        },
+        "flashGlow": 0.8500000238418579,
+        "idleTickWidth": 1.5,
+        "movingTickWidth": 3.5,
+        "tickGlow": 1.5,
+        "glowRadius": 9.0,
+        "dangerEnter": 0.25,
+        "dangerExit": 0.30000001192092898,
+        "dangerMinBrightness": 0.2800000011920929,
+        "dangerPeriod": 1.25,
+        "entranceDuration": 0.6499999761581421,
+        "entranceResolve": 0.11999999731779099,
+        "entranceGlow": 0.4000000059604645,
+        "entranceHeadGlow": 1.7999999523162842,
+        "chimeVolume": 0.1599999964237213,
+        "feverHeight": 32.0,
+        "superFeverHeight": 46.0,
+        "superSpread": 14.0,
+        "flameSpeed": 5.0,
+        "feverSparks": 2,
+        "superSparks": 4,
+        "extinguishDuration": 0.2199999988079071,
+        "zeroBurstDuration": 0.3199999928474426
+    }
+}

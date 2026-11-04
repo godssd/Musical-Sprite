@@ -1,0 +1,71 @@
+{
+  "curveRule": "Centerline dx/dt positive, dy/dt negative throughout. No interior stationary point or reversal.",
+  "version": 9,
+  "blueBorder": [
+    300,
+    360
+  ],
+  "redBorder": [
+    360,
+    300
+  ],
+  "source": "Analytic cubic Bezier vector path, not generated raster",
+  "mainCenterline": [
+    [
+      280,
+      280
+    ],
+    [
+      700,
+      260
+    ],
+    [
+      1120,
+      190
+    ],
+    [
+      1540,
+      155
+    ]
+  ],
+  "canvas": [
+    1900,
+    380
+  ],
+  "longLower": [
+    [
+      280,
+      294
+    ],
+    [
+      700,
+      274
+    ],
+    [
+      1120,
+      200
+    ],
+    [
+      1540,
+      165
+    ]
+  ],
+  "longUpper": [
+    [
+      280,
+      266
+    ],
+    [
+      700,
+      246
+    ],
+    [
+      1120,
+      180
+    ],
+    [
+      1540,
+      145
+    ]
+  ]
+}

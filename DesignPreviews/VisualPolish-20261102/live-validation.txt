@@ -1,0 +1,1 @@
+PASS: live scene initialized; legacy HP / scores retained and hidden; production canopy uniform scale and skyline verified; 1920x1080 native Game View captures include Overlay UI, 28 Combo tear frames, 29 new-hit overlap frames, 35 entry frames, 35 number update frames and damage/heal damping sequences. No scene saved.

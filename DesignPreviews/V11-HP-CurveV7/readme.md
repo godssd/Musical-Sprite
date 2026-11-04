@@ -1,0 +1,21 @@
+# 血条 V7 整体曲线审查
+
+2026-10-27，内置 imagegen。最终图：curve-review-v7.png。
+
+这轮只生成整体效果图，未切片、未替换游戏绑定或运行配置。V6 造型已被用户否定，不作为生产方向。V7 优先恢复月牙下沿向分数缓慢抬升的走势，血槽独立留白，取消多次凹凸。上下两排为满血 / 半血概念示意，生成图的像素比例和红蓝轮廓不是精确生产遮罩；正式接入需以同一母版镜像及血量裁切保证一致。
+
+## 整体生成提示
+
+Use case: precise-object-edit, game HUD design refinement.
+Reference: the attached user-edited image. Its BOTTOM complete red header is the authoritative design. Rebuild that header cleanly and display a coordinated red / blue design sheet. Keep the exact overall hand-painted forest cartoon identity, cream brush numbers, coral red/periwinkle blue, tiny fresh green leaves, restrained ink dashes. Navy flat backdrop. No reference collage titles, no unrelated music icons.
+MOST IMPORTANT: design HP band and underlying crescent flourish TOGETHER, with clear continuous negative space between them. Preserve the original header's elegant sweeping trajectory.
+Decorative frame: a graceful open C crescent at outside edge. Its broad lower bowl naturally narrows into a long fine curve going toward score. This underline is NOT horizontal: starts low under HP, smoothly rises about20px across a600px-long header toward the inner score, then makes one small rounded downward terminal curl. ONE coherent shallow flowing arc, no wobbles, no ruler-straight middle, no S wave. Crescent and underline are ONE connected silhouette.
+HP band: separate readable health-bearing broad short band under HP label, approx first half of header width. ONE gentle shallow arc whose centerline gradually rises toward score in SAME direction as underline. Thickness variation VERY subtle (at most15%), softly rounded ends, left-middle slightly fuller and inner end slightly finer but never pointed. Absolutely NO sinusoidal waves, no central hump followed by trough and upturned end, no twisting banana or flame. Keep this quiet, polished, almost classic, purposeful drawing. Clear navy gap of12–18px at600px-header scale from body to underline ALL ALONG; also gap to crescent inner wall. They must not merge or touch at any location. Full HP fills100% of the finite band.
+Layout: wide1536x1024concept sheet, TWO rows only so details are large. Each row red team LEFT, exact mirrored blue team RIGHT, but normal readable text. Outer side HP label smaller than large inner cream score. Row1 full HP label 'HP 326', scores '5842' / '4580'. Row2 half HP 'HP 163', SAME score and geometry, bright fill exactly half of the identical track; inactive half muted team charcoal. Small row labels '100%' and '50%' centered between teams. At top small title '曲线协调 · 修订稿'. Full health silhouettes must be identical between rows except clipped fill.
+Typography: small HP and health digits, large brush score. The score baseline sits just above the rising decorative line with modest breathing room. One small pair of outer leaves near crescent upper tip and one pair next to score's terminal curl. Sparse two brush-dash accents between HP and score.
+Flat matte clean artwork, subtle fine paper texture, controlled smooth anti-aliasing, no gradients that look 3D, no gloss, no drop shadows, no plastic, no bevels, no dark outlines, no visual noise. Do not reuse the failed wavy body or a straight stretched line. This is a close refinement of the BOTTOM reference header, NOT a new design language.
+
+## 蓝方镜像修正提示
+
+Edit this design sheet with ONE precise correction: the BLUE team headers in RIGHT column are currently incorrectly oriented. Red headers in LEFT column and title and background must remain unchanged. Correct BOTH blue rows to mirror the RED HEADER LAYOUT spatially: blue crescent and outer leaves on FAR RIGHT, 'HP 326'/'HP 163' above the RIGHT health band, cream score '4580' on inner LEFT, thin underline sweeps from crescent at RIGHT toward score LEFT with mirrored upward trajectory and a small curl on far LEFT. Blue end leaves beside score at LEFT. All TEXT AND DIGITS remain normal left-to-right readable, never mirror glyphs. Blue half-health starts from RIGHT and fills rightmost50% of identical full track, left half muted. Keep same good flat handpainted style, subtle shallow HP curve, continuous navy gap separating HP band from crescent and underside line. Do not alter RED side geometry, gap, colors or lettering. All other sheet content unchanged.
+

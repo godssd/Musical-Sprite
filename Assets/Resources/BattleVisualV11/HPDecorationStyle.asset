@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35459fcc43f64d4f8c72c055cbdb87d5, type: 3}
+  m_Name: HPDecorationStyle
+  m_EditorClassIdentifier:
+  showDetails: 1
+  tailExtension: 190
+  tailOpacity: 0.85
+  tailHeight: 65
+  tailYOffset: 3
+  outerLeafSize: {x: 40, y: 50}
+  outerLeafOffset: {x: -3, y: 78}
+  strokesSize: {x: 46, y: 20}
+  strokesOffset: {x: -38, y: 43}
+  dotOffset: {x: 9, y: 38}
+  dotSize: 7
+  innerLeafSize: {x: 34, y: 50}
+  innerLeafOffset: {x: 18, y: 61}
+  headerSize: {x: 646, y: 142}
+  headerScale: 1.15
+  screenInset: {x: 24, y: 18}
+  hpRootOffset: {x: 40, y: 22}
+  hpRootSize: {x: 350, y: 100}
+  bodyOffset: {x: 35, y: 19}
+  bodySize: {x: 228, y: 24}
+  numberOffset: {x: 40, y: 48}
+  numberSize: {x: 240, y: 48}
+  hpDigitHeight: 44
+  hpLabelHeightRatio: 0.73
+  hpLabelGap: 14
+  scoreOffset: {x: 400, y: 16}
+  scoreSize: {x: 210, y: 80}
+  scoreDigitHeight: 80

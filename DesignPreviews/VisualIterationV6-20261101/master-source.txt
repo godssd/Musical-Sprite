@@ -1,0 +1,1 @@
+Source: locked-base-reference.png. Cropped in source pixel coordinates; chromatic alpha separation only; combined crescent/ribbon silhouette, leaves and score-prefix retained from the approved original. No AI redraw, no SampleScene save.

@@ -1,14 +1,9 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System.Collections.Generic;
 
 /// <summary>
-/// 过热占位 VFX（P1 临时表现）。
-/// - 在运行时创建全屏 Overlay Canvas，左右半屏各一块 Image（轻 tint 提示）。
-/// - 订阅 FeverManager.OnStateChanged：左侧玩家触发 → 左半屏，右侧（对手/AI）触发 → 右半屏。
-/// - None=透明；Fever=红(左)/蓝(右) 脉冲；SuperFever=金色脉冲。
-/// - 队伍方块在过热时向主题色混合 60%，保留角色身份色（避免分不清谁是谁）。
-/// - 中央文字 banner 已被替换为世界空间的 FeverBanner 山峦涂鸦，详见 FeverBanner.cs。
+/// 旧过热占位组件。屏幕半幅染色已移除，过热布景由 FeverSceneryController 控制。
+/// 此组件仅保留早期队伍方块的主题色逻辑，主场景不再自动创建它。
 ///
 /// 挂载：场景任意 GO（FeverManager 会自动补建）。无正式美术，后续整体替换。
 /// </summary>
@@ -27,10 +22,6 @@ public class FeverVFXPlaceholder : MonoBehaviour
     private List<Color> leftTeamCubeIdentity = new List<Color>();
     private List<Color> rightTeamCubeIdentity = new List<Color>();
     private bool identityCaptured = false;
-
-    private Image[] overlays = new Image[2];     // 0=左, 1=右
-    private readonly Color[] targetColor = new Color[2];
-    private readonly float[] targetAlpha = new float[2];
 
     private FeverManager fever;
 
@@ -52,7 +43,6 @@ public class FeverVFXPlaceholder : MonoBehaviour
         }
         if (leftTeamCubes.Count == 0 && rightTeamCubes.Count == 0)
             AutoFindCubes();
-        BuildOverlays();
         fever.OnStateChanged += OnFeverChanged;
     }
 
@@ -65,44 +55,6 @@ public class FeverVFXPlaceholder : MonoBehaviour
     void OnDestroy()
     {
         if (fever != null) fever.OnStateChanged -= OnFeverChanged;
-    }
-
-    private void BuildOverlays()
-    {
-        GameObject canvasGo = new GameObject("FeverVFXCanvas");
-        Canvas canvas = canvasGo.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 50;
-        var scaler = canvasGo.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = 0.5f;
-        canvasGo.AddComponent<GraphicRaycaster>();
-
-        for (int side = 0; side < 2; side++)
-        {
-            // 左右半屏 tint
-            GameObject img = new GameObject(side == 0 ? "FeverOverlayLeft" : "FeverOverlayRight");
-            img.transform.SetParent(canvasGo.transform, false);
-            RectTransform rt = img.AddComponent<RectTransform>();
-            if (side == 0)
-            {
-                rt.anchorMin = new Vector2(0f, 0f);
-                rt.anchorMax = new Vector2(0.5f, 1f);
-            }
-            else
-            {
-                rt.anchorMin = new Vector2(0.5f, 0f);
-                rt.anchorMax = new Vector2(1f, 1f);
-            }
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            Image image = img.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0f);
-            image.raycastTarget = false;
-            overlays[side] = image;
-        }
     }
 
     private void AutoFindCubes()
@@ -133,13 +85,6 @@ public class FeverVFXPlaceholder : MonoBehaviour
 
     private void OnFeverChanged(FeverState oldState, FeverState cur, int side)
     {
-        Color c = cur == FeverState.SuperFever ? superColor :
-                  cur == FeverState.Fever ? (side == 0 ? leftTheme : rightTheme) :
-                  Color.white;
-        float a = cur == FeverState.None ? 0f : (cur == FeverState.SuperFever ? 0.45f : 0.30f);
-        targetColor[side] = c;
-        targetAlpha[side] = a;
-
         // 队伍方块材质变色：保留角色身份色，过热时仅“向主题色混合 60%”（不再整体覆盖成白/红/蓝，避免分不清谁是谁）
         var cubes = side == 0 ? leftTeamCubes : rightTeamCubes;
         var identities = side == 0 ? leftTeamCubeIdentity : rightTeamCubeIdentity;
@@ -161,16 +106,4 @@ public class FeverVFXPlaceholder : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        if (overlays[0] == null) return;
-        float pulse = 0.6f + 0.4f * Mathf.Sin(Time.time * 6f);
-        for (int s = 0; s < 2; s++)
-        {
-            if (overlays[s] == null) continue;
-            float a = targetAlpha[s] * (targetAlpha[s] > 0f ? pulse : 1f);
-            Color tgt = new Color(targetColor[s].r, targetColor[s].g, targetColor[s].b, a);
-            overlays[s].color = Color.Lerp(overlays[s].color, tgt, Time.deltaTime * 8f);
-        }
-    }
 }

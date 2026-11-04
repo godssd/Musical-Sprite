@@ -1,0 +1,1 @@
+PASS: three 256px sprite icons; timeout starts fresh; unmatched reset and successful release locks; ignored input does not mutate state; teams isolated; A/B/C legacy aliases; reset clears state; atomic key swaps and invalid/duplicate rejection. No PlayerPrefs modified by tests.

@@ -146,6 +146,16 @@ public class GameManager : MonoBehaviour
     private void OnPlayerDefeated(int defeatedSide)
     {
         if (winnerShown) return;
+        // Real HP reaching zero decides death immediately. HUD yellow is visual only.
+        isGameOver = true;
+        if (leftSpawner != null) leftSpawner.ClearActiveNotes();
+        if (rightSpawner != null) rightSpawner.ClearActiveNotes();
+        FinishDefeat(defeatedSide);
+    }
+
+    private void FinishDefeat(int defeatedSide)
+    {
+        if (winnerShown) return;
 
         string result;
         Color color;
@@ -221,6 +231,16 @@ public class GameManager : MonoBehaviour
         if (centerLine != null) centerLine.ResetBattle();
         if (opponentInput != null) opponentInput.ResetInput();
         if (scoreManager != null) scoreManager.ResetScores();
+
+        // Restart is a silent synchronization, not another MISS / fracture event.
+        foreach (var visuals in FindObjectsByType<BattleVisualsController>(FindObjectsSortMode.None))
+            if (visuals.leftSpawner == leftSpawner && visuals.rightSpawner == rightSpawner)
+                visuals.ResetComboDisplays();
+        if (FeverManager.Instance != null)
+        {
+            FeverManager.Instance.OnNoteMiss(0);
+            FeverManager.Instance.OnNoteMiss(1);
+        }
 
         // 重播全员开场动画，并重新走"待命-起播"流程（方块占位角色无 Spine，瞬时完成=0 秒开场）
         ReplayAllIntroAnimations();

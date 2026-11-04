@@ -1,0 +1,899 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.0/staging' branch; Version is '6000.0.82f1 (2fb0dae735e1) revision 3125466'; Using compiler version '193933523'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator" at "2026-10-28T13:07:55.4131159Z"
+OS: 'Windows 10  (10.0.19045) 64bit Professional' Language: 'zh' Physical Memory: 16322 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-10-28T13:07:55Z
+
+COMMAND LINE ARGUMENTS:
+D:\unity\6000.0.82f1\Editor\Unity.exe
+-batchmode
+-projectPath
+D:\unity\plan go\Musical Sprite
+-executeMethod
+FullRibbonHUDReview.Batch
+-quit
+-logFile
+D:\unity\plan go\Musical Sprite\DesignPreviews\FullRibbonLive-20261028\unity-verify.log
+Successfully changed project path to: D:\unity\plan go\Musical Sprite
+D:/unity/plan go/Musical Sprite
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [2568]  Target information:
+
+Player connection [2568]  * "[IP] 192.168.31.163 [Port] 55505 [Flags] 2 [Guid] 2550282684 [EditorId] 2550282684 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [2568]  * "[IP] 172.18.0.1 [Port] 55505 [Flags] 2 [Guid] 2550282684 [EditorId] 2550282684 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [2568] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [2568] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-27852" after 0.3 seconds.
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Artifact Garbage Collection - Removed 20 unused hashed content filesRefreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 6000.0.82f1 (2fb0dae735e1)
+[Subsystems] Discovering subsystems at path D:/unity/6000.0.82f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/unity/plan go/Musical Sprite/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 4070 Ti (ID=0x2782)
+    Vendor:   NVIDIA
+    VRAM:     11996 MB
+    Driver:   32.0.16.1047
+Initialize mono
+Mono path[0] = 'D:/unity/6000.0.82f1/Editor/Data/Managed'
+Mono path[1] = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56852
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.3'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-Administrator"
+[Licensing::IpcConnector] LicenseClient-Administrator channel disconnected successfully.
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82" at "2026-10-28T13:07:57.0561522Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 19012, path: "D:/unity/6000.0.82f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              465655d196ff45c3ac62c5aa04b88d4f
+  Correlation Id:          35226266a1109de0a385147743f44850
+  External correlation Id: 513185621096466450
+  Machine Id:              zBAHGvhiEkomrmV9VYKbt7d65SM=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-Administrator-6000.0.82" (connect: 0.00s, validation: 0.01s, handshake: 0.01s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82-notifications" at "2026-10-28T13:07:57.0757281Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
+  Product: Unity Personal Version
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 1.67s
+Registering precompiled unity dll's ...
+Register platform support module: D:/unity/6000.0.82f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.008034 seconds.
+- Loaded All Assemblies, in  0.492 seconds
+Native extension for WindowsStandalone target not found
+Package Manager log level set to [2]
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.331 seconds
+Domain Reload Profiling: 818ms
+	BeginReloadAssembly (199ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (1ms)
+	RebuildCommonClasses (43ms)
+	RebuildNativeTypeToScriptingClass (14ms)
+	initialDomainReloadingComplete (69ms)
+	LoadAllAssembliesAndSetupDomain (161ms)
+		LoadAssemblies (192ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (158ms)
+			TypeCache.Refresh (157ms)
+				TypeCache.ScanAssembly (142ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (332ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (296ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (21ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (58ms)
+			ProcessInitializeOnLoadAttributes (154ms)
+			ProcessInitializeOnLoadMethodAttributes (59ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 63 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.ai.inference@2.6.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.inference@9a123aee5df7)
+    com.unity.ai.navigation@2.0.14 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.navigation@134dd6a3b97b)
+    com.unity.collab-proxy@2.13.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collab-proxy@4628d2ba6ea4)
+    com.unity.ide.rider@3.0.39 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.rider@4504839d03f7)
+    com.unity.ide.visualstudio@2.0.27 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.visualstudio@dc1ddd4f09b6)
+    com.unity.inputsystem@1.19.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.inputsystem@21a28c3a6c83)
+    com.unity.timeline@1.8.12 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.11 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.visualscripting@8bed5ad90189)
+    com.unity.burst@1.8.30 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.burst@2f3d916873ea)
+    com.unity.dt.app-ui@1.3.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.dt.app-ui@3bbd9e4c5c92)
+    com.unity.collections@2.6.8 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collections@84e8eb3fc12e)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.searcher@4.9.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.searcher@1e17ce91558d)
+    com.unity.mathematics@1.3.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.mathematics@8017b507cc74)
+    com.unity.nuget.mono-cecil@1.11.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.5.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework.performance@8b56083ec0f0)
+  Built-in packages:
+    com.unity.multiplayer.center@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.multiplayer.center@f3fb577b3546)
+    com.unity.render-pipelines.universal@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal@c7abd84d7030)
+    com.unity.test-framework@1.6.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework@082c24152fd4)
+    com.unity.ugui@2.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ugui@8bb446d869cd)
+    com.unity.modules.accessibility@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.ai@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.screencapture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vehicles@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.vr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vr)
+    com.unity.modules.wind@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ext.nunit@031a54704bff)
+    com.unity.2d.sprite@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.2d.sprite@0eb6ea2c7181)
+    com.unity.render-pipelines.core@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.core@f663854f0ceb)
+    com.unity.shadergraph@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.shadergraph@14250cfec0ec)
+    com.unity.render-pipelines.universal-config@17.0.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal-config@dd206bf35d04)
+    com.unity.rendering.light-transport@1.0.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.rendering.light-transport@9bd588f963c0)
+  Git packages:
+    com.esotericsoftware.spine.spine-unity@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Assets/Spine#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-unity@21b16484175f)
+    com.esotericsoftware.spine.spine-csharp@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-csharp/src#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-csharp@62e1be8a5d43)
+    com.esotericsoftware.spine.urp-shaders@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Modules/com.esotericsoftware.spine.urp-shaders#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.urp-shaders@413194061080)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.02 seconds
+[API Updater] Processing imported assemblies took 107 ms (0/0 assembly(ies)).
+Assembly Updater Post Process Assets time: 0.111674s
+[ScriptCompilation] Requested script compilation because: Assembly Definition File(s) changed
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+DisplayProgressbar: Compiling Scripts
+Starting: D:\unity\6000.0.82f1\Editor\Data\Tools\netcorerun\netcorerun.exe "D:\unity\6000.0.82f1\Editor\Data\Tools\BuildPipeline\ScriptCompilationBuildProgram.exe" "Library/Bee/1900b0aE.dag.json" "Library/Bee/1900b0aE-inputdata.json" "Library\Bee\buildprogram0.traceevents"
+WorkingDir: D:/unity/plan go/Musical Sprite
+ExitCode: 4 Duration: 0s764ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/1900b0aE-inputdata.json
+*** Tundra requires additional run (0.72 seconds), 0 items updated, 51 evaluated
+ExitCode: 0 Duration: 0s863ms
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\1900b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+ExitCode: 0 Duration: 9s632ms
+Finished compiling graph: 1050 nodes, 18663 flattened edges (15311 ToBuild, 170 ToUse), maximum node priority 1115
+[ 516/1047  0s] WriteText Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.rsp
+[ 517/1047  0s] WriteText Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.rsp
+[ 565/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEngine.TestRunner.pdb
+[ 566/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEngine.TestRunner.dll
+[ 585/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEditor.TestRunner.pdb
+[ 635/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEditor.TestRunner.dll
+[ 750/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Collections.CodeGen.pdb
+[ 757/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Burst.CodeGen.dll
+[ 785/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Burst.CodeGen.pdb
+[ 802/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Collections.CodeGen.dll
+[ 803/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Rider.Editor.pdb
+[ 804/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualStudio.Editor.pdb
+[ 805/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Rider.Editor.dll
+[ 806/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualStudio.Editor.dll
+[ 807/1047  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[ 885/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.MacBLAS.dll
+[ 886/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Multiplayer.Center.Common.dll
+[ 887/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Flow.dll
+[ 888/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipeline.Universal.ShaderLibrary.dll
+[ 889/1047  0s] CopyFiles Library/ScriptAssemblies/spine-unity.dll
+[ 890/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.MVVM.dll
+[ 891/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.InternalAPIBridge.dll
+[ 892/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.TextMeshPro.dll
+[ 893/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.DocCodeExamples.dll
+[ 894/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Core.dll
+[ 895/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.dll
+[ 896/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Rendering.LightTransport.Runtime.dll
+[ 897/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Shaders.dll
+[ 898/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Runtime.dll
+[ 899/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Burst.dll
+[ 900/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Redux.dll
+[ 901/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.dll
+[ 902/1047  0s] CopyFiles Library/ScriptAssemblies/spine-csharp.dll
+[ 903/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.dll
+[ 904/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Mathematics.dll
+[ 905/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll
+[ 906/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.dll
+[ 907/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Runtime.dll
+[ 908/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.iOSBLAS.dll
+[ 909/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.GPUDriven.Runtime.dll
+[ 910/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Timeline.dll
+[ 911/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.State.dll
+[ 912/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Editor.Shared.pdb
+[ 913/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PlasticSCM.Editor.pdb
+[ 914/1047  0s] CopyFiles Library/ScriptAssemblies/PPv2URPConverters.pdb
+[ 915/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Collections.dll
+[ 916/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEngine.UI.dll
+[ 917/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Runtime.Shared.dll
+[ 918/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.2D.Runtime.dll
+[ 919/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Config.Runtime.dll
+[ 920/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PerformanceTesting.dll
+[ 921/1047  0s] CopyFiles Library/ScriptAssemblies/spine-unity-editor.pdb
+[ 922/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PlasticSCM.Editor.Entities.pdb
+[ 923/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.ShaderGraph.Utilities.pdb
+[ 924/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Burst.Editor.pdb
+[ 925/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Undo.dll
+[ 926/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.TestFramework.dll
+[ 927/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Multiplayer.Center.Editor.pdb
+[ 928/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Navigation.dll
+[ 929/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.ForUI.dll
+[ 930/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Collections.Editor.pdb
+[ 931/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.DocCodeSamples.pdb
+[ 932/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Rendering.LightTransport.Editor.pdb
+[ 933/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.ShaderLibrary.dll
+[ 934/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Editor.Shared.dll
+[ 935/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.State.Editor.pdb
+[ 936/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Microsoft.Msagl.pdb
+[ 937/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.TextMeshPro.Editor.pdb
+[ 938/1047  0s] CopyFiles Library/ScriptAssemblies/PPv2URPConverters.dll
+[ 939/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Editor.Visualizer.pdb
+[ 940/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PlasticSCM.Editor.dll
+[ 941/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.CollabProxy.Editor.pdb
+[ 942/1047  0s] CopyFiles Library/ScriptAssemblies/spine-unity-editor.dll
+[ 943/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Tokenization.dll
+[ 944/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PlasticSCM.Editor.Entities.dll
+[ 945/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEditor.UI.Analytics.pdb
+[ 946/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.Editor.ConversionSystem.pdb
+[ 947/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Core.Editor.pdb
+[ 948/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Burst.Editor.dll
+[ 949/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.2D.Sprite.Editor.pdb
+[ 950/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Collections.Editor.dll
+[ 951/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.DocCodeSamples.dll
+[ 952/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Timeline.Editor.pdb
+[ 953/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PlasticSCM.Editor.Assistant.pdb
+[ 954/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Multiplayer.Center.Editor.dll
+[ 955/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.State.Editor.dll
+[ 956/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PerformanceTesting.Editor.pdb
+[ 957/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Navigation.Editor.pdb
+[ 958/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.ShaderGraph.Utilities.dll
+[ 959/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Editor.pdb
+[ 960/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll
+[ 961/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Microsoft.Msagl.dll
+[ 962/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Editor.pdb
+[ 963/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.Updater.pdb
+[ 964/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Shared.Editor.pdb
+[ 965/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Rendering.LightTransport.Editor.dll
+[ 966/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Editor.Visualizer.dll
+[ 967/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll
+[ 968/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEditor.UI.Analytics.dll
+[ 969/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.ONNX.Editor.pdb
+[ 970/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Editor.pdb
+[ 971/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.Editor.pdb
+[ 972/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Core.Editor.dll
+[ 973/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Timeline.Editor.dll
+[ 974/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.2D.Sprite.Editor.dll
+[ 975/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.Editor.ConversionSystem.dll
+[ 976/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.SettingsProvider.Editor.pdb
+[ 977/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Editor.pdb
+[ 978/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Flow.Editor.pdb
+[ 979/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Searcher.Editor.pdb
+[ 980/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PerformanceTesting.Editor.dll
+[ 981/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.ShaderGraph.Editor.pdb
+[ 982/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Mathematics.Editor.pdb
+[ 983/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Editor.dll
+[ 984/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Navigation.Editor.dll
+[ 985/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEditor.UI.pdb
+[ 986/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Editor.dll
+[ 987/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PlasticSCM.Editor.Assistant.dll
+[ 988/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Shared.Editor.dll
+[ 989/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.Updater.dll
+[ 990/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipeline.Universal.ShaderLibrary.pdb
+[ 991/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Config.Runtime.pdb
+[ 992/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Runtime.pdb
+[ 993/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Runtime.Shared.pdb
+[ 994/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.pdb
+[ 995/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Collections.pdb
+[ 996/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Redux.pdb
+[ 997/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEngine.UI.pdb
+[ 998/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Navigation.pdb
+[ 999/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Rendering.LightTransport.Runtime.pdb
+[1000/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.pdb
+[1001/1047  0s] CopyFiles Library/ScriptAssemblies/spine-csharp.pdb
+[1002/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Editor.dll
+[1003/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Flow.pdb
+[1004/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.Tokenization.pdb
+[1005/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Runtime.pdb
+[1006/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.ShaderLibrary.pdb
+[1007/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Shaders.pdb
+[1008/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Multiplayer.Center.Common.pdb
+[1009/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.MVVM.pdb
+[1010/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.pdb
+[1011/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.pdb
+[1012/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.pdb
+[1013/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.InternalAPIBridge.pdb
+[1014/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.TextMeshPro.pdb
+[1015/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Universal.2D.Runtime.pdb
+[1016/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.State.pdb
+[1017/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Burst.pdb
+[1018/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.iOSBLAS.pdb
+[1019/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.DocCodeExamples.pdb
+[1020/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Mathematics.pdb
+[1021/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Core.pdb
+[1022/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.ForUI.pdb
+[1023/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.GPUDriven.Runtime.pdb
+[1024/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.PerformanceTesting.pdb
+[1025/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InputSystem.TestFramework.pdb
+[1026/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AppUI.Undo.pdb
+[1027/1047  0s] CopyFiles Library/ScriptAssemblies/spine-unity.pdb
+[1028/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.MacBLAS.pdb
+[1029/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Timeline.pdb
+[1030/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.SettingsProvider.Editor.dll
+[1031/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.RenderPipelines.Core.Editor.dll
+[1032/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.InferenceEngine.ONNX.Editor.dll
+[1033/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.AI.Navigation.Editor.dll
+[1034/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.VisualScripting.Flow.Editor.dll
+[1035/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Mathematics.Editor.dll
+[1036/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.ShaderGraph.Editor.dll
+[1037/1047  0s] CopyFiles Library/ScriptAssemblies/UnityEditor.UI.dll
+[1038/1047  0s] CopyFiles Library/ScriptAssemblies/Unity.Searcher.Editor.dll
+[1039/1047  3s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+
+Assets\Scripts\GameManager.cs(283,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Scripts\NotePrewarmer.cs(40,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+
+Assets\Scripts\HoldNote.cs(243,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used
+
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+
+Assets\Scripts\NoteMover.cs(97,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+[1040/1047  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+[1041/1047  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 133 defines and 312 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1042/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1043/1047  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 131 defines and 333 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1044/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[1045/1047  4s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+[1046/1047  4s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (9.61 seconds), 177 items updated, 1047 evaluated
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+Assets\Scripts\GameManager.cs(283,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Scripts\NotePrewarmer.cs(40,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+Assets\Scripts\HoldNote.cs(243,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+Assets\Scripts\NoteMover.cs(97,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+AssetDatabase: script compilation time: 11.797824s
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  1.319 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1 using Guid(c7c558a3d4a80a740b2fc85ac35438bf) (DefaultImporter) -> (artifact id: 'cfedab56512ea3fa4cb04f146d67c3a5') in 0.0210853 seconds
+Refreshing native plugins compatible for Editor in 5.33 ms, found 5 plugins.
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 5.96 ms, found 5 plugins.
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  5.393 seconds
+Domain Reload Profiling: 6699ms
+	BeginReloadAssembly (331ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (10ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (134ms)
+	RebuildCommonClasses (39ms)
+	RebuildNativeTypeToScriptingClass (14ms)
+	initialDomainReloadingComplete (43ms)
+	LoadAllAssembliesAndSetupDomain (879ms)
+		LoadAssemblies (627ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (379ms)
+			TypeCache.Refresh (273ms)
+				TypeCache.ScanAssembly (256ms)
+			BuildScriptInfoCaches (89ms)
+			ResolveRequiredComponents (14ms)
+	FinalizeReload (5394ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (5035ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (15ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (231ms)
+			ProcessInitializeOnLoadAttributes (4433ms)
+			ProcessInitializeOnLoadMethodAttributes (335ms)
+			AfterProcessingInitializeOnLoad (16ms)
+			EditorAssembliesLoaded (1ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (15ms)
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-2-red.png using Guid(1092811ee85a4f8094f871b99588a750) (TextureImporter) -> (artifact id: '6aedbca0b4f6cfb6b301c7faf4970960') in 0.0206038 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-4-cream.png using Guid(10c742736f884dc8b55e5b9c578bdce7) (TextureImporter) -> (artifact id: '45c1eea86f800551fbf54b363bfa12dd') in 0.0062747 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/avatar-frame-mask-red.png using Guid(60633514b53b41e5a81e864d3c536858) (TextureImporter) -> (artifact id: '0dfe2a05d86a73ae95e1d0181eb42090') in 0.0062233 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/avatar-content-mask.png using Guid(70d52bf1ed9c43b782381536f2bb1a13) (TextureImporter) -> (artifact id: '4901670de69ccfbf7158ba75563c4c42') in 0.0046642 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-loss-blue.png using Guid(e0d62fc8e8e84b59a6562320ccd44eed) (TextureImporter) -> (artifact id: '49564adf5db0fb448ffd44893d5e6177') in 0.0113972 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-0-cream.png using Guid(c126d4446c274b0d93c82131b9de4487) (TextureImporter) -> (artifact id: '5491478b18fce358ab8e3d3f0af351e1') in 0.0063475 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-2-blue.png using Guid(c13b508cb8e44a2ea81bf8ba035163ff) (TextureImporter) -> (artifact id: 'a0fb2c8b5774c77902ac508e3b0db051') in 0.0056174 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-8-cream.png using Guid(c13e11dd25fc4446a1c6edfff565b313) (TextureImporter) -> (artifact id: '396cfc774f9c3ce2b3caa405b571523e') in 0.00587 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-6-cream.png using Guid(22200973aac1429dbd5cc895d2f88e37) (TextureImporter) -> (artifact id: 'dcfe37afa45e3de9950c48c297e1107f') in 0.0058261 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/outer-dot-red.png using Guid(52043e159ab14d2bbbb8076904a949b6) (TextureImporter) -> (artifact id: '8575aba40a75498d6e84bc350a260f8f') in 0.0048596 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-5-red.png using Guid(f270b88c663c47d694e6e8a63c0b1575) (TextureImporter) -> (artifact id: '2ca5061478c6c83fe00f3be58c07dd2c') in 0.0051735 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/label-hp-cream.png using Guid(339347a561434433be1ee168cb44300d) (TextureImporter) -> (artifact id: '27167a8660d1f0306b37c51fdd2a24bc') in 0.0063389 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-4-red.png using Guid(531a7f80f20d49c68d1c47c590c6dca3) (TextureImporter) -> (artifact id: '0149520dfe0e521157d6b796685533a5') in 0.00589 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-1-cream.png using Guid(93aa9198652048d08fcac0bc758e9244) (TextureImporter) -> (artifact id: '0606ac892ad2a6537a712227e5e425f5') in 0.0050914 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-mask-blue.png using Guid(b33723cfdca84cbc9794c0df1336c2ae) (TextureImporter) -> (artifact id: '133773ef0d0374ec1d4970de92441cc5') in 0.0191138 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-3-cream.png using Guid(2418e59bb0d94753ac7a751b05f39d79) (TextureImporter) -> (artifact id: 'c68c00a4a8ba8d5fcf5bfdb6cf652c5a') in 0.0072368 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-6-blue.png using Guid(94db8ebec2334f1bba5efcb6b0992903) (TextureImporter) -> (artifact id: 'ba3ef01419a3e3736bf05d147e1d8bf4') in 0.0064805 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-heal-red.png using Guid(05b3a8dffc9346fc8cc5bd275280a1f9) (TextureImporter) -> (artifact id: 'cc29b232b9654474d01ef54cf94a2ab4') in 0.0401928 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-0-blue.png using Guid(45dca8f18a794c85a5582fe7292d23d5) (TextureImporter) -> (artifact id: 'b152d810a2a6151488916d6f1e81cc3c') in 0.0145969 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/inner-leaves-blue.png using Guid(65931cb04b8c4ccf987eba5be5ce1708) (TextureImporter) -> (artifact id: '660edc9cd7ae36a7262a214f5eacd514') in 0.0069701 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-2-cream.png using Guid(e599e5bf44024fe89a20e3b8191e86e1) (TextureImporter) -> (artifact id: '48f787401561e0db2fd5c044cae4ebb9') in 0.0078334 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/avatar-frame-blue.png using Guid(f556988df28543fb9d2a489ada410eb8) (TextureImporter) -> (artifact id: 'a6ae4e595236fc2951bac0f834a4bdd8') in 0.0106364 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-7-blue.png using Guid(7628e767796e431b917578a3b2a0ceaa) (TextureImporter) -> (artifact id: 'cd24273b44da819bf9e697a799795e1b') in 0.015186 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/avatar-frame-red.png using Guid(76f988e1ca1f4544b13164dd5fcbce5b) (TextureImporter) -> (artifact id: 'e9e5d80ec4e864e69b573317269cb867') in 0.0078889 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/score-marks-mask-blue.png using Guid(c62e9d940efe4720bb430cd1a367f242) (TextureImporter) -> (artifact id: '9ce7e016c3fcb5a373ff4df697cb7871') in 0.0055241 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/score-marks-red.png using Guid(d6bce0fb1e244a90a5808a2e14198be3) (TextureImporter) -> (artifact id: '46f5085f16aefdb3f8b0579581ed523c') in 0.0063181 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-3-red.png using Guid(0768a971548041cb9834206c449409f2) (TextureImporter) -> (artifact id: '0eb04a99f8ae1b81e573ebf5a6f0b48b') in 0.0058144 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-9-red.png using Guid(37166c24d323455789f790e6a011e35f) (TextureImporter) -> (artifact id: '7c1e04ab9db88ccbad0e158c237a6d78') in 0.0053502 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/outer-leaves-blue.png using Guid(673633ca8a1f42fcb1ce5937e85545dc) (TextureImporter) -> (artifact id: 'd94b31f7dd6299c183fd29a1d177cd9c') in 0.0051481 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/avatar-frame-mask-blue.png using Guid(f7f1aee239c44282b99fa3222bc4f8da) (TextureImporter) -> (artifact id: 'cfe7fca9b606fa5f2b379fbd8ced36dc') in 0.0062446 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-heal-blue.png using Guid(48464125400f46cb97b29c5d6fbc8ae7) (TextureImporter) -> (artifact id: '0bb5cb1fa9f0d5d39d098d60431bb8c9') in 0.0122794 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-red.png using Guid(682dcf5f03fa4eaa827abe2e8adb84ed) (TextureImporter) -> (artifact id: '92442caaa15670fd889434c429301fe5') in 0.0172993 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/score-marks-mask-red.png using Guid(78925d30775d4c21bc3c04eb4d1c38ef) (TextureImporter) -> (artifact id: '45bd285dd778371cff86fda2a82e4e71') in 0.0048647 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/inner-leaves-red.png using Guid(d96863a917dc4e91b096c2af43fa7ed2) (TextureImporter) -> (artifact id: 'e232b482085ad842eaef19e142dca6b7') in 0.0062866 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-9-blue.png using Guid(3a1cdad9a5ae4a9baad443a813a67d43) (TextureImporter) -> (artifact id: '4f61fb0654db9d6f351e747188971ef7') in 0.0065891 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-empty-blue.png using Guid(6ae3a0feedee4170a6054e1ac4c962e6) (TextureImporter) -> (artifact id: '5e7a02dec50960219f90ac75e771eb01') in 0.0128876 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/outer-dot-mask-red.png using Guid(ca97e8a4af934053a7ab041a5a97caf6) (TextureImporter) -> (artifact id: 'd2761ff3ae9a9005118ac0e0da060a0a') in 0.0036197 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-blue.png using Guid(cacf649414684c36abb89c1a4c6ae9c5) (TextureImporter) -> (artifact id: '44072163a96d2fa7f3625c2597d8d2f7') in 0.0157654 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-9-cream.png using Guid(da8eb3dbeb2c474d9958ad5fad4c53e3) (TextureImporter) -> (artifact id: 'bfc7c4abcdaf4dfa08fe790e7fd56268') in 0.0070549 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/outer-leaves-red.png using Guid(ea5ddbdf4fe4418b92f2db4ee156db66) (TextureImporter) -> (artifact id: '14b0ed9ac5a0cfa6630acfe578764f19') in 0.0062234 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-5-blue.png using Guid(5b4b9cf141e74419a9f26646fbf4ea1a) (TextureImporter) -> (artifact id: 'f5130f85a28824c938d2928727b4e128') in 0.0062808 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-7-red.png using Guid(7b748b4d73164381915a1c670329eedc) (TextureImporter) -> (artifact id: '1e719f25a5a48488c55ba2a45f9df805') in 0.0060851 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-0-red.png using Guid(ab32cd697e8949098b3c57341137ccb5) (TextureImporter) -> (artifact id: '6b9ad97cb3efd70b3e59e67559f3d6c5') in 0.0064691 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-5-cream.png using Guid(dbc8024ecd3d48daa45ed6c517d841c1) (TextureImporter) -> (artifact id: '4f9cd5ffb7003758e3629d8d5fbd4c67') in 0.0069512 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/outer-dot-blue.png using Guid(2c83afd6b6fa4074abf64986a6c96966) (TextureImporter) -> (artifact id: 'a3b149cb66c454da79c98a855709c56e') in 0.0060354 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/outer-dot-mask-blue.png using Guid(4c8afac398574c91883a3e04387c9665) (TextureImporter) -> (artifact id: 'a31df7c672c8dd4b9b44cc3620dd5eea') in 0.0049477 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-4-blue.png using Guid(4c8bc1a632ff432f915b5121597f72c6) (TextureImporter) -> (artifact id: 'f0b18bddafa7e765e707968304939cb0') in 0.0069734 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-loss-red.png using Guid(fc3ba5132e8d4d938df6067d1c6e0209) (TextureImporter) -> (artifact id: '51283abfca8a1cccd8e13436485a3b25') in 0.013016 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/identity-crescent-blue.png using Guid(2deb1703552d4addaaf92a3ab8931707) (TextureImporter) -> (artifact id: '95f1e30f0de8baee7f5f0c107cd368e0') in 0.006712 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-3-blue.png using Guid(6d2855b23af6433ca4187d632cce53b8) (TextureImporter) -> (artifact id: 'ae20d1c71d33c472ee460397c7f6c0fe') in 0.0070043 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-1-red.png using Guid(ad035687ac4a4539a8738f6fea79a951) (TextureImporter) -> (artifact id: 'f800f317bdb48ab457f1367ce3cb3412') in 0.0064917 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/identity-crescent-mask-blue.png using Guid(ed34643ea5574e4ba6b284a53113c62e) (TextureImporter) -> (artifact id: '4814511f916edc83dcc8bd768c9c7ee9') in 0.005044 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/identity-crescent-mask-red.png using Guid(fd12b0fe79dc45aba7c3013ca29bfadf) (TextureImporter) -> (artifact id: '7c66b38962e60caa23433c396f0e1ed9') in 0.0053094 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/identity-crescent-red.png using Guid(7eb33ea74c6240d88e2df27a7a0c35cc) (TextureImporter) -> (artifact id: '5b1f7695faba1306e18f798edd192144') in 0.0069385 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/score-marks-blue.png using Guid(9e6461bc6d824b9dbfa4d4d118278a38) (TextureImporter) -> (artifact id: '8e43311c68555cc2038a5012fd50fe83') in 0.0057109 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-7-cream.png using Guid(ae63aba345f24953830ff895e2e25191) (TextureImporter) -> (artifact id: 'b1c0231a69c306f08dbb54cce68fe422') in 0.0077966 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-empty-red.png using Guid(bed1966765de4ccb8128f8bb4aae159e) (TextureImporter) -> (artifact id: '98497fba6480817b413572e06e7b9e0a') in 0.0129214 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-6-red.png using Guid(3f8f2295387c420e9ddc9e6fdd98d9db) (TextureImporter) -> (artifact id: '2ef950a6e7cc3d6343c205679e2a53ac') in 0.0069778 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-8-red.png using Guid(5ff299730e3e435bbc85b101af056f51) (TextureImporter) -> (artifact id: '6f2959ece56f6c3e7a66dac3b94bd942') in 0.0060703 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-1-blue.png using Guid(9f5b71ba23c4429eb28cdbf680457eac) (TextureImporter) -> (artifact id: 'caafe643703a0d95a1c611592f2e0907') in 0.0067799 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/digit-8-blue.png using Guid(afc638b28e7249eeafac97ec0b05fdc5) (TextureImporter) -> (artifact id: '5cf9b5959a40c17d3a1a888f9b8ec0e4') in 0.0058808 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/ribbon-mask-red.png using Guid(ef83926518364451aeb081c3d2dbae55) (TextureImporter) -> (artifact id: '98f94012da90b8d2542fbe76a3a9eeb8') in 0.0143517 seconds
+Start importing Assets/Resources/Shaders/FullRibbonHUD.shader using Guid(489076b48d844ce59bc43229ea03562e) (ShaderImporter)Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+ -> (artifact id: '2b8a96d2c85776e372ac381a751bdb1b') in 0.0898875 seconds
+Start importing Assets/Resources/BattleVisualV11/FullRibbonHUDStyle.asset using Guid(3d23a28d56e74991823d9f4589dbe56d) (NativeFormatImporter) -> (artifact id: '58d84d12630bfa997e1bcc9798fbf30b') in 0.0194805 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/alpha-preparation.txt using Guid(2343bbe4f522092469de5b304aaab156) (TextScriptImporter) -> (artifact id: '3fc205e9ecd9155a76935baa8161759c') in 0.3599116 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonStaticV1/layout-v1.json using Guid(46d81bdb7d689894098298ce479fffb3) (TextScriptImporter) -> (artifact id: '4f4dd9cc1c41b13b909342ac9b0bdc07') in 0.0053262 seconds
+The following asset(s) located in immutable packages were unexpectedly altered. Making changes to immutable packages isn't recommended because the changes can be lost without any warning during Package Manager operations.
+  Packages/com.unity.collab-proxy/Editor/Gluon/UpdateProgress.cs
+  Packages/com.unity.dt.app-ui/PackageResources/Cursors/move@2x.png
+  Packages/com.unity.dt.app-ui/Runtime/UI/Components/DrawerHeader.cs
+  Packages/com.unity.ugui/Tests/Runtime/UGUI/EventSystem/GraphicRaycasterButtonTests.cs
+  Packages/com.unity.shadergraph/Editor/Generation/Enumerations/BlendOp.cs
+  Packages/com.unity.collab-proxy/Editor/CodeEditor/Rendering/SingleCharacterElementGenerator.cs
+  Packages/com.unity.collab-proxy/Editor/Assets/Images/d_iconoriginalsize@2x.png
+  Packages/com.unity.multiplayer.center/Editor/Recommendations/RecommenderSystemDataObject.cs
+  Packages/com.unity.mathematics/Unity.Mathematics/bool4x3.gen.cs
+  Packages/com.unity.render-pipelines.universal/Editor/ShaderGraph/Includes/SelectionPickingPass.hlsl
+  Packages/com.unity.collab-proxy/Editor/UI/DropDownTextField.cs
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Core/Routing/EdgeRoutingMode.cs
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Core/Plugin/Acknowledgements/Acknowledgement_DotNetZip.cs
+  Packages/com.unity.render-pipelines.universal/Editor/AssetPostProcessors/ModelPostProcessor.cs
+  Packages/com.unity.collections/Unity.Collections.Tests/Jobs/FilterJobTests.cs
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Core/Utilities/WarningLevel.cs
+  Packages/com.unity.test-framework.performance/Editor/TestReportGraph/SampleGroupAdditionalData.cs
+  Packages/com.unity.dt.app-ui/Runtime/UI/Popups/Toast.cs
+  Packages/com.unity.collab-proxy/Editor/Diff/UnityBigFileChecker.cs
+  Packages/com.unity.collab-proxy/Editor/Views/BranchExplorer/Drawing/Shapes/ChangesetNumberShape.cs
+  Packages/com.unity.render-pipelines.core/Runtime/Common
+  Packages/com.unity.render-pipelines.universal/ShaderLibrary/Debug/DebuggingCommon.hlsl
+  Packages/com.unity.burst/Runtime/BurstRuntime.cs
+  Packages/com.unity.render-pipelines.universal/Editor/VFXGraph/Shaders/Templates/ParticlePlanarPrimitivesLit/PassGBuffer.template
+  Packages/com.unity.inputsystem/InputSystem/Editor/Icons/Gamepad@4x.png
+  Packages/com.unity.timeline/Runtime/AssetUpgrade
+  Packages/com.unity.shadergraph/Editor/Data/Nodes/Artistic/Utility
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Flow/Framework/Nesting/GraphInputInspector.cs
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Core/Plugin/Changelogs/LegacyLudiqGraphs/Changelog_1_4_0.cs
+  Packages/com.unity.shadergraph/Editor/Generation/Attributes
+  Packages/com.unity.render-pipelines.core/Editor/CoreEditorDrawers.cs
+  Packages/com.unity.render-pipelines.universal/Editor/ShaderGraph/Templates
+  Packages/com.unity.searcher/LICENSE.md
+  Packages/com.unity.render-pipelines.core/Editor/Lighting/Icons/LightUnitIcons/SoftAreaLight@2x.png
+  Packages/com.unity.collab-proxy/Editor/CodeEditor/TextEditorComponent.cs
+  Packages/com.unity.collab-proxy/Editor/Assets/Images/d_iconzoomin.png
+  Packages/com.unity.dt.app-ui/PackageResources/Icons/Regular/NewFolder.png
+  Packages/com.unity.dt.app-ui/Runtime/UI/Components/Breadcrumbs.cs
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Core/Geometry/OverlapRemoval/OverlapRemovalNode.cs
+  Packages/com.unity.collab-proxy/Editor/Assets/Images/icondeletedremote@2x.png
+  Packages/com.unity.ide.visualstudio/Editor/KnownAssemblies.cs
+  Packages/com.unity.timeline/Editor/treeview/IPropertyKeyDataSource.cs
+  Packages/com.unity.render-pipelines.universal/Editor/UniversalAdditionalLightDataEditor.cs
+  Packages/com.unity.collab-proxy/Editor/Views/Diff/DiffTreeView.cs
+  Packages/com.unity.collab-proxy/Editor/CodeEditor/TextViewPosition.cs
+  Packages/com.unity.dt.app-ui/Runtime/Core/Platform/Windows/Plugins/x64/AppUINativePlugin.dll
+  Packages/com.unity.shadergraph/Editor/Data/Nodes/Artistic/Adjustment/InvertColorsNode.cs
+  Packages/com.unity.shadergraph/Editor/Generation/Descriptors/KeywordDescriptor.cs
+  Packages/com.unity.timeline/Editor/Window/TimelineWindow_Manipulators.cs
+  Packages/com.unity.render-pipelines.universal/Editor/2D/Resources/SceneViewIcons/PointLight.png
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Core/Variables/VariableDeclarationsInspector.cs
+  Packages/com.unity.render-pipelines.core/Runtime/Utilities/BlitColorAndDepth.hlsl
+  Packages/com.unity.dt.app-ui/PackageResources/Logos/Unity-Logo-White.png
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Miscellaneous/LayoutEditing/GraphRestoreData.cs
+  Packages/com.unity.dt.app-ui/PackageResources/Shaders/App UI Shaders.shadervariants
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Flow/Plugin/BoltFlowConfiguration.cs
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Routing/Spline/ConeSpanner/ConeRightSide.cs
+  Packages/com.unity.ai.inference/Runtime/Core/Serialization/FlatBuffers/FlatBufferBuilder.cs
+  Packages/com.unity.ugui/Runtime/UGUI/UI/Core/AnimationTriggers.cs
+  Packages/com.unity.mathematics/Unity.Mathematics/Noise/classicnoise3D.cs
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Routing/Spline/Bundling/TimeMeasurer.cs
+  Packages/com.unity.timeline/Editor/StyleSheets/Images/DarkSkin/TimelineMarkerItemCollapsed.png
+  Packages/com.unity.searcher/Editor/Searcher/SearcherDatabaseBase.cs
+  Packages/com.unity.collab-proxy/Editor/Views/BranchExplorer/Virtualization/CanvasScrollView.cs
+  Packages/com.unity.collab-proxy/Editor/Assets/Images/iconzoomtofit@2x.png
+  Packages/com.unity.timeline/Editor/StyleSheets/Images/Icons/TrackAvatarButtonDisabled.png
+  Packages/com.unity.render-pipelines.universal/Textures/BlueNoise256/LDR_LLL1_7.png
+  Packages/com.unity.visualscripting/Runtime/VisualScripting.Flow/Framework/Events/Physics2D
+  Packages/com.unity.modules.unitywebrequesttexture/package.ModuleCompilationTrigger
+  Packages/com.unity.ai.inference/Runtime/Core/Internals/ModelAssetWeightsData.cs
+  Packages/com.unity.dt.app-ui/Runtime/UI/Manipulators/Draggable.cs
+  Packages/com.unity.ai.inference/Runtime/Tokenization/Parsers/HuggingFace/PreTokenizers/ByteLevelPreTokenizerBuilder.cs
+  Packages/com.unity.ai.inference/Runtime/Plugins/iOS
+  Packages/com.unity.visualscripting/Runtime/VisualScripting.Core/Reflection/Optimization/InstanceActionInvoker_2.cs
+  Packages/com.unity.dt.app-ui/Runtime/Core/AppUIInput.cs
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Routing/Rectilinear/LookaheadScan.cs
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Layout/Layered/Ordering/AdjacentSwaps.cs
+  Packages/com.unity.ai.inference/Editor/Torch/TorchModelNodeWrapper.cs
+  Packages/com.unity.collections/Unity.Collections.PerformanceTests/RewindableAllocatorPerformanceTests.cs
+  Packages/com.unity.test-framework/UnityEditor.TestRunner/TestRun/Tasks/Scene/RemoveAdditionalUntitledSceneTask.cs
+  Packages/com.unity.dt.app-ui/PackageResources/Styles/Themes/App UI - Light - Large.tss
+  Packages/com.unity.shadergraph/Editor/Data/Enumerations/Precision.cs
+  Packages/com.unity.render-pipelines.core/Editor/LookDev/LookDevRenderer.cs
+  Packages/com.unity.render-pipelines.universal/Runtime/Passes/ScreenSpaceAmbientOcclusionPass.cs
+  Packages/com.unity.render-pipelines.universal/Runtime/Decal/Entities/DecalEntityManager.cs
+  Packages/com.esotericsoftware.spine.spine-csharp/ConstraintData.cs
+  Packages/com.unity.burst/Unity.Burst.CodeGen/CecilExtensions.cs
+  Packages/com.unity.render-pipelines.universal/ShaderLibrary/Debug/DebugViewEnums.cs.hlsl
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Flow/Framework/Codebase/LiteralInspector.cs
+  Packages/com.esotericsoftware.spine.spine-unity/Runtime/spine-unity/Shaders/Outline/BlendModes/Spine-Skeleton-PMA-Additive-Outline.shader
+  Packages/com.unity.inputsystem/InputSystem/Devices/Commands/QueryEnabledStateCommand.cs
+  Packages/com.unity.shadergraph/Editor/Data/Util/PropertyUtil.cs
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Flow/Plugin/Changelogs/Changelog_1_4_3.cs
+  Packages/com.unity.ai.inference/ThirdParty/Microsoft.Msagl/Routing/Spline/ConeSpanner/ConeSpanner.cs
+  Packages/com.unity.render-pipelines.universal/Editor/Converter/PPv2/PPv2ConversionIndexers.cs
+  Packages/com.unity.collab-proxy/Editor/Assets/Images/d_iconcheckmark@2x.png
+  Packages/com.unity.dt.app-ui/PackageResources/Icons/Regular/Image.png
+  Packages/com.unity.render-pipelines.core/Editor/PostProcessing/LensFlareResource/CircleFlareThumbnail.png
+  Packages/com.unity.dt.app-ui/Tests/Runtime/InternalBridge/EventBaseExtensionsBridgeTests.cs
+  Packages/com.unity.shadergraph/Editor/AssetCallbacks/CreateShaderGraph.cs
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Core/Debugging
+  Packages/com.unity.visualscripting/Runtime/VisualScripting.Flow/Framework/Collections/Dictionaries/RemoveDictionaryItem.cs
+  Packages/com.unity.test-framework/UnityEngine.TestRunner/NUnitExtensions/Commands/EnumerableSetUpTearDownCommand.cs
+  Packages/com.unity.test-framework.performance/Runtime/Measurements/ScopeMeasurement.cs
+  Packages/com.unity.render-pipelines.core/Editor/LookDev/CubeToLatlong.shader
+  Packages/com.unity.mathematics/Unity.Mathematics/svd.cs
+  Packages/com.unity.2d.sprite
+  Packages/com.unity.collab-proxy/Editor/Diff/Asset/Content/Search
+  Packages/com.esotericsoftware.spine.spine-unity/Editor/spine-unity/Modules/SkeletonRenderSeparator/Editor
+  Packages/com.unity.ext.nunit
+  Packages/com.unity.ai.inference/Runtime/Core/Backends/CPU/BurstCPU.Jobs.GenericA.cs
+  Packages/com.unity.shadergraph/Editor/Serialization/JsonRef.cs
+  Packages/com.unity.collab-proxy/Lib/Editor/Localization/mergetool.es.txt
+  Packages/com.unity.visualscripting/Runtime/VisualScripting.Core/Collections/AotList.cs
+  Packages/com.unity.visualscripting/Editor/VisualScripting.Core/Plugins/PluginDependencyAttribute.cs
+  Packages/com.unity.dt.app-ui/PackageResources/Icons/Regular/WaypointAdd.png
+  Packages/com.unity.ai.inference/Runtime/Core/Functional/Functional.Math.Pointwise.cs
+  Packages/com.unity.render-pipelines.universal/Editor/VFXGraph/Shaders/Templates/URPDecal/PassGBuffer.templ
+[C:\build\output\unity\unity\Modules\LocalizationEditor\LocalizationDatabase.cpp:807]Packages/com.unity.timeline/Editor/Localization/ja.po
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Lit ZWrite' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Lit ZWrite' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Tint' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Tint' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/SkeletonGraphic' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/SkeletonGraphic' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/Spine/Outline/Skeleton Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/Spine/Outline/Skeleton Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Sprite/Vertex Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Sprite/Vertex Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/Spine/Outline/Sprite' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/Spine/Outline/Sprite' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/2D/Spine/Outline/Skeleton' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/2D/Spine/Outline/Skeleton' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Sprite/Unlit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Sprite/Unlit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/SkeletonGraphic Tint Black' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/SkeletonGraphic Tint Black' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Blend Modes/Skeleton PMA Additive' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Blend Modes/Skeleton PMA Additive' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/Spine/Outline/Skeleton' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/Spine/Outline/Skeleton' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Blend Modes/Skeleton PMA Multiply' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Blend Modes/Skeleton PMA Multiply' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Fill' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Fill' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Sprite/Pixel Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Sprite/Pixel Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/2D/Spine/Outline/Sprite' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/2D/Spine/Outline/Sprite' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Tint Black' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton Tint Black' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Special/Skeleton Grayscale' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Special/Skeleton Grayscale' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Blend Modes/Skeleton PMA Screen' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Blend Modes/Skeleton PMA Screen' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Spine/Outline/Skeleton' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/2D/Spine/Outline/Skeleton Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+WARNING: Shader Unsupported: 'Universal Render Pipeline/2D/Spine/Outline/Skeleton Lit' - All subshaders removed
+WARNING: Shader Did you use #pragma only_renderers and omit this platform?
+WARNING: Shader If subshaders removal was intentional, you may have forgotten turning Fallback off?
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Refreshing native plugins compatible for Editor in 175.18 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 43.92 ms.
+Asset Pipeline Refresh (id=128de8ba83d825047b194b5379d81562): Total: 28.969 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=5 (actual=5, local cache=0, cache server=0)
+		Asset DB Process Time: managed=74 ms, native=11189 ms
+		Asset DB Callback time: managed=1965 ms, native=2407 ms
+		Scripting: domain reloads=1, domain reload time=1319 ms, compile time=11911 ms, other=100 ms
+		Project Asset Count: scripts=1725, non-scripts=4036
+		Asset File Changes: new=12821, changed=12821, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 25.209ms
+	ApplyChangesToAssetFolders: 0.796ms
+	Scan: 4088.604ms
+	OnSourceAssetsModified: 351.876ms
+	CategorizeAssetsWithTransientArtifact: 87.062ms
+	ProcessAssetsWithTransientArtifactChanges: 116.420ms
+	CategorizeAssets: 131.413ms
+	ImportOutOfDateAssets: 6558.244ms (-6422.892ms without children)
+		ImportManagerImport: 1064.545ms (9.269ms without children)
+			ImportInProcess: 1055.160ms
+			UpdateCategorizedAssets: 0.116ms
+		CompileScripts: 11910.995ms
+		ReloadNativeAssets: 0.055ms
+		UnloadImportedAssets: 0.907ms
+		ReloadImportedAssets: 0.005ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.415ms
+		InitializingProgressBar: 0.016ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 2.196ms
+	PostProcessAllAssets: 3808.097ms
+	Hotreload: 225.663ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.002ms
+	UnloadStreamsBegin: 3.021ms
+	PersistCurrentRevisions: 0.570ms
+	UnloadStreamsEnd: 0.002ms
+	GenerateScriptTypeHashes: 3.840ms
+	Untracked: 13572.381ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 3.215ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Musical Sprite
+Unloading 373 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8922 unused Assets / (59.7 MB). Loaded Objects now: 9069.
+Memory consumption went from 304.4 MB to 244.7 MB.
+Total: 85.113400 ms (FindLiveObjects: 0.939300 ms CreateObjectMapping: 1.347300 ms MarkObjects: 12.799800 ms  DeleteObjects: 70.024900 ms)
+
+Batchmode quit successfully invoked - shutting down!
+[Physics::Module] Cleanup current backned.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Exiting batchmode successfully now!
+Exiting without the bug reporter. Application will terminate with return code 0

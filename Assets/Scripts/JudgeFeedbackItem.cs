@@ -24,7 +24,12 @@ public class JudgeFeedbackItem : MonoBehaviour
 
     void Awake()
     {
-        uiText = GetComponentInChildren<Text>();
+        Configure(GetComponentInChildren<Text>());
+    }
+
+    public void Configure(Text label)
+    {
+        uiText=label;timer=0;
         if (uiText != null)
         {
             startColor = uiText.color;

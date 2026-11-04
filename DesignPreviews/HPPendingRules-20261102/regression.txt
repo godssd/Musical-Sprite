@@ -1,0 +1,9 @@
+Super loop fallback: Aibo_2_Shit_03_Play_Fever, animated bone pose changed.
+PASS: super loop / target, hit, dizziness, skills, return-to-normal and victory aliases.
+PASS: continuous losses/heals, interval=0.05, finite settlement and no event-time jumps.
+PASS: continuous losses/heals, interval=0.1, finite settlement and no event-time jumps.
+PASS: continuous losses/heals, interval=0.15, finite settlement and no event-time jumps.
+PASS: analytic damping frame-rate invariance, loss interrupts and refreshes hold, monotonic finite settlement.
+PASS: both reversal directions, white-flash peak, and zero impact after cursor reaches zero.
+PASS: number compress / expand / damp, continuous retrigger, frame-rate invariance; health first 50ms displacement >3x tail 50ms.
+PASS: inclusive 1.2s / refresh / pause while draining / lethal bypass / green stacking / green-first damage / exact green cancellation / excess-only yellow.

@@ -43,7 +43,7 @@ public class HPBarFxPreviewWindow : EditorWindow
     {
         EditorGUILayout.LabelField("血条扣血特效 · 编辑态预览", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "选中一条 HPBarLiquid（Hierarchy 点 HPBarLeft/Right），设好起始/目标血量，点'播放扣血'即可在 Scene 视图看到完整扣血特效，无需进入 Play。",
+            "选择 HPBarLiquid，目标低于起点预览扣血；高于起点预览绿色回血。可追加目标检查动画接续。V11 菜单 03 另有隔离曲带小样。",
             MessageType.Info);
 
         _target = (HPBarLiquid)EditorGUILayout.ObjectField("目标血条", _target, typeof(HPBarLiquid), true);
@@ -52,9 +52,20 @@ public class HPBarFxPreviewWindow : EditorWindow
         _to = EditorGUILayout.Slider("目标血量 %", _to * 100f, 0f, 100f) / 100f;
 
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("▶ 播放扣血") && _target != null) StartPreview();
+        if (GUILayout.Button("▶ 播放血量变化") && _target != null) StartPreview();
         if (GUILayout.Button("⏹ 停止")) StopPreview();
         EditorGUILayout.EndHorizontal();
+
+        if (GUILayout.Button("追加当前目标（不中断起点）") && _target != null)
+        {
+            _target.SetFill(_to);
+            if (!_playing)
+            {
+                _playing = true;
+                _lastTime = EditorApplication.timeSinceStartup;
+                EditorApplication.update += Tick;
+            }
+        }
 
         if (GUILayout.Button("设定基线（不播放）") && _target != null)
             _target.PreviewSetFill(_from);
@@ -91,7 +102,7 @@ public class HPBarFxPreviewWindow : EditorWindow
         _lastTime = now;
         if (dt > 0.1f) dt = 0.1f; // 防止切回编辑器时一次跳太大
 
-        _target.TickFX(dt);
+        if (!Application.isPlaying) _target.TickFX(dt);
         SceneView.RepaintAll();
 
         if (_target.IsSettled())

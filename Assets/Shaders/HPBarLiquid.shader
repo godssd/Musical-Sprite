@@ -4,6 +4,9 @@ Shader "MusicalSprite/UI/HPBarLiquid"
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Fill ("Fill", Range(0, 1)) = 1
+        _RangeStart ("Visible interval start", Range(0, 1)) = 0
+        _ShapeUV ("Atlas shape rectangle", Vector) = (0, 0, 1, 1)
+        _PaperStrength ("Paper pigment strength", Range(0, 1)) = 0
         _Flip ("Flip (0=left->right, 1=right->left)", Float) = 0
         _WaveAmp ("Slosh / Wave Amplitude", Float) = 0
         _SloshFreq ("Slosh Frequency", Float) = 2.2
@@ -102,6 +105,9 @@ Shader "MusicalSprite/UI/HPBarLiquid"
             float4 _ClipRect;
 
             float  _Fill;
+            float  _RangeStart;
+            float4 _ShapeUV;
+            float _PaperStrength;
             float  _Flip;
             float  _WaveAmp;
             float  _SloshFreq;
@@ -141,7 +147,8 @@ Shader "MusicalSprite/UI/HPBarLiquid"
 
             fixed4 frag(v2f IN) : SV_Target
             {
-                float2 uv = IN.texcoord;
+                float2 uv = (IN.texcoord - _ShapeUV.xy) / max(_ShapeUV.zw, float2(0.00001, 0.00001));
+                if (_Fill <= _RangeStart + 0.00001) discard;
 
                 // _Flip=0：液体靠左，右侧是液面；_Flip=1：镜像，液体靠右，左侧是液面
                 float u = lerp(uv.x, 1.0 - uv.x, step(0.5, _Flip));
@@ -176,6 +183,8 @@ Shader "MusicalSprite/UI/HPBarLiquid"
 
                 // 抗锯齿软边
                 float alpha = smoothstep(-_EdgeSoftness, _EdgeSoftness, d);
+                if (_RangeStart > 0.00001)
+                    alpha *= smoothstep(-_EdgeSoftness, _EdgeSoftness, u - _RangeStart);
                 if (alpha <= 0.002) discard;
 
                 // 沿填充方向(u)的渐变：满端(右侧/液面端=1)用 TopColor，空端用 BottomColor
@@ -221,7 +230,9 @@ Shader "MusicalSprite/UI/HPBarLiquid"
                 color.a *= lerp(1.0, blobMask, _BlobIntensity);
 
                 // 若给 Fill 配了遮罩贴图，用其 alpha 裁剪外形（无贴图时为白图 alpha=1）
-                color.a *= tex2D(_MainTex, uv).a;
+                half4 paper = tex2D(_MainTex, IN.texcoord);
+                color.a *= paper.a;
+                color.rgb *= lerp(1.0, dot(paper.rgb, half3(0.299, 0.587, 0.114)), _PaperStrength);
 
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);

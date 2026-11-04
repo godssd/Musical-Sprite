@@ -29,6 +29,8 @@ public class TouchInputManager : MonoBehaviour
     private Dictionary<int, int> fingerLane = new Dictionary<int, int>();
     // 每条轨道当前被按住的指头数（用于多指 / 滑动场景，避免误触发抬起）
     private int[] laneHoldCount = new int[4];
+    private SkillInputUI skillInput;
+    private readonly HashSet<int> skillPointers=new HashSet<int>();
     private RaycastHit[] hitBuffer = new RaycastHit[8];
 
     void Start()
@@ -42,10 +44,13 @@ public class TouchInputManager : MonoBehaviour
         if (gameCamera == null) gameCamera = Camera.main;
         if (gameCamera == null) return;
 
+        if(skillInput==null)skillInput=FindFirstObjectByType<SkillInputUI>();
+        if(GameManager.Instance!=null&&GameManager.Instance.isGameOver){ReleaseAll();return;}
         // 1. 处理所有触摸
         for (int i = 0; i < Input.touchCount; i++)
         {
             Touch t = Input.GetTouch(i);
+            if(CaptureSkillPointer(t.fingerId,t.position,t.phase))continue;
             int lane = LaneAtScreenPoint(t.position);
             UpdateFinger(t.fingerId, lane, t.phase);
         }
@@ -55,6 +60,8 @@ public class TouchInputManager : MonoBehaviour
         {
             if (Input.GetMouseButton(0) || Input.GetMouseButtonDown(0) || Input.GetMouseButtonUp(0))
             {
+                TouchPhase skillPhase=Input.GetMouseButtonDown(0)?TouchPhase.Began:Input.GetMouseButtonUp(0)?TouchPhase.Ended:TouchPhase.Moved;
+                if(CaptureSkillPointer(-1,Input.mousePosition,skillPhase))return;
                 int mlane = LaneAtScreenPoint(Input.mousePosition);
                 TouchPhase mp;
                 if (Input.GetMouseButtonDown(0)) mp = TouchPhase.Began;
@@ -69,6 +76,18 @@ public class TouchInputManager : MonoBehaviour
             }
         }
     }
+
+    private bool CaptureSkillPointer(int id,Vector2 point,TouchPhase phase){
+        if(skillPointers.Contains(id)){if(phase==TouchPhase.Ended||phase==TouchPhase.Canceled)skillPointers.Remove(id);ReleaseFinger(id);return true;}
+        if(skillInput!=null&&skillInput.ContainsScreenPoint(point)){
+            if(phase!=TouchPhase.Ended&&phase!=TouchPhase.Canceled)skillPointers.Add(id);
+            ReleaseFinger(id);return true;
+        }
+        return false;
+    }
+    private void ReleaseAll(){if(fingerLane.Count>0){var ids=new List<int>(fingerLane.Keys);foreach(var id in ids)ReleaseFinger(id);}skillPointers.Clear();}
+    private void OnDisable(){ReleaseAll();}
+    private void OnApplicationFocus(bool focused){if(!focused)ReleaseAll();}
 
     /// <summary>
     /// 屏幕坐标 → 命中的 TouchZone.lane（未命中返回 -1）。
@@ -148,7 +167,7 @@ public class TouchInputManager : MonoBehaviour
             laneHoldCount[lane] = Mathf.Max(0, laneHoldCount[lane] - 1);
             if (laneHoldCount[lane] == 0)
             {
-                leftSpawner.TriggerLaneUp(lane);
+                if(leftSpawner!=null)leftSpawner.TriggerLaneUp(lane);
                 if (logTouches) Debug.Log($"[Touch] lane {lane} up");
             }
         }

@@ -1,0 +1,133 @@
+{
+  "tool": "video-analysis-skill",
+  "version": "0.1.0",
+  "started_at": "2026-10-22T06:20:09.019319+00:00",
+  "input": "C:\\Users\\Administrator\\Desktop\\QQ20261018-92920.mp4",
+  "run_dir": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009",
+  "artifacts": {
+    "ffprobe_json": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\ffprobe.json",
+    "quality_gates": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\quality-gates.json",
+    "frames": [
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-01-00-00-00_689.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-02-00-00-01_378.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-03-00-00-02_067.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-04-00-00-02_755.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-05-00-00-03_444.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-06-00-00-04_133.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-07-00-00-04_822.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-08-00-00-05_511.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-09-00-00-06_200.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-10-00-00-06_888.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-11-00-00-07_577.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-12-00-00-08_266.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-13-00-00-08_955.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-14-00-00-09_644.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-15-00-00-10_333.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\frames\\frame-16-00-00-11_021.jpg"
+    ],
+    "contact_sheet": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\contact-sheet.jpg",
+    "analysis_brief": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\analysis-brief.md"
+  },
+  "warnings": [],
+  "source_kind": "local-file",
+  "source_video": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\source\\source.mp4",
+  "source_metadata": {
+    "original_name": "QQ20261018-92920.mp4",
+    "copied_to": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\cult-fog-video-analysis\\QQ20261018-92920-20261022-142009\\source\\source.mp4"
+  },
+  "media_summary": {
+    "duration_seconds": 11.71017,
+    "video_present": true,
+    "audio_present": true,
+    "width": 1368,
+    "height": 800,
+    "video_codec": "h264",
+    "audio_codec": "aac",
+    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+    "size_bytes": 4186885
+  },
+  "sample_plan": [
+    {
+      "index": 1,
+      "seconds": 0.689,
+      "label": "00:00:00.689"
+    },
+    {
+      "index": 2,
+      "seconds": 1.378,
+      "label": "00:00:01.378"
+    },
+    {
+      "index": 3,
+      "seconds": 2.067,
+      "label": "00:00:02.067"
+    },
+    {
+      "index": 4,
+      "seconds": 2.755,
+      "label": "00:00:02.755"
+    },
+    {
+      "index": 5,
+      "seconds": 3.444,
+      "label": "00:00:03.444"
+    },
+    {
+      "index": 6,
+      "seconds": 4.133,
+      "label": "00:00:04.133"
+    },
+    {
+      "index": 7,
+      "seconds": 4.822,
+      "label": "00:00:04.822"
+    },
+    {
+      "index": 8,
+      "seconds": 5.511,
+      "label": "00:00:05.511"
+    },
+    {
+      "index": 9,
+      "seconds": 6.2,
+      "label": "00:00:06.200"
+    },
+    {
+      "index": 10,
+      "seconds": 6.888,
+      "label": "00:00:06.888"
+    },
+    {
+      "index": 11,
+      "seconds": 7.577,
+      "label": "00:00:07.577"
+    },
+    {
+      "index": 12,
+      "seconds": 8.266,
+      "label": "00:00:08.266"
+    },
+    {
+      "index": 13,
+      "seconds": 8.955,
+      "label": "00:00:08.955"
+    },
+    {
+      "index": 14,
+      "seconds": 9.644,
+      "label": "00:00:09.644"
+    },
+    {
+      "index": 15,
+      "seconds": 10.333,
+      "label": "00:00:10.333"
+    },
+    {
+      "index": 16,
+      "seconds": 11.021,
+      "label": "00:00:11.021"
+    }
+  ],
+  "finished_at": "2026-10-22T06:20:23.956229+00:00",
+  "status": "passed"
+}

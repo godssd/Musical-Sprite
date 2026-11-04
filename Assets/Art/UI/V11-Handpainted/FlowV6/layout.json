@@ -1,0 +1,40 @@
+{
+  "purpose": "Flowing body and continuous negative space; material draft only",
+  "redGrowth": "right",
+  "frameSizing": "Horizontal 3-slice only. Maintain native aspect of left/right caps. Match strip seam in source. Do not scale the complete frame horizontally.",
+  "existingGlyphs": "../0.png through ../9.png",
+  "version": 6,
+  "materials": [
+    {
+      "sourceCanvas": [
+        2172,
+        724
+      ],
+      "trimRect": [
+        172,
+        252,
+        1829,
+        265
+      ],
+      "borderRight": 280,
+      "borderLeft": 600,
+      "file": "hp-connected-neutral.png"
+    },
+    {
+      "sourceCanvas": [
+        2172,
+        724
+      ],
+      "trimRect": [
+        112,
+        235,
+        1948,
+        269
+      ],
+      "borderRight": 0,
+      "borderLeft": 0,
+      "file": "hp-capsule-neutral.png"
+    }
+  ],
+  "blueGrowth": "left"
+}

@@ -36,6 +36,8 @@ public class HPBarLiquid : MonoBehaviour
     public Image fillImage;
     [Tooltip("黄色残影层（受击时显示被扣除的部分），由 Setup 自动创建")]
     public Image ghostImage;
+    [Tooltip("绿色回血虚血层。运行时按 Fill 的形状自动创建，或显式绑定。")]
+    public Image healingImage;
     [Tooltip("闪白层，由 Setup 自动创建")]
     public Image flashImage;
     [Tooltip("深红/深蓝底边层（液体下方的暗底），由 Setup 自动创建")]
@@ -43,6 +45,9 @@ public class HPBarLiquid : MonoBehaviour
     public Text hpText;
     [Tooltip("可选：用图片拼出手绘风 HP 数字。留空则继续用上面的 Text 显示。")]
     public HPNumberSprite hpNumberSprite;
+    [Header("V11 手绘素材")]
+    public bool useHandpaintedArtwork = true;
+    [Range(0f, 1f)] public float paperTextureStrength;
 
     [Header("液体颜色")]
     [Tooltip("液体颜色（纯色模式下上下相同）")]
@@ -57,6 +62,11 @@ public class HPBarLiquid : MonoBehaviour
     public float fillDuration = 0.4f;
     [Tooltip("缓动指数，越大开头越快、结尾越慢（建议 2~4）")]
     public float fillEasePower = 3f;
+
+    [Header("回血（绿色仅覆盖增加的区间）")]
+    public bool enableHealingFx = true;
+    public Color healingColor = new Color(0.40f, 0.92f, 0.30f, 1f);
+    [Min(0.01f)] public float healingFillDuration = 0.55f;
 
     [Header("摇晃（酒杯式上下晃，可保留或归零）")]
     [Tooltip("扣血基础摇晃幅度")]
@@ -120,6 +130,12 @@ public class HPBarLiquid : MonoBehaviour
 
     private Material _mat;
     private Material _ghostMat;
+    private Material _healingMat;
+    private bool _allowPreviewHealing;
+    private bool _healingActive;
+    private float _healingStart;
+    private float _animationDuration;
+    private float _ghostDisplayed;
     private RectTransform _rootRect;
     private int _maxHP = 1;
 
@@ -144,6 +160,7 @@ public class HPBarLiquid : MonoBehaviour
     private float _fxGhostStart, _fxGhostEnd, _fxGhostElapsed, _fxGhostHold, _fxGhostDrain;
 
     private static readonly int FillID               = Shader.PropertyToID("_Fill");
+    private static readonly int RangeStartID         = Shader.PropertyToID("_RangeStart");
     private static readonly int FlipID               = Shader.PropertyToID("_Flip");
     private static readonly int WaveAmpID            = Shader.PropertyToID("_WaveAmp");
     private static readonly int WaveFreqID           = Shader.PropertyToID("_WaveFreq");
@@ -185,6 +202,9 @@ public class HPBarLiquid : MonoBehaviour
             if (d != null) decorationImage = d.GetComponent<Image>();
         }
         if (flashImage != null) SetImageAlpha(flashImage, 0f);
+
+        if (hpNumberSprite == null) hpNumberSprite = GetComponentInChildren<HPNumberSprite>();
+        if (Application.isPlaying && useHandpaintedArtwork) HandpaintedHUD.ApplyHP(this);
 
         if (scoreManager != null)
             _maxHP = Mathf.Max(1, scoreManager.GetMaxHP(side));
@@ -249,6 +269,11 @@ public class HPBarLiquid : MonoBehaviour
             else DestroyImmediate(_ghostMat);
             _ghostMat = null;
         }
+        if (_healingMat != null)
+        {
+            if (Application.isPlaying) Destroy(_healingMat); else DestroyImmediate(_healingMat);
+            _healingMat = null;
+        }
     }
 
     /// <summary>
@@ -311,8 +336,14 @@ public class HPBarLiquid : MonoBehaviour
                 fill = Mathf.Lerp(_fxGhostStart, _fxGhostEnd, e);
                 if (t2 >= 1f) { _fxGhostActive = false; fill = 0f; }
             }
-            if (_ghostMat != null) _ghostMat.SetFloat(FillID, fill);
+            _ghostDisplayed = fill;
+            if (_ghostMat != null)
+            {
+                _ghostMat.SetFloat(FillID, fill);
+                _ghostMat.SetFloat(RangeStartID, Mathf.Max(_currentFill, _targetFill));
+            }
         }
+        UpdateHealingVisual();
     }
 
     /// <summary>
@@ -322,6 +353,20 @@ public class HPBarLiquid : MonoBehaviour
     private void PushStaticParams()
     {
         if (_mat == null) return;
+        _mat.SetFloat(FlipID, side == 0 ? 0f : 1f);
+        _mat.SetFloat(RangeStartID, 0f);
+        var sprite = fillImage != null ? fillImage.sprite : null;
+        Vector4 shapeUV = new Vector4(0f, 0f, 1f, 1f);
+        if (sprite != null)
+        {
+            Rect region = sprite.rect;
+            shapeUV = new Vector4(region.x / sprite.texture.width, region.y / sprite.texture.height,
+                region.width / sprite.texture.width, region.height / sprite.texture.height);
+        }
+        _mat.SetVector("_ShapeUV", shapeUV);
+        _mat.SetFloat("_PaperStrength", paperTextureStrength);
+        if (_ghostMat != null) _ghostMat.SetVector("_ShapeUV", shapeUV);
+        if (_healingMat != null) _healingMat.SetVector("_ShapeUV", shapeUV);
 
         _mat.SetFloat(WaveFreqID, waveFreq);
         _mat.SetFloat(WaveSpeedID, waveSpeed);
@@ -340,6 +385,7 @@ public class HPBarLiquid : MonoBehaviour
 
         if (_ghostMat != null)
         {
+            _ghostMat.SetFloat(FlipID, side == 0 ? 0f : 1f);
             _ghostMat.SetColor(TopColorID, ghostColor);
             _ghostMat.SetColor(BottomColorID, ghostColor);
         }
@@ -353,7 +399,10 @@ public class HPBarLiquid : MonoBehaviour
 
         if (_ghostMat == null && ghostImage != null && ghostImage.material != null)
         {
-            _ghostMat = new Material(ghostImage.material);
+            // New ribbon samples have a default UI material until this controller configures them.
+            Material source = ghostImage.material.HasProperty(FillID) ? ghostImage.material : _mat;
+            if (source == null) return;
+            _ghostMat = new Material(source);
             _ghostMat.SetColor(TopColorID, ghostColor);
             _ghostMat.SetColor(BottomColorID, ghostColor);
             _ghostMat.SetFloat(FlipID, side == 0 ? 0f : 1f);
@@ -366,6 +415,69 @@ public class HPBarLiquid : MonoBehaviour
             _ghostMat.SetFloat(FillID, 0f);
             ghostImage.material = _ghostMat;
         }
+        if (enableHealingFx && (Application.isPlaying || _allowPreviewHealing)) EnsureHealingMaterial();
+    }
+
+    private void EnsureHealingMaterial()
+    {
+        if (_mat == null || fillImage == null) return;
+        if (healingImage == null)
+        {
+            var go = new GameObject("Heal", typeof(RectTransform));
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, fillImage.gameObject.scene);
+            go.transform.SetParent(fillImage.transform.parent, false);
+            healingImage = (Image)go.AddComponent(fillImage.GetType());
+            healingImage.sprite = fillImage.sprite;
+            healingImage.type = fillImage.type;
+            healingImage.preserveAspect = fillImage.preserveAspect;
+            healingImage.color = Color.white;
+            healingImage.raycastTarget = false;
+            var source = fillImage.rectTransform;
+            var target = healingImage.rectTransform;
+            target.anchorMin = source.anchorMin; target.anchorMax = source.anchorMax;
+            target.pivot = source.pivot; target.sizeDelta = source.sizeDelta;
+            target.anchoredPosition3D = source.anchoredPosition3D;
+            target.localScale = source.localScale; target.localRotation = source.localRotation;
+            if (fillImage is RibbonHPImage ribbon && healingImage is RibbonHPImage healingRibbon)
+                healingRibbon.mirrorShape = ribbon.mirrorShape;
+            // Above the main fill so a damage->healing reversal can still show the true gained interval.
+            target.SetSiblingIndex(source.GetSiblingIndex() + 1);
+        }
+        if (_healingMat == null)
+        {
+            _healingMat = new Material(_mat) { name = name + "_HealingInterval" };
+            _healingMat.SetFloat(CrestIntensityID, 0f);
+            _healingMat.SetFloat(SurfaceGlowID, 0f);
+            _healingMat.SetFloat(TopGlossIntensityID, 0f);
+            _healingMat.SetFloat(BlobIntensityID, 0f);
+            _healingMat.SetFloat(SurfaceDarkenRangeID, 0f);
+            _healingMat.SetFloat(AmbientWaveID, 0f);
+            _healingMat.SetFloat(WaveAmpID, 0f);
+            healingImage.material = _healingMat;
+            healingImage.enabled = false;
+        }
+        _healingMat.SetFloat(FlipID, side == 0 ? 0f : 1f);
+        _healingMat.SetColor(TopColorID, healingColor);
+        _healingMat.SetColor(BottomColorID, healingColor);
+    }
+
+    private void UpdateHealingVisual()
+    {
+        if (_healingMat == null || healingImage == null) return;
+        if (!enableHealingFx || !_healingActive || !_fillAnimating)
+        {
+            _healingActive = false;
+            healingImage.enabled = false;
+            return;
+        }
+        float t = Mathf.Clamp01(_fillAnimElapsed / Mathf.Max(0.001f, _animationDuration));
+        float eased = 1f - Mathf.Pow(1f - t, fillEasePower);
+        float lower = _currentFill <= _targetFill
+            ? Mathf.Max(_healingStart, _currentFill)
+            : Mathf.Lerp(_healingStart, _targetFill, eased);
+        _healingMat.SetFloat(RangeStartID, Mathf.Min(lower, _targetFill));
+        _healingMat.SetFloat(FillID, _targetFill);
+        healingImage.enabled = _targetFill - lower > 0.0001f;
     }
 
     private void ResolveFillImage()
@@ -426,21 +538,39 @@ public class HPBarLiquid : MonoBehaviour
 
         if (delta > 1e-5f)
         {
-            // 起点取"当前显示值"与"旧目标"的较大者，保证黄色残影覆盖完整
-            _fillAnimStart = Mathf.Max(_currentFill, oldTarget);
+            // Always continue from the visible position; yellow high-water is tracked separately.
+            _fillAnimStart = _currentFill;
             _fillAnimEnd = ratio;
             _fillAnimElapsed = 0f;
             _fillAnimating = true;
+            _animationDuration = ratio > oldTarget ? healingFillDuration : fillDuration;
 
             // 只有扣血才触发摇晃与扣血特效；回血只播填充动画
             if (ratio < oldTarget - 1e-5f)
             {
+                _healingActive = false;
+                if (healingImage != null) healingImage.enabled = false;
                 TriggerShake(oldTarget - ratio);
                 if (enableDamageFx) StartDamageFx(oldTarget, ratio);
+            }
+            else
+            {
+                _fxGhostActive = false;
+                _ghostDisplayed = 0f;
+                if (_ghostMat != null) _ghostMat.SetFloat(FillID, 0f);
+                _healingStart = Mathf.Min(_currentFill, oldTarget);
+                _healingActive = enableHealingFx;
+                _fxFlashElapsed = _fxFlashDur;
+                _fxPunchElapsed = _fxPunchDur;
+                _shakeElapsed = shakeDuration;
+                _shakeAmount = 0f;
+                if (flashImage != null) SetImageAlpha(flashImage, 0f);
+                if (_rootRect != null) _rootRect.localScale = Vector3.one;
             }
         }
 
         _targetFill = ratio;
+        if (delta > 1e-5f) UpdateHealingVisual();
     }
 
     /// <summary>
@@ -454,6 +584,11 @@ public class HPBarLiquid : MonoBehaviour
         _shakeAmount = 0f;
         _shakeElapsed = shakeDuration;
         _fxGhostActive = false;
+        _healingActive = false;
+        _ghostDisplayed = 0f;
+        _fxFlashElapsed = _fxFlashDur;
+        _fxPunchElapsed = _fxPunchDur;
+        if (healingImage != null) healingImage.enabled = false;
         if (_ghostMat != null) _ghostMat.SetFloat(FillID, 0f);
         if (_mat != null) _mat.SetFloat(FillID, _currentFill);
         if (flashImage != null) SetImageAlpha(flashImage, 0f);
@@ -502,7 +637,7 @@ public class HPBarLiquid : MonoBehaviour
         }
 
         _fillAnimElapsed += dt;
-        float t = Mathf.Clamp01(_fillAnimElapsed / Mathf.Max(0.001f, fillDuration));
+        float t = Mathf.Clamp01(_fillAnimElapsed / Mathf.Max(0.001f, _animationDuration));
 
         float eased = 1f - Mathf.Pow(1f - t, fillEasePower);
         _currentFill = Mathf.Lerp(_fillAnimStart, _fillAnimEnd, eased);
@@ -583,8 +718,10 @@ public class HPBarLiquid : MonoBehaviour
         _fxPunchDur = punchDuration;
         _fxPunchElapsed = 0f;
 
+        float highWater = Mathf.Max(fromFill, Mathf.Max(_currentFill, _fxGhostActive ? _ghostDisplayed : 0f));
         _fxGhostActive = true;
-        _fxGhostStart = fromFill;   // 黄色残影顶部 = 受击前血量
+        _fxGhostStart = highWater;
+        _ghostDisplayed = highWater;
         _fxGhostEnd = toFill;       // 底部 = 受击后血量
         _fxGhostElapsed = 0f;
         _fxGhostHold = ghostHold;
@@ -605,6 +742,7 @@ public class HPBarLiquid : MonoBehaviour
     public void PreviewSetFill(float ratio)
     {
         ratio = Mathf.Clamp01(ratio);
+        _allowPreviewHealing = true;
         EnsureMaterials();
         if (scoreManager != null) _maxHP = Mathf.Max(1, scoreManager.GetMaxHP(side));
 
@@ -614,6 +752,10 @@ public class HPBarLiquid : MonoBehaviour
         _shakeAmount = 0f;
         _shakeElapsed = shakeDuration;
         _fxGhostActive = false;
+        _healingActive = false;
+        _fxFlashElapsed = _fxFlashDur;
+        _fxPunchElapsed = _fxPunchDur;
+        if (healingImage != null) healingImage.enabled = false;
         if (_ghostMat != null) _ghostMat.SetFloat(FillID, 0f);
         if (_mat != null) _mat.SetFloat(FillID, ratio);
         if (flashImage != null) SetImageAlpha(flashImage, 0f);
@@ -639,18 +781,7 @@ public class HPBarLiquid : MonoBehaviour
         if (scoreManager == null)
             scoreManager = FindFirstObjectByType<ScoreManager>();
         PreviewSetFill(fromRatio);
-
-        _targetFill = toRatio;
-        _fillAnimStart = fromRatio;
-        _fillAnimEnd = toRatio;
-        _fillAnimElapsed = 0f;
-        _fillAnimating = true;
-
-        if (toRatio < fromRatio - 1e-5f)
-        {
-            TriggerShake(fromRatio - toRatio);
-            if (enableDamageFx) StartDamageFx(fromRatio, toRatio);
-        }
+        SetFill(toRatio);
     }
 
     /// <summary>特效序列是否已全部结束（用于预览窗口停止驱动）。</summary>

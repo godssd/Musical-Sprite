@@ -1,0 +1,1 @@
+Visible pixels changed by independent optical layer: 3675. Same time, material colours and camera; solids held constant.

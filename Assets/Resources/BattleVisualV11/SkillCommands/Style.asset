@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38369587e67c222408b952b737ec764d, type: 3}
+  m_Name: Style
+  m_EditorClassIdentifier: 
+  useSemanticArtwork: 1
+  icons:
+  - {fileID: 6207007391064376870, guid: 882867d9c5e75b84d8743f0bb4af7793, type: 3}
+  - {fileID: 3723454709175604914, guid: 882867d9c5e75b84d8743f0bb4af7793, type: 3}
+  - {fileID: 7532527516964295053, guid: 882867d9c5e75b84d8743f0bb4af7793, type: 3}
+  artworkFrame: {fileID: 21300000, guid: 89d4f0a451e05a941963ea84a90d3a75, type: 3}
+  artworkHeight: 600
+  artworkIconUV:
+  - {x: 0.504, y: 0.818}
+  - {x: 0.482, y: 0.5}
+  - {x: 0.449, y: 0.206}
+  pressGlow: 0.8
+  releaseGlow: 2.4
+  team: {r: 1, g: 0.32, b: 0.3, a: 1}
+  cream: {r: 1, g: 1, b: 1, a: 1}
+  hitSize: 160
+  frameSize: 146
+  iconSize: 112
+  spacing: 180
+  rightInset: 32
+  resetDuration: 0.28
+  releaseDuration: 0.38

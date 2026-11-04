@@ -33,6 +33,10 @@ public class HPNumberSprite : MonoBehaviour
     public float labelGap = 12f;
     [Tooltip("居中对齐：true=放在血条中间，false=靠左用 leftPadding")]
     public bool center = true;
+    public bool rightAlign;
+    public float rightPadding;
+    [Range(.5f, 1.5f)] public float labelHeightRatio = 1f;
+    public Color digitColor = Color.white;
     [Tooltip("靠左模式下的左边距（居中对齐时忽略）")]
     public float leftPadding = 22f;
 
@@ -59,6 +63,17 @@ public class HPNumberSprite : MonoBehaviour
         _currentHP = hp;
         Refresh();
     }
+
+    public void ConfigureArtwork(Sprite label, Sprite[] glyphs, Color tint)
+    {
+        hpLabel = label; digits = glyphs; digitColor = tint;
+        if (!_built) Build();
+        if (_built && _labelImage == null && hpLabel != null) _labelImage = CreateImage("HPLabel", hpLabel);
+        if (_labelImage != null) _labelImage.sprite = hpLabel;
+        Refresh();
+    }
+
+    public void RefreshLayout() => Refresh();
 
     private void Build()
     {
@@ -99,6 +114,7 @@ public class HPNumberSprite : MonoBehaviour
     private Image CreateImage(string name, Sprite sprite)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, gameObject.scene);
         go.transform.SetParent(transform, false);
 
         var img = go.GetComponent<Image>();
@@ -120,7 +136,7 @@ public class HPNumberSprite : MonoBehaviour
         float labelWidth = 0f;
         if (_labelImage != null)
         {
-            ScaleToHeight(_labelImage, digitHeight);
+            ScaleToHeight(_labelImage, digitHeight * labelHeightRatio);
             labelWidth = _labelImage.rectTransform.rect.width * _labelImage.rectTransform.localScale.x;
         }
 
@@ -136,6 +152,7 @@ public class HPNumberSprite : MonoBehaviour
             if (d < 0 || d > 9) continue;
 
             img.sprite = digits[d];
+            img.color = digitColor;
             img.SetNativeSize();
             var rt = img.rectTransform;
             float h = rt.rect.height;
@@ -156,7 +173,13 @@ public class HPNumberSprite : MonoBehaviour
         float labelStartX = leftPadding;
         float digitStartX = labelStartX + labelWidth + (labelWidth > 0f ? labelGap : 0f);
 
-        if (center)
+        if (rightAlign)
+        {
+            float hostWidth = ((RectTransform)transform).rect.width;
+            digitStartX = hostWidth - rightPadding - digitTotalWidth;
+            labelStartX = digitStartX - labelWidth - (labelWidth > 0f ? labelGap : 0f);
+        }
+        else if (center)
         {
             RectTransform hostRt = transform as RectTransform;
             float hostWidth = hostRt != null ? hostRt.rect.width : 0f;

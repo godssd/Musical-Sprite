@@ -1,0 +1,1 @@
+PASS: same production renderer, artwork, camera, time and palette; only diagnostic shader terms cumulatively disabled. 00 current; 01 remove full-band outer halo; 02 also remove band centre/rim light; 03 also remove legacy inner glow. Diagnostic alternatives are evidence, not approved replacement designs. No runtime shader, style or scene changed.

@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e134e86afdfe4050828b39d936eaa9b3, type: 3}
+  m_Name: FullRibbonHUDStyle
+  m_EditorClassIdentifier: 
+  useFullRibbon: 1
+  screenInset: {x: 24, y: 18}
+  scale: 1.12
+  centerGap: 80
+  teamSize: {x: 760, y: 200}
+  ribbonPosition: {x: 156, y: 113}
+  ribbonSize: {x: 565, y: 48}
+  scoreHeight: 86
+  hpHeight: 48
+  digitWidthScale: 0.86
+  outerLeafPosition: {x: 10, y: 23}
+  outerLeafSize: {x: 60, y: 66}
+  crescentPosition: {x: 129, y: 104}
+  crescentSize: {x: 80, y: 66}
+  innerLeafOffset: {x: -17, y: -25}
+  innerLeafSize: {x: 44, y: 56}
+  ribbon:
+  - {fileID: 21300000, guid: 682dcf5f03fa4eaa827abe2e8adb84ed, type: 3}
+  - {fileID: 21300000, guid: cacf649414684c36abb89c1a4c6ae9c5, type: 3}
+  avatarFrame:
+  - {fileID: 21300000, guid: 76f988e1ca1f4544b13164dd5fcbce5b, type: 3}
+  - {fileID: 21300000, guid: f556988df28543fb9d2a489ada410eb8, type: 3}
+  crescent:
+  - {fileID: 21300000, guid: 7eb33ea74c6240d88e2df27a7a0c35cc, type: 3}
+  - {fileID: 21300000, guid: 2deb1703552d4addaaf92a3ab8931707, type: 3}
+  outerLeaves:
+  - {fileID: 21300000, guid: ea5ddbdf4fe4418b92f2db4ee156db66, type: 3}
+  - {fileID: 21300000, guid: 673633ca8a1f42fcb1ce5937e85545dc, type: 3}
+  innerLeaves:
+  - {fileID: 21300000, guid: d96863a917dc4e91b096c2af43fa7ed2, type: 3}
+  - {fileID: 21300000, guid: 65931cb04b8c4ccf987eba5be5ce1708, type: 3}
+  marks:
+  - {fileID: 21300000, guid: d6bce0fb1e244a90a5808a2e14198be3, type: 3}
+  - {fileID: 21300000, guid: 9e6461bc6d824b9dbfa4d4d118278a38, type: 3}
+  dot:
+  - {fileID: 21300000, guid: 52043e159ab14d2bbbb8076904a949b6, type: 3}
+  - {fileID: 21300000, guid: 2c83afd6b6fa4074abf64986a6c96966, type: 3}
+  avatarMask: {fileID: 21300000, guid: 70d52bf1ed9c43b782381536f2bb1a13, type: 3}
+  avatars:
+  - {fileID: 21300000, guid: 873a61c84b814b9a8b15777126fb48ac, type: 3}
+  - {fileID: 21300000, guid: 5f8297974ad54952a4e974799112a863, type: 3}
+  hpLabel: {fileID: 21300000, guid: 339347a561434433be1ee168cb44300d, type: 3}
+  digits:
+  - {fileID: 21300000, guid: c126d4446c274b0d93c82131b9de4487, type: 3}
+  - {fileID: 21300000, guid: 93aa9198652048d08fcac0bc758e9244, type: 3}
+  - {fileID: 21300000, guid: e599e5bf44024fe89a20e3b8191e86e1, type: 3}
+  - {fileID: 21300000, guid: 2418e59bb0d94753ac7a751b05f39d79, type: 3}
+  - {fileID: 21300000, guid: 10c742736f884dc8b55e5b9c578bdce7, type: 3}
+  - {fileID: 21300000, guid: dbc8024ecd3d48daa45ed6c517d841c1, type: 3}
+  - {fileID: 21300000, guid: 22200973aac1429dbd5cc895d2f88e37, type: 3}
+  - {fileID: 21300000, guid: ae63aba345f24953830ff895e2e25191, type: 3}
+  - {fileID: 21300000, guid: c13e11dd25fc4446a1c6edfff565b313, type: 3}
+  - {fileID: 21300000, guid: da8eb3dbeb2c474d9958ad5fad4c53e3, type: 3}
+  red: {r: 1, g: 0.305, b: 0.305, a: 1}
+  blue: {r: 0.478, g: 0.639, b: 1, a: 1}
+  redEmpty: {r: 0.35, g: 0.23, b: 0.27, a: 1}
+  blueEmpty: {r: 0.24, g: 0.31, b: 0.45, a: 1}
+  letteringColor: {r: 1, g: 0.977, b: 0.95, a: 1}
+  flashDuration: 0.11
+  holdDuration: 0.1
+  lossDuration: 0.28
+  healDuration: 0.45
+  lossColor: {r: 0.76, g: 0.57, b: 0.23, a: 1}
+  healingColor: {r: 0.47, g: 0.79, b: 0.36, a: 1}
+  flashGlow: 1.1
+  pendingGlow: 0.65
+  pendingInnerLight: 0.24
+  idleTickWidth: 2.4
+  movingTickWidth: 4.2
+  tickGlow: 2
+  glowRadius: 11
+  dangerEnter: 0.25
+  dangerExit: 0.3
+  dangerMinBrightness: 0.28
+  dangerPeriod: 1.25
+  entranceDuration: 0.72
+  entranceResolve: 0.1
+  entranceGlow: 0.4
+  entranceHeadGlow: 1.8
+  chimeVolume: 0.16
+  feverHeight: 20
+  superFeverHeight: 30
+  superSpread: 14
+  flameSpeed: 5
+  feverSparks: 2
+  superSparks: 4
+  extinguishDuration: 0.22
+  zeroBurstDuration: 0.32

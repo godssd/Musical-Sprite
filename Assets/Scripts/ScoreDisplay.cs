@@ -26,6 +26,7 @@ public class ScoreDisplay : MonoBehaviour
     private Vector2 baseSize;
     private float popTimer = 0f;
     private int currentScore = 0;
+    private SpriteNumberGraphic paintedNumber;
 
     void Start()
     {
@@ -65,11 +66,19 @@ public class ScoreDisplay : MonoBehaviour
             Debug.LogWarning($"[ScoreDisplay] {name} 找不到 RectTransform");
         }
 
-        SetScore(0);
+        // ScoreManager may already have synchronized the real value before Start.
+        RefreshScoreText();
     }
 
     void Update()
     {
+        if (paintedNumber != null)
+        {
+            popTimer = Mathf.Max(0f, popTimer - Time.deltaTime);
+            float t = popTimer / .14f;
+            paintedNumber.rectTransform.localScale = Vector3.one * (1f + .04f * Mathf.Sin(t * Mathf.PI));
+            return;
+        }
         if (popTimer > 0f)
         {
             popTimer -= Time.deltaTime;
@@ -84,17 +93,66 @@ public class ScoreDisplay : MonoBehaviour
 
     public void SetScore(int score)
     {
+        if (score == currentScore) return;
+        bool increased = score > currentScore;
         currentScore = score;
+        RefreshScoreText();
+        if (gameObject.activeInHierarchy && increased)
+            popTimer = paintedNumber != null ? .14f : popDuration;
+        else popTimer = 0f;
+    }
+
+    private void RefreshScoreText()
+    {
         if (scoreText != null)
         {
-            scoreText.text = $"{prefix}{score}{suffix}";
+            scoreText.text = $"{prefix}{currentScore}{suffix}";
         }
+        if (paintedNumber != null) paintedNumber.SetNumber(currentScore, true);
+    }
 
-        if (gameObject.activeInHierarchy)
+    public void UseHandpaintedHUD(float height)
+    {
+        if (!HandpaintedHUD.EnsureLoaded()) return;
+        if (paintedNumber == null)
         {
-            popTimer = popDuration;
+            var go = new GameObject("HandpaintedScore_V11", typeof(RectTransform), typeof(CanvasRenderer), typeof(SpriteNumberGraphic));
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, gameObject.scene);
+            go.transform.SetParent(transform, false);
+            paintedNumber = go.GetComponent<SpriteNumberGraphic>();
+            var rect = paintedNumber.rectTransform;
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            paintedNumber.color = Color.white; paintedNumber.raycastTarget = false;
+            popTimer = 0f;
+            transform.localScale = Vector3.one;
         }
+        paintedNumber.digitHeight = height;
+        paintedNumber.SetVerticesDirty();
+        if (scoreText == null) scoreText = GetComponentInChildren<Text>();
+        if (scoreText != null) scoreText.enabled = false;
+        var nestedCanvas = GetComponent<Canvas>();
+        if (nestedCanvas != null) nestedCanvas.overrideSorting = false;
+        RefreshScoreText();
     }
 
     public int GetScore() => currentScore;
+
+    public bool HasHandpaintedDisplay => paintedNumber != null && paintedNumber.isActiveAndEnabled &&
+        paintedNumber.canvas != null && paintedNumber.canvas.isActiveAndEnabled;
+
+    public float HandpaintedWidth(float height) => SpriteNumberGraphic.MeasureWidth(currentScore, height);
+
+    public void SetHandpaintedAlignment(bool rightAlign)
+    {
+        if (paintedNumber == null) return;
+        float alignment = rightAlign ? 1f : 0f;
+        if (paintedNumber.horizontalAlignment != alignment)
+        {
+            paintedNumber.horizontalAlignment = alignment;
+            paintedNumber.SetVerticesDirty();
+        }
+        // The small score punch grows away from its fixed HP-side edge.
+        paintedNumber.rectTransform.pivot = new Vector2(alignment, .5f);
+    }
 }

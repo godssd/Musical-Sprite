@@ -1,0 +1,1 @@
+PASS: runtime HUD, fever, five Combo teardown keyframes and five four-track states rendered in Unity. Health timing, zero Combo and new-hit interruption checks passed. Scene not saved.

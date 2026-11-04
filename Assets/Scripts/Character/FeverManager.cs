@@ -46,7 +46,6 @@ public class FeverManager : MonoBehaviour
         foreach (var s in spawners)
             s.OnJudge += HandleJudge;
 
-        EnsureFeverVFX();
         EnsureFeverBanner();
         EnsureEnergyVFX();
         EnsureEnergyBar();
@@ -55,9 +54,9 @@ public class FeverManager : MonoBehaviour
     private void HandleJudge(int side, int lane, string rank, Vector3 pos, UnityEngine.Object source)
     {
         // BREAK = 连轨音符中途断连（已命中若干节点）：视为失败，重置过热连击（与 MISS 同效）。
-        if (rank == "MISS" || rank == "BREAK")
+        if (JudgeRank.IsFailure(rank))
             OnNoteMiss(side);
-        else
+        else if (JudgeRank.IsSuccess(rank))
             OnNoteHit(side);
     }
 
@@ -127,13 +126,6 @@ public class FeverManager : MonoBehaviour
 #else
         config = ScriptableObject.CreateInstance<FeverConfigSO>();
 #endif
-    }
-
-    private void EnsureFeverVFX()
-    {
-        if (FindFirstObjectByType<FeverVFXPlaceholder>() != null) return;
-        var go = new GameObject("FeverVFXPlaceholder");
-        go.AddComponent<FeverVFXPlaceholder>();
     }
 
     private void EnsureFeverBanner()

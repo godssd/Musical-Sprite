@@ -1,0 +1,40 @@
+{
+  "redGrowth": "right",
+  "version": 5,
+  "existingGlyphs": "../0.png through ../9.png",
+  "purpose": "Connected crescent and extendable score underline",
+  "frameSizing": "Horizontal 3-slice only. Maintain native aspect of left/right caps. Match strip seam in source. Do not scale the complete frame horizontally.",
+  "materials": [
+    {
+      "trimRect": [
+        172,
+        252,
+        1829,
+        265
+      ],
+      "file": "hp-connected-neutral.png",
+      "borderLeft": 600,
+      "sourceCanvas": [
+        2172,
+        724
+      ],
+      "borderRight": 280
+    },
+    {
+      "trimRect": [
+        194,
+        271,
+        1782,
+        222
+      ],
+      "file": "hp-capsule-neutral.png",
+      "borderLeft": 0,
+      "sourceCanvas": [
+        2170,
+        725
+      ],
+      "borderRight": 0
+    }
+  ],
+  "blueGrowth": "left"
+}

@@ -1,0 +1,8 @@
+{
+  "has_video_stream": true,
+  "has_audio_stream": true,
+  "duration_seconds": 11.71017,
+  "duration_known": true,
+  "source_metadata_available": true,
+  "evidence_rule": "Do not claim exact dialogue without subtitles or ASR transcript."
+}

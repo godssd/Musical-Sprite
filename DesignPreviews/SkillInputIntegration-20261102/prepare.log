@@ -1,0 +1,399 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.0/staging' branch; Version is '6000.0.82f1 (2fb0dae735e1) revision 3125466'; Using compiler version '193933523'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator" at "2026-11-02T17:06:34.3487114Z"
+OS: 'Windows 10  (10.0.19045) 64bit Professional' Language: 'zh' Physical Memory: 16322 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-11-02T17:06:34Z
+
+COMMAND LINE ARGUMENTS:
+D:\unity\6000.0.82f1\Editor\Unity.exe
+-batchmode
+-projectPath
+D:/unity/plan go/Musical Sprite
+-executeMethod
+SkillCommandReview.PrepareAndValidate
+-quit
+-logFile
+D:/unity/plan go/Musical Sprite/DesignPreviews/SkillInputIntegration-20261102/prepare.log
+Successfully changed project path to: D:/unity/plan go/Musical Sprite
+D:/unity/plan go/Musical Sprite
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [29008]  Target information:
+
+Player connection [29008]  * "[IP] 192.168.31.163 [Port] 55504 [Flags] 2 [Guid] 4214082537 [EditorId] 4214082537 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [29008]  * "[IP] 172.18.0.1 [Port] 55504 [Flags] 2 [Guid] 4214082537 [EditorId] 4214082537 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [29008] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [29008] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-15596" after 0.3 seconds.
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Refreshing native plugins compatible for Editor in 0.98 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 6000.0.82f1 (2fb0dae735e1)
+[Subsystems] Discovering subsystems at path D:/unity/6000.0.82f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/unity/plan go/Musical Sprite/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 4070 Ti (ID=0x2782)
+    Vendor:   NVIDIA
+    VRAM:     11996 MB
+    Driver:   32.0.16.1047
+Initialize mono
+Mono path[0] = 'D:/unity/6000.0.82f1/Editor/Data/Managed'
+Mono path[1] = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56596
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: D:/unity/6000.0.82f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.005169 seconds.
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.3'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-Administrator"
+[Licensing::IpcConnector] LicenseClient-Administrator channel disconnected successfully.
+[Licensing::IpcConnector] Channel LicenseClient-Administrator-6000.0.82 doesn't exist
+[Licensing::Module] Successfully launched the LicensingClient (PId: 12628)
+- Loaded All Assemblies, in  0.425 seconds
+Native extension for WindowsStandalone target not found
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82" at "2026-11-02T17:06:36.111789Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 12628, path: "D:/unity/6000.0.82f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+Package Manager log level set to [2]
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.312 seconds
+Domain Reload Profiling: 732ms
+	BeginReloadAssembly (148ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (1ms)
+	RebuildCommonClasses (39ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (56ms)
+	LoadAllAssembliesAndSetupDomain (164ms)
+		LoadAssemblies (143ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (161ms)
+			TypeCache.Refresh (160ms)
+				TypeCache.ScanAssembly (147ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (313ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (277ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (19ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (55ms)
+			ProcessInitializeOnLoadAttributes (139ms)
+			ProcessInitializeOnLoadMethodAttributes (60ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Module] Licensing is not yet initialized.
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              809782edd7fe49c28c6821c516b600c2
+  Correlation Id:          d60c06f1a7d9c531eb45fb0d332c47e3
+  External correlation Id: 7426214561238280039
+  Machine Id:              zBAHGvhiEkomrmV9VYKbt7d65SM=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-Administrator-6000.0.82" (connect: 0.38s, validation: 0.27s, handshake: 0.01s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82-notifications" at "2026-11-02T17:06:36.3916706Z"
+[Licensing::Module] Connected to LicensingClient (PId: 12628, launch time: 0.00, total connection time: 0.66s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
+  Product: Unity Personal Version
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.01
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 2.08s
+[Licensing::Module] Licensing is initialized (took 0.18s).
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 63 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.ai.inference@2.6.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.inference@9a123aee5df7)
+    com.unity.ai.navigation@2.0.14 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.navigation@134dd6a3b97b)
+    com.unity.collab-proxy@2.13.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collab-proxy@4628d2ba6ea4)
+    com.unity.ide.rider@3.0.39 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.rider@4504839d03f7)
+    com.unity.ide.visualstudio@2.0.27 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.visualstudio@dc1ddd4f09b6)
+    com.unity.inputsystem@1.19.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.inputsystem@21a28c3a6c83)
+    com.unity.timeline@1.8.12 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.11 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.visualscripting@8bed5ad90189)
+    com.unity.burst@1.8.30 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.burst@2f3d916873ea)
+    com.unity.dt.app-ui@1.3.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.dt.app-ui@3bbd9e4c5c92)
+    com.unity.collections@2.6.8 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collections@84e8eb3fc12e)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.searcher@4.9.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.searcher@1e17ce91558d)
+    com.unity.mathematics@1.3.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.mathematics@8017b507cc74)
+    com.unity.nuget.mono-cecil@1.11.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.5.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework.performance@8b56083ec0f0)
+  Built-in packages:
+    com.unity.multiplayer.center@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.multiplayer.center@f3fb577b3546)
+    com.unity.render-pipelines.universal@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal@c7abd84d7030)
+    com.unity.test-framework@1.6.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework@082c24152fd4)
+    com.unity.ugui@2.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ugui@8bb446d869cd)
+    com.unity.modules.accessibility@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.ai@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.screencapture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vehicles@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.vr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vr)
+    com.unity.modules.wind@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ext.nunit@031a54704bff)
+    com.unity.2d.sprite@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.2d.sprite@0eb6ea2c7181)
+    com.unity.render-pipelines.core@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.core@f663854f0ceb)
+    com.unity.shadergraph@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.shadergraph@14250cfec0ec)
+    com.unity.render-pipelines.universal-config@17.0.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal-config@dd206bf35d04)
+    com.unity.rendering.light-transport@1.0.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.rendering.light-transport@9bd588f963c0)
+  Git packages:
+    com.esotericsoftware.spine.spine-unity@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Assets/Spine#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-unity@21b16484175f)
+    com.esotericsoftware.spine.spine-csharp@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-csharp/src#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-csharp@62e1be8a5d43)
+    com.esotericsoftware.spine.urp-shaders@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Modules/com.esotericsoftware.spine.urp-shaders#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.urp-shaders@413194061080)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.02 seconds
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+DisplayProgressbar: Compiling Scripts
+ExitCode: 0 Duration: 2s215ms
+[ 808/1047  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1043/1047  1s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+[1044/1047  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 131 defines and 333 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1045/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[1046/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (2.18 seconds), 5 items updated, 1047 evaluated
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+AssetDatabase: script compilation time: 2.659253s
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  1.111 seconds
+Refreshing native plugins compatible for Editor in 4.21 ms, found 5 plugins.
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 6.59 ms, found 5 plugins.
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  3.862 seconds
+Domain Reload Profiling: 4963ms
+	BeginReloadAssembly (309ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (13ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (136ms)
+	RebuildCommonClasses (34ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (38ms)
+	LoadAllAssembliesAndSetupDomain (707ms)
+		LoadAssemblies (501ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (321ms)
+			TypeCache.Refresh (226ms)
+				TypeCache.ScanAssembly (211ms)
+			BuildScriptInfoCaches (79ms)
+			ResolveRequiredComponents (13ms)
+	FinalizeReload (3863ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (3613ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (14ms)
+			SetLoadedEditorAssemblies (3ms)
+			BeforeProcessingInitializeOnLoad (211ms)
+			ProcessInitializeOnLoadAttributes (3154ms)
+			ProcessInitializeOnLoadMethodAttributes (219ms)
+			AfterProcessingInitializeOnLoad (11ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (9ms)
+Refreshing native plugins compatible for Editor in 4.17 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.64 ms.
+Asset Pipeline Refresh (id=0fef6f0ea509c2e4c90bcd05ad850dee): Total: 8.735 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=4408 ms
+		Asset DB Callback time: managed=301 ms, native=159 ms
+		Scripting: domain reloads=1, domain reload time=1111 ms, compile time=2661 ms, other=92 ms
+		Project Asset Count: scripts=1734, non-scripts=4100
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 21.817ms
+	ApplyChangesToAssetFolders: 0.857ms
+	Scan: 100.151ms
+	OnSourceAssetsModified: 0.735ms
+	CategorizeAssetsWithTransientArtifact: 79.051ms
+	ProcessAssetsWithTransientArtifactChanges: 101.766ms
+	CategorizeAssets: 63.828ms
+	ImportOutOfDateAssets: 3882.784ms (1219.356ms without children)
+		CompileScripts: 2660.529ms
+		ReloadNativeAssets: 0.020ms
+		UnloadImportedAssets: 0.740ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 1.002ms
+		InitializingProgressBar: 0.000ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.000ms
+		OnDemandSchedulerStart: 1.136ms
+	PostProcessAllAssets: 434.021ms
+	Hotreload: 6.773ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.002ms
+	UnloadStreamsBegin: 2.372ms
+	PersistCurrentRevisions: 0.209ms
+	UnloadStreamsEnd: 0.002ms
+	GenerateScriptTypeHashes: 2.901ms
+	Untracked: 4040.670ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 2.909ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Musical Sprite
+Unloading 84 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8443 unused Assets / (24.6 MB). Loaded Objects now: 9237.
+Memory consumption went from 249.8 MB to 225.3 MB.
+Total: 15.499000 ms (FindLiveObjects: 0.861500 ms CreateObjectMapping: 1.487400 ms MarkObjects: 5.867800 ms  DeleteObjects: 7.281500 ms)
+
+Start importing Assets/Resources/BattleVisualV11/SkillCommands/courage.png using Guid(9d3fffe7e47dc6c46aa91885f9dbd734) (TextureImporter) -> (artifact id: '4ad0f805c542a7f032840806863e156c') in 0.0238614 seconds
+Refreshing native plugins compatible for Editor in 5.73 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.09 ms.
+Asset Pipeline Refresh (id=63d8bbd3622e3ac4e81d6ffc21d71106): Total: 0.135 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Resources/BattleVisualV11/SkillCommands/courage.png using Guid(9d3fffe7e47dc6c46aa91885f9dbd734) (TextureImporter) -> (artifact id: '4ad0f805c542a7f032840806863e156c') in 0.0081662 seconds
+Refreshing native plugins compatible for Editor in 4.29 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=d6f95972bd3b6024c9f7fe68ed0f5701): Total: 0.041 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Resources/BattleVisualV11/SkillCommands/guardian.png using Guid(cff6000e07c62f04798a16b5d13a909c) (TextureImporter) -> (artifact id: '443ef2b712db01c781556c8e62483cf8') in 0.0093581 seconds
+Refreshing native plugins compatible for Editor in 4.67 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.08 ms.
+Asset Pipeline Refresh (id=2dad90ed0519f2344ae5a4183472208e): Total: 0.043 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Resources/BattleVisualV11/SkillCommands/guardian.png using Guid(cff6000e07c62f04798a16b5d13a909c) (TextureImporter) -> (artifact id: '443ef2b712db01c781556c8e62483cf8') in 0.0078033 seconds
+Refreshing native plugins compatible for Editor in 5.07 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.08 ms.
+Asset Pipeline Refresh (id=676414b73c6d5c34d8c8e341c0353ee9): Total: 0.039 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Resources/BattleVisualV11/SkillCommands/tenacity.png using Guid(ed051a930c596ae4780e9cc33e880a2d) (TextureImporter) -> (artifact id: '3a0466659aa44461ad8de5ca3167d38d') in 0.0097893 seconds
+Refreshing native plugins compatible for Editor in 4.77 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=f8579fb00bb200d41ad7a08d4fb43c23): Total: 0.046 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Resources/BattleVisualV11/SkillCommands/tenacity.png using Guid(ed051a930c596ae4780e9cc33e880a2d) (TextureImporter) -> (artifact id: '3a0466659aa44461ad8de5ca3167d38d') in 0.0100437 seconds
+Refreshing native plugins compatible for Editor in 4.82 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.09 ms.
+Asset Pipeline Refresh (id=cd21d6347b3a0ee48aee756ccd8a2982): Total: 0.040 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Resources/BattleVisualV11/SkillCommands/Style.asset using Guid(55ec3123ebdf52f4f8ac62b671192266) (NativeFormatImporter) -> (artifact id: '196c4302ef64f90c2d601f0746e18a46') in 0.0067293 seconds
+Refreshing native plugins compatible for Editor in 4.50 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=4971b5abadff89741885c532c0b367b0): Total: 0.043 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Batchmode quit successfully invoked - shutting down!
+Curl error 42: Callback aborted
+[Physics::Module] Cleanup current backned.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Exiting batchmode successfully now!
+Exiting without the bug reporter. Application will terminate with return code 0

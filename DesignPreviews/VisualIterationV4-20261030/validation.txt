@@ -1,0 +1,1 @@
+PASS: runtime HUD, fever, five Combo tear keyframes and five four-track states rendered in Unity. Health timing, zero Combo, authored 0-9 paths, 0.23s paper fade and outgoing-snapshot continuity after a new hit checked. Scene not saved.

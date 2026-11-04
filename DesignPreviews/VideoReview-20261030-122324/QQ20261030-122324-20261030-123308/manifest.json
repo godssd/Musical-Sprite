@@ -1,0 +1,181 @@
+{
+  "tool": "video-analysis-skill",
+  "version": "0.1.0",
+  "started_at": "2026-10-30T04:33:08.777233+00:00",
+  "input": "C:/Users/Administrator/Downloads/QQ20261030-122324.mp4",
+  "run_dir": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308",
+  "artifacts": {
+    "ffprobe_json": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\ffprobe.json",
+    "quality_gates": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\quality-gates.json",
+    "frames": [
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-01-00-00-01_689.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-02-00-00-03_379.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-03-00-00-05_068.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-04-00-00-06_757.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-05-00-00-08_447.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-06-00-00-10_136.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-07-00-00-11_825.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-08-00-00-13_515.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-09-00-00-15_204.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-10-00-00-16_893.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-11-00-00-18_583.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-12-00-00-20_272.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-13-00-00-21_961.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-14-00-00-23_651.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-15-00-00-25_340.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-16-00-00-27_029.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-17-00-00-28_719.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-18-00-00-30_408.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-19-00-00-32_097.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-20-00-00-33_787.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-21-00-00-35_476.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-22-00-00-37_165.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-23-00-00-38_855.jpg",
+      "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\frames\\frame-24-00-00-40_544.jpg"
+    ],
+    "contact_sheet": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\contact-sheet.jpg",
+    "analysis_brief": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\analysis-brief.md"
+  },
+  "warnings": [],
+  "source_kind": "local-file",
+  "source_video": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\source\\source.mp4",
+  "source_metadata": {
+    "original_name": "QQ20261030-122324.mp4",
+    "copied_to": "D:\\unity\\plan go\\Musical Sprite\\DesignPreviews\\VideoReview-20261030-122324\\QQ20261030-122324-20261030-123308\\source\\source.mp4"
+  },
+  "media_summary": {
+    "duration_seconds": 42.2334,
+    "video_present": true,
+    "audio_present": true,
+    "width": 1362,
+    "height": 968,
+    "video_codec": "h264",
+    "audio_codec": "aac",
+    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+    "size_bytes": 13809327
+  },
+  "sample_plan": [
+    {
+      "index": 1,
+      "seconds": 1.689,
+      "label": "00:00:01.689"
+    },
+    {
+      "index": 2,
+      "seconds": 3.379,
+      "label": "00:00:03.379"
+    },
+    {
+      "index": 3,
+      "seconds": 5.068,
+      "label": "00:00:05.068"
+    },
+    {
+      "index": 4,
+      "seconds": 6.757,
+      "label": "00:00:06.757"
+    },
+    {
+      "index": 5,
+      "seconds": 8.447,
+      "label": "00:00:08.447"
+    },
+    {
+      "index": 6,
+      "seconds": 10.136,
+      "label": "00:00:10.136"
+    },
+    {
+      "index": 7,
+      "seconds": 11.825,
+      "label": "00:00:11.825"
+    },
+    {
+      "index": 8,
+      "seconds": 13.515,
+      "label": "00:00:13.515"
+    },
+    {
+      "index": 9,
+      "seconds": 15.204,
+      "label": "00:00:15.204"
+    },
+    {
+      "index": 10,
+      "seconds": 16.893,
+      "label": "00:00:16.893"
+    },
+    {
+      "index": 11,
+      "seconds": 18.583,
+      "label": "00:00:18.583"
+    },
+    {
+      "index": 12,
+      "seconds": 20.272,
+      "label": "00:00:20.272"
+    },
+    {
+      "index": 13,
+      "seconds": 21.961,
+      "label": "00:00:21.961"
+    },
+    {
+      "index": 14,
+      "seconds": 23.651,
+      "label": "00:00:23.651"
+    },
+    {
+      "index": 15,
+      "seconds": 25.34,
+      "label": "00:00:25.340"
+    },
+    {
+      "index": 16,
+      "seconds": 27.029,
+      "label": "00:00:27.029"
+    },
+    {
+      "index": 17,
+      "seconds": 28.719,
+      "label": "00:00:28.719"
+    },
+    {
+      "index": 18,
+      "seconds": 30.408,
+      "label": "00:00:30.408"
+    },
+    {
+      "index": 19,
+      "seconds": 32.097,
+      "label": "00:00:32.097"
+    },
+    {
+      "index": 20,
+      "seconds": 33.787,
+      "label": "00:00:33.787"
+    },
+    {
+      "index": 21,
+      "seconds": 35.476,
+      "label": "00:00:35.476"
+    },
+    {
+      "index": 22,
+      "seconds": 37.165,
+      "label": "00:00:37.165"
+    },
+    {
+      "index": 23,
+      "seconds": 38.855,
+      "label": "00:00:38.855"
+    },
+    {
+      "index": 24,
+      "seconds": 40.544,
+      "label": "00:00:40.544"
+    }
+  ],
+  "finished_at": "2026-10-30T04:33:13.300261+00:00",
+  "status": "passed"
+}

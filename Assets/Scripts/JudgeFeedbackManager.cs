@@ -7,6 +7,8 @@ using UnityEngine.UI;
 /// </summary>
 public class JudgeFeedbackManager : MonoBehaviour
 {
+    public bool useHandpaintedJudgements=true;
+
     [Header("飘字预制体（世界空间 Canvas + Text）")]
     public GameObject perfectPrefab;
     public GameObject goodPrefab;
@@ -24,6 +26,7 @@ public class JudgeFeedbackManager : MonoBehaviour
 
     public void ShowFeedback(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)
     {
+        if(useHandpaintedJudgements&&HandpaintedJudgementHUD.TryShow(this,side,lane,rank,position+spawnOffset))return;
         GameObject prefab = null;
         Color color = Color.white;
 
@@ -45,11 +48,15 @@ public class JudgeFeedbackManager : MonoBehaviour
                 prefab = perfectPrefab;   // 复用可见预制体（文字/颜色在下方按 rank 覆盖）
                 color = passColor;
                 break;
+            case "YES":
+                prefab = perfectPrefab;
+                color = new Color(1,.95f,.86f);
+                break;
             case "MISS":
                 prefab = missPrefab;
                 color = missColor;
                 break;
-            case "BREAK":   // 连轨中途断连：飘字显示为 MISS（语义同失败，但不清零连击）
+            case "BREAK":   // 与 MISS 同功能，保留内部触发原因。
                 prefab = missPrefab;
                 color = missColor;
                 break;
@@ -89,6 +96,7 @@ public class JudgeFeedbackManager : MonoBehaviour
             case "GOOD":    rankScale = 0.4f; break;
             case "CLEAR":   rankScale = 0.42f; break;
             case "PASS":    rankScale = 0.4f; break;
+            case "YES":     rankScale = 0.36f; break;
             case "MISS":    rankScale = 0.3f; break;
             case "BREAK":   rankScale = 0.3f; break;
         }
@@ -105,6 +113,7 @@ public class JudgeFeedbackManager : MonoBehaviour
             uiText.text = (rank == "BREAK") ? "MISS" : rank;
             uiText.color = color;
         }
+        item.Configure(uiText);
     }
 
     private Font GetUIFont()

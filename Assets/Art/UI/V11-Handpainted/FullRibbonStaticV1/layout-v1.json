@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "status": "static-artwork-review-not-runtime-bound",
+  "reference": "DesignPreviews/TeamHUD-MotionV6-20261028/locked-base-reference.png",
+  "designCanvasPerTeam": [720, 200],
+  "coordinates": "top-left, red layout; mirror geometric group for blue, never mirror text",
+  "maxScoreDigits": 6,
+  "ribbonLengthFollowsScore": false,
+  "regions": {
+    "avatarFrame": [30, 32, 132, 132],
+    "avatarContent": [43, 45, 105, 105],
+    "outerLeaves": [3, 15, 66, 72],
+    "outerDot": [20, 98, 10, 13],
+    "identityCrescent": [121, 104, 80, 66],
+    "ribbon": [156, 113, 505, 48],
+    "innerLeaves": [655, 76, 44, 48]
+  },
+  "numberLayout": {
+    "scoreHeight": 64,
+    "scoreTop": 42,
+    "redScoreRight": 645,
+    "blueScoreLeft": 75,
+    "digitSlotWidthRatio": 0.8,
+    "digitGap": 2,
+    "hpDigitHeight": 36,
+    "redHpStart": [225, 53],
+    "blueHpStart": [459, 53],
+    "glyphPaddingPixels": 8,
+    "sourceDigits": "Assets/Resources/BattleVisualV11/HudAssets/digits-v1.png"
+  },
+  "fillDirections": {
+    "redRemaining": "left to right; damage removes from right",
+    "blueRemaining": "right to left; damage removes from left"
+  },
+  "maskPolicy": "all fill states and effects use identical alpha per team; no independent permanent inner hook",
+  "avatarPolicy": "replaceable image clipped by avatar-content-mask; no custom character animation"
+}

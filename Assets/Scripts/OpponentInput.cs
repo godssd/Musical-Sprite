@@ -401,7 +401,10 @@ public class OpponentInput : MonoBehaviour
         for (int i = 0; i < rt.inputSequence.Length; i++)
         {
             if (rt.phase != ActiveSkillRuntime.Phase.Standby) { aiCasting = false; yield break; }
+            while(sui.IsInputLocked(1)){if(GameManager.Instance!=null&&GameManager.Instance.isGameOver){aiCasting=false;yield break;}yield return null;}
+            if(rt==null||rt.phase!=ActiveSkillRuntime.Phase.Standby){aiCasting=false;yield break;}
             var res = sui.FeedInput(1, rt.inputSequence[i]);
+            if(res==FeedResult.Locked){i--;yield return null;continue;}
             if (res == FeedResult.Rejected)
             {
                 Debug.LogWarning($"[OpponentAI][诊断] 第{i}步被 FeedInput 拒绝(缓冲已清空)。目标rt: ownerSide={rt.ownerSide} ownerNull={(rt.owner == null)} hasActive={(rt.owner != null ? rt.owner.HasActiveSkill : false)} phase={rt.phase} needsEnergy={rt.NeedsEnergyGate} slotFull={rt.IsSlotFull()} seqLen={(rt.inputSequence != null ? rt.inputSequence.Length : -1)} step={(rt.inputSequence != null && i < rt.inputSequence.Length ? rt.inputSequence[i].ToString() : "?")}");
@@ -427,6 +430,7 @@ public class OpponentInput : MonoBehaviour
 
     public void ResetInput()
     {
+        StopAllCoroutines(); // A previous command chain must not resume after restart.
         pressIndex = 0;
         releaseIndex = 0;
         nextEvaluateTime = 0f;

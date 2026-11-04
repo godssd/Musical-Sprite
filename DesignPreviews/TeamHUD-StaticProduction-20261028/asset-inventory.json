@@ -1,0 +1,374 @@
+[
+  {
+    "file": "avatar-content-mask.png",
+    "width": 256,
+    "alphaCorner": 0,
+    "height": 256
+  },
+  {
+    "file": "avatar-frame-blue.png",
+    "width": 401,
+    "alphaCorner": 0,
+    "height": 401
+  },
+  {
+    "file": "avatar-frame-mask-blue.png",
+    "width": 401,
+    "alphaCorner": 0,
+    "height": 401
+  },
+  {
+    "file": "avatar-frame-mask-red.png",
+    "width": 401,
+    "alphaCorner": 0,
+    "height": 401
+  },
+  {
+    "file": "avatar-frame-red.png",
+    "width": 401,
+    "alphaCorner": 0,
+    "height": 401
+  },
+  {
+    "file": "digit-0-blue.png",
+    "width": 270,
+    "alphaCorner": 0,
+    "height": 346
+  },
+  {
+    "file": "digit-0-cream.png",
+    "width": 270,
+    "alphaCorner": 0,
+    "height": 346
+  },
+  {
+    "file": "digit-0-red.png",
+    "width": 270,
+    "alphaCorner": 0,
+    "height": 346
+  },
+  {
+    "file": "digit-1-blue.png",
+    "width": 207,
+    "alphaCorner": 0,
+    "height": 369
+  },
+  {
+    "file": "digit-1-cream.png",
+    "width": 207,
+    "alphaCorner": 0,
+    "height": 369
+  },
+  {
+    "file": "digit-1-red.png",
+    "width": 207,
+    "alphaCorner": 0,
+    "height": 369
+  },
+  {
+    "file": "digit-2-blue.png",
+    "width": 283,
+    "alphaCorner": 0,
+    "height": 353
+  },
+  {
+    "file": "digit-2-cream.png",
+    "width": 283,
+    "alphaCorner": 0,
+    "height": 353
+  },
+  {
+    "file": "digit-2-red.png",
+    "width": 283,
+    "alphaCorner": 0,
+    "height": 353
+  },
+  {
+    "file": "digit-3-blue.png",
+    "width": 253,
+    "alphaCorner": 0,
+    "height": 364
+  },
+  {
+    "file": "digit-3-cream.png",
+    "width": 253,
+    "alphaCorner": 0,
+    "height": 364
+  },
+  {
+    "file": "digit-3-red.png",
+    "width": 253,
+    "alphaCorner": 0,
+    "height": 364
+  },
+  {
+    "file": "digit-4-blue.png",
+    "width": 285,
+    "alphaCorner": 0,
+    "height": 363
+  },
+  {
+    "file": "digit-4-cream.png",
+    "width": 285,
+    "alphaCorner": 0,
+    "height": 363
+  },
+  {
+    "file": "digit-4-red.png",
+    "width": 285,
+    "alphaCorner": 0,
+    "height": 363
+  },
+  {
+    "file": "digit-5-blue.png",
+    "width": 260,
+    "alphaCorner": 0,
+    "height": 362
+  },
+  {
+    "file": "digit-5-cream.png",
+    "width": 260,
+    "alphaCorner": 0,
+    "height": 362
+  },
+  {
+    "file": "digit-5-red.png",
+    "width": 260,
+    "alphaCorner": 0,
+    "height": 362
+  },
+  {
+    "file": "digit-6-blue.png",
+    "width": 272,
+    "alphaCorner": 0,
+    "height": 358
+  },
+  {
+    "file": "digit-6-cream.png",
+    "width": 272,
+    "alphaCorner": 0,
+    "height": 358
+  },
+  {
+    "file": "digit-6-red.png",
+    "width": 272,
+    "alphaCorner": 0,
+    "height": 358
+  },
+  {
+    "file": "digit-7-blue.png",
+    "width": 266,
+    "alphaCorner": 0,
+    "height": 357
+  },
+  {
+    "file": "digit-7-cream.png",
+    "width": 266,
+    "alphaCorner": 0,
+    "height": 357
+  },
+  {
+    "file": "digit-7-red.png",
+    "width": 266,
+    "alphaCorner": 0,
+    "height": 357
+  },
+  {
+    "file": "digit-8-blue.png",
+    "width": 276,
+    "alphaCorner": 0,
+    "height": 366
+  },
+  {
+    "file": "digit-8-cream.png",
+    "width": 276,
+    "alphaCorner": 0,
+    "height": 366
+  },
+  {
+    "file": "digit-8-red.png",
+    "width": 276,
+    "alphaCorner": 0,
+    "height": 366
+  },
+  {
+    "file": "digit-9-blue.png",
+    "width": 257,
+    "alphaCorner": 0,
+    "height": 361
+  },
+  {
+    "file": "digit-9-cream.png",
+    "width": 257,
+    "alphaCorner": 0,
+    "height": 361
+  },
+  {
+    "file": "digit-9-red.png",
+    "width": 257,
+    "alphaCorner": 0,
+    "height": 361
+  },
+  {
+    "file": "identity-crescent-blue.png",
+    "width": 288,
+    "alphaCorner": 0,
+    "height": 269
+  },
+  {
+    "file": "identity-crescent-mask-blue.png",
+    "width": 288,
+    "alphaCorner": 0,
+    "height": 269
+  },
+  {
+    "file": "identity-crescent-mask-red.png",
+    "width": 288,
+    "alphaCorner": 0,
+    "height": 269
+  },
+  {
+    "file": "identity-crescent-red.png",
+    "width": 288,
+    "alphaCorner": 0,
+    "height": 269
+  },
+  {
+    "file": "inner-leaves-blue.png",
+    "width": 216,
+    "alphaCorner": 0,
+    "height": 265
+  },
+  {
+    "file": "inner-leaves-red.png",
+    "width": 216,
+    "alphaCorner": 0,
+    "height": 265
+  },
+  {
+    "file": "label-hp-cream.png",
+    "width": 356,
+    "alphaCorner": 0,
+    "height": 265
+  },
+  {
+    "file": "outer-dot-blue.png",
+    "width": 99,
+    "alphaCorner": 0,
+    "height": 95
+  },
+  {
+    "file": "outer-dot-mask-blue.png",
+    "width": 99,
+    "alphaCorner": 0,
+    "height": 95
+  },
+  {
+    "file": "outer-dot-mask-red.png",
+    "width": 99,
+    "alphaCorner": 0,
+    "height": 95
+  },
+  {
+    "file": "outer-dot-red.png",
+    "width": 99,
+    "alphaCorner": 0,
+    "height": 95
+  },
+  {
+    "file": "outer-leaves-blue.png",
+    "width": 230,
+    "alphaCorner": 0,
+    "height": 262
+  },
+  {
+    "file": "outer-leaves-red.png",
+    "width": 230,
+    "alphaCorner": 0,
+    "height": 262
+  },
+  {
+    "file": "ribbon-blue.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-empty-blue.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-empty-red.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-heal-blue.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-heal-red.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-loss-blue.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-loss-red.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-mask-blue.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-mask-red.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "ribbon-red.png",
+    "width": 1940,
+    "alphaCorner": 0,
+    "height": 184
+  },
+  {
+    "file": "score-marks-blue.png",
+    "width": 293,
+    "alphaCorner": 0,
+    "height": 173
+  },
+  {
+    "file": "score-marks-mask-blue.png",
+    "width": 293,
+    "alphaCorner": 0,
+    "height": 173
+  },
+  {
+    "file": "score-marks-mask-red.png",
+    "width": 293,
+    "alphaCorner": 0,
+    "height": 173
+  },
+  {
+    "file": "score-marks-red.png",
+    "width": 293,
+    "alphaCorner": 0,
+    "height": 173
+  }
+]

@@ -1,0 +1,1 @@
+PASS: real runtime renderer captured eleven states in isolated Unity preview scene; shader has no compiler errors; damage/heal holds, reversals and zero-impact timing checked; actual ScoreManager.ResetScores/AddScore/TakeDamage/Heal events drove the renderer. This does not replace live match testing.

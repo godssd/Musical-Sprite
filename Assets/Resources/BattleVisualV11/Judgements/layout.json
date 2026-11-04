@@ -1,0 +1,52 @@
+{
+  "regions": [
+    {
+      "rank": "PERFECT",
+      "x": 301,
+      "y": 34,
+      "width": 661,
+      "height": 198,
+      "glyphHeight": 178
+    },
+    {
+      "rank": "GOOD",
+      "x": 450,
+      "y": 264,
+      "width": 371,
+      "height": 178,
+      "glyphHeight": 141
+    },
+    {
+      "rank": "CLEAR",
+      "x": 417,
+      "y": 476,
+      "width": 440,
+      "height": 175,
+      "glyphHeight": 138
+    },
+    {
+      "rank": "PASS",
+      "x": 467,
+      "y": 677,
+      "width": 355,
+      "height": 178,
+      "glyphHeight": 152
+    },
+    {
+      "rank": "YES",
+      "x": 507,
+      "y": 867,
+      "width": 284,
+      "height": 189,
+      "glyphHeight": 147
+    },
+    {
+      "rank": "MISS",
+      "x": 480,
+      "y": 1070,
+      "width": 319,
+      "height": 160,
+      "glyphHeight": 123
+    }
+  ]
+}

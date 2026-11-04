@@ -1,0 +1,7 @@
+[
+  "Assets/Scripts/ScoreManager.cs",
+  "Assets/Scripts/ScoreDisplay.cs",
+  "Assets/Scripts/UI/SpriteNumberGraphic.cs",
+  "Assets/Editor/HPDecorationStyleEditor.cs",
+  "DesignPreviews/visual-implementation-progress-v11.md"
+]

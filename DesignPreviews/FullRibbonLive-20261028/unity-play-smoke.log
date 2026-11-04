@@ -1,0 +1,2273 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.0/staging' branch; Version is '6000.0.82f1 (2fb0dae735e1) revision 3125466'; Using compiler version '193933523'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator" at "2026-10-28T23:59:29.1860366Z"
+OS: 'Windows 10  (10.0.19045) 64bit Professional' Language: 'zh' Physical Memory: 16322 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-10-28T23:59:29Z
+
+COMMAND LINE ARGUMENTS:
+D:\unity\6000.0.82f1\Editor\Unity.exe
+-batchmode
+-projectPath
+D:\unity\plan go\Musical Sprite
+-executeMethod
+FullRibbonGameSmoke.Batch
+-logFile
+D:\unity\plan go\Musical Sprite\DesignPreviews\FullRibbonLive-20261028\unity-play-smoke.log
+Successfully changed project path to: D:\unity\plan go\Musical Sprite
+D:/unity/plan go/Musical Sprite
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [10884]  Target information:
+
+Player connection [10884]  * "[IP] 192.168.31.163 [Port] 55505 [Flags] 2 [Guid] 497743756 [EditorId] 497743756 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [10884]  * "[IP] 172.18.0.1 [Port] 55505 [Flags] 2 [Guid] 497743756 [EditorId] 497743756 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [10884] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [10884] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-36108" after 0.3 seconds.
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Refreshing native plugins compatible for Editor in 1.73 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 6000.0.82f1 (2fb0dae735e1)
+[Subsystems] Discovering subsystems at path D:/unity/6000.0.82f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/unity/plan go/Musical Sprite/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 4070 Ti (ID=0x2782)
+    Vendor:   NVIDIA
+    VRAM:     11996 MB
+    Driver:   32.0.16.1047
+Initialize mono
+Mono path[0] = 'D:/unity/6000.0.82f1/Editor/Data/Managed'
+Mono path[1] = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56108
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.3'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-Administrator"
+[Licensing::IpcConnector] LicenseClient-Administrator channel disconnected successfully.
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82" at "2026-10-28T23:59:30.9377176Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 19012, path: "D:/unity/6000.0.82f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              1e306929a8d44718ab5c2e9460bc1fb5
+  Correlation Id:          35226266a1109de0a385147743f44850
+  External correlation Id: 6499028798088577241
+  Machine Id:              zBAHGvhiEkomrmV9VYKbt7d65SM=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-Administrator-6000.0.82" (connect: 0.00s, validation: 0.00s, handshake: 0.01s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82-notifications" at "2026-10-28T23:59:30.9446877Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
+  Product: Unity Personal Version
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 1.76s
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: D:/unity/6000.0.82f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.006145 seconds.
+- Loaded All Assemblies, in  0.469 seconds
+Native extension for WindowsStandalone target not found
+Package Manager log level set to [2]
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.306 seconds
+Domain Reload Profiling: 771ms
+	BeginReloadAssembly (190ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (2ms)
+	RebuildCommonClasses (45ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (58ms)
+	LoadAllAssembliesAndSetupDomain (158ms)
+		LoadAssemblies (182ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (154ms)
+			TypeCache.Refresh (153ms)
+				TypeCache.ScanAssembly (138ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (1ms)
+	FinalizeReload (307ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (271ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (21ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (53ms)
+			ProcessInitializeOnLoadAttributes (138ms)
+			ProcessInitializeOnLoadMethodAttributes (55ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 63 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.ai.inference@2.6.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.inference@9a123aee5df7)
+    com.unity.ai.navigation@2.0.14 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.navigation@134dd6a3b97b)
+    com.unity.collab-proxy@2.13.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collab-proxy@4628d2ba6ea4)
+    com.unity.ide.rider@3.0.39 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.rider@4504839d03f7)
+    com.unity.ide.visualstudio@2.0.27 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.visualstudio@dc1ddd4f09b6)
+    com.unity.inputsystem@1.19.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.inputsystem@21a28c3a6c83)
+    com.unity.timeline@1.8.12 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.11 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.visualscripting@8bed5ad90189)
+    com.unity.burst@1.8.30 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.burst@2f3d916873ea)
+    com.unity.dt.app-ui@1.3.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.dt.app-ui@3bbd9e4c5c92)
+    com.unity.collections@2.6.8 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collections@84e8eb3fc12e)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.searcher@4.9.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.searcher@1e17ce91558d)
+    com.unity.mathematics@1.3.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.mathematics@8017b507cc74)
+    com.unity.nuget.mono-cecil@1.11.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.5.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework.performance@8b56083ec0f0)
+  Built-in packages:
+    com.unity.multiplayer.center@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.multiplayer.center@f3fb577b3546)
+    com.unity.render-pipelines.universal@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal@c7abd84d7030)
+    com.unity.test-framework@1.6.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework@082c24152fd4)
+    com.unity.ugui@2.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ugui@8bb446d869cd)
+    com.unity.modules.accessibility@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.ai@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.screencapture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vehicles@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.vr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vr)
+    com.unity.modules.wind@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ext.nunit@031a54704bff)
+    com.unity.2d.sprite@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.2d.sprite@0eb6ea2c7181)
+    com.unity.render-pipelines.core@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.core@f663854f0ceb)
+    com.unity.shadergraph@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.shadergraph@14250cfec0ec)
+    com.unity.render-pipelines.universal-config@17.0.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal-config@dd206bf35d04)
+    com.unity.rendering.light-transport@1.0.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.rendering.light-transport@9bd588f963c0)
+  Git packages:
+    com.esotericsoftware.spine.spine-unity@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Assets/Spine#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-unity@21b16484175f)
+    com.esotericsoftware.spine.spine-csharp@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-csharp/src#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-csharp@62e1be8a5d43)
+    com.esotericsoftware.spine.urp-shaders@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Modules/com.esotericsoftware.spine.urp-shaders#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.urp-shaders@413194061080)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.02 seconds
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+DisplayProgressbar: Compiling Scripts
+Starting: D:\unity\6000.0.82f1\Editor\Data\Tools\netcorerun\netcorerun.exe "D:\unity\6000.0.82f1\Editor\Data\Tools\BuildPipeline\ScriptCompilationBuildProgram.exe" "Library/Bee/1900b0aE.dag.json" "Library/Bee/1900b0aE-inputdata.json" "Library\Bee\buildprogram0.traceevents"
+WorkingDir: D:/unity/plan go/Musical Sprite
+ExitCode: 4 Duration: 2s577ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/1900b0aE-inputdata.json
+[ 807/1047  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[ 808/1047  2s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+
+Assets\Scripts\GameManager.cs(285,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Scripts\NotePrewarmer.cs(40,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+
+Assets\Scripts\NoteMover.cs(97,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+
+Assets\Scripts\HoldNote.cs(243,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used
+*** Tundra requires additional run (2.50 seconds), 2 items updated, 806 evaluated
+ExitCode: 0 Duration: 0s817ms
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\1900b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+ExitCode: 0 Duration: 1s588ms
+Finished compiling graph: 1050 nodes, 18663 flattened edges (15311 ToBuild, 170 ToUse), maximum node priority 1115
+[ 559/1047  0s] WriteText Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.rsp
+[ 808/1047  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1040/1047  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+[1041/1047  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 133 defines and 312 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1042/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1043/1047  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 131 defines and 333 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1044/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[1045/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+[1046/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (1.56 seconds), 9 items updated, 1047 evaluated
+Assets\Scripts\Editor\BlobShadowSetupEditor.cs(36,23): warning CS0618: 'Object.FindObjectsOfType<T>()' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Editor\GroundEdgeMaterialSetup.cs(466,36): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Editor\SpriteSheetBuilderWindow.cs(351,21): warning CS0618: 'TextureImporter.spritesheet' is obsolete: 'Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.'
+Assets\Editor\BeatmapEditorWindow.cs(114,22): warning CS0414: The field 'BeatmapEditorWindow.linkingLinked' is assigned but its value is never used
+AssetDatabase: script compilation time: 5.467061s
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  1.399 seconds
+Refreshing native plugins compatible for Editor in 42.64 ms, found 5 plugins.
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 4.66 ms, found 5 plugins.
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  4.024 seconds
+Domain Reload Profiling: 5412ms
+	BeginReloadAssembly (331ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (11ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (148ms)
+	RebuildCommonClasses (36ms)
+	RebuildNativeTypeToScriptingClass (17ms)
+	initialDomainReloadingComplete (41ms)
+	LoadAllAssembliesAndSetupDomain (963ms)
+		LoadAssemblies (741ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (346ms)
+			TypeCache.Refresh (247ms)
+				TypeCache.ScanAssembly (231ms)
+			BuildScriptInfoCaches (82ms)
+			ResolveRequiredComponents (13ms)
+	FinalizeReload (4024ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (3708ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (15ms)
+			SetLoadedEditorAssemblies (5ms)
+			BeforeProcessingInitializeOnLoad (226ms)
+			ProcessInitializeOnLoadAttributes (3325ms)
+			ProcessInitializeOnLoadMethodAttributes (126ms)
+			AfterProcessingInitializeOnLoad (11ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (10ms)
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonAvatarsV1/default-red.png using Guid(873a61c84b814b9a8b15777126fb48ac) (TextureImporter) -> (artifact id: 'a30ad884176065537791e3cfa57aae4f') in 0.0346593 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonAvatarsV1/default-blue.png using Guid(5f8297974ad54952a4e974799112a863) (TextureImporter) -> (artifact id: 'd42616a93d8a84bac72d6fd695b69d52') in 0.0064661 seconds
+Refreshing native plugins compatible for Editor in 4.02 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.66 ms.
+Asset Pipeline Refresh (id=4a6b063d75c8edf4f84b855b8a7d6fb6): Total: 12.534 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=6 ms, native=4992 ms
+		Asset DB Callback time: managed=311 ms, native=262 ms
+		Scripting: domain reloads=1, domain reload time=1400 ms, compile time=5469 ms, other=91 ms
+		Project Asset Count: scripts=1726, non-scripts=4038
+		Asset File Changes: new=1, changed=4, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 22.761ms
+	ApplyChangesToAssetFolders: 0.678ms
+	Scan: 200.683ms
+	OnSourceAssetsModified: 0.869ms
+	CategorizeAssetsWithTransientArtifact: 107.911ms
+	ProcessAssetsWithTransientArtifactChanges: 109.284ms
+	CategorizeAssets: 227.865ms
+	ImportOutOfDateAssets: 4129.330ms (-1387.906ms without children)
+		ImportManagerImport: 44.429ms (1.546ms without children)
+			ImportInProcess: 42.883ms
+		CompileScripts: 5469.419ms
+		ReloadNativeAssets: 0.049ms
+		UnloadImportedAssets: 0.874ms
+		ReloadImportedAssets: 0.000ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 1.411ms
+		InitializingProgressBar: 0.005ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 1.048ms
+	PostProcessAllAssets: 544.788ms
+	Hotreload: 8.117ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.002ms
+	UnloadStreamsBegin: 2.416ms
+	PersistCurrentRevisions: 0.258ms
+	UnloadStreamsEnd: 0.001ms
+	GenerateScriptTypeHashes: 3.078ms
+	Untracked: 7178.853ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 3.098ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Musical Sprite
+Unloading 81 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8418 unused Assets / (23.6 MB). Loaded Objects now: 9212.
+Memory consumption went from 251.5 MB to 227.8 MB.
+Total: 15.383000 ms (FindLiveObjects: 0.864400 ms CreateObjectMapping: 1.344900 ms MarkObjects: 6.392100 ms  DeleteObjects: 6.780900 ms)
+
+Opening scene 'Assets/Scenes/SampleScene.unity'
+Unloading 89 Unused Serialized files (Serialized files now loaded: 0)
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMin (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:697)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:245)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene (string,UnityEditor.SceneManagement.OpenSceneMode)
+FullRibbonGameSmoke:Batch () (at Assets/Editor/FullRibbonGameSmoke.cs:25)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 697]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMax (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:692)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:245)
+UnityEditor.SceneManagement.EditorSceneManager:OpenScene (string,UnityEditor.SceneManagement.OpenSceneMode)
+FullRibbonGameSmoke:Batch () (at Assets/Editor/FullRibbonGameSmoke.cs:25)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 692]
+
+Loaded scene 'Assets/Scenes/SampleScene.unity'
+	Deserialize:            114.524 ms
+	Integration:            531.215 ms
+	Integration of assets:  6.823 ms
+	Thread Wait Time:       -1.393 ms
+	Total Operation Time:   651.170 ms
+Unloading 6 unused Assets / (6.0 KB). Loaded Objects now: 10252.
+Memory consumption went from 264.5 MB to 264.5 MB.
+Total: 8.233400 ms (FindLiveObjects: 0.789800 ms CreateObjectMapping: 0.758800 ms MarkObjects: 6.641200 ms  DeleteObjects: 0.042800 ms)
+
+Unity is not designed to run with Administrator privileges.
+
+With elevated access, scripts in your project can modify system files, registry settings, or protected areas, even accidentally.
+This could make your system unstable or unbootable.
+
+Restart as a standard user for the safest experience.
+[Project] Loading completed in 17.329 seconds
+	Project init time: 				15.512 seconds
+		Template init time: 		0.000 seconds
+		Package Manager init time: 		0.341 seconds
+		Asset Database init time: 		0.667 seconds
+		Global illumination init time: 	0.018 seconds
+		Assemblies load time: 			0.804 seconds
+		Unity extensions init time: 	0.010 seconds
+		Asset Database refresh time: 	12.534 seconds
+	Scene opening time: 			0.980 seconds
+##utp:{"type":"ProjectInfo","version":2,"phase":"Immediate","time":1793231985752,"processId":36108,"projectLoad":17.3287325,"projectInit":15.5116341,"templateInit":0.0,"packageManagerInit":0.3406765,"assetDatabaseInit":0.6670502,"globalIlluminationInit":0.0182659,"assembliesLoad":0.8043207,"unityExtensionsInit":0.0101469,"assetDatabaseRefresh":12.5343956,"sceneOpening":0.9797708}
+##utp:{"type":"EditorInfo","version":2,"phase":"Immediate","time":1793231985752,"processId":36108,"editorVersion":"6000.0.82f1 (2fb0dae735e1)","branch":"6000.0/staging","buildType":"Release","platform":"Windows"}
+Asset Pipeline Refresh (id=13a6e4012c35ecd468a12efbf1116d2c): Total: 0.069 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+DisplayProgressbar: Unity Version Control
+[HPBarLiquid] 'HPBarRight' side=1 已订阅 OnHPChanged，初始 HP=0/300，fill=0.000，fillImage=Fill，ghost=有，flash=有，数字=图片
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:Start () (at Assets/Scripts/UI/HPBarLiquid.cs:227)
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 227)
+
+[HPBarLiquid] 'HPBarLeft' side=0 已订阅 OnHPChanged，初始 HP=0/300，fill=0.000，fillImage=Fill，ghost=有，flash=有，数字=图片
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:Start () (at Assets/Scripts/UI/HPBarLiquid.cs:227)
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 227)
+
+[UnityConnectServicesConfig] config is NOT valid, switching to default
+Created GICache directory at C:/Users/Administrator/AppData/LocalLow/Unity/Caches/GiCache. Took: 0.030s, timestamps: [17.346 - 17.376]
+Reloading assemblies for play mode.
+Reloading assemblies after forced synchronous recompile.
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.883 seconds
+Refreshing native plugins compatible for Editor in 4.84 ms, found 5 plugins.
+Native extension for WindowsStandalone target not found
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  1.229 seconds
+Domain Reload Profiling: 2105ms
+	BeginReloadAssembly (489ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (67ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (264ms)
+	RebuildCommonClasses (33ms)
+	RebuildNativeTypeToScriptingClass (13ms)
+	initialDomainReloadingComplete (35ms)
+	LoadAllAssembliesAndSetupDomain (305ms)
+		LoadAssemblies (172ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (237ms)
+			TypeCache.Refresh (8ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (212ms)
+			ResolveRequiredComponents (13ms)
+	FinalizeReload (1229ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (732ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (14ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (193ms)
+			ProcessInitializeOnLoadAttributes (394ms)
+			ProcessInitializeOnLoadMethodAttributes (116ms)
+			AfterProcessingInitializeOnLoad (11ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (149ms)
+Asset Pipeline Refresh (id=f442e29465a40d9479dd18e2cb599bb8): Total: 2.276 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=1347 ms
+		Asset DB Callback time: managed=19 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=908 ms, compile time=1 ms, other=0 ms
+		Project Asset Count: scripts=1726, non-scripts=4038
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 2.237ms
+	ApplyChangesToAssetFolders: 0.292ms
+	Scan: 0.001ms
+	OnSourceAssetsModified: 0.001ms
+	CategorizeAssetsWithTransientArtifact: 0.003ms
+	ProcessAssetsWithTransientArtifactChanges: 5.190ms
+	CategorizeAssets: 60.766ms
+	ImportOutOfDateAssets: 1247.498ms (1242.511ms without children)
+		CompileScripts: 1.101ms
+		CollectScriptTypesHashes: 1.539ms
+		ReloadNativeAssets: 1.078ms
+		UnloadImportedAssets: 0.068ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.834ms
+		InitializingProgressBar: 0.000ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.000ms
+		OnDemandSchedulerStart: 0.367ms
+	PostProcessAllAssets: 19.390ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.406ms
+	UnloadStreamsBegin: 1.675ms
+	PersistCurrentRevisions: 0.182ms
+	UnloadStreamsEnd: 0.001ms
+	GenerateScriptTypeHashes: 4.633ms
+	Untracked: 938.779ms
+
+The referenced script (Unknown) on this Behaviour is missing!
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_CreateGameObject (UnityEngine.GameObject,string)
+UnityEngine.GameObject:.ctor (string,System.Type[])
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:426)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 426]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+UnityEngine.GameObject:.ctor (string,System.Type[])
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:426)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 426]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+UnityEngine.GameObject:.ctor (string,System.Type[])
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:426)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 426]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnBeforeTransformParentChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetParent (UnityEngine.Transform,bool)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:428)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 428]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnTransformParentChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetParent (UnityEngine.Transform,bool)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:428)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 428]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (HPBarRight: OnTransformChildrenChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetParent (UnityEngine.Transform,bool)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:428)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 428]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:429)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 429]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:429)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 429]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMin (UnityEngine.Vector2)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:437)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 437]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMax (UnityEngine.Vector2)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:437)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 437]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_sizeDelta (UnityEngine.Vector2)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:438)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 438]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (HPBarRight: OnTransformChildrenChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetSiblingIndex (int)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:444)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 444]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMin (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:697)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:245)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 697]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_CreateGameObject (UnityEngine.GameObject,string)
+UnityEngine.GameObject:.ctor (string,System.Type[])
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:426)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 426]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+UnityEngine.GameObject:.ctor (string,System.Type[])
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:426)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 426]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+UnityEngine.GameObject:.ctor (string,System.Type[])
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:426)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 426]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnBeforeTransformParentChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetParent (UnityEngine.Transform,bool)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:428)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 428]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnTransformParentChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetParent (UnityEngine.Transform,bool)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:428)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 428]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (HPBarLeft: OnTransformChildrenChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetParent (UnityEngine.Transform,bool)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:428)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 428]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:429)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 429]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnDidAddComponent)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:429)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 429]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMin (UnityEngine.Vector2)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:437)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 437]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMax (UnityEngine.Vector2)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:437)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 437]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Heal: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_sizeDelta (UnityEngine.Vector2)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:438)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 438]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (HPBarLeft: OnTransformChildrenChanged)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.Transform:SetSiblingIndex (int)
+HPBarLiquid:EnsureHealingMaterial () (at Assets/Scripts/UI/HPBarLiquid.cs:444)
+HPBarLiquid:EnsureMaterials () (at Assets/Scripts/UI/HPBarLiquid.cs:418)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:243)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 444]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMax (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:692)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:245)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 692]
+
+[CharacterBattleSystem] 已装载角色：leftMaxHP=326 L_combat=101 | rightMaxHP=326 R_combat=101 | default=False
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem:InitializeFromData () (at Assets/Scripts/Character/CharacterBattleSystem.cs:180)
+CharacterBattleSystem:Awake () (at Assets/Scripts/Character/CharacterBattleSystem.cs:44)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 180)
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            16.134 ms
+	Integration:            338.365 ms
+	Integration of assets:  0.562 ms
+	Thread Wait Time:       -0.410 ms
+	Total Operation Time:   354.651 ms
+[ScoreDisplay] ScoreLeft 初始化完成： anchoredPosition=(456.00, -18.00) sizeDelta=(396.00, 73.00) scoreText=0
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+ScoreDisplay:Start () (at Assets/Scripts/ScoreDisplay.cs:62)
+
+(Filename: Assets/Scripts/ScoreDisplay.cs Line: 62)
+
+[CharacterBattleSystem] 使用场景预置的 CharacterCubeMarker x 8
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem:AutoFillMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:261)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:50)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 261)
+
+[CharacterBattleSystem] ColorMarker RightBand_Member_Lane2(side=1,lane=2) c=大狗 modelPrefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] RightBand_Member_Lane2(side=1,lane=2) 调用 SetModelPrefab prefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] RightBand_Member_Lane2 SetModelPrefab 开始：prefab=Bigdog slotPoseCount=1 slotPose=有 side=1 lane=2 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] RightBand_Member_Lane2 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] RightBand_Member_Lane2 实例化模型 Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] RightBand_Member_Lane2 应用位姿：slotPose=RightBand_Member_Lane2 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] ColorMarker RightBand_Member_Lane3(side=1,lane=3) c=大狗 modelPrefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] RightBand_Member_Lane3(side=1,lane=3) 调用 SetModelPrefab prefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] RightBand_Member_Lane3 SetModelPrefab 开始：prefab=Bigdog slotPoseCount=1 slotPose=有 side=1 lane=3 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] RightBand_Member_Lane3 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] RightBand_Member_Lane3 实例化模型 Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] RightBand_Member_Lane3 应用位姿：slotPose=RightBand_Member_Lane3 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] ColorMarker LeftBand_Member_Lane3(side=0,lane=3) c=屎屎 modelPrefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] LeftBand_Member_Lane3(side=0,lane=3) 调用 SetModelPrefab prefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] LeftBand_Member_Lane3 SetModelPrefab 开始：prefab=Shit slotPoseCount=1 slotPose=有 side=0 lane=3 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] LeftBand_Member_Lane3 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] LeftBand_Member_Lane3 实例化模型 Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] LeftBand_Member_Lane3 应用位姿：slotPose=LeftBand_Member_Lane3 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] ColorMarker LeftBand_Member_Lane1(side=0,lane=1) c=大狗 modelPrefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] LeftBand_Member_Lane1(side=0,lane=1) 调用 SetModelPrefab prefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] LeftBand_Member_Lane1 SetModelPrefab 开始：prefab=Bigdog slotPoseCount=1 slotPose=有 side=0 lane=1 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] LeftBand_Member_Lane1 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] LeftBand_Member_Lane1 实例化模型 Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] LeftBand_Member_Lane1 应用位姿：slotPose=LeftBand_Member_Lane1 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] ColorMarker LeftBand_Member_Lane2(side=0,lane=2) c=屎屎 modelPrefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] LeftBand_Member_Lane2(side=0,lane=2) 调用 SetModelPrefab prefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] LeftBand_Member_Lane2 SetModelPrefab 开始：prefab=Shit slotPoseCount=1 slotPose=有 side=0 lane=2 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] LeftBand_Member_Lane2 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] LeftBand_Member_Lane2 实例化模型 Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] LeftBand_Member_Lane2 应用位姿：slotPose=LeftBand_Member_Lane2 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] ColorMarker RightBand_Member_Lane1(side=1,lane=1) c=屎屎 modelPrefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] RightBand_Member_Lane1(side=1,lane=1) 调用 SetModelPrefab prefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] RightBand_Member_Lane1 SetModelPrefab 开始：prefab=Shit slotPoseCount=1 slotPose=有 side=1 lane=1 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] RightBand_Member_Lane1 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] RightBand_Member_Lane1 实例化模型 Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] RightBand_Member_Lane1 应用位姿：slotPose=RightBand_Member_Lane1 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] ColorMarker RightBand_Member_Lane0(side=1,lane=0) c=屎屎 modelPrefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] RightBand_Member_Lane0(side=1,lane=0) 调用 SetModelPrefab prefab=Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] RightBand_Member_Lane0 SetModelPrefab 开始：prefab=Shit slotPoseCount=1 slotPose=有 side=1 lane=0 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] RightBand_Member_Lane0 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] RightBand_Member_Lane0 实例化模型 Shit
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] RightBand_Member_Lane0 应用位姿：slotPose=RightBand_Member_Lane0 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] ColorMarker LeftBand_Member_Lane0(side=0,lane=0) c=大狗 modelPrefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:338)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 338)
+
+[CharacterBattleSystem] LeftBand_Member_Lane0(side=0,lane=0) 调用 SetModelPrefab prefab=Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:342)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 342)
+
+[CharacterCubeMarker] LeftBand_Member_Lane0 SetModelPrefab 开始：prefab=Bigdog slotPoseCount=1 slotPose=有 side=0 lane=0 fallback=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> 最终使用 pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:337)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 337)
+
+[CharacterCubeMarker] LeftBand_Member_Lane0 SlotPose[0] pos=(0.000, 0.000, 0.000) rot=(0.000, 0.000, 0.000) scale=(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:340)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 340)
+
+[CharacterCubeMarker] LeftBand_Member_Lane0 实例化模型 Bigdog
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:357)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 357)
+
+[CharacterCubeMarker] LeftBand_Member_Lane0 应用位姿：slotPose=LeftBand_Member_Lane0 offset=pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000) -> final pos(0.000, 0.000, 0.000) rot(0.000, 0.000, 0.000) scale(1.000, 1.000, 1.000)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:365)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterCubeMarker.cs Line: 365)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterCubeMarker:SetModelPrefab (UnityEngine.GameObject,string) (at Assets/Scripts/Character/CharacterCubeMarker.cs:374)
+CharacterBattleSystem:ColorMarker (CharacterCubeMarker) (at Assets/Scripts/Character/CharacterBattleSystem.cs:343)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:357)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterBattleSystem] 已按角色身份色上色 x 8 个方块（小熊灰 / 大狗橙 / 屎屎绿 / 布姆白 / 小黑黑）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem:ColorAllMarkers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:358)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:52)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 358)
+
+[CharacterBattleSystem] 自动创建 BuffController
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem:EnsureControllers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:412)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:57)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 412)
+
+[CharacterBattleSystem] 自动创建 SleepController
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem:EnsureControllers () (at Assets/Scripts/Character/CharacterBattleSystem.cs:418)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:57)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 418)
+
+[CharacterBattleSystem][诊断] 主动技能运行时挂载计数：side0=4 side1=4（共8）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem:SetupSkillRuntimes () (at Assets/Scripts/Character/CharacterBattleSystem.cs:114)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:59)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 114)
+
+[CharacterBattleSystem] 已为每个角色挂载主动技能运行时与被动控制器（能力1~能力5）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem:SetupSkillRuntimes () (at Assets/Scripts/Character/CharacterBattleSystem.cs:116)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:59)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 116)
+
+[Battle] side=0 lane=0 charId=2 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[Battle] side=0 lane=1 charId=2 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[Battle] side=0 lane=2 charId=3 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[Battle] side=0 lane=3 charId=3 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[Battle] side=1 lane=0 charId=3 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[Battle] side=1 lane=1 charId=3 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[Battle] side=1 lane=2 charId=2 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[Battle] side=1 lane=3 charId=2 slot=0 能量已满
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CharacterBattleSystem/<>c__DisplayClass21_0:<LoadSide>b__0 (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:243)
+CharacterClass:FillAllEnergySlots () (at Assets/Scripts/Character/CharacterClass.cs:232)
+CharacterBattleSystem:Start () (at Assets/Scripts/Character/CharacterBattleSystem.cs:67)
+
+(Filename: Assets/Scripts/Character/CharacterBattleSystem.cs Line: 243)
+
+[ScoreDisplay] ScoreRight 初始化完成： anchoredPosition=(-456.00, -18.00) sizeDelta=(396.00, 73.00) scoreText=0
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+ScoreDisplay:Start () (at Assets/Scripts/ScoreDisplay.cs:62)
+
+(Filename: Assets/Scripts/ScoreDisplay.cs Line: 62)
+
+[ScoreManager] 自动创建 FeverManager
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+ScoreManager:Start () (at Assets/Scripts/ScoreManager.cs:106)
+
+(Filename: Assets/Scripts/ScoreManager.cs Line: 106)
+
+[ScoreManager] 自动创建 SkillInputUI
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+ScoreManager:Start () (at Assets/Scripts/ScoreManager.cs:128)
+
+(Filename: Assets/Scripts/ScoreManager.cs Line: 128)
+
+[HPBarLiquid] 'HPBarRight' side=1 已订阅 OnHPChanged，初始 HP=326/326，fill=1.000，fillImage=Fill，ghost=有，flash=有，数字=图片
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:Start () (at Assets/Scripts/UI/HPBarLiquid.cs:227)
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 227)
+
+[HPBarLiquid] 'HPBarLeft' side=0 已订阅 OnHPChanged，初始 HP=326/326，fill=1.000，fillImage=Fill，ghost=有，flash=有，数字=图片
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:Start () (at Assets/Scripts/UI/HPBarLiquid.cs:227)
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 227)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterAnimator] prefix=Aibo_2_Shit 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_2_Shit_04_Play_Superfever
+  Aibo_2_Shit_08_Target_Superfever
+  Aibo_2_Shit_09_Hit
+  Aibo_2_Shit_10_Dizziness
+  Aibo_2_Shit_16_Victory
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[CharacterAnimator] prefix=Aibo_1_Bigdog 在 SkeletonData 中未找到以下动画（对应状态不会播放）:
+  Aibo_1_Bigdog_04_Select
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+CharacterAnimator:Rebuild () (at Assets/Scripts/Character/CharacterAnimator.cs:204)
+CharacterAnimator:Start () (at Assets/Scripts/Character/CharacterAnimator.cs:138)
+
+(Filename: Assets/Scripts/Character/CharacterAnimator.cs Line: 204)
+
+[Passive] side=2 被动技能「skill_7_good_dog」生效（满足条件）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+PassiveSkillController:Update () (at Assets/Scripts/Character/PassiveSkillController.cs:80)
+
+(Filename: Assets/Scripts/Character/PassiveSkillController.cs Line: 80)
+
+[Passive] side=2 被动技能「skill_7_good_dog」生效（满足条件）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+PassiveSkillController:Update () (at Assets/Scripts/Character/PassiveSkillController.cs:80)
+
+(Filename: Assets/Scripts/Character/PassiveSkillController.cs Line: 80)
+
+[Passive] side=2 被动技能「skill_7_good_dog」生效（满足条件）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+PassiveSkillController:Update () (at Assets/Scripts/Character/PassiveSkillController.cs:80)
+
+(Filename: Assets/Scripts/Character/PassiveSkillController.cs Line: 80)
+
+[Passive] side=2 被动技能「skill_7_good_dog」生效（满足条件）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+PassiveSkillController:Update () (at Assets/Scripts/Character/PassiveSkillController.cs:80)
+
+(Filename: Assets/Scripts/Character/PassiveSkillController.cs Line: 80)
+
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[HPBarLiquid] 'HPBarRight' side=1 血量变化 → 326/326（fill 目标 1.000）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:TakeDamage (int,int) (at Assets/Scripts/ScoreManager.cs:461)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:54)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+[HPBarLiquid] 'HPBarLeft' side=0 血量变化 → 294/326（fill 目标 0.902）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:TakeDamage (int,int) (at Assets/Scripts/ScoreManager.cs:461)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:54)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+[Passive:好狗] side=2 受击动画触发，充能 +14（战斗力×0.4，冷却 4s）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+PassiveSkillController:OnHitAnimPlayed (CharacterCubeMarker) (at Assets/Scripts/Character/PassiveSkillController.cs:111)
+CharacterCubeMarker:PlayHit () (at Assets/Scripts/Character/CharacterCubeMarker.cs:570)
+CharacterBattleSystem:OnSideDamaged (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:497)
+ScoreManager:TakeDamage (int,int) (at Assets/Scripts/ScoreManager.cs:462)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:54)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/Character/PassiveSkillController.cs Line: 111)
+
+[Passive:好狗] side=2 受击动画触发，充能 +14（战斗力×0.4，冷却 4s）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+PassiveSkillController:OnHitAnimPlayed (CharacterCubeMarker) (at Assets/Scripts/Character/PassiveSkillController.cs:111)
+CharacterCubeMarker:PlayHit () (at Assets/Scripts/Character/CharacterCubeMarker.cs:570)
+CharacterBattleSystem:OnSideDamaged (int,int) (at Assets/Scripts/Character/CharacterBattleSystem.cs:497)
+ScoreManager:TakeDamage (int,int) (at Assets/Scripts/ScoreManager.cs:462)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:54)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/Character/PassiveSkillController.cs Line: 111)
+
+[HPBarLiquid] 'HPBarRight' side=1 血量变化 → 326/326（fill 目标 1.000）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:Heal (int,int) (at Assets/Scripts/ScoreManager.cs:483)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:57)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+[HPBarLiquid] 'HPBarLeft' side=0 血量变化 → 310/326（fill 目标 0.951）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:Heal (int,int) (at Assets/Scripts/ScoreManager.cs:483)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:57)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+[HPBarLiquid] 'HPBarRight' side=1 血量变化 → 326/326（fill 目标 1.000）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:TakeDamage (int,int) (at Assets/Scripts/ScoreManager.cs:461)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:60)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+[HPBarLiquid] 'HPBarLeft' side=0 血量变化 → 0/326（fill 目标 0.000）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:TakeDamage (int,int) (at Assets/Scripts/ScoreManager.cs:461)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:60)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+[HPBarLiquid] 'HPBarRight' side=1 血量变化 → 326/326（fill 目标 1.000）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:ResetScores () (at Assets/Scripts/ScoreManager.cs:567)
+GameManager:RestartGame () (at Assets/Scripts/GameManager.cs:255)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:65)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+[HPBarLiquid] 'HPBarLeft' side=0 血量变化 → 326/326（fill 目标 1.000）
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:OnHPChanged (int,int) (at Assets/Scripts/UI/HPBarLiquid.cs:617)
+ScoreManager:ResetScores () (at Assets/Scripts/ScoreManager.cs:567)
+GameManager:RestartGame () (at Assets/Scripts/GameManager.cs:255)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:65)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 617)
+
+游戏已重置
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+GameManager:RestartGame () (at Assets/Scripts/GameManager.cs:279)
+FullRibbonGameSmoke:Tick () (at Assets/Editor/FullRibbonGameSmoke.cs:65)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: Assets/Scripts/GameManager.cs Line: 279)
+
+Unloading 71 Unused Serialized files (Serialized files now loaded: 0)
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMin (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:697)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:245)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 697]
+
+SendMessage cannot be called during Awake, CheckConsistency, or OnValidate (Decoration: OnRectTransformDimensionsChange)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.RectTransform:set_anchorMax (UnityEngine.Vector2)
+HPBarLiquid:SyncDecorationWidth (single) (at Assets/Scripts/UI/HPBarLiquid.cs:692)
+HPBarLiquid:OnValidate () (at Assets/Scripts/UI/HPBarLiquid.cs:245)
+
+[Assets/Scripts/UI/HPBarLiquid.cs line 692]
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            7.164 ms
+	Integration:            199.665 ms
+	Integration of assets:  0.137 ms
+	Thread Wait Time:       -0.092 ms
+	Total Operation Time:   206.874 ms
+Unloading 77 unused Assets / (3.8 MB). Loaded Objects now: 10461.
+Memory consumption went from 369.4 MB to 365.6 MB.
+Total: 11.764300 ms (FindLiveObjects: 0.584600 ms CreateObjectMapping: 0.413200 ms MarkObjects: 10.406200 ms  DeleteObjects: 0.359400 ms)
+
+[HPBarLiquid] 'HPBarRight' side=1 已订阅 OnHPChanged，初始 HP=0/300，fill=0.000，fillImage=Fill，ghost=有，flash=有，数字=图片
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:Start () (at Assets/Scripts/UI/HPBarLiquid.cs:227)
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 227)
+
+[HPBarLiquid] 'HPBarLeft' side=0 已订阅 OnHPChanged，初始 HP=0/300，fill=0.000，fillImage=Fill，ghost=有，flash=有，数字=图片
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HPBarLiquid:Start () (at Assets/Scripts/UI/HPBarLiquid.cs:227)
+
+(Filename: Assets/Scripts/UI/HPBarLiquid.cs Line: 227)
+
+Start importing Assets/Art/Materials/M_GrassFringe.mat using Guid(c67000119180cb7408209e8b5e2fc6bf) (NativeFormatImporter) -> (artifact id: 'f65c9356a044bbaebca3f446235a0722') in 0.0076979 seconds
+Refreshing native plugins compatible for Editor in 18.11 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=88050b5136f793e4ead85f4d09dcd809): Total: 0.124 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[Physics::Module] Cleanup current backned.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793231995327,"processId":36108,"allocatedMemory":19575274,"memoryLabels":[{"Default":28597},{"Permanent":15356},{"NewDelete":71323},{"Thread":4230344},{"Manager":821306},{"VertexData":152},{"Geometry":816},{"VFX":-104},{"Texture":296},{"Shader":87961},{"Material":24},{"GfxDevice":55856},{"Animation":392},{"Audio":4040},{"FontEngine":256},{"Physics":2081},{"Serialization":816},{"Input":14824},{"JobScheduler":33024},{"TextLib":160},{"Mono":32},{"MonoCode":64},{"ScriptingNativeRuntime":155060},{"BaseObject":1633008},{"Resource":1304},{"Renderer":2928},{"Transform":4646},{"File":3941},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":26993},{"DynamicArray":114854},{"HashMap":106952},{"Utility":2660622},{"Curl":1727},{"PoolAlloc":2584},{"AI":104},{"TypeTree":5005},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7888},{"Director":8240},{"CloudService":9904},{"WebRequest":552},{"VR":45969},{"SceneManager":496},{"Video":208},{"LazyScriptCache":32},{"Camera":17},{"Secure":265},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":464},{"Hierarchy":272},{"CoreStats":12536},{"Identifiers":6192},{"Gui":80},{"EditorUtility":69728},{"VersionControl":4},{"Undo":947},{"AssetDatabase":8922426},{"EditorGi":328},{"UnityConnect":24208},{"Upm":2036},{"DrivenProperties":72},{"LocalIPC":219},{"ProfilerEditor":9778},{"CoreBusinessMetrics":2899},{"Licensing":664},{"AssetReference":32},{"IPCStream":32}]}

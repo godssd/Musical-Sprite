@@ -1,0 +1,424 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.0/staging' branch; Version is '6000.0.82f1 (2fb0dae735e1) revision 3125466'; Using compiler version '193933523'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator" at "2026-10-28T14:51:34.1750751Z"
+OS: 'Windows 10  (10.0.19045) 64bit Professional' Language: 'zh' Physical Memory: 16322 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-10-28T14:51:34Z
+
+COMMAND LINE ARGUMENTS:
+D:\unity\6000.0.82f1\Editor\Unity.exe
+-batchmode
+-projectPath
+D:\unity\plan go\Musical Sprite
+-executeMethod
+FullRibbonHUDReview.Batch
+-quit
+-logFile
+D:\unity\plan go\Musical Sprite\DesignPreviews\FullRibbonLive-20261028\unity-final-capture.log
+Successfully changed project path to: D:\unity\plan go\Musical Sprite
+D:/unity/plan go/Musical Sprite
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [31180]  Target information:
+
+Player connection [31180]  * "[IP] 192.168.31.163 [Port] 55505 [Flags] 2 [Guid] 2519635418 [EditorId] 2519635418 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [31180]  * "[IP] 172.18.0.1 [Port] 55505 [Flags] 2 [Guid] 2519635418 [EditorId] 2519635418 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-2OVR750) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [31180] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [31180] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-35032" after 0.3 seconds.
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Artifact Garbage Collection - Removed 1 unused hashed content filesRefreshing native plugins compatible for Editor in 0.87 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 6000.0.82f1 (2fb0dae735e1)
+[Subsystems] Discovering subsystems at path D:/unity/6000.0.82f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path D:/unity/plan go/Musical Sprite/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 4070 Ti (ID=0x2782)
+    Vendor:   NVIDIA
+    VRAM:     11996 MB
+    Driver:   32.0.16.1047
+Initialize mono
+Mono path[0] = 'D:/unity/6000.0.82f1/Editor/Data/Managed'
+Mono path[1] = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'D:/unity/6000.0.82f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56032
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: D:/unity/6000.0.82f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.004989 seconds.
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.3'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-Administrator"
+[Licensing::IpcConnector] LicenseClient-Administrator channel disconnected successfully.
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82" at "2026-10-28T14:51:35.6137698Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 19012, path: "D:/unity/6000.0.82f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              d41e0d2a00974df1a45ca92aa89b7e7e
+  Correlation Id:          35226266a1109de0a385147743f44850
+  External correlation Id: 4189479949583024707
+  Machine Id:              zBAHGvhiEkomrmV9VYKbt7d65SM=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-Administrator-6000.0.82" (connect: 0.00s, validation: 0.00s, handshake: 0.01s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Administrator-6000.0.82-notifications" at "2026-10-28T14:51:35.6222837Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: ewogICJzdWJzR3JvdXAiIDogInVuaXR5IGVkaXRvciIsCiAgIm5hbWVzcGFjZSIgOiAidW5pdHlfZWRpdG9yIiwKICAidHlwZSIgOiAiRURJVE9SIiwKICAidGFnIiA6ICJVbml0eVBlcnNvbmFsXXXX
+  Product: Unity Personal Version
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 1.47s
+- Loaded All Assemblies, in  0.417 seconds
+Native extension for WindowsStandalone target not found
+Package Manager log level set to [2]
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.291 seconds
+Domain Reload Profiling: 701ms
+	BeginReloadAssembly (143ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (1ms)
+	RebuildCommonClasses (42ms)
+	RebuildNativeTypeToScriptingClass (18ms)
+	initialDomainReloadingComplete (57ms)
+	LoadAllAssembliesAndSetupDomain (149ms)
+		LoadAssemblies (138ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (145ms)
+			TypeCache.Refresh (144ms)
+				TypeCache.ScanAssembly (131ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (292ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (259ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (20ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (54ms)
+			ProcessInitializeOnLoadAttributes (130ms)
+			ProcessInitializeOnLoadMethodAttributes (52ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 63 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.ai.inference@2.6.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.inference@9a123aee5df7)
+    com.unity.ai.navigation@2.0.14 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ai.navigation@134dd6a3b97b)
+    com.unity.collab-proxy@2.13.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collab-proxy@4628d2ba6ea4)
+    com.unity.ide.rider@3.0.39 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.rider@4504839d03f7)
+    com.unity.ide.visualstudio@2.0.27 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ide.visualstudio@dc1ddd4f09b6)
+    com.unity.inputsystem@1.19.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.inputsystem@21a28c3a6c83)
+    com.unity.timeline@1.8.12 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.11 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.visualscripting@8bed5ad90189)
+    com.unity.burst@1.8.30 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.burst@2f3d916873ea)
+    com.unity.dt.app-ui@1.3.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.dt.app-ui@3bbd9e4c5c92)
+    com.unity.collections@2.6.8 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.collections@84e8eb3fc12e)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.searcher@4.9.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.searcher@1e17ce91558d)
+    com.unity.mathematics@1.3.2 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.mathematics@8017b507cc74)
+    com.unity.nuget.mono-cecil@1.11.6 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.5.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework.performance@8b56083ec0f0)
+  Built-in packages:
+    com.unity.multiplayer.center@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.multiplayer.center@f3fb577b3546)
+    com.unity.render-pipelines.universal@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal@c7abd84d7030)
+    com.unity.test-framework@1.6.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.test-framework@082c24152fd4)
+    com.unity.ugui@2.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ugui@8bb446d869cd)
+    com.unity.modules.accessibility@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.ai@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.screencapture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vehicles@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.vr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.vr)
+    com.unity.modules.wind@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.ext.nunit@031a54704bff)
+    com.unity.2d.sprite@1.0.0 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.2d.sprite@0eb6ea2c7181)
+    com.unity.render-pipelines.core@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.core@f663854f0ceb)
+    com.unity.shadergraph@17.0.4 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.shadergraph@14250cfec0ec)
+    com.unity.render-pipelines.universal-config@17.0.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.render-pipelines.universal-config@dd206bf35d04)
+    com.unity.rendering.light-transport@1.0.1 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.unity.rendering.light-transport@9bd588f963c0)
+  Git packages:
+    com.esotericsoftware.spine.spine-unity@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Assets/Spine#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-unity@21b16484175f)
+    com.esotericsoftware.spine.spine-csharp@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-csharp/src#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.spine-csharp@62e1be8a5d43)
+    com.esotericsoftware.spine.urp-shaders@https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Modules/com.esotericsoftware.spine.urp-shaders#4.3 (location: D:\unity\plan go\Musical Sprite\Library\PackageCache\com.esotericsoftware.spine.urp-shaders@413194061080)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.01 seconds
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+Starting: D:\unity\6000.0.82f1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: D:/unity/plan go/Musical Sprite
+DisplayProgressbar: Compiling Scripts
+ExitCode: 0 Duration: 2s493ms
+[ 807/1047  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1039/1047  1s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+
+Assets\Scripts\GameManager.cs(285,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+
+Assets\Scripts\NotePrewarmer.cs(40,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+
+Assets\Scripts\HoldNote.cs(243,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used
+
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+
+Assets\Scripts\NoteMover.cs(97,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+[1041/1047  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 131 defines and 333 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1042/1047  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 133 defines and 312 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1045/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1046/1047  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (2.46 seconds), 6 items updated, 1047 evaluated
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+Assets\Scripts\GameManager.cs(285,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+Assets\Scripts\NotePrewarmer.cs(40,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+Assets\Scripts\HoldNote.cs(243,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+Assets\Scripts\NoteMover.cs(97,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+AssetDatabase: script compilation time: 2.917335s
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  1.158 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonAvatarsV1 using Guid(c44c7f0c6a3183a48a85a7a130131a4a) (DefaultImporter) -> (artifact id: 'ad4cae9bbd2ca60f585d47e390c0a1d2') in 0.0173622 seconds
+Refreshing native plugins compatible for Editor in 4.06 ms, found 5 plugins.
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 4.35 ms, found 5 plugins.
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  3.831 seconds
+Domain Reload Profiling: 4978ms
+	BeginReloadAssembly (337ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (38ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (141ms)
+	RebuildCommonClasses (35ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (38ms)
+	LoadAllAssembliesAndSetupDomain (724ms)
+		LoadAssemblies (510ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (328ms)
+			TypeCache.Refresh (233ms)
+				TypeCache.ScanAssembly (217ms)
+			BuildScriptInfoCaches (79ms)
+			ResolveRequiredComponents (13ms)
+	FinalizeReload (3831ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (3610ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (13ms)
+			SetLoadedEditorAssemblies (3ms)
+			BeforeProcessingInitializeOnLoad (201ms)
+			ProcessInitializeOnLoadAttributes (3240ms)
+			ProcessInitializeOnLoadMethodAttributes (137ms)
+			AfterProcessingInitializeOnLoad (14ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (11ms)
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonAvatarsV1/default-red.png using Guid(873a61c84b814b9a8b15777126fb48ac) (TextureImporter) -> (artifact id: '2508a848f5f06527b016c965328ab3fa') in 0.0144974 seconds
+Start importing Assets/Art/UI/V11-Handpainted/FullRibbonAvatarsV1/default-blue.png using Guid(5f8297974ad54952a4e974799112a863) (TextureImporter) -> (artifact id: 'cb05b80603f1437914c8efa94d3c4092') in 0.0031744 seconds
+Start importing Assets/Resources/Shaders/FullRibbonHUD.shader using Guid(489076b48d844ce59bc43229ea03562e) (ShaderImporter)Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+ -> (artifact id: '90b8298318f17b81948eb971ab3c5d4b') in 0.0559869 seconds
+Start importing Assets/Resources/BattleVisualV11/FullRibbonHUDStyle.asset using Guid(3d23a28d56e74991823d9f4589dbe56d) (NativeFormatImporter) -> (artifact id: '0ed00253e324b064b05462ed10553819') in 0.0129478 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Refreshing native plugins compatible for Editor in 4.52 ms, found 5 plugins.
+Preloading 1 native plugins for Editor in 0.79 ms.
+Asset Pipeline Refresh (id=6be6fd87326647644ad3abf00ec2320b): Total: 9.414 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=3 (actual=3, local cache=0, cache server=0)
+		Asset DB Process Time: managed=5 ms, native=4548 ms
+		Asset DB Callback time: managed=263 ms, native=425 ms
+		Scripting: domain reloads=1, domain reload time=1158 ms, compile time=2919 ms, other=92 ms
+		Project Asset Count: scripts=1726, non-scripts=4038
+		Asset File Changes: new=3, changed=6, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 19.362ms
+	ApplyChangesToAssetFolders: 0.699ms
+	Scan: 144.197ms
+	OnSourceAssetsModified: 1.166ms
+	CategorizeAssetsWithTransientArtifact: 81.826ms
+	ProcessAssetsWithTransientArtifactChanges: 99.274ms
+	CategorizeAssets: 65.551ms
+	ImportOutOfDateAssets: 3963.351ms (929.289ms without children)
+		ImportManagerImport: 111.823ms (4.947ms without children)
+			ImportInProcess: 106.826ms
+			UpdateCategorizedAssets: 0.050ms
+		CompileScripts: 2918.647ms
+		ReloadNativeAssets: 0.052ms
+		UnloadImportedAssets: 0.840ms
+		ReloadImportedAssets: 0.000ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 1.769ms
+		InitializingProgressBar: 0.011ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 0.919ms
+	PostProcessAllAssets: 663.709ms
+	Hotreload: 7.917ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.002ms
+	UnloadStreamsBegin: 2.613ms
+	PersistCurrentRevisions: 0.277ms
+	UnloadStreamsEnd: 0.001ms
+	GenerateScriptTypeHashes: 2.942ms
+	Untracked: 4363.780ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 3.622ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Musical Sprite
+Unloading 81 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8417 unused Assets / (30.1 MB). Loaded Objects now: 9211.
+Memory consumption went from 259.3 MB to 229.3 MB.
+Total: 17.381700 ms (FindLiveObjects: 1.120800 ms CreateObjectMapping: 1.700400 ms MarkObjects: 5.878500 ms  DeleteObjects: 8.681300 ms)
+
+Exception: FullRibbonHUDStyle 或素材引用缺失。
+  at FullRibbonHUDReview.Build () [0x00038] in D:\unity\plan go\Musical Sprite\Assets\Editor\FullRibbonHUDReview.cs:56 
+UnityEngine.DebugLogHandler:Internal_LogException_Injected(Exception, IntPtr)
+UnityEngine.DebugLogHandler:Internal_LogException(Exception, Object)
+UnityEngine.DebugLogHandler:LogException(Exception, Object)
+UnityEngine.Logger:LogException(Exception, Object)
+UnityEngine.Debug:LogException(Exception)
+FullRibbonHUDReview:Build() (at Assets\Editor\FullRibbonHUDReview.cs:67)
+FullRibbonHUDReview:CaptureValidation(String) (at Assets\Editor\FullRibbonHUDReview.cs:79)
+FullRibbonHUDReview:Batch() (at Assets\Editor\FullRibbonHUDReview.cs:98)
+
+(Filename: Assets/Editor/FullRibbonHUDReview.cs Line: 67)
+
+Exception: FullRibbonHUDStyle 或素材引用缺失。
+  at FullRibbonHUDReview.CaptureValidation (System.String directory) [0x00021] in D:\unity\plan go\Musical Sprite\Assets\Editor\FullRibbonHUDReview.cs:79 
+  at FullRibbonHUDReview.Batch () [0x00015] in D:\unity\plan go\Musical Sprite\Assets\Editor\FullRibbonHUDReview.cs:98 
+UnityEngine.DebugLogHandler:Internal_LogException_Injected(Exception, IntPtr)
+UnityEngine.DebugLogHandler:Internal_LogException(Exception, Object)
+UnityEngine.DebugLogHandler:LogException(Exception, Object)
+UnityEngine.Logger:LogException(Exception, Object)
+UnityEngine.Debug:LogException(Exception)
+FullRibbonHUDReview:Batch() (at Assets\Editor\FullRibbonHUDReview.cs:99)
+
+(Filename: Assets/Editor/FullRibbonHUDReview.cs Line: 99)
+
+Curl error 42: Callback aborted
+[Physics::Module] Cleanup current backned.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-Administrator-6000.0.82 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793199106822,"processId":35032,"allocatedMemory":18734826,"memoryLabels":[{"Default":28597},{"Permanent":15356},{"NewDelete":70465},{"Thread":4230384},{"Manager":33794},{"VertexData":8},{"Geometry":816},{"VFX":-104},{"Texture":160},{"Shader":88281},{"Material":24},{"GfxDevice":55784},{"Animation":392},{"Audio":4040},{"FontEngine":256},{"Physics":2081},{"Serialization":816},{"Input":14824},{"JobScheduler":33024},{"TextLib":160},{"Mono":32},{"MonoCode":64},{"ScriptingNativeRuntime":155060},{"BaseObject":1620624},{"Resource":1304},{"Renderer":2928},{"Transform":4646},{"File":1016},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":19069},{"DynamicArray":114226},{"HashMap":100593},{"Utility":2660622},{"Curl":48},{"PoolAlloc":2440},{"AI":104},{"TypeTree":5005},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7888},{"Director":8240},{"CloudService":8608},{"WebRequest":589},{"VR":45969},{"SceneManager":496},{"Video":64},{"LazyScriptCache":32},{"Camera":17},{"Secure":265},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":464},{"Hierarchy":272},{"CoreStats":12536},{"Identifiers":6192},{"Gui":80},{"EditorUtility":51060},{"VersionControl":4},{"Undo":947},{"AssetDatabase":8922510},{"EditorGi":328},{"UnityConnect":24184},{"Upm":2036},{"DrivenProperties":72},{"LocalIPC":219},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2899},{"Licensing":664},{"AssetReference":32},{"IPCStream":32}]}

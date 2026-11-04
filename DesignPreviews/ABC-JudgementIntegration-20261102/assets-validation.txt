@@ -1,0 +1,1 @@
+PASS: six approved rank regions imported; lettering and team strokes separated; uncompressed RGBA, sRGB, alpha, bilinear, no mipmaps. Style supports legacy rollback. Shared HUD / Combo / health regression executed.

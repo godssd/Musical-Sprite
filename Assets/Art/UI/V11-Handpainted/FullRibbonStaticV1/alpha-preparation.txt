@@ -1,0 +1,7 @@
+ribbon: 1940x184, keep 1 component(s), alpha padding 8px
+avatar-frame: 401x401, keep 1 component(s), alpha padding 8px
+identity-crescent: 288x269, keep 1 component(s), alpha padding 8px
+outer-leaves: 230x262, keep 2 component(s), alpha padding 8px
+inner-leaves: 216x265, keep 2 component(s), alpha padding 8px
+score-marks: 293x173, keep 3 component(s), alpha padding 8px
+outer-dot: 99x95, keep 1 component(s), alpha padding 8px

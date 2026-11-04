@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e134e86afdfe4050828b39d936eaa9b3, type: 3}
+  m_Name: FullRibbonHUDStyle
+  m_EditorClassIdentifier: 
+  useFullRibbon: 1
+  screenInset: {x: 30, y: 18}
+  scale: 1.12
+  centerGap: 80
+  teamSize: {x: 760, y: 200}
+  ribbonPosition: {x: 128, y: 93}
+  ribbonSize: {x: 605, y: 79}
+  scoreHeight: 88
+  hpHeight: 52
+  digitWidthScale: 0.79
+  outerLeafPosition: {x: 0, y: 5}
+  outerLeafSize: {x: 58, y: 84}
+  crescentPosition: {x: 129, y: 104}
+  crescentSize: {x: 80, y: 66}
+  innerLeafOffset: {x: -28, y: -7}
+  innerLeafSize: {x: 54, y: 64}
+  masterArtwork: 1
+  ribbonProfiles:
+  - {fileID: 2800000, guid: 7b7aee5d546ed14438bd083d09b0da99, type: 3}
+  - {fileID: 2800000, guid: 5f1af6f9d979aea40a9f6b6f98a47beb, type: 3}
+  ribbon:
+  - {fileID: 21300000, guid: fe297a89ec1a3e8449334fcdfd488060, type: 3}
+  - {fileID: 21300000, guid: 361488b588884224388fc0f703b6cd39, type: 3}
+  avatarFrame:
+  - {fileID: 21300000, guid: 3a4d7f62a9beb0c4d9e4835bcbd8e574, type: 3}
+  - {fileID: 21300000, guid: 0d966369d72551e49a612e088c0fffc0, type: 3}
+  crescent:
+  - {fileID: 21300000, guid: 7eb33ea74c6240d88e2df27a7a0c35cc, type: 3}
+  - {fileID: 21300000, guid: 2deb1703552d4addaaf92a3ab8931707, type: 3}
+  outerLeaves:
+  - {fileID: 21300000, guid: 3aa27063f2d89374589b124cc46601fe, type: 3}
+  - {fileID: 21300000, guid: b690650067534fd4d824215a899196e2, type: 3}
+  innerLeaves:
+  - {fileID: 21300000, guid: bdf54c2109acc8045aa714646c9c3993, type: 3}
+  - {fileID: 21300000, guid: 7235e8820b6c03a4383784d6dd8ba74f, type: 3}
+  marks:
+  - {fileID: 21300000, guid: cdc353c5187235a4aad1266b70d108b3, type: 3}
+  - {fileID: 21300000, guid: fbf26279da3532f42a7084737e8e212c, type: 3}
+  dot:
+  - {fileID: 21300000, guid: 52043e159ab14d2bbbb8076904a949b6, type: 3}
+  - {fileID: 21300000, guid: 2c83afd6b6fa4074abf64986a6c96966, type: 3}
+  avatarMask: {fileID: 21300000, guid: 70d52bf1ed9c43b782381536f2bb1a13, type: 3}
+  avatars:
+  - {fileID: 21300000, guid: 873a61c84b814b9a8b15777126fb48ac, type: 3}
+  - {fileID: 21300000, guid: 5f8297974ad54952a4e974799112a863, type: 3}
+  hpLabel: {fileID: 21300000, guid: 339347a561434433be1ee168cb44300d, type: 3}
+  digits:
+  - {fileID: 21300000, guid: c126d4446c274b0d93c82131b9de4487, type: 3}
+  - {fileID: 21300000, guid: 93aa9198652048d08fcac0bc758e9244, type: 3}
+  - {fileID: 21300000, guid: e599e5bf44024fe89a20e3b8191e86e1, type: 3}
+  - {fileID: 21300000, guid: 2418e59bb0d94753ac7a751b05f39d79, type: 3}
+  - {fileID: 21300000, guid: 10c742736f884dc8b55e5b9c578bdce7, type: 3}
+  - {fileID: 21300000, guid: dbc8024ecd3d48daa45ed6c517d841c1, type: 3}
+  - {fileID: 21300000, guid: 22200973aac1429dbd5cc895d2f88e37, type: 3}
+  - {fileID: 21300000, guid: ae63aba345f24953830ff895e2e25191, type: 3}
+  - {fileID: 21300000, guid: c13e11dd25fc4446a1c6edfff565b313, type: 3}
+  - {fileID: 21300000, guid: da8eb3dbeb2c474d9958ad5fad4c53e3, type: 3}
+  red: {r: 1, g: 0.305, b: 0.305, a: 1}
+  blue: {r: 0.478, g: 0.639, b: 1, a: 1}
+  redEmpty: {r: 0.35, g: 0.23, b: 0.27, a: 1}
+  blueEmpty: {r: 0.24, g: 0.31, b: 0.45, a: 1}
+  letteringColor: {r: 1, g: 0.95, b: 0.86, a: 1}
+  flashDuration: 0.11
+  holdDuration: 0.1
+  lossDuration: 0.64
+  healDuration: 0.7
+  lossColor: {r: 0.98039216, g: 0.7490196, b: 0.2509804, a: 1}
+  healingColor: {r: 0.49411765, g: 0.9490196, b: 0.47058824, a: 1}
+  flashGlow: 1.55
+  pendingGlow: 0.8
+  pendingInnerLight: 0.32
+  idleTickWidth: 2.4
+  movingTickWidth: 4.2
+  tickGlow: 2.5
+  glowRadius: 20
+  dangerEnter: 0.25
+  dangerExit: 0.3
+  dangerMinBrightness: 0.28
+  dangerPeriod: 1.25
+  entranceDuration: 0.78
+  entranceResolve: 0.1
+  entranceGlow: 0.85
+  entranceHeadGlow: 2.8
+  chimeVolume: 0.16
+  feverHeight: 20
+  superFeverHeight: 30
+  superSpread: 14
+  flameSpeed: 5
+  feverSparks: 2
+  superSparks: 4
+  extinguishDuration: 0.22
+  zeroBurstDuration: 0.32
+  opticalBow: 1.8
+  opticalCoreWidth: 1.25
+  opticalOverflow: 4
+  opticalNearRadius: 3.4
+  opticalFarRadius: 11
+  opticalNearStrength: 0.85
+  opticalFarStrength: 0.32
+  opticalEdgeStrength: 0.38
+  pendingHaloStrength: 0.8
+  loadingNearGlow: 0.65
+  loadingFarGlow: 0.35

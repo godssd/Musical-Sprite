@@ -28,6 +28,9 @@ public class BattleVisualsController : MonoBehaviour
 
     private void Start()
     {
+        // Optional mist is no longer automatically installed into the battle scene.
+        ConfigureUnifiedRail(leftSpawner, 0);
+        ConfigureUnifiedRail(rightSpawner, 1);
         // 判定灯按 side * 4 + lane 排列；在运行时建立独立的视觉预览，不改场景资产。
         if (indicators != null)
         {
@@ -62,6 +65,27 @@ public class BattleVisualsController : MonoBehaviour
         }
     }
 
+    private void ConfigureUnifiedRail(NoteSpawner spawner, int side)
+    {
+        if (spawner == null || spawner.hitPoint == null) return;
+        var root = new GameObject(side == 0 ? "JudgementUI_Red_V11" : "JudgementUI_Blue_V11");
+        root.transform.SetParent(transform, false);
+        var visual = root.AddComponent<UnifiedJudgementRail>();
+        // The saved scene keeps hit anchors and the old visible lines on separate objects.
+        var oldLine = GameObject.Find(side == 0 ? "LeftHitLine" : "RightHitLine");
+        var oldRenderer = oldLine != null && oldLine.scene == gameObject.scene
+            ? oldLine.GetComponent<Renderer>() : spawner.hitPoint.GetComponent<Renderer>();
+        visual.Configure(side, spawner.hitPoint, spawner.laneSpacing, centerLine,
+            oldRenderer);
+        if (!visual.IsConfigured) { Destroy(root); return; }
+        for (int lane = 0; lane < UnifiedJudgementRail.LaneCount; lane++)
+        {
+            int index = side * UnifiedJudgementRail.LaneCount + lane;
+            if (indicators != null && index < indicators.Length && indicators[index] != null)
+                indicators[index].BindUnifiedRail(visual, lane);
+        }
+    }
+
     private void OnDestroy()
     {
         if (leftSpawner != null)
@@ -76,6 +100,12 @@ public class BattleVisualsController : MonoBehaviour
             rightSpawner.OnLaneUp -= OnLaneUp;
             rightSpawner.OnJudge -= OnJudge;
         }
+    }
+
+    public void ResetComboDisplays()
+    {
+        leftComboDisplay?.SetComboImmediate(0);
+        rightComboDisplay?.SetComboImmediate(0);
     }
 
     private void OnLanePress(int side, int lane)
@@ -103,29 +133,30 @@ public class BattleVisualsController : MonoBehaviour
 
     private void OnJudge(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)
     {
-        // 沉睡期间该轨道角色无命中表现（输入已被屏蔽，此处作双保险，且避免沉睡中残留连击跳动）
+        if (side < 0 || side > 1) return;
+        ComboDisplay target = side == 0 ? leftComboDisplay : rightComboDisplay;
+        // Failure state is committed before sleep / casting visual gates.
+        if (JudgeRank.IsFailure(rank))
+        {
+            target?.ResetCombo();
+            return;
+        }
+        if (!JudgeRank.IsSuccess(rank))
+        {
+            Debug.LogWarning($"[BattleVisuals] 未识别的判定：{rank}");
+            return;
+        }
+        target?.AddCombo(1);
+
+        // Sleep filters the character / rail response, never the already-reported Combo result.
         if (SleepController.Instance != null && SleepController.Instance.IsCharacterSleeping(side, lane)) return;
 
         // 输入先触发中性白光；判定成功再由同一盏灯转为本方颜色。
-        if (rank != "MISS" && side >= 0 && side < 2 && lane >= 0 && lane < 4)
+        if (rank != "MISS" && rank != "BREAK" && side >= 0 && side < 2 && lane >= 0 && lane < 4)
         {
             int idx = side * 4 + lane;
             if (indicators != null && idx < indicators.Length && indicators[idx] != null)
                 indicators[idx].Hit();
-        }
-
-        ComboDisplay target = side == 0 ? leftComboDisplay : rightComboDisplay;
-        if (target == null) return;
-
-        if (rank == "MISS")
-        {
-            target.ResetCombo();
-        }
-        else
-        {
-            // PERFECT / GOOD / CLEAR 都记一次连击。
-            // 一个完整长按 = 起手命中 +1、完成时 CLEAR +1，共 +2。
-            target.AddCombo(1);
         }
 
         // 普通命中：对应音轨角色向上跳一下（修复：之前被误删，导致命中时角色不跳）。

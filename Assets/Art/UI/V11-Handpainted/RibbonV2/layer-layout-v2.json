@@ -1,0 +1,59 @@
+{
+  "layers": [
+    {
+      "name": "hp-fill-aligned-v2.png",
+      "canvasWidth": 2172,
+      "canvasHeight": 724,
+      "alphaBoundsTopLeft": {
+        "height": 149,
+        "x": 234,
+        "y": 282,
+        "width": 851
+      },
+      "SHA256": "70B25C4571088282B80852F27DD307F3224EABEF85E978C5B70CB8AD0E166431"
+    },
+    {
+      "name": "hp-fixed-neutral-aligned-v2.png",
+      "canvasWidth": 2172,
+      "canvasHeight": 724,
+      "alphaBoundsTopLeft": {
+        "height": 266,
+        "x": 105,
+        "y": 236,
+        "width": 1979
+      },
+      "SHA256": "F6DCCC5D587C224C09E53043C988E11D8625D3F91357D649613FC19E583BF93B"
+    },
+    {
+      "name": "hp-fixed-red-aligned-v2.png",
+      "canvasWidth": 2172,
+      "canvasHeight": 724,
+      "alphaBoundsTopLeft": {
+        "height": 268,
+        "x": 107,
+        "y": 235,
+        "width": 1986
+      },
+      "SHA256": "8E8BE09E60B5765E5FD5F661C603D29AC3234FEED928F3597F8F06614EDC32E0"
+    },
+    {
+      "name": "hp-master-red-v2.png",
+      "canvasWidth": 2172,
+      "canvasHeight": 724,
+      "alphaBoundsTopLeft": {
+        "height": 264,
+        "x": 108,
+        "y": 239,
+        "width": 1992
+      },
+      "SHA256": "47813C26500F4E0DE780175E368A94CA23383910DABB26BA104FC54FD5F61B1B"
+    }
+  ],
+  "commonBoundsTopLeft": {
+    "height": 268,
+    "x": 105,
+    "y": 235,
+    "width": 1995
+  },
+  "coordinateRule": "All aligned layers use the same full canvas and origin. Never trim or scale each layer independently."
+}

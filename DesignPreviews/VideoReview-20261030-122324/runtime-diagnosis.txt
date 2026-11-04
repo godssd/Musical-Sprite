@@ -1,0 +1,15 @@
+Fever: Aibo_2_Shit_03_Play_Fever loop=True complete=False time=0.1
+After switching to missing SuperFever: Aibo_2_Shit_07_Target_Fever loop=False complete=True time=1
+Super target accepted=False; applied bone pose unchanged=True
+After return to existing Normal loop: Aibo_2_Shit_02_Play_Normal loop=True complete=False time=0
+PASS: missing SuperFever loop leaves a finished one-shot at its last pose; missing Super target cannot recover it; Normal state recovers.
+HP event 1: target=0.9693 cursor=1.0000 moving=False
+HP event 2: target=0.9387 cursor=1.0000 moving=False
+HP event 3: target=0.9080 cursor=1.0000 moving=False
+HP event 4: target=0.8773 cursor=1.0000 moving=False
+HP event 5: target=0.8466 cursor=1.0000 moving=False
+HP event 6: target=0.8160 cursor=1.0000 moving=False
+PASS: 0.15s repeated losses keep resetting the 0.19s flash+hold, so delayed cursor never starts while hits continue.
+Continuous heal: target=0.7000 cursor=0.3000
+Loss interrupted by heal: cursor jumps from 0.6562 to 0.5000; actual target=0.7500
+PASS: repeated heals also starve the cursor; damage-to-heal reversal changes the cursor instantly.

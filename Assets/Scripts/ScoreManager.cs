@@ -19,6 +19,8 @@ public class ScoreManager : MonoBehaviour
     [Header("玩家分数显示（可选，会自动查找）")]
     public ScoreDisplay leftScoreDisplay;
     public ScoreDisplay rightScoreDisplay;
+    [Tooltip("保留旧绿/黄 IMGUI 分数作为回退。默认仅在手绘分数不可用时显示；勾选可强制显示旧层。")]
+    public bool forceLegacyScoreOverlay;
 
     [Header("发射器（可选，会自动查找）")]
     public NoteSpawner leftSpawner;
@@ -63,6 +65,7 @@ public class ScoreManager : MonoBehaviour
     public event Action<int, int> OnScoreChanged;
     public event Action<int, int> OnHPChanged;
     public event Action<int> OnPlayerDefeated; // 参数：战败方 side
+    public event Action OnBattleReset;
 
     /// <summary>
     /// 【P4A 事件驱动累积】某侧靠【自身命中】拿到加分时派发。
@@ -138,6 +141,29 @@ public class ScoreManager : MonoBehaviour
 
         // 运行时兜底：如果场景里没有分数显示对象，自动创建，避免分数 UI 缺失
         EnsureScoreDisplays();
+        var connectedStyle = Resources.Load<ConnectedHeaderStyle>(ConnectedHeaderStyle.ResourcePath);
+        if (FullRibbonBattleHUD.TryEnable(this))
+        {
+            // New header reads the same data; legacy objects are retained and hidden after startup.
+            var previous = GetComponent<BattleHeaderLayout>();
+            if (previous != null) previous.enabled = false;
+            var connected = GetComponent<ConnectedBattleHeaderLayout>();
+            if (connected != null) connected.enabled = false;
+        }
+        else if (connectedStyle != null && connectedStyle.useConnectedHeader && connectedStyle.HasArtwork)
+        {
+            var previous = GetComponent<BattleHeaderLayout>();
+            if (previous != null) previous.enabled = false;
+            var header = GetComponent<ConnectedBattleHeaderLayout>();
+            if (header == null) header = gameObject.AddComponent<ConnectedBattleHeaderLayout>();
+            header.Configure(this, connectedStyle);
+        }
+        else
+        {
+            var headerLayout = GetComponent<BattleHeaderLayout>();
+            if (headerLayout == null) headerLayout = gameObject.AddComponent<BattleHeaderLayout>();
+            headerLayout.Configure(this);
+        }
 
         if (leftScoreDisplay == null)
             Debug.LogWarning("[ScoreManager] 未找到左分数显示");
@@ -270,12 +296,16 @@ public class ScoreManager : MonoBehaviour
 
     /// <summary>
     /// IMGUI 兜底绘制：只显示分数（不显示血量），放在血条旁边。
-    /// 始终绘制，不再因 uGUI 对象存在就跳过——避免 uGUI 层级/缩放异常时玩家看不到分数。
+    /// 手绘分数可用时隐藏，保留旧绘制供强制回退或缺失时兜底。
     /// </summary>
     void OnGUI()
     {
         // 实时同步 uGUI 分数文字（如果存在），保持两边一致
         SyncUGUIScoresToIMGUI();
+        var fullRibbon = GetComponent<FullRibbonBattleHUD>();
+        if (!forceLegacyScoreOverlay && fullRibbon != null && fullRibbon.IsReady) return;
+        if (!forceLegacyScoreOverlay && leftScoreDisplay != null && rightScoreDisplay != null &&
+            leftScoreDisplay.HasHandpaintedDisplay && rightScoreDisplay.HasHandpaintedDisplay) return;
 
         GUIStyle style = new GUIStyle(GUI.skin.label);
         style.fontSize = Mathf.RoundToInt(48f * 1.32f); // 在 1.1 倍基础上再放大 1.2 倍
@@ -464,6 +494,7 @@ public class ScoreManager : MonoBehaviour
 
     private void HandleJudge(int side, int lane, string rank, Vector3 position, UnityEngine.Object source)
     {
+        if (side < 0 || side > 1 || !JudgeRank.IsSuccess(rank)) return;
         int delta = 0;
         switch (rank)
         {
@@ -472,11 +503,9 @@ public class ScoreManager : MonoBehaviour
             case "CLEAR": delta = clearScore; break;
             case "YES": delta = yesScore; break;
             case "PASS": delta = passScore; break;
-            case "MISS": delta = missScore; break;
-            case "BREAK": delta = 0; break;   // 连轨中途断连：不计分、不充能（与 MISS 同效，仅不清零连击）
         }
 
-        // MISS：不加分、不充能（仅由 FeverManager 的 OnNoteMiss 断连）
+        // Only classified successes may add score / energy; failure never applies missScore.
         if (delta <= 0) return;
 
         // 过热倍率：最终得分 = 基础分 × 倍率（分数不损失，只在得分上乘倍率）
@@ -536,6 +565,7 @@ public class ScoreManager : MonoBehaviour
         UpdateDisplays();
         OnScoreChanged?.Invoke(leftScore, rightScore);
         OnHPChanged?.Invoke(leftHP, rightHP);
+        OnBattleReset?.Invoke();
     }
 
     public int GetLeftScore() => leftScore;

@@ -1,0 +1,1 @@
+PASS: V7 solid / additive optics / unified load shaders rendered in isolated Unity preview scene; shared boundary geometry and all shader compilation checked; damage/heal holds, reversals and zero-impact timing checked; actual ScoreManager.ResetScores/AddScore/TakeDamage/Heal events drove the renderer. This does not replace live match testing.

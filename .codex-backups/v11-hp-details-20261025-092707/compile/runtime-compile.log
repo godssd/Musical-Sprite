@@ -1,0 +1,8 @@
+Assets\Scripts\OpponentInput.cs(65,15): warning CS0108: 'OpponentInput.FindFirstObjectByType<T>()' hides inherited member 'Object.FindFirstObjectByType<T>()'. Use the new keyword if hiding was intended.
+Assets\Scripts\GameManager.cs(253,26): warning CS0618: 'Object.FindObjectsOfType<T>(bool)' is obsolete: 'Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.'
+Assets\Scripts\NotePrewarmer.cs(40,26): warning CS0618: 'Object.FindObjectOfType<T>()' is obsolete: 'Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType'
+Assets\Scripts\BombExplosion.cs(1104,13): warning CS0618: 'ParticleSystem.TextureSheetAnimationModule.useRandomRow' is obsolete: 'useRandomRow property is deprecated. Use rowMode instead.'
+Assets\Scripts\ShockwaveVFX.cs(650,13): warning CS0618: 'ParticleSystem.Particle.size' is obsolete: 'size property is deprecated. Use startSize or GetCurrentSize() instead.'
+Assets\Scripts\NoteMover.cs(97,17): warning CS0414: The field 'NoteMover.digitFigures' is assigned but its value is never used
+Assets\EffectCore\packs\StylizedExplosionPack1\WebDemo\scripts\projectileActorExplosion1.cs(27,9): warning CS0414: The field 'projectileActorExplosion1.projectileSimFire' is assigned but its value is never used
+Assets\Scripts\HoldNote.cs(243,19): warning CS0414: The field 'HoldNote.missNodeAlpha' is assigned but its value is never used

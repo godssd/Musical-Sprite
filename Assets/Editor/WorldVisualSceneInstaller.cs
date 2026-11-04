@@ -191,10 +191,15 @@ namespace MusicalSprite.EditorTools
             controller.background.localPosition = new Vector3(0f, 0f, 5.6f);
             controller.feverLayer = MakeFeverSprite("Fever_Rising", set.feverScenery, sideRoot, 5.1f);
             controller.superFeverLayer = MakeFeverSprite("SuperFever_Rising_Front", set.superFeverScenery, sideRoot, 4.7f);
-            controller.feverShownLocalPosition = new Vector3(0f, 0.55f, 5.1f);
-            controller.feverHiddenLocalPosition = new Vector3(0f, -4f, 5.1f);
-            controller.superShownLocalPosition = new Vector3(0f, 1.1f, 4.7f);
-            controller.superHiddenLocalPosition = new Vector3(0f, -4f, 4.7f);
+            controller.visibleImageHeight = 0.30f;
+            controller.feverTint = side == 0 ? new Color(1f, 0.38f, 0.21f, 1f) : new Color(0.31f, 0.61f, 1f, 1f);
+            controller.superTint = side == 0 ? new Color(1f, 0.72f, 0.28f, 1f) : new Color(0.47f, 0.91f, 1f, 1f);
+            // Cropped artwork rises from below the ground. Super fever stays in
+            // front of the fever card and stops lower, so both remain visible.
+            controller.feverShownLocalPosition = new Vector3(0f, 2.25f, 5.1f);
+            controller.feverHiddenLocalPosition = new Vector3(0f, -4.8f, 5.1f);
+            controller.superShownLocalPosition = new Vector3(0f, 1.5f, 4.7f);
+            controller.superHiddenLocalPosition = new Vector3(0f, -4.8f, 4.7f);
             controller.feverLayer.localPosition = controller.feverHiddenLocalPosition;
             controller.superFeverLayer.localPosition = controller.superHiddenLocalPosition;
         }
@@ -203,13 +208,13 @@ namespace MusicalSprite.EditorTools
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = new Vector3(0f, -4f, z);
-            // 临时整张图有很大的透明留白；纵向放大保证三层在同图调试时可分辨。
-            go.transform.localScale = new Vector3(0.38f, 0.75f, 0.38f);
+            go.transform.localPosition = new Vector3(0f, -4.8f, z);
+            go.transform.rotation = Camera.main != null
+                ? Camera.main.transform.rotation : Quaternion.Euler(62f, 0f, 0f);
+            go.transform.localScale = new Vector3(0.76f, 1.32f, 1f);
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
-            renderer.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(Art + "Materials/M_SceneProp.mat");
-            renderer.sortingOrder = -50;
+            renderer.sortingOrder = name == "Background_Static" ? -70 : name == "Fever_Rising" ? -60 : -50;
             return go.transform;
         }
     }

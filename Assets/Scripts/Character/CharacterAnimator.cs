@@ -195,14 +195,39 @@ public class CharacterAnimator : MonoBehaviour
                 string full = animationPrefix + "_" + kv.Value.suffix;
                 if (skeletonData.FindAnimation(full) != null)
                     available[kv.Key] = kv.Value;
-                else
-                    missing.Add(full);
+                else {
+                    // This character's exporter uses older slot numbers and has
+                    // no separate super-fever clips. Alias only known equivalents.
+                    string alias=CharacterAlias(kv.Key);
+                    if(alias!=null&&skeletonData.FindAnimation(animationPrefix+"_"+alias)!=null)
+                        available[kv.Key]=new Slot(alias,kv.Value.priority,kv.Value.loop);
+                    else missing.Add(full);
+                }
             }
             // 诊断：把"在 SkeletonData 里找不到"的动画名直接打出来，方便核对 SlotTable 后缀是否跟 Spine 导出名一致。
             // 这正是普通命中/过热命中/呼号/技能攻击"完全没反应"的根因——对应动画名没匹配上，available 里没注册。
             if (missing.Count > 0)
                 Debug.LogWarning($"[CharacterAnimator] prefix={animationPrefix} 在 SkeletonData 中未找到以下动画（对应状态不会播放）:\n  " + string.Join("\n  ", missing));
         }
+    }
+
+    private string CharacterAlias(CharacterAnimationState state){
+        if(animationPrefix!="Aibo_2_Shit")return null;
+        switch(state){
+            case CharacterAnimationState.PlaySuperFever:return "03_Play_Fever";
+            case CharacterAnimationState.TargetSuperFever:return "07_Target_Fever";
+            case CharacterAnimationState.Hit:return "08_Hit";
+            case CharacterAnimationState.Dizziness:return "09_Dizziness";
+            case CharacterAnimationState.Victory:return "16_Victory01";
+            default:return null;
+        }
+    }
+
+    private CharacterAnimationState ExistingLoop(CharacterAnimationState requested){
+        if(available!=null&&available.TryGetValue(requested,out var slot)&&slot.loop)return requested;
+        if(requested==CharacterAnimationState.PlaySuperFever&&available!=null&&available.ContainsKey(CharacterAnimationState.PlayFever))return CharacterAnimationState.PlayFever;
+        if(available!=null&&available.ContainsKey(initialState))return initialState;
+        return CharacterAnimationState.PlayNormal;
     }
 
     void Update()
@@ -222,6 +247,7 @@ public class CharacterAnimator : MonoBehaviour
 
         var st = skel.AnimationState;
         var cur = st.GetTrack(0);
+        currentLoopState=ExistingLoop(currentLoopState);
         string desired = ResolveName(currentLoopState);
         if (string.IsNullOrEmpty(desired)) return;
 
@@ -254,6 +280,7 @@ public class CharacterAnimator : MonoBehaviour
         {
             return;
         }
+        loopState=ExistingLoop(loopState);
         // 任何显式 loop 切换都取消挂起的受控时长循环回退（外部已主动接管状态）
         timedLoopRemaining = 0f;
         bool changed = (currentLoopState != loopState);
