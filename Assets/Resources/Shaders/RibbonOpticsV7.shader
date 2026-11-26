@@ -19,7 +19,7 @@ Shader "MusicalSprite/UI/RibbonOpticsV7" {
    #include "RibbonBoundary.cginc"
    struct appdata{float4 vertex:POSITION;float2 uv:TEXCOORD0;fixed4 color:COLOR;};
    struct v2f{float4 vertex:SV_POSITION;float2 uv:TEXCOORD0;fixed4 color:COLOR;float4 world:TEXCOORD1;};
-   sampler2D _CurveTex,_RibbonTex;float4 _RibbonUV;float4 _ClipRect,_BarSize,_CursorBoundary,_LowBoundary,_HighBoundary,_CoreColor,_HaloColor,_PendingColor;
+   sampler2D _CurveTex,_RibbonTex;float4 _RibbonUV;float4 _ClipRect,_BarSize,_CursorBoundary,_LowBoundary,_HighBoundary,_CoreColor,_NearColor,_HaloColor,_PendingColor,_PendingFar;
    float4 _FlashBoundary0,_FlashBoundary1;
    float _SideSign,_Bow,_Motion,_Visible,_Visibility,_CoreWidth,_NearRadius,_FarRadius,_NearStrength,_FarStrength,_Overflow,_Interval,_PendingHaloStrength,_Flash;
    v2f vert(appdata v){v2f o;o.world=v.vertex;o.vertex=UnityObjectToClipPos(v.vertex);o.uv=v.uv;o.color=v.color;return o;}
@@ -44,7 +44,7 @@ Shader "MusicalSprite/UI/RibbonOpticsV7" {
     float core=(1-smoothstep(_CoreWidth*.5,_CoreWidth*.5+aa,distance))*taper;
     float nearGlow=exp(-.5*pow(distance/max(.3,_NearRadius),2))*_NearStrength;
     float farGlow=exp(-.5*pow(distance/max(.5,_FarRadius),2))*_FarStrength;
-    float3 light=(_CoreColor.rgb*core*1.35+lerp(_HaloColor.rgb,_CoreColor.rgb,.25)*nearGlow+_HaloColor.rgb*farGlow)*_Visible;
+    float3 light=(_CoreColor.rgb*core*.85+_NearColor.rgb*nearGlow*.55+_HaloColor.rgb*farGlow*.65)*_Visible;
     float2 section=tex2D(_CurveTex,float2(saturate(i.uv.x),.5)).rg*_BarSize.y;
     float ribbonAlpha=tex2D(_RibbonTex,_RibbonUV.xy+saturate(i.uv)*_RibbonUV.zw).a;
     float outside=1-ribbonAlpha;
@@ -54,7 +54,7 @@ Shader "MusicalSprite/UI/RibbonOpticsV7" {
     // No white mix and no edge-distance peak: the flat pigment stays unchanged.
     float nearArea=SoftCoverage(p.y,section,3.2)*IntervalCoverage(lo,hi,3.2);
     float farArea=SoftCoverage(p.y,section,9.0)*IntervalCoverage(lo,hi,9.0);
-    light+=_PendingColor.rgb*(nearArea*.48+farArea*.24)*outside*_Interval*_PendingHaloStrength;
+    light+=(_PendingColor.rgb*nearArea*.48+_PendingFar.rgb*farArea*.24)*outside*_Interval*_PendingHaloStrength;
     float f0=RibbonProgressSide(p.x,p.y,_FlashBoundary0,_SideSign,_Bow);
     float f1=RibbonProgressSide(p.x,p.y,_FlashBoundary1,_SideSign,_Bow);
     float flashArea=SoftCoverage(p.y,section,3.2)*IntervalCoverage(f0,f1,3.2)+.4*SoftCoverage(p.y,section,9)*IntervalCoverage(f0,f1,9);

@@ -1,0 +1,7 @@
+Free Aspect
+16:9 Aspect
+16:10 Aspect
+Full HD (1920x1080)
+WXGA (1366x768)
+QHD (2560x1440)
+4K UHD (3840x2160)

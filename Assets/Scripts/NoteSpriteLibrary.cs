@@ -9,6 +9,7 @@ using UnityEngine;
 public class NoteSpriteLibrary : ScriptableObject
 {
     [Header("Tap")] public Sprite tap;
+    [Tooltip("普通单轨点击的独立外观。留空时使用 Tap。")] public Sprite plainTap;
     [Header("Tap Select")] public Sprite tapSelect;
     [Header("Small Tap")] public Sprite smallTap;
     [Header("Small Tap Select")] public Sprite smallTapSelect;

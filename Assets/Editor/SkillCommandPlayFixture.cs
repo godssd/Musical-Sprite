@@ -73,9 +73,18 @@ public sealed class SkillCommandPlayFixture : IDisposable {
             var frame=Array.Find(ui.GetComponentsInChildren<Image>(),image=>image.name=="MasterArtworkFrame");
             Assert(frame!=null&&frame.sprite==ui.style.artworkFrame,"V4 master sprite not bound");
             var mat=frame.material;Assert(mat!=null&&mat.shader.name=="MusicalSprite/UI/SkillCommandArtwork"&&!UnityEditor.ShaderUtil.ShaderHasError(mat.shader),"Artwork glow shader unavailable");
+            if(ui.style.flowPath!=null){
+                var path=ui.style.flowPath;Assert(path.GetPixelBilinear(.145f,.162f).r-path.GetPixelBilinear(.71f,.744f).r>.6f,"Artwork flow path did not run from original opening to final endpoint");
+                var bright=mat.GetColor("_BrightHue");var halo=mat.GetColor("_GlowHue");Assert(bright.g>halo.g&&halo.r>halo.g*1.5f,"Frame light lost warm color hierarchy");
+                var pulse=new SkillCommandPulse();pulse.Trigger(1.07f,.91f,.26f);pulse.Advance(.04f);Assert(pulse.Scale<.95f,"Skill compression no longer matches .04 second board");pulse.Advance(.06f);Assert(pulse.Scale>1.04f,"Skill rebound no longer matches .10 second board");pulse.Advance(.16f);Assert(Mathf.Abs(pulse.Scale-1)<.001f,"Skill pulse did not settle");
+            }
             Show("Press");ui.AdvanceFeedback(.055f);float press=mat.GetVector("_Press").x;
             Show("Release");ui.AdvanceFeedback(.11f);var glow=mat.GetVector("_Release");
             Assert(glow.x*glow.z>press*2&&ui.IsInputLocked(0),"Full release was not brighter than ordinary input");
+            Assert(mat.GetVector("_Press").sqrMagnitude==0,"Last key retained a stronger local glow during synchronized release");
+            foreach(var image in ui.GetComponentsInChildren<Image>())if(image.name=="勇气"||image.name=="守护"||image.name=="坚韧")Assert((image.material.GetVector("_Release")-glow).sqrMagnitude<.00001f,"Three-key feedback clocks were not synchronized");
+            ui.AdvanceFeedback(ui.style.releaseDuration*.73f-.11f);Assert(mat.GetVector("_Release").w>.42f,"Arrival accent was missing at the light endpoint");
+            ui.AdvanceFeedback(ui.style.releaseDuration*.25f);Assert(mat.GetVector("_Release").w<.001f&&ui.IsInputLocked(0),"Accent did not hand off to afterglow before release ended");
             ui.ResetInput();Assert(mat.GetVector("_Release").x==0&&mat.GetVector("_Press").sqrMagnitude==0,"Reset retained emitted light");
         }
         ui.ResetInput();Assert(!ui.IsInputLocked(0)&&!ui.IsInputLocked(1)&&ui.BufferedCount(0)==0&&ui.BufferedCount(1)==0,"Restart retained command state");

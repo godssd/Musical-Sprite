@@ -14,7 +14,7 @@ public class SkillInputUI : MonoBehaviour {
     static readonly SkillInputStep[] steps={SkillInputStep.Left,SkillInputStep.Down,SkillInputStep.Right};
     static readonly string[] names={"勇气","守护","坚韧"};
     readonly SkillCommandSession[] sessions={new SkillCommandSession(),new SkillCommandSession()};
-    readonly DampedNumberPulse[] pulses={new DampedNumberPulse(),new DampedNumberPulse(),new DampedNumberPulse()};
+    readonly SkillCommandPulse[] pulses={new SkillCommandPulse(),new SkillCommandPulse(),new SkillCommandPulse()};
     readonly RectTransform[] hits=new RectTransform[3],visuals=new RectTransform[3];
     readonly Image[] roots=new Image[3],icons=new Image[3];
     readonly Graphic[] rings=new Graphic[3];
@@ -67,6 +67,7 @@ public class SkillInputUI : MonoBehaviour {
             artwork=ImageAt("MasterArtworkFrame",group,style.artworkFrame,style.artworkHeight);
             artwork.rectTransform.sizeDelta=artworkSize;artwork.preserveAspect=false;
             artworkMaterials[0]=ArtworkMaterial(artwork,artworkSize,false);
+            if(artworkMaterials[0]!=null){artworkMaterials[0].SetTexture("_PathTex",style.flowPath);SetArtworkPalette(artworkMaterials[0],new Color(1,.68f,.51f),new Color(1,.40f,.32f),new Color(.60f,.31f,.45f));}
         }else if(semantic){
             link=Child("CommandLink",group,typeof(RectTransform),typeof(CanvasRenderer),typeof(SkillCommandLinkGraphic)).GetComponent<SkillCommandLinkGraphic>();
             link.rectTransform.sizeDelta=group.sizeDelta;link.spacing=spacing;link.radius=style.frameSize*.5f;link.raycastTarget=false;
@@ -84,7 +85,15 @@ public class SkillInputUI : MonoBehaviour {
                     ribbon.rectTransform.sizeDelta=Vector2.one*style.frameSize;ribbon.command=i;ribbon.raycastTarget=false;rings[i]=ribbon;
                 }
                 icons[i]=ImageAt(names[i],visuals[i],style.icons[i],style.iconSize);
-                if(masterArtwork)artworkMaterials[i+1]=ArtworkMaterial(icons[i],Vector2.one*style.iconSize,true);
+                if(masterArtwork){
+                    artworkMaterials[i+1]=ArtworkMaterial(icons[i],Vector2.one*style.iconSize,true);
+                    if(artworkMaterials[i+1]!=null){
+                        var bright=new[]{new Color(1,.85f,.61f),new Color(.74f,.91f,.98f),new Color(.84f,.91f,.65f)};
+                        var glow=new[]{new Color(1,.63f,.29f),new Color(.36f,.73f,1),new Color(.48f,.79f,.29f)};
+                        var shadow=new[]{new Color(.72f,.43f,.30f),new Color(.38f,.52f,.72f),new Color(.35f,.56f,.43f)};
+                        SetArtworkPalette(artworkMaterials[i+1],bright[i],glow[i],shadow[i]);
+                    }
+                }
             }else{
                 var go=Child("LegacyArrow",visuals[i],typeof(RectTransform),typeof(CanvasRenderer),typeof(Text));var rt=(RectTransform)go.transform;rt.sizeDelta=Vector2.one*size;
                 var label=go.GetComponent<Text>();label.text=new[]{"←","↓","→"}[i];label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");label.fontSize=110;label.alignment=TextAnchor.MiddleCenter;label.raycastTarget=false;
@@ -92,7 +101,8 @@ public class SkillInputUI : MonoBehaviour {
         }
         if(masterArtwork){
             burst=Child("ReleasePaintSparks",group,typeof(RectTransform),typeof(CanvasRenderer),typeof(SkillCommandBurstGraphic)).GetComponent<SkillCommandBurstGraphic>();
-            burst.rectTransform.anchoredPosition=new Vector2(artworkSize.x*.23f,-artworkSize.y*.405f);burst.rectTransform.sizeDelta=new Vector2(180,160);burst.raycastTarget=false;
+            burst.rectTransform.anchoredPosition=Vector2.zero;burst.rectTransform.sizeDelta=new Vector2(260,720);burst.raycastTarget=false;
+            burst.origins=new[]{hits[0].anchoredPosition+Vector2.up*style.artworkHeight*.1036f,hits[1].anchoredPosition+Vector2.up*style.artworkHeight*.1059f,hits[2].anchoredPosition+Vector2.up*style.artworkHeight*.1105f};
         }
         Canvas.ForceUpdateCanvases();ApplyVisuals();
     }
@@ -102,6 +112,10 @@ public class SkillInputUI : MonoBehaviour {
         var material=new Material(shader){hideFlags=HideFlags.HideAndDontSave};
         var sprite=image.sprite;float u=sprite.rect.width/sprite.texture.width,v=sprite.rect.height/sprite.texture.height;
         material.SetVector("_GlowUV",new Vector4(u/size.x,v/size.y,0,0));material.SetFloat("_IsIcon",isIcon?1:0);image.material=material;return material;
+    }
+    void SetArtworkPalette(Material material,Color bright,Color glow,Color shadow){
+        Color Linear(Color c)=>QualitySettings.activeColorSpace==ColorSpace.Linear?c.linear:c;
+        material.SetColor("_BrightHue",Linear(bright));material.SetColor("_GlowHue",Linear(glow));material.SetColor("_ShadowHue",Linear(shadow));
     }
     void Update(){
         EnsureInitialized();AdvanceFeedback(Time.deltaTime);
@@ -133,8 +147,9 @@ public class SkillInputUI : MonoBehaviour {
             // Preserve the existing first-complete-runtime selection rule.
             rt.BeginCast();session.Clear();
             if(rt.phase!=ActiveSkillRuntime.Phase.Standby){
-                session.Lock(SkillCommandFeedback.Release,style!=null?style.releaseDuration:.38f);
-                if(side==0)for(int i=0;i<3;i++)pulses[i].Trigger(1.07f,.94f,.32f);
+                float duration=style!=null?style.releaseDuration:.85f;
+                session.Lock(SkillCommandFeedback.Release,duration);
+                if(side==0)for(int i=0;i<3;i++)pulses[i].Trigger(1.045f,.97f,duration*.95f,duration*.12f,duration*.30f);
                 ApplyVisuals();return LastResult=FeedResult.Triggered;
             }
             // A role animation may reject the cast. The prefix was still valid:
@@ -153,12 +168,12 @@ public class SkillInputUI : MonoBehaviour {
         if(canvas==null)return;
         Rect safe=Screen.safeArea;if(Camera.main!=null){Rect r=Camera.main.pixelRect;float l=Mathf.Max(safe.xMin,r.xMin),b=Mathf.Max(safe.yMin,r.yMin),rr=Mathf.Min(safe.xMax,r.xMax),t=Mathf.Min(safe.yMax,r.yMax);if(rr>l&&t>b)safe=Rect.MinMaxRect(l,b,rr,t);}
         safeArea.anchorMin=new Vector2(safe.xMin/Mathf.Max(1,Screen.width),safe.yMin/Mathf.Max(1,Screen.height));safeArea.anchorMax=new Vector2(safe.xMax/Mathf.Max(1,Screen.width),safe.yMax/Mathf.Max(1,Screen.height));safeArea.offsetMin=safeArea.offsetMax=Vector2.zero;
-        var session=sessions[0];float resetDuration=style!=null?style.resetDuration:.28f,releaseDuration=style!=null?style.releaseDuration:.38f;
+        var session=sessions[0];float resetDuration=style!=null?style.resetDuration:.28f,releaseDuration=style!=null?style.releaseDuration:.85f;
         float reset=session.Feedback==SkillCommandFeedback.Reset?Mathf.Sin(Mathf.Clamp01(session.FeedbackAge/resetDuration)*Mathf.PI):0;
         float release=session.Feedback==SkillCommandFeedback.Release?Mathf.Sin(Mathf.Clamp01(session.FeedbackAge/releaseDuration)*Mathf.PI):0;
         for(int i=0;i<3;i++){
             if(visuals[i]==null)continue;
-            visuals[i].localScale=Vector3.one*pulses[i].Scale*(1-reset*.055f+release*.015f);
+            visuals[i].localScale=Vector3.one*pulses[i].Scale*(1-reset*.055f+(masterArtwork?0:release*.015f));
             visuals[i].anchoredPosition=masterArtwork?Vector2.zero:new Vector2((i-1)*reset*2,0);
             if(semantic){
                 icons[i].color=masterArtwork?Color.white:Color.Lerp(style.cream,new Color(.55f,.55f,.60f),reset*.8f);
@@ -170,9 +185,16 @@ public class SkillInputUI : MonoBehaviour {
         if(masterArtwork){
             // Sharper attack, longer soft tail: complete release is visibly stronger than a press.
             float t=Mathf.Clamp01(session.FeedbackAge/releaseDuration);
-            float energy=session.Feedback==SkillCommandFeedback.Release&&t<1?Mathf.SmoothStep(0,1,t/.10f)*Mathf.Pow(1-t,1.1f):0;
-            var releaseData=new Vector4(energy,Mathf.Lerp(.12f,.94f,Mathf.SmoothStep(0,1,t/.68f)),style.releaseGlow,0);
+            float energy=session.Feedback==SkillCommandFeedback.Release&&t<1?Mathf.SmoothStep(0,1,t/.18f)*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.66f,1,t))):0;
+            // Broad soft accent instead of an electrical snap; same clock on all keys.
+            float finishFlash=session.Feedback==SkillCommandFeedback.Release?.50f*Mathf.SmoothStep(0,1,Mathf.InverseLerp(.58f,.72f,t))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.74f,.96f,t))):0;
+            float travel=Mathf.SmoothStep(0,1,Mathf.InverseLerp(.10f,.72f,t));
+            float dampedTravel=(1-(1+5*travel)*Mathf.Exp(-5*travel))/(1-6*Mathf.Exp(-5));
+            var releaseData=new Vector4(energy,dampedTravel,style.releaseGlow,finishFlash);
             var pressData=new Vector4(Mathf.Exp(-pressAges[0]*17),Mathf.Exp(-pressAges[1]*17),Mathf.Exp(-pressAges[2]*17),0)*style.pressGlow*(1-reset);
+            // The final command does not get an extra single-key glow on top of
+            // the synchronized whole-group response.
+            if(session.Feedback==SkillCommandFeedback.Release&&t<1)pressData=Vector4.zero;
             for(int i=0;i<artworkMaterials.Length;i++){
                 var material=artworkMaterials[i];if(material==null)continue;
                 material.SetFloat("_Reset",reset);material.SetVector("_Release",releaseData);material.SetVector("_Press",pressData);

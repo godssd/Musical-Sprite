@@ -61,6 +61,7 @@ public static class NotePrewarmer
         if (lib != null)
         {
             Collect(lib.tap, textures);
+            Collect(lib.plainTap, textures);
             Collect(lib.tapSelect, textures);
             Collect(lib.smallTap, textures);
             Collect(lib.smallTapSelect, textures);
@@ -89,7 +90,8 @@ public static class NotePrewarmer
             foreach (var tex in textures)
             {
                 if (tex == null) continue;
-                Material mat = NoteMover.BuildPrewarmMaterial(tex);
+                bool jelly = lib != null && lib.plainTap != null && tex == lib.plainTap.texture;
+                Material mat = NoteMover.BuildPrewarmMaterial(tex, jelly);
                 if (mat == null) continue;
                 warmMaterials.Add(mat);
 
@@ -104,7 +106,10 @@ public static class NotePrewarmer
                 var mf = go.AddComponent<MeshFilter>();
                 mf.sharedMesh = NoteMover.FlatQuadMesh;
                 var mr = go.AddComponent<MeshRenderer>();
-                mr.material = mat;   // 实例化 alpha=0 材质，渲染后随 warmRoot 销毁
+                if (jelly && NoteMover.JellyHitMaterials.Length > 1)
+                    mr.sharedMaterials = new[] { mat, NoteMover.JellyHitMaterials[1] };
+                else
+                    mr.sharedMaterial = mat;
             }
 
             yield return null;

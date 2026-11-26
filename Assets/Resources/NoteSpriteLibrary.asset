@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: NoteSpriteLibrary
   m_EditorClassIdentifier: 
   tap: {fileID: 21300000, guid: 3a90ea90383cf9a4a87d7bded3ec7276, type: 3}
+  plainTap: {fileID: 21300000, guid: 573d40f2dc744fac93924eecc2425c2f, type: 3}
   tapSelect: {fileID: 21300000, guid: a9b75bfc5ea5214478ccecac88a0aae3, type: 3}
   smallTap: {fileID: 21300000, guid: 23412a2920bc7514395c0f23becfd340, type: 3}
   smallTapSelect: {fileID: 21300000, guid: cbf16adacdba8ed4ea0e0adbee81803b, type: 3}

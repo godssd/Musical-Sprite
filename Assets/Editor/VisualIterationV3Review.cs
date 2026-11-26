@@ -26,6 +26,8 @@ public static class VisualIterationV3Review
     public static void BatchV4()=>Run("DesignPreviews/VisualIterationV4-20261030/live");
     public static void BatchSkills(){SessionState.SetBool(Key+".skills",true);Run("DesignPreviews/SkillInputIntegration-20261102/live");}
     public static void BatchSkillsV4(){SessionState.SetBool(Key+".skills",true);Run("DesignPreviews/SkillCommands-Motion-20261103/live");}
+    public static void BatchColoredSkills(){SessionState.SetBool(Key+".skills",true);Run("DesignPreviews/ColoredUILight-20261104/skills");}
+    public static void BatchColoredHUD()=>Run("DesignPreviews/ColoredUILight-20261104/hud");
     public static void BatchV7()=>Run("DesignPreviews/UIFxRebuildV7-20261101/live");
     public static void BatchV6()=>Run("DesignPreviews/VisualIterationV6-20261101/live");
     public static void BatchV5()=>Run("DesignPreviews/VisualIterationV5-20261030/live");
@@ -153,9 +155,9 @@ public static class VisualIterationV3Review
             }
             else if(phase==28){skillFixture.Show("Press");skillUI.AdvanceFeedback(.055f);Queue("02-skill-press");}
             else if(phase==29){skillFixture.Show("Reset");skillUI.AdvanceFeedback(.12f);Queue("03-skill-reset-locked");}
-            else if(phase==30){skillFixture.Show("Release");skillUI.AdvanceFeedback(.11f);Queue("04-skill-release-locked");}
+            else if(phase==30){skillFixture.Show("Release");skillUI.AdvanceFeedback(.30f);Queue("04-skill-release-locked");}
             else if(phase==31){animationFrame=0;skillFixture.Show("Release");Queue("skill-release-frame-00");}
-            else if(phase==32){animationFrame++;skillUI.AdvanceFeedback(.02f);Queue("skill-release-frame-"+animationFrame.ToString("D2"));if(animationFrame<24)phase--;}
+            else if(phase==32){animationFrame++;skillUI.AdvanceFeedback(.02f);Queue("skill-release-frame-"+animationFrame.ToString("D2"));if(animationFrame<Mathf.CeilToInt(skillUI.style.releaseDuration/.02f)+5)phase--;}
             else if(phase==33){
                 skillFixture.Dispose();skillFixture=null;
                 File.WriteAllText(Path.Combine(Output,"runtime-validation.txt"),"PASS: real-scene semantic icons and fixed hitboxes; shared prefix matches multiple eligible runtimes; full sequence begins actual ActiveSkillRuntime; slot energy consumed once; reset / release locks reject input without modifying buffer; per-team isolation; timeout; keyboard remap and note-key conflict checks; UI pointer raycast; pointer gesture ownership until release; reset clears buffers and locks. UI fixtures did not change real score or HP. PlayerPrefs unchanged. Native 1920x1080 captures; fixtures use no character models, retaining existing production role animation calls. No scene saved.");

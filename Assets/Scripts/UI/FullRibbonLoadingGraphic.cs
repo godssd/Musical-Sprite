@@ -100,6 +100,9 @@ public sealed class FullRibbonLoadingGraphic : MaskableGraphic {
         instance.SetVector("_Tangent",new Vector4(tangent.x,tangent.y,-tangent.y,tangent.x));instance.SetFloat("_TeamWidth",style.teamSize.x);instance.SetFloat("_Side",side);instance.SetFloat("_Travel",travel);
         instance.SetFloat("_Visible",IsVisible?visibility:0);instance.SetFloat("_NearStrength",style.loadingNearGlow);instance.SetFloat("_FarStrength",style.loadingFarGlow);
         Color white=new Color(1,.985f,.94f,1);instance.SetColor("_White",QualitySettings.activeColorSpace==ColorSpace.Linear?white.linear:white);
+        Color near=side==0?new Color(1,.83f,.65f):new Color(.70f,.90f,1),far=side==0?new Color(1,.53f,.38f):new Color(.40f,.59f,1);
+        instance.SetColor("_NearTint",QualitySettings.activeColorSpace==ColorSpace.Linear?near.linear:near);
+        instance.SetColor("_FarTint",QualitySettings.activeColorSpace==ColorSpace.Linear?far.linear:far);
         SetVerticesDirty();
     }
     protected override void OnPopulateMesh(VertexHelper h){h.Clear();Rect r=GetPixelAdjustedRect();h.AddVert(new Vector3(r.xMin,r.yMin),color,new Vector2(0,0));h.AddVert(new Vector3(r.xMin,r.yMax),color,new Vector2(0,1));h.AddVert(new Vector3(r.xMax,r.yMax),color,new Vector2(1,1));h.AddVert(new Vector3(r.xMax,r.yMin),color,new Vector2(1,0));h.AddTriangle(0,1,2);h.AddTriangle(0,2,3);}

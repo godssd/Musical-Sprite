@@ -22,9 +22,11 @@ public sealed class RibbonOpticalGraphic : MaskableGraphic {
         var ribbon=style.ribbon[side];var region=ribbon.rect;
         m.SetTexture("_RibbonTex",ribbon.texture);m.SetVector("_RibbonUV",new Vector4(region.x/ribbon.texture.width,region.y/ribbon.texture.height,region.width/ribbon.texture.width,region.height/ribbon.texture.height));
         Color team=style.Team(side);
-        m.SetColor("_CoreColor",Linear(Color.Lerp(team,Color.white,.83f)));
-        m.SetColor("_HaloColor",Linear(team));
+        m.SetColor("_CoreColor",Linear(Color.Lerp(team,side==0?new Color(1,.94f,.82f):new Color(.89f,.98f,1),.38f)));
+        m.SetColor("_NearColor",Linear(side==0?new Color(1,.64f,.42f):new Color(.49f,.83f,1)));
+        m.SetColor("_HaloColor",Linear(side==0?new Color(1,.35f,.29f):new Color(.36f,.55f,1)));
         m.SetColor("_PendingColor",Linear(healing?style.healingColor:style.lossColor));
+        m.SetColor("_PendingFar",Linear(healing?new Color(.40f,.72f,.39f):new Color(1,.58f,.20f)));
         if(style.ribbonProfiles!=null&&style.ribbonProfiles.Length>side)m.SetTexture("_CurveTex",style.ribbonProfiles[side]);
         SetVerticesDirty();
     }

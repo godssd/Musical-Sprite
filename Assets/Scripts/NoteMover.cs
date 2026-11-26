@@ -31,6 +31,14 @@ public class NoteMover : MonoBehaviour
     private MaterialPropertyBlock noteProperties;
     private Color noteTint = Color.white;
     private static Material sharedTapMaterial;
+    private static Material jellyMaterial;
+    private static Material[] jellyHitMaterials;
+    private static readonly int JellyHitId = Shader.PropertyToID("_JellyHit");
+    private static readonly int TapImpactId = Shader.PropertyToID("_TapImpact");
+    private static readonly int TapLiftId = Shader.PropertyToID("_TapLift");
+    private static readonly int RadianceGainId = Shader.PropertyToID("_RadianceGain");
+    private static readonly int RailXId = Shader.PropertyToID("_RailX");
+    private bool animateJelly;
     private Color originalColor;
     private bool isChainTap = false;
     private TextMesh chainCountText;
@@ -205,9 +213,10 @@ public class NoteMover : MonoBehaviour
     /// 预热用采样材质：与 MakeTapMaterial 同一路径，但 alpha=0（不可见）。
     /// 供 NotePrewarmer 用临时物体真渲染两帧，触发 shader 变体编译与纹理 GPU 上传。
     /// </summary>
-    public static Material BuildPrewarmMaterial(Texture2D tex)
+    public static Material BuildPrewarmMaterial(Texture2D tex, bool jelly = false)
     {
-        Material mat = MakeTapMaterial(tex);
+        Material mat = jelly ? new Material(JellyMaterial) : MakeTapMaterial(tex);
+        mat.mainTexture = tex;
         mat.color = new Color(1f, 1f, 1f, 0f);
         return mat;
     }
@@ -494,10 +503,11 @@ public class NoteMover : MonoBehaviour
 
         Texture2D tapTex = tapTexture;
         Sprite tapSpriteRef = null;
-        if (tapTex == null && NoteSpriteLibrary.Instance != null && NoteSpriteLibrary.Instance.tap != null)
+        var library = NoteSpriteLibrary.Instance;
+        if (tapTex == null && library != null)
         {
-            tapSpriteRef = NoteSpriteLibrary.Instance.tap;
-            tapTex = tapSpriteRef.texture;
+            tapSpriteRef = isPlainTap && library.plainTap != null ? library.plainTap : library.tap;
+            if (tapSpriteRef != null) tapTex = tapSpriteRef.texture;
         }
         float tapPPU = tapSpriteRef != null ? tapSpriteRef.pixelsPerUnit : 100f;
         Texture2D wideTex = wideTexture;
@@ -657,6 +667,12 @@ public class NoteMover : MonoBehaviour
                     noteMaterial = smallTapNoteMaterial != null ? smallTapNoteMaterial : SharedTapMaterial;
                 else if (isChainTap)
                     noteMaterial = SharedTapMaterial;   // 连点沿用通用 Repeat 贴图，不使用 Tap 模板的内置贴图
+                else if (isPlainTap && tapNoteMaterial == null && library != null &&
+                         tapSpriteRef != null && tapSpriteRef == library.plainTap)
+                {
+                    noteMaterial = JellyMaterial;
+                    animateJelly = noteMaterial.HasProperty(JellyHitId);
+                }
                 else
                     noteMaterial = tapNoteMaterial != null ? tapNoteMaterial : SharedTapMaterial;
                 usesGeneratedMaterial = isChainTap || (isSmallTap ? smallTapNoteMaterial == null : tapNoteMaterial == null);
@@ -671,6 +687,7 @@ public class NoteMover : MonoBehaviour
             }
             rend.sharedMaterial = noteMaterial;
             noteProperties = new MaterialPropertyBlock();
+            if (animateJelly) noteProperties.SetFloat(RailXId, hitPos.x);
             if (usesGeneratedMaterial) SetNoteTexture(activeTex);
             originalColor = visibleBaseColor;
             SetNoteTint(visibleBaseColor);   // 初始色（rend 仍 disabled，过粉杠后再显形）
@@ -770,7 +787,7 @@ public class NoteMover : MonoBehaviour
     }
 
     /// <summary>
-    /// 播放命中反馈：变黑 → 白 → 变大 → 消失。
+    /// 播放音符自身的命中反馈；判定线和角色由判定事件独立驱动。
     /// </summary>
     public void PlayHitAnimation(string rank)
     {
@@ -971,48 +988,81 @@ public class NoteMover : MonoBehaviour
         if (skin2 == null) return false; // 无皮肤集：回退发光染色
         Texture2D skinSelect = NoteSpriteLibrary.GetEnchantSkin(skillId, kind + "_Select");
         SetNoteTexture(skin2);
+        if (animateJelly)
+        {
+            noteProperties.SetFloat(RailXId, -10000f);
+        }
+        animateJelly = false; // 附魔有独立的命中贴图。
         if (skinSelect != null) _selectTex = skinSelect;   // 命中后切到皮肤 Select 版
         textured = true;                                   // 命中走 Select（完成）贴图路径
         SetNoteTint(Color.white);                          // 以贴图原色显示
         return true;
     }
 
+    private void SetJellyHitShape(float time, float lightProgress, float fragmentProgress, float strength, float direction)
+    {
+        // Give the first compression and overshoot distinct beats, then settle with a smaller echo.
+        float squeeze = 0.33f * Mathf.SmoothStep(0f, 1f, time / 0.036f)
+                      - 0.58f * Mathf.SmoothStep(0f, 1f, (time - 0.036f) / 0.058f)
+                      + 0.33f * Mathf.SmoothStep(0f, 1f, (time - 0.094f) / 0.064f)
+                      - 0.08f * Mathf.SmoothStep(0f, 1f, (time - 0.158f) / 0.069f);
+        float light = Mathf.SmoothStep(0f, 1f, time / 0.055f)
+                    * (1f - Mathf.SmoothStep(0f, 1f, (time - 0.085f) / 0.16f));
+        float sweep = Mathf.SmoothStep(-0.08f, 1.18f, time / 0.22f);
+        // Select 自带金边和爪印亮部，仅给形变叠一点移动反光。
+        noteProperties.SetVector(JellyHitId, new Vector4(squeeze * strength, 0.20f * light * strength, sweep, direction));
+        noteProperties.SetVector(TapImpactId, new Vector4(lightProgress, strength, direction, fragmentProgress));
+    }
+
     private IEnumerator HitCoroutine(string rank)
     {
-        float duration = 0.25f;
+        const float lightDuration = 0.25f;
+        const float jellyBodyDuration = 0.27f;
+        float duration = !animateJelly ? lightDuration : rank == "PERFECT" ? 0.48f : 0.43f;
         float timer = 0f;
 
         // 命中表现：换皮音符且有"完成"贴图时，直接切成 Select（完成）贴图以原色显示，再放大淡出；
         // 其余（非换皮 / 无 Select，如连点圆柱）沿用旧的"变黑 → 白 → 放大消失"。
         bool useSelect = textured && _selectTex != null;
-        if (noteMaterial != null)
-        {
-            if (useSelect)
-            {
-                ApplySelectTexture();      // 换成"完成"贴图
-                SetNoteTint(Color.white);  // 以贴图原色显示（不闪黑）
-            }
-            else
-            {
-                SetNoteTint(Color.black);  // 旧：变黑强调被击中
-            }
-        }
+        bool showArtwork = useSelect || animateJelly;
+        if (useSelect) ApplySelectTexture();
+        SetNoteTint(showArtwork ? Color.white : Color.black);
 
-        if (!useSelect)
+        if (!showArtwork)
             yield return new WaitForSeconds(0.05f); // 旧表现：先黑一下
 
         // 放大并淡出（两种路径共用）
         Vector3 startScale = transform.localScale;
         Vector3 endScale = startScale * 1.4f;
+        float strength = rank == "PERFECT" ? 1f : 0.76f;
+        float direction = Mathf.Sign(hitPos.x - spawnPos.x);
+        if (animateJelly)
+        {
+            // Unity draws the last submesh once per remaining material. Both layers share
+            // the note's timing, culling, renderer and property block.
+            rend.sharedMaterials = JellyHitMaterials;
+            noteProperties.SetFloat(RadianceGainId, 1f);
+            noteProperties.SetFloat(TapLiftId, 1f);
+            rend.localBounds = new Bounds(new Vector3(0f, 0f, 0.26f), new Vector3(3.8f, 0.12f, 2.9f));
+        }
 
         while (timer < duration)
         {
             timer += Time.deltaTime;
-            float t = timer / duration;
+            float t = Mathf.Clamp01(timer / duration);
+
+            if (animateJelly)
+            {
+                SetJellyHitShape(timer, Mathf.Clamp01(timer / lightDuration), t, strength, direction);
+                float fade = Mathf.SmoothStep(0f, 1f, (timer - 0.095f) / (jellyBodyDuration - 0.095f));
+                SetNoteTint(new Color(1f, 1f, 1f, 1f - fade));
+                yield return null;
+                continue;
+            }
 
             if (noteMaterial != null)
             {
-                if (useSelect)
+                if (showArtwork)
                     SetNoteTint(new Color(1f, 1f, 1f, 1f - t)); // 完成贴图淡出：保原色，仅降透明度
                 else
                     SetNoteTint(Color.Lerp(Color.white, new Color(1f, 1f, 1f, 0f), t)); // 黑 → 白 → 透
@@ -1144,6 +1194,35 @@ public class NoteMover : MonoBehaviour
     private Color GetNoteTint()
     {
         return noteTint;
+    }
+
+    private static Material JellyMaterial
+    {
+        get
+        {
+            if (jellyMaterial == null)
+            {
+                var shader = Resources.Load<Shader>("Shaders/TapJelly");
+                jellyMaterial = shader != null && shader.isSupported ? new Material(shader) : MakeTapMaterial(null);
+                jellyMaterial.renderQueue = 3023;
+            }
+            return jellyMaterial;
+        }
+    }
+
+    internal static Material[] JellyHitMaterials
+    {
+        get
+        {
+            if (jellyHitMaterials == null || jellyHitMaterials[0] == null)
+            {
+                var shader = Resources.Load<Shader>("Shaders/TapHitRadiance");
+                jellyHitMaterials = shader != null && shader.isSupported
+                    ? new[] { JellyMaterial, new Material(shader) }
+                    : new[] { JellyMaterial };
+            }
+            return jellyHitMaterials;
+        }
     }
 
     private static Material SharedTapMaterial

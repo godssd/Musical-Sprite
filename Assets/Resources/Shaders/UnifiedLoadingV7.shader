@@ -18,7 +18,7 @@ Shader "MusicalSprite/UI/UnifiedLoadingV7" {
    #include "UnityUI.cginc"
    struct appdata{float4 vertex:POSITION;float2 uv:TEXCOORD0;fixed4 color:COLOR;};
    struct v2f{float4 vertex:SV_POSITION;float2 uv:TEXCOORD0;fixed4 color:COLOR;float4 world:TEXCOORD1;};
-   sampler2D _MainTex;float4 _ClipRect,_MaskDimensions,_Head,_Tangent,_White;
+   sampler2D _MainTex;float4 _ClipRect,_MaskDimensions,_Head,_Tangent,_White,_NearTint,_FarTint;
    float _Side,_TeamWidth,_Travel,_Visible,_NearStrength,_FarStrength;
    v2f vert(appdata v){v2f o;o.world=v.vertex;o.vertex=UnityObjectToClipPos(v.vertex);o.uv=v.uv;o.color=v.color;return o;}
    fixed4 frag(v2f i):SV_Target{
@@ -27,7 +27,6 @@ Shader "MusicalSprite/UI/UnifiedLoadingV7" {
     float revealed=1-smoothstep(_Travel-.35,_Travel+.35,axis);
     float3 mask=tex2D(_MainTex,i.uv).rgb;
     float core=mask.r*revealed;
-    float halo=(mask.g*_NearStrength+mask.b*_FarStrength)*revealed;
     float2 q=p-_Head.xy;float along=dot(q,_Tangent.xy),normal=dot(q,_Tangent.zw);
     float cap=max(2,_Head.z+7);
     float segmentDistance=length(float2(along,max(0,abs(normal)-cap)));
@@ -36,14 +35,15 @@ Shader "MusicalSprite/UI/UnifiedLoadingV7" {
     float headHalo=exp(-.5*(pow(along/10,2)+pow(normal/(cap*.95),2)))*.85;
     float headCore=saturate(streak*.95+hotspot)*_Head.w;
     float coverage=max(core,headCore);
-    float3 glow=float3(1,.83,.53)*halo+float3(1,.91,.72)*headHalo*_Head.w;
+    float3 glow=(_NearTint.rgb*mask.g*_NearStrength+_FarTint.rgb*mask.b*_FarStrength)*revealed+_NearTint.rgb*headHalo*_Head.w*.8;
+    glow*=1-coverage*.85;
     float visibility=_Visible*i.color.a;
     #ifdef UNITY_UI_CLIP_RECT
     visibility*=UnityGet2DClipping(i.world.xy,_ClipRect);
     #endif
     // Premultiplied coverage plus independent emitted light. An alpha-zero
     // halo adds light instead of blending the background towards a dull colour.
-    fixed4 result=fixed4((_White.rgb*coverage+glow)*i.color.rgb*visibility,coverage*visibility);
+    fixed4 result=fixed4((_White.rgb*coverage*lerp(.80f,1,headCore)+glow)*i.color.rgb*visibility,coverage*visibility);
     return result;
    }
    ENDCG

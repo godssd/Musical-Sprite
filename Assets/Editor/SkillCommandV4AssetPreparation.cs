@@ -14,7 +14,7 @@ public static class SkillCommandV4AssetPreparation {
         style.icons=new[]{sprites.Single(s=>s.name=="courage"),sprites.Single(s=>s.name=="guardian"),sprites.Single(s=>s.name=="tenacity")};
         style.useSemanticArtwork=true;style.cream=Color.white;style.artworkHeight=600;style.iconSize=112;
         style.artworkIconUV=new[]{new Vector2(.504f,.818f),new Vector2(.482f,.500f),new Vector2(.449f,.206f)};
-        style.pressGlow=.8f;style.releaseGlow=2.4f;EditorUtility.SetDirty(style);AssetDatabase.SaveAssets();
+        style.pressGlow=.8f;style.releaseGlow=1.8f;EditorUtility.SetDirty(style);AssetDatabase.SaveAssets();
     }
     public static void Prepare(){
         const string root="Assets/Art/UI/SkillCommandsV4/";
